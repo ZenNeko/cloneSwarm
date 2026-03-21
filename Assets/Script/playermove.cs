@@ -24,14 +24,6 @@ public class playermove : MonoBehaviour
         }
     }
     
-    public void OnTriggerEnter(Collider collision)
-    {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            // ทำอะไรบางอย่างเมื่อชนกับศัตรู เช่น ลดพลังชีวิต หรือแสดงข้อความ
-            Debug.Log("ชนกับศัตรู!");
-        }
-    }
 
     public void Move(InputAction.CallbackContext context)
     {
