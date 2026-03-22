@@ -7,39 +7,50 @@ public class Projectile : MonoBehaviour
     public float maxRange = 20f;
 
     private Transform target;
-    private Vector3 startPosition;
+    private Vector3   moveDirection;   // ใช้เมื่อไม่มี target (กระสุนแตกข้าง)
+    private Vector3   startPosition;
 
+    /// <summary>Homing mode — ติดตาม target</summary>
     public void Init(Transform target)
     {
-        this.target = target;
+        this.target   = target;
+        moveDirection = Vector3.zero;
+        startPosition = transform.position;
+    }
+
+    /// <summary>Direction mode — บินตรง ไม่ homing</summary>
+    public void InitDirection(Vector3 direction)
+    {
+        moveDirection = direction.normalized;
+        target        = null;
         startPosition = transform.position;
     }
 
     void Update()
     {
-        // ถ้า target ตายไปแล้ว ให้ลบ projectile
-        if (target == null)
+        if (moveDirection != Vector3.zero)
         {
-            Destroy(gameObject);
-            return;
+            // Direction mode
+            transform.position += moveDirection * speed * Time.deltaTime;
+        }
+        else
+        {
+            // Homing mode
+            if (target == null) { Destroy(gameObject); return; }
+            transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
         }
 
-        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
-
-        // ลบถ้าเกินระยะ
         if (Vector3.Distance(startPosition, transform.position) >= maxRange)
-        {
             Destroy(gameObject);
-        }
     }
 
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Enemy"))
         {
-            Health health = other.GetComponent<Health>();
-            if (health != null)
-                health.TakeDamage(damage);
+            Enemy enemy = other.GetComponent<Enemy>();
+            if (enemy != null)
+                enemy.EnemyTakeDamage(damage);
 
             Destroy(gameObject);
         }

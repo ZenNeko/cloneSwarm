@@ -3,9 +3,13 @@ using UnityEngine;
 public class PlayerWeapon : MonoBehaviour
 {
     public GameObject projectilePrefab;
-    public float attackRange = 8f;
-    public float attackSpeed = 1f; // จำนวนยิงต่อวินาที
-    public float damage = 20f;
+    public float attackRange       = 8f;
+    public float attackSpeed       = 1f;    // จำนวนยิงต่อวินาที
+    public float damage            = 20f;
+    public float projectileSpeed   = 12f;   // ส่งให้ Projectile ตอน spawn
+    public int   multiProjectileCount = 1;  // จำนวน projectile ต่อการยิง
+    [Tooltip("มุมกระจายระหว่าง projectile (องศา)")]
+    public float spreadAngle       = 15f;   // องศาระหว่าง projectile แต่ละลูก
 
     private float attackTimer;
 
@@ -47,15 +51,28 @@ public class PlayerWeapon : MonoBehaviour
     {
         if (projectilePrefab == null) return;
 
-        // spawn กลางตัว player เล็กน้อย
-        Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
-        GameObject proj = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
+        Vector3 spawnPos  = transform.position + Vector3.up * 0.5f;
+        Vector3 targetDir = (target.position - spawnPos).normalized;
 
-        Projectile p = proj.GetComponent<Projectile>();
-        if (p != null)
+        int count = Mathf.Max(1, multiProjectileCount);
+
+        for (int i = 0; i < count; i++)
         {
+            // คำนวณมุม: กระจาย symmetric รอบ targetDir
+            float angle   = (i - (count - 1) * 0.5f) * spreadAngle;
+            Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * targetDir;
+
+            GameObject proj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+            Projectile p    = proj.GetComponent<Projectile>();
+            if (p == null) continue;
+
             p.damage = damage;
-            p.Init(target);
+            p.speed  = projectileSpeed;
+
+            if (i == 0)
+                p.Init(target);          // กระสุนตรงกลาง — homing
+            else
+                p.InitDirection(dir);    // กระสุนข้างๆ — บินตรง
         }
     }
 

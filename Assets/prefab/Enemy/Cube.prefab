@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 1271662588879709939}
   m_Layer: 0
   m_Name: Cube
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -128,6 +128,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   player: {fileID: 0}
   speed: 3
+  contactDamage: 10
+  damageCooldown: 1
+  maxHealth: 40
+  onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  expReward: 10
+  expOrbPrefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
 --- !u!54 &1271662588879709939
 Rigidbody:
   m_ObjectHideFlags: 0
