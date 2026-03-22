@@ -16,6 +16,9 @@ GameObject:
   - component: {fileID: 1746890018923511425}
   - component: {fileID: 4250323636796052472}
   - component: {fileID: 2672743675842583459}
+  - component: {fileID: -5025853322421610712}
+  - component: {fileID: 4780518412959422657}
+  - component: {fileID: -7067229058889926239}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -284,7 +287,7 @@ MonoBehaviour:
   onDeath:
     m_PersistentCalls:
       m_Calls: []
-  moveSpeedPerLevel: 0.1
+  healthRegenPerSecond: 0
 --- !u!114 &2672743675842583459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -301,3 +304,68 @@ MonoBehaviour:
   attackRange: 8
   attackSpeed: 1
   damage: 20
+  projectileSpeed: 12
+  multiProjectileCount: 1
+  spreadAngle: 15
+--- !u!114 &-5025853322421610712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1385780694
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &4780518412959422657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f28a5d7a6983c149bef935c5b84df84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UpgradeManager
+  allUpgrades: []
+  cardsPerLevel: 3
+--- !u!114 &-7067229058889926239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aa3f860f74f3c84fbc0a5e610061aa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExperienceManager
+  currentLevel: 1
+  maxLevel: 30
+  baseExpToLevel: 100
+  expGrowthRate: 1.25
+  expMultiplier: 1
+  onLevelUp:
+    m_PersistentCalls:
+      m_Calls: []
+  onExpChanged:
+    m_PersistentCalls:
+      m_Calls: []

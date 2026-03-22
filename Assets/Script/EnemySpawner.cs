@@ -1,55 +1,57 @@
+using Unity.Netcode;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
-public class EnemySpawner : MonoBehaviour
+public class EnemySpawner : NetworkBehaviour
 {
-    public GameObject enemyPrefab; // Prefab ของศัตรู
-    public Transform player; // อ้างอิงตัวผู้เล่น
-    public float spawnRate = 1f; // ระยะเวลาในการเกิดศัตรู (วินาที/ตัว)
-    public float spawnRadius = 10f; // ระยะห่างจากผู้เล่นที่จะให้ศัตรูเกิด
+    public GameObject enemyPrefab;
+    public float spawnRate   = 1f;
+    public float spawnRadius = 10f;
 
-    void Start()
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+    public override void OnNetworkSpawn()
     {
-        // สั่งให้เริ่มเรียกฟังก์ชัน SpawnEnemy วนซ้ำไปเรื่อยๆ
-        InvokeRepeating("SpawnEnemy", 0f, spawnRate);
+        // Spawn เฉพาะ Server
+        if (!IsServer) return;
+        InvokeRepeating(nameof(SpawnEnemy), 1f, spawnRate);
     }
 
+    public override void OnNetworkDespawn()
+    {
+        CancelInvoke(nameof(SpawnEnemy));
+    }
+
+    // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnEnemy()
     {
-        if (player == null) return;
+        if (!IsServer) return;
 
-        // สุ่มตำแหน่งแบบวงกลม 2D (แกน X และ Z สำหรับเกม 3D) รอบๆ ผู้เล่น
-        Vector2 randomCircle = Random.insideUnitCircle.normalized;
-        
-        // แปลงให้อยู่ในระนาบ X-Z แทนที่จะเป็น X-Y (ซึ่งทำให้ศัตรูเกิดในอากาศ)
-        Vector3 randomDirection = new Vector3(randomCircle.x, 0f, randomCircle.y);
-        
-        // กำหนดตำแหน่งที่จะเกิดโดยอ้างอิงความสูง (Y) จากตัวผู้เล่น
-        Vector3 spawnPosition = player.position + (randomDirection * spawnRadius);
+        Transform spawnNear = GetRandomPlayerTransform();
+        if (spawnNear == null) return;
 
-        // สร้างศัตรูใหม่
-        GameObject newEnemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
-        
-        // กำหนดเป้าหมายให้ศัตรูตัวใหม่รู้ว่าใครคือผู้เล่น
-        Enemy enemyScript = newEnemy.GetComponent<Enemy>();
-        if (enemyScript != null)
-        {
-            enemyScript.player = player;
-        }
+        Vector2 rand = Random.insideUnitCircle.normalized;
+        Vector3 pos  = spawnNear.position + new Vector3(rand.x, 0f, rand.y) * spawnRadius;
+
+        GameObject enemy = Instantiate(enemyPrefab, pos, Quaternion.identity);
+        enemy.GetComponent<NetworkObject>()?.Spawn(true);
+        // Enemy.OnNetworkSpawn จะหา target เองอัตโนมัติ
     }
 
-    // แสดงเส้น Gizmos ในหน้าต่าง Scene เพื่อให้เห็นระยะการเกิดของศัตรู
+    // ── Helpers ───────────────────────────────────────────────────────────
+    Transform GetRandomPlayerTransform()
+    {
+        var clients = NetworkManager.Singleton.ConnectedClientsList;
+        if (clients.Count == 0) return null;
+
+        int idx = Random.Range(0, clients.Count);
+        return clients[idx].PlayerObject?.transform;
+    }
+
+    // ── Gizmo ─────────────────────────────────────────────────────────────
     void OnDrawGizmosSelected()
     {
-        Vector3 center = player != null ? player.position : transform.position;
-
 #if UNITY_EDITOR
-        // วาดเส้นวงกลมแบบแบน (Circle) บนระนาบพื้น (หันหน้าขึ้นตามแกน Y)
-        Handles.color = Color.red;
-        Handles.DrawWireDisc(center, Vector3.up, spawnRadius);
+        UnityEditor.Handles.color = Color.red;
+        UnityEditor.Handles.DrawWireDisc(transform.position, Vector3.up, spawnRadius);
 #endif
     }
 }

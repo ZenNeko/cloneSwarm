@@ -31,19 +31,25 @@ public class LevelUpUI : MonoBehaviour
     }
 
     // ── Public API (เรียกจาก UpgradeManager) ──────────────────────────────
-    public void Show(List<WeaponUpgradeData> upgrades)
+    /// <param name="upgrades">รายการ upgrade ที่สุ่มได้</param>
+    /// <param name="stackLookup">fn(upgrade) → stack ปัจจุบัน — ส่งมาจาก UpgradeManager</param>
+    /// <param name="onPicked">callback เมื่อ player เลือก card</param>
+    /// <param name="level">Level ใหม่ที่ขึ้น (0 = ไม่แสดง)</param>
+    public void Show(
+        List<WeaponUpgradeData>                   upgrades,
+        System.Func<WeaponUpgradeData, int>       stackLookup,
+        System.Action<WeaponUpgradeData>          onPicked,
+        int level = 0)
     {
-        // อัป header
-        if (levelLabel && ExperienceManager.Instance != null)
-            levelLabel.text = $"LEVEL UP!   Level {ExperienceManager.Instance.GetCurrentLevel()}";
+        if (levelLabel)
+            levelLabel.text = level > 0 ? $"LEVEL UP!   Level {level}" : "LEVEL UP!";
 
-        // ตั้ง card slots
         for (int i = 0; i < cardSlots.Count; i++)
         {
             if (i < upgrades.Count)
             {
                 cardSlots[i].gameObject.SetActive(true);
-                cardSlots[i].Populate(upgrades[i]);
+                cardSlots[i].Populate(upgrades[i], stackLookup(upgrades[i]), onPicked);
             }
             else
             {

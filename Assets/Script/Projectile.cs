@@ -1,19 +1,21 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class Projectile : MonoBehaviour
+public class Projectile : NetworkBehaviour
 {
-    public float speed = 12f;
-    public float damage = 20f;
+    public float speed    = 12f;
+    public float damage   = 20f;
     public float maxRange = 20f;
 
     private Transform target;
-    private Vector3   moveDirection;   // ใช้เมื่อไม่มี target (กระสุนแตกข้าง)
+    private Vector3   moveDirection;
     private Vector3   startPosition;
 
+    // ── Init ──────────────────────────────────────────────────────────────
     /// <summary>Homing mode — ติดตาม target</summary>
-    public void Init(Transform target)
+    public void Init(Transform t)
     {
-        this.target   = target;
+        target        = t;
         moveDirection = Vector3.zero;
         startPosition = transform.position;
     }
@@ -26,33 +28,32 @@ public class Projectile : MonoBehaviour
         startPosition = transform.position;
     }
 
+    // ── Update: Server only ───────────────────────────────────────────────
     void Update()
     {
+        if (!IsServer) return;
+
         if (moveDirection != Vector3.zero)
         {
-            // Direction mode
             transform.position += moveDirection * speed * Time.deltaTime;
         }
         else
         {
-            // Homing mode
-            if (target == null) { Destroy(gameObject); return; }
+            if (target == null) { NetworkObject.Despawn(true); return; }
             transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
         }
 
         if (Vector3.Distance(startPosition, transform.position) >= maxRange)
-            Destroy(gameObject);
+            NetworkObject.Despawn(true);
     }
 
+    // ── Collision ─────────────────────────────────────────────────────────
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Enemy"))
-        {
-            Enemy enemy = other.GetComponent<Enemy>();
-            if (enemy != null)
-                enemy.EnemyTakeDamage(damage);
+        if (!IsServer) return;
+        if (!other.CompareTag("Enemy")) return;
 
-            Destroy(gameObject);
-        }
+        other.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        NetworkObject.Despawn(true);
     }
 }
