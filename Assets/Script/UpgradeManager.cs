@@ -1,167 +1,200 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// จัดการ pool ของ upgrades, สุ่มเลือก, และ apply ค่าให้ player components
-/// เป็นเจ้าของ Time.timeScale — ไม่มี class อื่น touch timeScale
+/// Per-player upgrade manager — อยู่บน Player Prefab
+/// ทำงานเฉพาะ Owner เท่านั้น (non-owner จะ disable)
+///
+/// Flow:
+///   SharedExperienceManager.OnUpgradePhaseStart → ShowUpgradeUI()
+///   Player เลือก card → ApplyUpgrade() → PlayerUpgradePickedServerRpc()
+///   SharedExperienceManager.OnForceAutoPick → AutoPick() ถ้ายังไม่ได้เลือก
+///   SharedExperienceManager.OnUpgradePhaseEnd → HideUI, reset state
 /// </summary>
-public class UpgradeManager : MonoBehaviour
+public class UpgradeManager : NetworkBehaviour
 {
-    public static UpgradeManager Instance { get; private set; }
-
     [Header("Upgrade Pool")]
     [Tooltip("ลาก WeaponUpgradeData ScriptableObjects ทั้งหมดมาใส่ที่นี่")]
     public List<WeaponUpgradeData> allUpgrades = new();
-
-    [Tooltip("จำนวน card ที่แสดงต่อครั้ง")]
     public int cardsPerLevel = 3;
 
-    // ── References ──────────────────────────────────────────────────────
+    // ── References ────────────────────────────────────────────────────────
     private PlayerWeapon playerWeapon;
     private playermove   playerMove;
 
-    // ── Runtime state ───────────────────────────────────────────────────
-    private Dictionary<WeaponUpgradeData, int> appliedStacks = new();
+    // ── State ─────────────────────────────────────────────────────────────
+    private Dictionary<WeaponUpgradeData, int> appliedStacks  = new();
+    private List<WeaponUpgradeData>             currentOptions = new();   // options ที่แสดงอยู่ตอนนี้
+    private bool                                hasPicked;                // เลือกไปแล้วในรอบนี้
 
-    // Queue รองรับ level-up หลายครั้งพร้อมกัน
-    private Queue<int> pendingLevelUps = new();
-    private bool isShowingUI = false;
-
-    // ── Lifecycle ────────────────────────────────────────────────────────
-    void Awake()
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+    public override void OnNetworkSpawn()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
+        if (!IsOwner) { enabled = false; return; }
+
+        playerWeapon = GetComponent<PlayerWeapon>() ?? GetComponentInChildren<PlayerWeapon>();
+        playerMove   = GetComponent<playermove>()   ?? GetComponentInChildren<playermove>();
+
+        if (!playerWeapon) Debug.LogError("[UpgradeManager] ❌ PlayerWeapon not found!");
+        if (!playerMove)   Debug.LogError("[UpgradeManager] ❌ playermove not found!");
+
+        Debug.Log($"[UpgradeManager] ✅ Init — weapon:{playerWeapon != null} move:{playerMove != null}");
+
+        SharedExperienceManager.OnUpgradePhaseStart += OnUpgradePhaseStart;
+        SharedExperienceManager.OnUpgradePhaseEnd   += OnUpgradePhaseEnd;
+        SharedExperienceManager.OnForceAutoPick     += OnForceAutoPick;
     }
 
-    void Start()
+    public override void OnNetworkDespawn()
     {
-        playerWeapon = FindObjectOfType<PlayerWeapon>();
-        playerMove   = FindObjectOfType<playermove>();
-
-        if (ExperienceManager.Instance != null)
-            ExperienceManager.Instance.onLevelUp.AddListener(OnLevelUp);
+        if (!IsOwner) return;
+        SharedExperienceManager.OnUpgradePhaseStart -= OnUpgradePhaseStart;
+        SharedExperienceManager.OnUpgradePhaseEnd   -= OnUpgradePhaseEnd;
+        SharedExperienceManager.OnForceAutoPick     -= OnForceAutoPick;
     }
 
-    void OnDestroy()
+    // ── Phase Events ──────────────────────────────────────────────────────
+
+    void OnUpgradePhaseStart(int newLevel)
     {
-        if (ExperienceManager.Instance != null)
-            ExperienceManager.Instance.onLevelUp.RemoveListener(OnLevelUp);
-    }
+        hasPicked      = false;
+        currentOptions = PickRandomUpgrades(cardsPerLevel);
 
-    // ── Level-Up trigger ─────────────────────────────────────────────────
-    void OnLevelUp(int newLevel)
-    {
-        pendingLevelUps.Enqueue(newLevel);
-        if (!isShowingUI)
-            ShowNextUpgrade();
-    }
-
-    void ShowNextUpgrade()
-    {
-        if (pendingLevelUps.Count == 0) return;
-
-        pendingLevelUps.Dequeue();
-        List<WeaponUpgradeData> options = PickRandomUpgrades(cardsPerLevel);
-
-        if (options.Count == 0)
+        if (currentOptions.Count == 0)
         {
-            // ไม่มี upgrade เหลือ ข้ามได้เลย
-            ShowNextUpgrade();
+            // ไม่มี upgrade ให้เลือก → แจ้ง server ทันที
+            Debug.Log("[UpgradeManager] ไม่มี upgrade ให้เลือก — skip");
+            NotifyPicked();
             return;
         }
 
-        isShowingUI = true;
-        Time.timeScale = 0f;
-        LevelUpUI.Instance.Show(options);
+        LevelUpUI.Instance.Show(currentOptions, GetStacks, ApplyUpgrade, newLevel);
     }
 
-    // ── Apply upgrade (เรียกจาก LevelUpUI หลัง player เลือก card) ────────
+    void OnUpgradePhaseEnd()
+    {
+        // ทุกคนเลือกเสร็จแล้ว — ปิด panel ทั้งหมด
+        LevelUpUI.Instance?.Hide();
+        hasPicked = false;
+    }
+
+    void OnForceAutoPick()
+    {
+        if (hasPicked) return;   // เลือกไปแล้ว ไม่ต้อง auto
+
+        if (currentOptions.Count > 0)
+        {
+            Debug.Log($"[UpgradeManager] Auto-pick: {currentOptions[0].upgradeName}");
+            ApplyUpgrade(currentOptions[0]);
+        }
+        else
+        {
+            // ไม่มีตัวเลือก — notify เฉยๆ
+            NotifyPicked();
+        }
+    }
+
+    // ── Apply Upgrade ─────────────────────────────────────────────────────
     public void ApplyUpgrade(WeaponUpgradeData data)
     {
-        if (data == null) return;
+        if (data == null || hasPicked) return;
 
-        // เพิ่ม stack
+        hasPicked = true;                          // กัน double-call
+        LevelUpUI.Instance?.HideCards();          // ซ่อนการ์ด แต่คง panel ไว้รอคนอื่น
+
         appliedStacks.TryGetValue(data, out int stacks);
         appliedStacks[data] = stacks + 1;
 
-        // Apply ค่า
         switch (data.upgradeType)
         {
             case UpgradeType.Damage:
-                if (playerWeapon)
-                    playerWeapon.damage = ApplyValue(playerWeapon.damage, data);
+                if (playerWeapon) { float b = playerWeapon.damage; playerWeapon.damage = ApplyValue(b, data); Debug.Log($"[Upgrade] Damage {b:F1} → {playerWeapon.damage:F1}"); }
+                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
                 break;
 
             case UpgradeType.AttackSpeed:
-                if (playerWeapon)
-                    playerWeapon.attackSpeed = ApplyValue(playerWeapon.attackSpeed, data);
+                if (playerWeapon) { float b = playerWeapon.attackSpeed; playerWeapon.attackSpeed = ApplyValue(b, data); Debug.Log($"[Upgrade] AttackSpeed {b:F2} → {playerWeapon.attackSpeed:F2}"); }
+                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
                 break;
 
             case UpgradeType.AttackRange:
-                if (playerWeapon)
-                    playerWeapon.attackRange = ApplyValue(playerWeapon.attackRange, data);
-                break;
-
-            case UpgradeType.MoveSpeed:
-                if (playerMove)
-                    playerMove.moveSpeed = ApplyValue(playerMove.moveSpeed, data);
-                break;
-
-            case UpgradeType.MaxHealth:
-                if (playerMove)
-                    playerMove.GainMaxHealth(data.mode == UpgradeApplicationMode.Additive
-                        ? data.value
-                        : playerMove.maxHealth * data.value);
+                if (playerWeapon) { float b = playerWeapon.attackRange; playerWeapon.attackRange = ApplyValue(b, data); Debug.Log($"[Upgrade] AttackRange {b:F1} → {playerWeapon.attackRange:F1}"); }
+                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
                 break;
 
             case UpgradeType.ProjectileSpeed:
-                if (playerWeapon)
-                    playerWeapon.projectileSpeed = ApplyValue(playerWeapon.projectileSpeed, data);
-                break;
-
-            case UpgradeType.ExpBonus:
-                if (ExperienceManager.Instance)
-                    ExperienceManager.Instance.expMultiplier =
-                        ApplyValue(ExperienceManager.Instance.expMultiplier, data);
+                if (playerWeapon) { float b = playerWeapon.projectileSpeed; playerWeapon.projectileSpeed = ApplyValue(b, data); Debug.Log($"[Upgrade] ProjSpeed {b:F1} → {playerWeapon.projectileSpeed:F1}"); }
+                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
                 break;
 
             case UpgradeType.MultiProjectile:
-                if (playerWeapon)
-                    playerWeapon.multiProjectileCount += (int)data.value;
+                if (playerWeapon) { playerWeapon.multiProjectileCount += (int)data.value; Debug.Log($"[Upgrade] MultiProj → {playerWeapon.multiProjectileCount}"); }
+                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
+                break;
+
+            case UpgradeType.MoveSpeed:
+                if (playerMove) { float b = playerMove.moveSpeed; playerMove.moveSpeed = ApplyValue(b, data); Debug.Log($"[Upgrade] MoveSpeed {b:F2} → {playerMove.moveSpeed:F2}"); }
+                else Debug.LogError("[Upgrade] ❌ playerMove null");
+                break;
+
+            case UpgradeType.MaxHealth:
+                if (playerMove) { float amt = data.mode == UpgradeApplicationMode.Additive ? data.value : playerMove.maxHealth * data.value; ApplyMaxHealthServerRpc(amt); Debug.Log($"[Upgrade] MaxHealth +{amt}"); }
+                else Debug.LogError("[Upgrade] ❌ playerMove null");
                 break;
 
             case UpgradeType.HealthRegen:
-                if (playerMove)
-                    playerMove.healthRegenPerSecond = ApplyValue(playerMove.healthRegenPerSecond, data);
+                if (playerMove) { float r = ApplyValue(playerMove.healthRegenPerSecond, data); ApplyHealthRegenServerRpc(r); Debug.Log($"[Upgrade] HealthRegen → {r:F2}/s"); }
+                else Debug.LogError("[Upgrade] ❌ playerMove null");
                 break;
+
+            case UpgradeType.ExpBonus:
+            {
+                var sem = SharedExperienceManager.Instance;
+                if (sem != null)
+                {
+                    float b       = sem.expMultiplier.Value;
+                    float newMult = ApplyValue(b, data);
+                    sem.ApplyExpMultiplierServerRpc(newMult);
+                    Debug.Log($"[Upgrade] ExpBonus (shared) {b:F2}x → {newMult:F2}x");
+                }
+                else Debug.LogError("[Upgrade] ❌ SharedExperienceManager null");
+                break;
+            }
         }
 
-        Debug.Log($"[Upgrade] {data.upgradeName} applied (stack {appliedStacks[data]}/{data.maxStacks})");
+        Debug.Log($"[Upgrade] ✅ {data.upgradeName} — stack {appliedStacks[data]}/{data.maxStacks}");
 
-        // ปิด UI และดู queue
-        isShowingUI = false;
-        LevelUpUI.Instance.Hide();
-
-        if (pendingLevelUps.Count > 0)
-            ShowNextUpgrade();
-        else
-            Time.timeScale = 1f;
+        // แจ้ง Server ว่า player นี้เลือกเสร็จแล้ว
+        NotifyPicked();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    void NotifyPicked()
+    {
+        SharedExperienceManager.Instance?.PlayerUpgradePickedServerRpc();
+    }
+
+    // ── ServerRpc สำหรับ stats ที่ต้องเปลี่ยนบน Server ─────────────────
+    [ServerRpc]
+    void ApplyMaxHealthServerRpc(float amount)  => playerMove?.GainMaxHealth(amount);
+
+    [ServerRpc]
+    void ApplyHealthRegenServerRpc(float value)
+    {
+        if (playerMove) playerMove.healthRegenPerSecond = value;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
     public int GetStacks(WeaponUpgradeData data) =>
         appliedStacks.TryGetValue(data, out int s) ? s : 0;
 
     List<WeaponUpgradeData> PickRandomUpgrades(int count)
     {
-        // กรองที่ maxed out
-        var pool = new List<WeaponUpgradeData>(allUpgrades.Count);
+        var pool = new List<WeaponUpgradeData>();
         foreach (var u in allUpgrades)
         {
-            int stacks = GetStacks(u);
-            if (u.maxStacks <= 0 || stacks < u.maxStacks)
-                pool.Add(u);
+            int s = GetStacks(u);
+            if (u.maxStacks <= 0 || s < u.maxStacks) pool.Add(u);
         }
 
         // Fisher-Yates shuffle
@@ -171,8 +204,7 @@ public class UpgradeManager : MonoBehaviour
             (pool[i], pool[j]) = (pool[j], pool[i]);
         }
 
-        int take = Mathf.Min(count, pool.Count);
-        return pool.GetRange(0, take);
+        return pool.GetRange(0, Mathf.Min(count, pool.Count));
     }
 
     static float ApplyValue(float current, WeaponUpgradeData data) =>

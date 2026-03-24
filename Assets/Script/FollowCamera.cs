@@ -1,23 +1,32 @@
 using UnityEngine;
 
+/// <summary>
+/// ตาม player ของตัวเอง (IsOwner) โดยรับ Transform ผ่าน static event
+/// </summary>
 public class FollowCamera : MonoBehaviour
 {
-    private Camera _camera;
-    [SerializeField] private Transform target;
-    [SerializeField] private Vector3 offset;
-    void Start()
-    {
-        
-    }
+    [SerializeField] private Vector3 offset = new Vector3(0f, 10f, -5f);
 
-    // Update is called once per frame
+    private Transform target;
+
+    void OnEnable()  => playermove.OnLocalPlayerSpawned += SetTarget;
+    void OnDisable() => playermove.OnLocalPlayerSpawned -= SetTarget;
+
+    void SetTarget(Transform t) => target = t;
+
     void LateUpdate()
     {
-        _camera = GetComponent<Camera>();
-        if (_camera != null && target != null)
+        // Fallback: ถ้าพลาด event (spawn ก่อน subscribe) ให้หา player เอง
+        if (target == null)
         {
-            transform.position = target.position + offset;
-            transform.LookAt(target.position);
+            foreach (var pm in FindObjectsOfType<playermove>())
+            {
+                if (pm.IsOwner) { target = pm.transform; break; }
+            }
+            if (target == null) return;
         }
+
+        transform.position = target.position + offset;
+        transform.LookAt(target.position);
     }
 }

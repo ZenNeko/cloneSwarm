@@ -1,10 +1,10 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class Enemy : MonoBehaviour
+public class Enemy : NetworkBehaviour
 {
     [Header("Movement")]
-    public Transform player;
     public float speed = 3f;
 
     [Header("Contact Damage")]
@@ -16,69 +16,119 @@ public class Enemy : MonoBehaviour
     public UnityEvent onDeath;
 
     [Header("Experience")]
-    public float expReward = 10f;
-    [Tooltip("Prefab ของ ExpOrb ที่จะ drop เมื่อตาย")]
+    public float     expReward   = 10f;
     public GameObject expOrbPrefab;
 
-    private float currentHealth;
-    private float damageTimer;
+    // ── Network State ─────────────────────────────────────────────────────
+    public NetworkVariable<float> netHealth = new NetworkVariable<float>(
+        30f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    void Start()
+    private Transform currentTarget;
+    private float     damageTimer;
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+    public override void OnNetworkSpawn()
     {
-        currentHealth = maxHealth;
+        if (!IsServer) return;
+        netHealth.Value = maxHealth;
+        currentTarget   = FindNearestPlayer();
     }
 
+    // ── Update: Server only ───────────────────────────────────────────────
     void Update()
     {
-        
-        if (player != null)
-        {
-            transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
-        }
+        if (!IsServer) return;
+
+        // Re-target ทุก 60 frame (~1 วินาที)
+        if (Time.frameCount % 60 == 0 || currentTarget == null)
+            currentTarget = FindNearestPlayer();
+
+        if (currentTarget != null)
+            transform.position = Vector3.MoveTowards(
+                transform.position, currentTarget.position, speed * Time.deltaTime);
 
         damageTimer += Time.deltaTime;
-        
     }
 
     void OnTriggerStay(Collider other)
     {
-        if (other.CompareTag("Player") && damageTimer >= damageCooldown)
-        {
-            playermove playerHealth = other.GetComponent<playermove>();
-            if (playerHealth != null)
-            {
-                playerHealth.TakeDamage(contactDamage);
-                damageTimer = 0f;
-            }
-        }
+        if (!IsServer) return;
+        if (!other.CompareTag("Player") || damageTimer < damageCooldown) return;
+
+        playermove pm = other.GetComponent<playermove>();
+        if (pm == null) return;
+
+        pm.TakeDamage(contactDamage);
+        damageTimer = 0f;
     }
 
+    // ── Damage ────────────────────────────────────────────────────────────
     public void EnemyTakeDamage(float amount)
     {
-        currentHealth -= amount;
-        if (currentHealth <= 0f)
+        if (!IsServer) return;
+
+        netHealth.Value = Mathf.Max(0f, netHealth.Value - amount);
+        if (netHealth.Value > 0f) return;
+
+        onDeath.Invoke();
+        SpawnExpOrb();
+        if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
+        else Destroy(gameObject);
+    }
+
+    // ── Drop ExpOrb ───────────────────────────────────────────────────────
+    void SpawnExpOrb()
+    {
+        if (expOrbPrefab != null)
         {
-            currentHealth = 0f;
-            onDeath.Invoke();
-
-            // Drop ExpOrb ที่ตำแหน่ง enemy ตาย
-            if (expOrbPrefab != null)
-            {
-                GameObject orb = Instantiate(expOrbPrefab, transform.position, Quaternion.identity);
-                ExpOrb expOrb = orb.GetComponent<ExpOrb>();
-                if (expOrb != null)
-                    expOrb.Init(player, expReward);
-            }
-            else if (ExperienceManager.Instance != null)
-            {
-                // Fallback: ให้ EXP ตรงๆ ถ้าไม่มี Prefab
-                ExperienceManager.Instance.AddExp(expReward);
-            }
-
-            Destroy(gameObject);
+            GameObject orb = Instantiate(expOrbPrefab, transform.position, Quaternion.identity);
+            orb.GetComponent<NetworkObject>()?.Spawn(true);
+            orb.GetComponent<ExpOrb>()?.SetExpAmount(expReward);
+        }
+        else
+        {
+            // Fallback: ให้ EXP ตรงกับ player ที่ใกล้ที่สุด
+            currentTarget?.GetComponent<ExperienceManager>()?.AddExp(expReward);
         }
     }
 
-    public float GetHealthPercent() => currentHealth / maxHealth;
-    public float GetCurrentHealth() => currentHealth;
+    // ── Find Nearest Player ───────────────────────────────────────────────
+    Transform FindNearestPlayer()
+    {
+        if (NetworkManager.Singleton == null) return null;
+
+        Transform nearest = null;
+        float     minDist = float.MaxValue;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var playerObj = client.PlayerObject;
+            if (playerObj == null) continue;
+
+            float dist = Vector3.Distance(transform.position, playerObj.transform.position);
+            if (dist < minDist) { minDist = dist; nearest = playerObj.transform; }
+        }
+        return nearest;
+    }
+
+    /// <summary>
+    /// เรียกจาก EnemySpawner หลัง Spawn — คูณ stats ตาม wave
+    /// </summary>
+    /// <summary>
+    /// เรียกจาก EnemySpawner หลัง Spawn — คูณ stats ตาม wave
+    /// </summary>
+    /// <param name="healthMult">HP multiplier (1 + wave × healthMultPerWave)</param>
+    /// <param name="speedMult">Speed multiplier</param>
+    /// <param name="expMult">EXP reward multiplier (1 + wave × expMultPerWave) — ตั้งค่าได้ใน WaveManager</param>
+    public void ApplyWaveScaling(float healthMult, float speedMult, float expMult = 1f)
+    {
+        if (!IsServer) return;
+        maxHealth       = maxHealth * healthMult;
+        netHealth.Value = maxHealth;
+        speed           = speed * speedMult;
+        expReward       = expReward * expMult;
+    }
+
+    public float GetHealthPercent() => netHealth.Value / maxHealth;
+    public float GetCurrentHealth() => netHealth.Value;
 }

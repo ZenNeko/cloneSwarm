@@ -1,86 +1,84 @@
+using System;
+using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Events;
 
-public class ExperienceManager : MonoBehaviour
+/// <summary>
+/// EXP / Level system per-player — อยู่บน Player Prefab
+/// ไม่มี Singleton แล้ว ใช้ static events แทน
+/// </summary>
+public class ExperienceManager : NetworkBehaviour
 {
-    public static ExperienceManager Instance { get; private set; }
-
     [Header("Level Settings")]
-    public int currentLevel = 1;
-    public int maxLevel = 30;
+    public int   maxLevel      = 30;
     public float baseExpToLevel = 100f;
-    [Tooltip("EXP ที่ต้องการเพิ่มขึ้นเท่าไหร่ต่อเลเวล (multiplier)")]
+    [Tooltip("EXP ที่ต้องการเพิ่มเท่าไหร่ต่อเลเวล")]
     public float expGrowthRate = 1.25f;
 
     [Header("Multipliers")]
-    [Tooltip("คูณ EXP ที่ได้รับ — เพิ่มได้จาก ExpBonus upgrade")]
     public float expMultiplier = 1f;
 
-    [Header("Events")]
-    [Tooltip("เรียกเมื่อ Level Up พร้อมส่งค่า level ใหม่")]
-    public UnityEvent<int> onLevelUp;
-    [Tooltip("เรียกทุกครั้งที่ EXP เปลี่ยน (currentExp, expToNextLevel)")]
-    public UnityEvent<float, float> onExpChanged;
+    // ── Network Variables ─────────────────────────────────────────────────
+    public NetworkVariable<float> netCurrentExp = new NetworkVariable<float>(
+        0f,  NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<int>   netCurrentLevel = new NetworkVariable<int>(
+        1,   NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<float> netExpToNext = new NetworkVariable<float>(
+        100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    private float currentExp;
-    private float expToNextLevel;
+    // ── Static Events (แทน Singleton) ────────────────────────────────────
+    /// <summary>ยิงจาก Owner เมื่อ Level Up</summary>
+    public static event Action<int>         OnLocalLevelUp;
+    /// <summary>ยิงจาก Owner ทุกครั้งที่ EXP เปลี่ยน</summary>
+    public static event Action<float,float> OnLocalExpChanged;
 
-    // ──────────────────────────────────────────────
-    //  Init
-    // ──────────────────────────────────────────────
-    void Awake()
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+    public override void OnNetworkSpawn()
     {
-        if (Instance != null && Instance != this)
+        if (IsServer)
+            netExpToNext.Value = CalcExpToNextLevel(1);
+
+        if (IsOwner)
         {
-            Destroy(gameObject);
-            return;
+            netCurrentExp.OnValueChanged   += (_, v) => OnLocalExpChanged?.Invoke(v, netExpToNext.Value);
+            netCurrentLevel.OnValueChanged += (_, v) => OnLocalLevelUp?.Invoke(v);
+
+            // ยิงค่าเริ่มต้นให้ UI รู้
+            OnLocalExpChanged?.Invoke(netCurrentExp.Value, netExpToNext.Value);
         }
-        Instance = this;
     }
 
-    void Start()
+    public override void OnNetworkDespawn()
     {
-        expToNextLevel = CalcExpToNextLevel(currentLevel);
-        onExpChanged.Invoke(currentExp, expToNextLevel);
+        if (!IsOwner) return;
+        netCurrentExp.OnValueChanged   -= (_, v) => OnLocalExpChanged?.Invoke(v, netExpToNext.Value);
+        netCurrentLevel.OnValueChanged -= (_, v) => OnLocalLevelUp?.Invoke(v);
     }
 
-    // ──────────────────────────────────────────────
-    //  Public API
-    // ──────────────────────────────────────────────
-
-    /// <summary>เพิ่ม EXP และ Level Up อัตโนมัติถ้าเต็ม</summary>
+    // ── Public API ────────────────────────────────────────────────────────
+    /// <summary>เรียกจาก ExpOrb บน Server</summary>
     public void AddExp(float amount)
     {
-        if (currentLevel >= maxLevel) return;
+        if (!IsServer) return;
+        if (netCurrentLevel.Value >= maxLevel) return;
 
-        currentExp += amount * expMultiplier;
+        float exp = netCurrentExp.Value + amount * expMultiplier;
 
-        // รองรับการ Level Up หลายครั้งพร้อมกัน
-        while (currentExp >= expToNextLevel && currentLevel < maxLevel)
+        while (exp >= netExpToNext.Value && netCurrentLevel.Value < maxLevel)
         {
-            currentExp -= expToNextLevel;
-            currentLevel++;
-            expToNextLevel = CalcExpToNextLevel(currentLevel);
-
-            Debug.Log($"[EXP] Level Up! → Level {currentLevel}");
-            onLevelUp.Invoke(currentLevel);
+            exp -= netExpToNext.Value;
+            netCurrentLevel.Value++;
+            netExpToNext.Value = CalcExpToNextLevel(netCurrentLevel.Value);
+            Debug.Log($"[EXP] Level Up! → {netCurrentLevel.Value}");
         }
 
-        onExpChanged.Invoke(currentExp, expToNextLevel);
+        netCurrentExp.Value = exp;
     }
 
-    public float GetExpPercent()   => (expToNextLevel > 0) ? currentExp / expToNextLevel : 1f;
-    public float GetCurrentExp()   => currentExp;
-    public float GetExpToNext()    => expToNextLevel;
-    public int   GetCurrentLevel() => currentLevel;
+    float CalcExpToNextLevel(int level) =>
+        Mathf.Floor(baseExpToLevel * Mathf.Pow(expGrowthRate, level - 1));
 
-    // ──────────────────────────────────────────────
-    //  Formula
-    // ──────────────────────────────────────────────
-
-    /// <summary>EXP ที่ต้องการสำหรับ level นี้ (exponential scaling)</summary>
-    float CalcExpToNextLevel(int level)
-    {
-        return Mathf.Floor(baseExpToLevel * Mathf.Pow(expGrowthRate, level - 1));
-    }
+    public float GetExpPercent()   => netExpToNext.Value > 0 ? netCurrentExp.Value / netExpToNext.Value : 1f;
+    public float GetCurrentExp()   => netCurrentExp.Value;
+    public float GetExpToNext()    => netExpToNext.Value;
+    public int   GetCurrentLevel() => netCurrentLevel.Value;
 }

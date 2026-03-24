@@ -1,63 +1,47 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class ExpOrb : MonoBehaviour
+public class ExpOrb : NetworkBehaviour
 {
     [Header("EXP")]
     public float expAmount = 10f;
 
     [Header("Pickup")]
-    [Tooltip("ระยะ base ที่ orb เริ่มวิ่งเข้าหา player (ถ้าไม่มี PlayerWeapon)")]
+    [Tooltip("ระยะ base ที่ orb เริ่มวิ่งเข้าหา player")]
     public float attractRadius = 4f;
     [Tooltip("อัตราส่วน attractRadius ต่อ AttackRange ของ PlayerWeapon (0 = ใช้ attractRadius คงที่)")]
     public float attractRadiusRatio = 0.5f;
-    [Tooltip("ความเร็วที่ orb วิ่งเข้าหา player")]
-    public float moveSpeed = 8f;
-    [Tooltip("ระยะที่ถือว่า 'เก็บได้' และให้ EXP ทันที")]
+    public float moveSpeed    = 8f;
     public float pickupRadius = 0.4f;
 
     [Header("Bob Animation")]
-    [Tooltip("ความสูงที่ลอยขึ้นลง")]
     public float bobHeight = 0.2f;
-    [Tooltip("ความเร็วการลอย")]
-    public float bobSpeed = 2f;
+    public float bobSpeed  = 2f;
 
-    private Transform    player;
-    private PlayerWeapon playerWeapon;
-    private Vector3      startPos;
-    private bool         isAttracting;
+    private Transform currentTarget;
+    private Vector3   startPos;
 
-    // ──────────────────────────────────────────────
-    //  Init — เรียกจาก Enemy ตอน spawn
-    // ──────────────────────────────────────────────
-    public void Init(Transform playerTransform, float exp)
+    // ── Init (เรียกจาก Enemy หลัง Spawn) ─────────────────────────────────
+    public void SetExpAmount(float amount) => expAmount = amount;
+
+    public override void OnNetworkSpawn()
     {
-        player       = playerTransform;
-        expAmount    = exp;
-        startPos     = transform.position;
-
-        // หา PlayerWeapon เพื่ออ่าน attackRange แบบ dynamic
-        playerWeapon = playerTransform.GetComponentInChildren<PlayerWeapon>()
-                    ?? playerTransform.GetComponentInParent<PlayerWeapon>();
+        if (!IsServer) return;
+        startPos      = transform.position;
+        currentTarget = FindNearestPlayer();
     }
 
-    // ──────────────────────────────────────────────
-    //  คำนวณ attractRadius จาก AttackRange ของ player
-    // ──────────────────────────────────────────────
-    float GetAttractRadius()
-    {
-        if (attractRadiusRatio > 0f && playerWeapon != null)
-            return playerWeapon.attackRange * attractRadiusRatio;
-        return attractRadius;
-    }
-
-    // ──────────────────────────────────────────────
-    //  Update
-    // ──────────────────────────────────────────────
+    // ── Update: Server only ───────────────────────────────────────────────
     void Update()
     {
-        if (player == null) return;
+        if (!IsServer) return;
 
-        float dist = Vector3.Distance(transform.position, player.position);
+        if (Time.frameCount % 90 == 0 || currentTarget == null)
+            currentTarget = FindNearestPlayer();
+
+        if (currentTarget == null) return;
+
+        float dist = Vector3.Distance(transform.position, currentTarget.position);
 
         if (dist <= pickupRadius)
         {
@@ -67,46 +51,61 @@ public class ExpOrb : MonoBehaviour
 
         if (dist <= GetAttractRadius())
         {
-            // วิ่งเข้าหา player
-            isAttracting = true;
             transform.position = Vector3.MoveTowards(
-                transform.position,
-                player.position,
-                moveSpeed * Time.deltaTime
-            );
+                transform.position, currentTarget.position, moveSpeed * Time.deltaTime);
         }
         else
         {
-            // ลอยขึ้นลง (bob) รอ player เข้ามา
-            isAttracting = false;
+            // Bob animation รอ player เข้ามา
             float newY = startPos.y + Mathf.Sin(Time.time * bobSpeed) * bobHeight;
             transform.position = new Vector3(startPos.x, newY, startPos.z);
         }
     }
 
-    // ──────────────────────────────────────────────
-    //  Fallback — เก็บด้วย Trigger (ถ้า Collider ตั้งเป็น IsTrigger)
-    // ──────────────────────────────────────────────
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-            Collect();
-    }
-
-    // ──────────────────────────────────────────────
-    //  Collect
-    // ──────────────────────────────────────────────
+    // ── Collect ───────────────────────────────────────────────────────────
     void Collect()
     {
-        if (ExperienceManager.Instance != null)
-            ExperienceManager.Instance.AddExp(expAmount);
-
-        Destroy(gameObject);
+        SharedExperienceManager.Instance?.AddExp(expAmount);
+        if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
+        else Destroy(gameObject);
     }
 
-    // ──────────────────────────────────────────────
-    //  Gizmo
-    // ──────────────────────────────────────────────
+    // ── Fallback Trigger ─────────────────────────────────────────────────
+    void OnTriggerEnter(Collider other)
+    {
+        if (!IsServer) return;
+        if (other.CompareTag("Player")) Collect();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    float GetAttractRadius()
+    {
+        if (attractRadiusRatio > 0f && currentTarget != null)
+        {
+            var pw = currentTarget.GetComponent<PlayerWeapon>();
+            if (pw != null) return pw.attackRange * attractRadiusRatio;
+        }
+        return attractRadius;
+    }
+
+    Transform FindNearestPlayer()
+    {
+        if (NetworkManager.Singleton == null) return null;
+
+        Transform nearest = null;
+        float     minDist = float.MaxValue;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var obj = client.PlayerObject;
+            if (obj == null) continue;
+
+            float dist = Vector3.Distance(transform.position, obj.transform.position);
+            if (dist < minDist) { minDist = dist; nearest = obj.transform; }
+        }
+        return nearest;
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;

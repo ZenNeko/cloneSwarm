@@ -14,8 +14,12 @@ GameObject:
   - component: {fileID: 7094194690789621480}
   - component: {fileID: 2651904573833167194}
   - component: {fileID: 1746890018923511425}
+  - component: {fileID: -5025853322421610712}
   - component: {fileID: 4250323636796052472}
   - component: {fileID: 2672743675842583459}
+  - component: {fileID: 8264601110927716481}
+  - component: {fileID: 7655913753558015870}
+  - component: {fileID: 1258628423518312534}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -267,6 +271,31 @@ MonoBehaviour:
   m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &-5025853322421610712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1385780694
+  InScenePlacedSourceGlobalObjectIdHash: 1385780694
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &4250323636796052472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -279,12 +308,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89ad8cb152291424a8a0c9439865b199, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::playermove
+  ShowTopMostFoldoutHeaderGroup: 1
   moveSpeed: 5
   maxHealth: 100
   onDeath:
     m_PersistentCalls:
       m_Calls: []
-  moveSpeedPerLevel: 0.1
+  healthRegenPerSecond: 0
+  netHealth:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
 --- !u!114 &2672743675842583459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -297,7 +332,112 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea015b747163f7243bf4074fde3db25d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWeapon
-  projectilePrefab: {fileID: 0}
+  ShowTopMostFoldoutHeaderGroup: 1
+  projectilePrefab: {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   attackRange: 8
   attackSpeed: 1
   damage: 20
+  projectileSpeed: 12
+  multiProjectileCount: 1
+  spreadAngle: 15
+--- !u!114 &8264601110927716481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f28a5d7a6983c149bef935c5b84df84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UpgradeManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  allUpgrades:
+  - {fileID: 11400000, guid: 4dbee36d8a733f14399ff4a00218b94b, type: 2}
+  - {fileID: 11400000, guid: d7dfeaaa054b18c46bcf11d57e9bf6d9, type: 2}
+  - {fileID: 11400000, guid: e44a7e629e1265d4c8f439a952d9f7d3, type: 2}
+  - {fileID: 11400000, guid: 9f8e287d9ce0011498e386015da6ae83, type: 2}
+  - {fileID: 11400000, guid: aea9ab25284b7fc49b91e416da9fbacf, type: 2}
+  - {fileID: 11400000, guid: 100db598764caca46871a36ff9faae06, type: 2}
+  - {fileID: 11400000, guid: c9d7fec216a978845b8b8054c766fe79, type: 2}
+  - {fileID: 11400000, guid: a3d8ebec44ec4da43951edb4edf763b8, type: 2}
+  cardsPerLevel: 5
+--- !u!114 &7655913753558015870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aa3f860f74f3c84fbc0a5e610061aa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExperienceManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxLevel: 30
+  baseExpToLevel: 100
+  expGrowthRate: 1.25
+  expMultiplier: 1
+  netCurrentExp:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  netCurrentLevel:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 1
+  netExpToNext:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
+--- !u!114 &1258628423518312534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 1
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 0
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0

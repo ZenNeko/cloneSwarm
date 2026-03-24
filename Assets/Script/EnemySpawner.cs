@@ -1,55 +1,90 @@
+using Unity.Netcode;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
-public class EnemySpawner : MonoBehaviour
+/// <summary>
+/// Spawner ที่รับคำสั่งจาก WaveManager — ไม่มี logic wave ของตัวเอง
+/// </summary>
+public class EnemySpawner : NetworkBehaviour
 {
-    public GameObject enemyPrefab; // Prefab ของศัตรู
-    public Transform player; // อ้างอิงตัวผู้เล่น
-    public float spawnRate = 1f; // ระยะเวลาในการเกิดศัตรู (วินาที/ตัว)
-    public float spawnRadius = 10f; // ระยะห่างจากผู้เล่นที่จะให้ศัตรูเกิด
+    [Header("Prefabs")]
+    public GameObject enemyPrefab;
 
-    void Start()
+    [Header("Spawn Settings")]
+    [Tooltip("Spawn interval เริ่มต้น (วินาที) — WaveManager จะลดลงทุก wave")]
+    public float baseSpawnRate = 1.5f;
+    [Tooltip("รัศมีที่ spawn รอบผู้เล่น")]
+    public float spawnRadius   = 12f;
+
+    // ── Wave-controlled params (Server only) ──────────────────────────────
+    private float      currentHealthMult = 1f;
+    private float      currentSpeedMult  = 1f;
+    private float      currentExpMult    = 1f;
+    private WaveConfig currentConfig;
+
+    public override void OnNetworkSpawn()
     {
-        // สั่งให้เริ่มเรียกฟังก์ชัน SpawnEnemy วนซ้ำไปเรื่อยๆ
-        InvokeRepeating("SpawnEnemy", 0f, spawnRate);
+        // WaveManager เรียก StartSpawning() เอง — ไม่ spawn ทันที
     }
 
+    public override void OnNetworkDespawn()
+    {
+        CancelInvoke(nameof(SpawnEnemy));
+    }
+
+    // ── API สำหรับ WaveManager ─────────────────────────────────────────────
+    public void StartSpawning(float spawnRate, float healthMult, float speedMult, float expMult = 1f, WaveConfig config = null)
+    {
+        if (!IsServer) return;
+        currentHealthMult = healthMult;
+        currentSpeedMult  = speedMult;
+        currentExpMult    = expMult;
+        currentConfig     = config;
+
+        CancelInvoke(nameof(SpawnEnemy));
+        InvokeRepeating(nameof(SpawnEnemy), 0.5f, spawnRate);
+        Debug.Log($"[EnemySpawner] Spawning started — rate:{spawnRate:F2}s HP×{healthMult:F2} SPD×{speedMult:F2} EXP×{expMult:F2}");
+    }
+
+    public void StopSpawning()
+    {
+        CancelInvoke(nameof(SpawnEnemy));
+        Debug.Log("[EnemySpawner] Spawning stopped");
+    }
+
+    // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnEnemy()
     {
-        if (player == null) return;
+        if (!IsServer) return;
 
-        // สุ่มตำแหน่งแบบวงกลม 2D (แกน X และ Z สำหรับเกม 3D) รอบๆ ผู้เล่น
-        Vector2 randomCircle = Random.insideUnitCircle.normalized;
-        
-        // แปลงให้อยู่ในระนาบ X-Z แทนที่จะเป็น X-Y (ซึ่งทำให้ศัตรูเกิดในอากาศ)
-        Vector3 randomDirection = new Vector3(randomCircle.x, 0f, randomCircle.y);
-        
-        // กำหนดตำแหน่งที่จะเกิดโดยอ้างอิงความสูง (Y) จากตัวผู้เล่น
-        Vector3 spawnPosition = player.position + (randomDirection * spawnRadius);
+        Transform spawnNear = GetRandomPlayerTransform();
+        if (spawnNear == null) return;
 
-        // สร้างศัตรูใหม่
-        GameObject newEnemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
-        
-        // กำหนดเป้าหมายให้ศัตรูตัวใหม่รู้ว่าใครคือผู้เล่น
-        Enemy enemyScript = newEnemy.GetComponent<Enemy>();
-        if (enemyScript != null)
-        {
-            enemyScript.player = player;
-        }
+        Vector2 rand = Random.insideUnitCircle.normalized;
+        Vector3 pos  = spawnNear.position + new Vector3(rand.x, 0f, rand.y) * spawnRadius;
+
+        // เลือก prefab จาก WaveConfig ถ้ามี ไม่งั้นใช้ default
+        GameObject prefab = currentConfig?.PickRandomPrefab() ?? enemyPrefab;
+        if (prefab == null) return;
+        GameObject go = Instantiate(prefab, pos, Quaternion.identity);
+        go.GetComponent<NetworkObject>()?.Spawn(true);
+
+        // Apply wave scaling หลัง Spawn (OnNetworkSpawn set base health แล้ว)
+        go.GetComponent<Enemy>()?.ApplyWaveScaling(currentHealthMult, currentSpeedMult, currentExpMult);
     }
 
-    // แสดงเส้น Gizmos ในหน้าต่าง Scene เพื่อให้เห็นระยะการเกิดของศัตรู
+    // ── Helpers ───────────────────────────────────────────────────────────
+    Transform GetRandomPlayerTransform()
+    {
+        var clients = NetworkManager.Singleton.ConnectedClientsList;
+        if (clients.Count == 0) return null;
+        return clients[Random.Range(0, clients.Count)].PlayerObject?.transform;
+    }
+
     void OnDrawGizmosSelected()
     {
-        Vector3 center = player != null ? player.position : transform.position;
-
 #if UNITY_EDITOR
-        // วาดเส้นวงกลมแบบแบน (Circle) บนระนาบพื้น (หันหน้าขึ้นตามแกน Y)
-        Handles.color = Color.red;
-        Handles.DrawWireDisc(center, Vector3.up, spawnRadius);
+        UnityEditor.Handles.color = Color.red;
+        UnityEditor.Handles.DrawWireDisc(transform.position, Vector3.up, spawnRadius);
 #endif
     }
 }
