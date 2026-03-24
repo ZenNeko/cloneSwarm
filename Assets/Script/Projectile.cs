@@ -31,7 +31,7 @@ public class Projectile : NetworkBehaviour
     // ── Update: Server only ───────────────────────────────────────────────
     void Update()
     {
-        if (!IsServer) return;
+        if (!IsServer || !NetworkObject.IsSpawned) return;
 
         if (moveDirection != Vector3.zero)
         {
@@ -39,21 +39,27 @@ public class Projectile : NetworkBehaviour
         }
         else
         {
-            if (target == null) { NetworkObject.Despawn(true); return; }
+            if (target == null) { SafeDespawn(); return; }
             transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
         }
 
         if (Vector3.Distance(startPosition, transform.position) >= maxRange)
-            NetworkObject.Despawn(true);
+            SafeDespawn();
     }
 
     // ── Collision ─────────────────────────────────────────────────────────
     void OnTriggerEnter(Collider other)
     {
-        if (!IsServer) return;
+        if (!IsServer || !NetworkObject.IsSpawned) return;
         if (!other.CompareTag("Enemy")) return;
 
         other.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
-        NetworkObject.Despawn(true);
+        SafeDespawn();
+    }
+
+    void SafeDespawn()
+    {
+        if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
+        else Destroy(gameObject);
     }
 }

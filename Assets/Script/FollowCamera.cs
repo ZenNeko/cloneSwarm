@@ -16,7 +16,16 @@ public class FollowCamera : MonoBehaviour
 
     void LateUpdate()
     {
-        if (target == null) return;
+        // Fallback: ถ้าพลาด event (spawn ก่อน subscribe) ให้หา player เอง
+        if (target == null)
+        {
+            foreach (var pm in FindObjectsOfType<playermove>())
+            {
+                if (pm.IsOwner) { target = pm.transform; break; }
+            }
+            if (target == null) return;
+        }
+
         transform.position = target.position + offset;
         transform.LookAt(target.position);
     }

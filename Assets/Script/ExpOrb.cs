@@ -65,8 +65,9 @@ public class ExpOrb : NetworkBehaviour
     // ── Collect ───────────────────────────────────────────────────────────
     void Collect()
     {
-        currentTarget?.GetComponent<ExperienceManager>()?.AddExp(expAmount);
-        NetworkObject.Despawn(true);
+        SharedExperienceManager.Instance?.AddExp(expAmount);
+        if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
+        else Destroy(gameObject);
     }
 
     // ── Fallback Trigger ─────────────────────────────────────────────────

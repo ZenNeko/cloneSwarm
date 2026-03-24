@@ -47,6 +47,20 @@ public class playermove : NetworkBehaviour
             // ดัก health เปลี่ยนเพื่อ trigger Death UI
             netHealth.OnValueChanged += OnHealthChanged;
         }
+        else
+        {
+            // ── Non-owner: ปิด PlayerInput ป้องกันแย่ง input กัน ──────────
+            var pi = GetComponent<UnityEngine.InputSystem.PlayerInput>();
+            if (pi != null) pi.enabled = false;
+
+            // ── Non-owner: ปิด Rigidbody physics ──────────────────────────
+            // NetworkTransform จะ sync position แทน
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+            }
+        }
     }
 
     public override void OnNetworkDespawn()

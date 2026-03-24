@@ -61,16 +61,20 @@ public class PlayerWeapon : NetworkBehaviour
             Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * targetDir;
 
             GameObject proj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
-            proj.GetComponent<NetworkObject>()?.Spawn(true);
 
             Projectile p = proj.GetComponent<Projectile>();
-            if (p == null) continue;
+            if (p == null) { Destroy(proj); continue; }
 
+            // ✅ Init ก่อน Spawn เสมอ — ป้องกัน Update รันก่อน target ถูกตั้ง
             p.damage = dmg;
             p.speed  = projSpeed;
 
-            if (i == 0) p.Init(target);       // กลาง — homing
-            else        p.InitDirection(dir);  // ข้างๆ — บินตรง
+            // count=1 → homing ตาม target
+            // count>1 → ทุกลูกยิงตรง (direction) ป้องกันทับซ้อน
+            if (count == 1) p.Init(target);
+            else            p.InitDirection(dir);
+
+            proj.GetComponent<NetworkObject>()?.Spawn(true);
         }
     }
 

@@ -2,6 +2,7 @@ using System;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Bridge ระหว่าง Building Block Session และ NetworkManager
@@ -15,6 +16,10 @@ public class GameSessionManager : MonoBehaviour
 
     [Header("Session Type (ต้องตรงกับ SessionSettings)")]
     [SerializeField] private string sessionType = "default-session";
+
+    [Header("Scenes")]
+    [Tooltip("รายชื่อ Scene ที่ Host สามารถเลือกได้ (ต้องอยู่ใน Build Settings)")]
+    public string[] availableScenes = { "SampleScene" };
 
     // ── Static Events สำหรับ game code subscribe ─────────────────────────
     /// <summary>เมื่อเข้า session สำเร็จ (ทั้ง Host และ Client)</summary>
@@ -131,4 +136,28 @@ public class GameSessionManager : MonoBehaviour
     public string   SessionCode     => currentSession?.Code ?? "";
     public int      PlayerCount     => currentSession?.Players.Count ?? 0;
     public int      MaxPlayers      => currentSession?.MaxPlayers ?? 0;
+
+    /// <summary>Host กด Start Game → โหลด scene ให้ทุก client อัตโนมัติ</summary>
+    /// <param name="sceneName">ชื่อ scene ที่จะโหลด — ถ้าไม่ส่งจะใช้ availableScenes[0]</param>
+    public void StartGame(string sceneName = null)
+    {
+        if (!IsHost)
+        {
+            Debug.LogWarning("[Session] StartGame: ต้องเป็น Host เท่านั้น");
+            return;
+        }
+
+        var nm = NetworkManager.Singleton;
+
+        // NGO ยังไม่ start → ไม่มี SceneManager
+        if (nm == null || !nm.IsListening)
+        {
+            Debug.LogError("[Session] StartGame: NetworkManager ยังไม่ได้ start — ตรวจสอบ SessionSettings → createNetworkSession = true");
+            return;
+        }
+
+        string target = sceneName ?? (availableScenes.Length > 0 ? availableScenes[0] : "SampleScene");
+        Debug.Log($"[Session] StartGame → โหลด '{target}'");
+        nm.SceneManager.LoadScene(target, LoadSceneMode.Single);
+    }
 }

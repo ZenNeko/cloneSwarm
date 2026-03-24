@@ -72,7 +72,8 @@ public class Enemy : NetworkBehaviour
 
         onDeath.Invoke();
         SpawnExpOrb();
-        NetworkObject.Despawn(true);
+        if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
+        else Destroy(gameObject);
     }
 
     // ── Drop ExpOrb ───────────────────────────────────────────────────────
