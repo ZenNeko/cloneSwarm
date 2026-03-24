@@ -116,6 +116,13 @@ public class playermove : NetworkBehaviour
         netHealth.Value  = Mathf.Min(netHealth.Value + amount, maxHealth);
     }
 
+    /// <summary>ฟื้น HP — เรียกจาก ZoneObjective (Server side)</summary>
+    public void Heal(float amount)
+    {
+        if (!IsServer) return;
+        netHealth.Value = Mathf.Min(netHealth.Value + amount, maxHealth);
+    }
+
     public float GetHealthPercent() => netHealth.Value / maxHealth;
     public float GetCurrentHealth() => netHealth.Value;
 }

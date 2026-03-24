@@ -40,7 +40,9 @@ public class Projectile : NetworkBehaviour
         else
         {
             if (target == null) { SafeDespawn(); return; }
-            transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+            // ล็อค Y ให้อยู่ระดับเดิม — ป้องกัน homing ดิ่งลงพื้นเมื่อ enemy อยู่ต่ำกว่า spawnPos
+            Vector3 targetFlat = new Vector3(target.position.x, transform.position.y, target.position.z);
+            transform.position = Vector3.MoveTowards(transform.position, targetFlat, speed * Time.deltaTime);
         }
 
         if (Vector3.Distance(startPosition, transform.position) >= maxRange)

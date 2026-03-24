@@ -111,6 +111,24 @@ public class Enemy : NetworkBehaviour
         return nearest;
     }
 
+    /// <summary>
+    /// เรียกจาก EnemySpawner หลัง Spawn — คูณ stats ตาม wave
+    /// </summary>
+    /// <summary>
+    /// เรียกจาก EnemySpawner หลัง Spawn — คูณ stats ตาม wave
+    /// </summary>
+    /// <param name="healthMult">HP multiplier (1 + wave × healthMultPerWave)</param>
+    /// <param name="speedMult">Speed multiplier</param>
+    /// <param name="expMult">EXP reward multiplier (1 + wave × expMultPerWave) — ตั้งค่าได้ใน WaveManager</param>
+    public void ApplyWaveScaling(float healthMult, float speedMult, float expMult = 1f)
+    {
+        if (!IsServer) return;
+        maxHealth       = maxHealth * healthMult;
+        netHealth.Value = maxHealth;
+        speed           = speed * speedMult;
+        expReward       = expReward * expMult;
+    }
+
     public float GetHealthPercent() => netHealth.Value / maxHealth;
     public float GetCurrentHealth() => netHealth.Value;
 }

@@ -52,7 +52,12 @@ public class PlayerWeapon : NetworkBehaviour
             return;
 
         Transform  target    = targetObj.transform;
-        Vector3    targetDir = (target.position - spawnPos).normalized;
+        // Flatten ให้อยู่บนระนาบ XZ ก่อนเสมอ — ป้องกัน projectile จมดิน
+        // เมื่อ enemy อยู่ใกล้และต่ำกว่า spawnPos ทำให้ targetDir.y ติดลบ
+        Vector3 flat = target.position - spawnPos;
+        flat.y = 0f;
+        if (flat.sqrMagnitude < 0.001f) flat = transform.forward;   // กรณี enemy อยู่ใต้ตัวพอดี
+        Vector3    targetDir = flat.normalized;
         int        count     = Mathf.Max(1, projCount);
 
         for (int i = 0; i < count; i++)
