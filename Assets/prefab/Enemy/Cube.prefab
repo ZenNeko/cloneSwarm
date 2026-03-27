@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 2990737950153141939}
   - component: {fileID: 1271662588879709939}
   - component: {fileID: 3862272354037605889}
+  - component: {fileID: -6133487190327713639}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Enemy
@@ -157,6 +158,7 @@ MonoBehaviour:
   speed: 3
   contactDamage: 10
   damageCooldown: 1
+  damageRadius: 1.4
   maxHealth: 40
   onDeath:
     m_PersistentCalls:
@@ -190,8 +192,8 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
+  m_UseGravity: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 0
@@ -241,3 +243,24 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!135 &-6133487190327713639
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9014505396291406032}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.85
+  m_Center: {x: 0, y: 0, z: 0}

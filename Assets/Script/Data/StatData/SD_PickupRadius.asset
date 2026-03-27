@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcdbca98072823b4392f16c24f6511c3, type: 3}
+  m_Name: SD_PickupRadius
+  m_EditorClassIdentifier: Assembly-CSharp::StatData
+  statName: PickupRadius
+  description: "+35% \u0E23\u0E31\u0E28\u0E21\u0E35\u0E14\u0E39\u0E14 EXP/lv"
+  icon: {fileID: -443482787, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
+  statType: 10
+  valuePerLevel:
+  - 0.35
+  - 0.35
+  - 0.35
+  - 0.35
+  - 0.35
+  weight: 50

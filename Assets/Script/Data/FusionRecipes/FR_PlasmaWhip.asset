@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91939ee3d4bfcbe43b93251eca01291b, type: 3}
+  m_Name: FR_PlasmaWhip
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponFusionRecipe
+  recipeName: Plasma Whip
+  superWeaponA: {fileID: 11400000, guid: bb37c6397e1b3864089c22cfa0300e46, type: 2}
+  superWeaponB: {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}
+  fusionResult: {fileID: 11400000, guid: 3bf30fb8ceee2204eb30d8151f2368fe, type: 2}

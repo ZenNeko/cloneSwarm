@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcdbca98072823b4392f16c24f6511c3, type: 3}
+  m_Name: SD_Damage
+  m_EditorClassIdentifier: Assembly-CSharp::StatData
+  statName: Damage
+  description: "\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E04\u0E27\u0E32\u0E21\u0E40\u0E2A\u0E35\u0E22\u0E2B\u0E32\u0E22\u0E17\u0E38\u0E01
+    weapon +10%/lv"
+  icon: {fileID: 5318086, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
+  statType: 0
+  valuePerLevel:
+  - 0.1
+  - 0.1
+  - 0.1
+  - 0.1
+  - 0.1
+  weight: 90

@@ -6,6 +6,7 @@ public class Projectile : NetworkBehaviour
     public float speed    = 12f;
     public float damage   = 20f;
     public float maxRange = 20f;
+    public bool  piercing = false;   // ถ้า true = ไม่ destroy เมื่อชน enemy
 
     private Transform target;
     private Vector3   moveDirection;
@@ -56,7 +57,7 @@ public class Projectile : NetworkBehaviour
         if (!other.CompareTag("Enemy")) return;
 
         other.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
-        SafeDespawn();
+        if (!piercing) SafeDespawn();
     }
 
     void SafeDespawn()

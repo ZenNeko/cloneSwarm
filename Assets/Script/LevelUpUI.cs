@@ -19,6 +19,8 @@ public class LevelUpUI : MonoBehaviour
     [Header("Cards Section")]
     [Tooltip("GameObject ที่ครอบ levelLabel + cardSlots ทั้งหมด — ซ่อนหลังเลือกแล้ว แต่ panelRoot ยังเปิดอยู่")]
     public GameObject cardsSection;
+    [Tooltip("Parent ของ card ทั้งหมด (Panel) — ถ้าไม่ assign จะหาจาก cardsSection อัตโนมัติ")]
+    public GameObject cardsContainer;
     public TextMeshProUGUI levelLabel;      // "LEVEL UP!  →  Level 5"
     [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่")]
     public List<UpgradeCardUI> cardSlots;
@@ -61,48 +63,44 @@ public class LevelUpUI : MonoBehaviour
     }
 
     // ── Public API ────────────────────────────────────────────────────────
-    /// <param name="upgrades">รายการ upgrade ที่สุ่มได้</param>
-    /// <param name="stackLookup">fn(upgrade) → stack ปัจจุบัน</param>
+    /// <param name="cards">รายการ card ที่สุ่มได้ (UpgradeCardInfo)</param>
     /// <param name="onPicked">callback เมื่อ player เลือก card</param>
-    /// <param name="level">Level ใหม่ที่ขึ้น (0 = ไม่แสดงตัวเลข)</param>
+    /// <param name="level">Level ใหม่ที่ขึ้น (0 = แสดงแค่ LEVEL UP!)</param>
     public void Show(
-        List<WeaponUpgradeData>              upgrades,
-        System.Func<WeaponUpgradeData, int>  stackLookup,
-        System.Action<WeaponUpgradeData>     onPicked,
+        List<UpgradeCardInfo>              cards,
+        System.Action<UpgradeCardInfo>     onPicked,
         int level = 0)
     {
-        // Header
+        // 1. เปิด hierarchy ก่อนเสมอ
+        if (panelRoot)      panelRoot.SetActive(true);
+        if (cardsSection)   cardsSection.SetActive(true);
+        if (cardsContainer) cardsContainer.SetActive(true);
+
+        // 2. Header
         if (levelLabel)
             levelLabel.text = level > 0 ? $"LEVEL UP!   Level {level}" : "LEVEL UP!";
 
-        // Cards
-        for (int i = 0; i < cardSlots.Count; i++)
+        // 3. หา card slots จาก cardsContainer โดยตรง
+        UpgradeCardUI[] slots = cardsContainer
+            ? cardsContainer.GetComponentsInChildren<UpgradeCardUI>(true)
+            : cardSlots.ToArray();
+
+        for (int i = 0; i < slots.Length; i++)
         {
-            if (i < upgrades.Count)
+            if (i < cards.Count)
             {
-                cardSlots[i].gameObject.SetActive(true);
-                cardSlots[i].Populate(upgrades[i], stackLookup(upgrades[i]), onPicked);
+                slots[i].gameObject.SetActive(true);
+                slots[i].Populate(cards[i], onPicked);
             }
             else
             {
-                cardSlots[i].gameObject.SetActive(false);
+                slots[i].gameObject.SetActive(false);
             }
         }
 
-        // เปิด cards section ก่อน
-        if (cardsSection) cardsSection.SetActive(true);
-
-        // Timer reset
-        if (timerLabel)
-        {
-            timerLabel.color = timerNormalColor;
-            timerLabel.text  = "";
-        }
-
-        // Waiting reset
-        if (waitingLabel) waitingLabel.text = "";
-
-        if (panelRoot) panelRoot.SetActive(true);
+        // 4. Reset timer / waiting
+        if (timerLabel)  { timerLabel.color = timerNormalColor; timerLabel.text = ""; }
+        if (waitingLabel)  waitingLabel.text = "";
     }
 
     /// <summary>

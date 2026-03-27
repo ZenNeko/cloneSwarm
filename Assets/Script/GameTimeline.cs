@@ -119,9 +119,11 @@ public class GameTimeline : NetworkBehaviour
     {
         if (NetworkManager.Singleton == null) return;
         foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
-            if (c.PlayerObject != null) return;   // มีคนรอดอยู่
+        {
+            var pm = c.PlayerObject?.GetComponent<playermove>();
+            if (pm != null && !pm.isDead.Value) return;   // มีคนรอดอยู่
+        }
 
-        // ทุกคนตายแล้ว
         gameEnded = true;
         GameLostClientRpc(gameTime.Value, GetLevel());
         Debug.Log($"[GameTimeline] ❌ LOSE — t={FormatTime(gameTime.Value)}");

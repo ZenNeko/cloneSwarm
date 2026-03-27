@@ -49,9 +49,14 @@ public class SharedExperienceManager : NetworkBehaviour
     /// <summary>อัปเดตจำนวนคนที่เลือกแล้ว → UI "X / Y players"</summary>
     public static event Action<int, int> OnPickedCountChanged;   // (picked, total)
 
+    // ── Orb Reward Events ─────────────────────────────────────────────────
+    /// <summary>ผู้เล่นเก็บ Objective Orb — แสดง 1-card UI, หยุดเกม</summary>
+    public static event Action OnOrbPhaseStart;
+
     // ── Server-side State ─────────────────────────────────────────────────
     private Queue<int>     pendingLevels   = new();
     private bool           isUpgradePhase  = false;
+    private bool           isOrbPhase      = false;
     private HashSet<ulong> pickedPlayers   = new();
     private Coroutine      timerCoroutine;
 
@@ -232,6 +237,64 @@ public class SharedExperienceManager : NetworkBehaviour
     void NotifyPickedCountClientRpc(int picked, int total)
     {
         OnPickedCountChanged?.Invoke(picked, total);
+    }
+
+    // ── Orb Phase ─────────────────────────────────────────────────────────
+
+    /// <summary>ObjectiveOrb เรียกเมื่อถูกเก็บ — ทุกคนได้ reward พร้อมกัน</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void OrbCollectedServerRpc()
+    {
+        if (!IsServer || isUpgradePhase || isOrbPhase) return;
+        isOrbPhase = true;
+        pickedPlayers.Clear();
+        int total = NetworkManager.ConnectedClients.Count;
+        BeginOrbPhaseClientRpc(total);
+        if (timerCoroutine != null) StopCoroutine(timerCoroutine);
+        timerCoroutine = StartCoroutine(OrbTimerCoroutine());
+    }
+
+    [ClientRpc]
+    void BeginOrbPhaseClientRpc(int totalPlayers)
+    {
+        Time.timeScale = 0f;
+        OnPickedCountChanged?.Invoke(0, totalPlayers);
+        OnOrbPhaseStart?.Invoke();
+    }
+
+    /// <summary>UpgradeManager เรียกหลังเลือก Orb card เสร็จ</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerOrbPickedServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (!isOrbPhase) return;
+        pickedPlayers.Add(rpcParams.Receive.SenderClientId);
+        int total = NetworkManager.ConnectedClients.Count;
+        NotifyPickedCountClientRpc(pickedPlayers.Count, total);
+        if (pickedPlayers.Count >= total) CompleteOrbPhase();
+    }
+
+    void CompleteOrbPhase()
+    {
+        if (timerCoroutine != null) { StopCoroutine(timerCoroutine); timerCoroutine = null; }
+        isOrbPhase = false;
+        pickedPlayers.Clear();
+        EndUpgradePhaseClientRpc();   // reuse same "resume" ClientRpc
+    }
+
+    IEnumerator OrbTimerCoroutine()
+    {
+        if (upgradePickSeconds <= 0f) yield break;
+        float remaining = upgradePickSeconds;
+        while (remaining > 0f)
+        {
+            UpdateTimerClientRpc(remaining);
+            yield return new WaitForSecondsRealtime(1f);
+            remaining -= 1f;
+        }
+        UpdateTimerClientRpc(0f);
+        ForceAutoPickClientRpc();
+        yield return new WaitForSecondsRealtime(0.5f);
+        CompleteOrbPhase();
     }
 
     // ── Getters ───────────────────────────────────────────────────────────
