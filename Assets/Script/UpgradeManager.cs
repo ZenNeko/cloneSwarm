@@ -3,212 +3,290 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Per-player upgrade manager — อยู่บน Player Prefab
-/// ทำงานเฉพาะ Owner เท่านั้น (non-owner จะ disable)
+/// Per-player upgrade manager — อยู่บน Player Prefab, ทำงานเฉพาะ Owner
 ///
-/// Flow:
-///   SharedExperienceManager.OnUpgradePhaseStart → ShowUpgradeUI()
-///   Player เลือก card → ApplyUpgrade() → PlayerUpgradePickedServerRpc()
-///   SharedExperienceManager.OnForceAutoPick → AutoPick() ถ้ายังไม่ได้เลือก
-///   SharedExperienceManager.OnUpgradePhaseEnd → HideUI, reset state
+/// Level Up   → สุ่ม 3 cards (weighted random) จาก WeaponData + StatData pool
+/// Orb Reward → สุ่ม 1 card  (Super / Fusion / Weapon/Stat)
 /// </summary>
 public class UpgradeManager : NetworkBehaviour
 {
-    [Header("Upgrade Pool")]
-    [Tooltip("ลาก WeaponUpgradeData ScriptableObjects ทั้งหมดมาใส่ที่นี่")]
-    public List<WeaponUpgradeData> allUpgrades = new();
+    [Header("Pool")]
+    [Tooltip("ลาก WeaponData ทั้งหมดมาใส่ที่นี่")]
+    public List<WeaponData>          allWeapons = new();
+    [Tooltip("ลาก StatData ทั้งหมดมาใส่ที่นี่")]
+    public List<StatData>            allStats   = new();
+    [Tooltip("ลาก WeaponFusionRecipe ทั้งหมดมาใส่ที่นี่")]
+    public List<WeaponFusionRecipe>  allRecipes = new();
     public int cardsPerLevel = 3;
 
     // ── References ────────────────────────────────────────────────────────
-    private PlayerWeapon playerWeapon;
-    private playermove   playerMove;
+    private PlayerWeaponManager weaponManager;
+    private PlayerStatManager   statManager;
+    private playermove           playerMove;
 
     // ── State ─────────────────────────────────────────────────────────────
-    private Dictionary<WeaponUpgradeData, int> appliedStacks  = new();
-    private List<WeaponUpgradeData>             currentOptions = new();   // options ที่แสดงอยู่ตอนนี้
-    private bool                                hasPicked;                // เลือกไปแล้วในรอบนี้
+    private List<UpgradeCardInfo> currentOptions = new();
+    private bool                  hasPicked;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
         if (!IsOwner) { enabled = false; return; }
 
-        playerWeapon = GetComponent<PlayerWeapon>() ?? GetComponentInChildren<PlayerWeapon>();
-        playerMove   = GetComponent<playermove>()   ?? GetComponentInChildren<playermove>();
+        weaponManager = GetComponent<PlayerWeaponManager>();
+        statManager   = GetComponent<PlayerStatManager>();
+        playerMove    = GetComponent<playermove>();
 
-        if (!playerWeapon) Debug.LogError("[UpgradeManager] ❌ PlayerWeapon not found!");
-        if (!playerMove)   Debug.LogError("[UpgradeManager] ❌ playermove not found!");
-
-        Debug.Log($"[UpgradeManager] ✅ Init — weapon:{playerWeapon != null} move:{playerMove != null}");
-
-        SharedExperienceManager.OnUpgradePhaseStart += OnUpgradePhaseStart;
+        SharedExperienceManager.OnUpgradePhaseStart += OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   += OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     += OnForceAutoPick;
+        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;
     }
 
     public override void OnNetworkDespawn()
     {
         if (!IsOwner) return;
-        SharedExperienceManager.OnUpgradePhaseStart -= OnUpgradePhaseStart;
+        SharedExperienceManager.OnUpgradePhaseStart -= OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   -= OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     -= OnForceAutoPick;
+        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;
     }
 
-    // ── Phase Events ──────────────────────────────────────────────────────
-
-    void OnUpgradePhaseStart(int newLevel)
+    // ── Level Up (3 cards) ────────────────────────────────────────────────
+    void OnLevelUpPhaseStart(int newLevel)
     {
         hasPicked      = false;
-        currentOptions = PickRandomUpgrades(cardsPerLevel);
-
-        if (currentOptions.Count == 0)
-        {
-            // ไม่มี upgrade ให้เลือก → แจ้ง server ทันที
-            Debug.Log("[UpgradeManager] ไม่มี upgrade ให้เลือก — skip");
-            NotifyPicked();
-            return;
-        }
-
-        LevelUpUI.Instance.Show(currentOptions, GetStacks, ApplyUpgrade, newLevel);
+        currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
+        if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
+        LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);
     }
 
-    void OnUpgradePhaseEnd()
+    // ── Orb Reward (1 card) ───────────────────────────────────────────────
+    void OnOrbPhaseStart()
     {
-        // ทุกคนเลือกเสร็จแล้ว — ปิด panel ทั้งหมด
-        LevelUpUI.Instance?.Hide();
-        hasPicked = false;
+        hasPicked      = false;
+        currentOptions = PickCards(1, isOrbReward: true);
+        if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
+        LevelUpUI.Instance?.Show(currentOptions, ApplyOrbCard, 0);
     }
+
+    void OnUpgradePhaseEnd() { LevelUpUI.Instance?.Hide(); hasPicked = false; }
 
     void OnForceAutoPick()
     {
-        if (hasPicked) return;   // เลือกไปแล้ว ไม่ต้อง auto
-
-        if (currentOptions.Count > 0)
-        {
-            Debug.Log($"[UpgradeManager] Auto-pick: {currentOptions[0].upgradeName}");
-            ApplyUpgrade(currentOptions[0]);
-        }
-        else
-        {
-            // ไม่มีตัวเลือก — notify เฉยๆ
-            NotifyPicked();
-        }
+        if (hasPicked) return;
+        if (currentOptions.Count > 0) ApplyCard(currentOptions[0]);
+        else NotifyLevelUpPicked();
     }
 
-    // ── Apply Upgrade ─────────────────────────────────────────────────────
-    public void ApplyUpgrade(WeaponUpgradeData data)
+    // ── Card Pool ─────────────────────────────────────────────────────────
+    List<UpgradeCardInfo> PickCards(int count, bool isOrbReward)
     {
-        if (data == null || hasPicked) return;
+        var pool = isOrbReward ? BuildOrbPool() : BuildLevelUpPool();
+        if (pool.Count == 0) return new List<UpgradeCardInfo>();
 
-        hasPicked = true;                          // กัน double-call
-        LevelUpUI.Instance?.HideCards();          // ซ่อนการ์ด แต่คง panel ไว้รอคนอื่น
+        var result = new List<UpgradeCardInfo>();
+        var used   = new HashSet<int>();
 
-        appliedStacks.TryGetValue(data, out int stacks);
-        appliedStacks[data] = stacks + 1;
-
-        switch (data.upgradeType)
+        for (int n = 0; n < count && used.Count < pool.Count; n++)
         {
-            case UpgradeType.Damage:
-                if (playerWeapon) { float b = playerWeapon.damage; playerWeapon.damage = ApplyValue(b, data); Debug.Log($"[Upgrade] Damage {b:F1} → {playerWeapon.damage:F1}"); }
-                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
-                break;
+            float total = 0f;
+            for (int i = 0; i < pool.Count; i++)
+                if (!used.Contains(i)) total += pool[i].Weight;
 
-            case UpgradeType.AttackSpeed:
-                if (playerWeapon) { float b = playerWeapon.attackSpeed; playerWeapon.attackSpeed = ApplyValue(b, data); Debug.Log($"[Upgrade] AttackSpeed {b:F2} → {playerWeapon.attackSpeed:F2}"); }
-                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
-                break;
+            if (total <= 0f) break;
 
-            case UpgradeType.AttackRange:
-                if (playerWeapon) { float b = playerWeapon.attackRange; playerWeapon.attackRange = ApplyValue(b, data); Debug.Log($"[Upgrade] AttackRange {b:F1} → {playerWeapon.attackRange:F1}"); }
-                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
-                break;
-
-            case UpgradeType.ProjectileSpeed:
-                if (playerWeapon) { float b = playerWeapon.projectileSpeed; playerWeapon.projectileSpeed = ApplyValue(b, data); Debug.Log($"[Upgrade] ProjSpeed {b:F1} → {playerWeapon.projectileSpeed:F1}"); }
-                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
-                break;
-
-            case UpgradeType.MultiProjectile:
-                if (playerWeapon) { playerWeapon.multiProjectileCount += (int)data.value; Debug.Log($"[Upgrade] MultiProj → {playerWeapon.multiProjectileCount}"); }
-                else Debug.LogError("[Upgrade] ❌ playerWeapon null");
-                break;
-
-            case UpgradeType.MoveSpeed:
-                if (playerMove) { float b = playerMove.moveSpeed; playerMove.moveSpeed = ApplyValue(b, data); Debug.Log($"[Upgrade] MoveSpeed {b:F2} → {playerMove.moveSpeed:F2}"); }
-                else Debug.LogError("[Upgrade] ❌ playerMove null");
-                break;
-
-            case UpgradeType.MaxHealth:
-                if (playerMove) { float amt = data.mode == UpgradeApplicationMode.Additive ? data.value : playerMove.maxHealth * data.value; ApplyMaxHealthServerRpc(amt); Debug.Log($"[Upgrade] MaxHealth +{amt}"); }
-                else Debug.LogError("[Upgrade] ❌ playerMove null");
-                break;
-
-            case UpgradeType.HealthRegen:
-                if (playerMove) { float r = ApplyValue(playerMove.healthRegenPerSecond, data); ApplyHealthRegenServerRpc(r); Debug.Log($"[Upgrade] HealthRegen → {r:F2}/s"); }
-                else Debug.LogError("[Upgrade] ❌ playerMove null");
-                break;
-
-            case UpgradeType.ExpBonus:
+            float roll = Random.Range(0f, total);
+            float acc  = 0f;
+            for (int i = 0; i < pool.Count; i++)
             {
-                var sem = SharedExperienceManager.Instance;
-                if (sem != null)
+                if (used.Contains(i)) continue;
+                acc += pool[i].Weight;
+                if (roll <= acc)
                 {
-                    float b       = sem.expMultiplier.Value;
-                    float newMult = ApplyValue(b, data);
-                    sem.ApplyExpMultiplierServerRpc(newMult);
-                    Debug.Log($"[Upgrade] ExpBonus (shared) {b:F2}x → {newMult:F2}x");
+                    result.Add(pool[i]);
+                    used.Add(i);
+                    break;
                 }
-                else Debug.LogError("[Upgrade] ❌ SharedExperienceManager null");
-                break;
+            }
+        }
+        return result;
+    }
+
+    // ── Level Up Pool — Weapon + Stat cards ───────────────────────────────
+    List<UpgradeCardInfo> BuildLevelUpPool()
+    {
+        var pool = new List<UpgradeCardInfo>();
+
+        foreach (var w in allWeapons)
+        {
+            if (w == null || w.tier != WeaponTier.Normal) continue;
+
+            if (!weaponManager.HasWeapon(w))
+            {
+                if (weaponManager.HasFreeSlot())
+                    pool.Add(new UpgradeCardInfo
+                    {
+                        type        = UpgradeCardType.WeaponNew,
+                        weapon      = w,
+                        targetLevel = 1
+                    });
+            }
+            else
+            {
+                int lv = weaponManager.GetWeaponLevel(w); // 0-indexed
+                if (lv + 1 < w.MaxLevel)
+                    pool.Add(new UpgradeCardInfo
+                    {
+                        type        = UpgradeCardType.WeaponLevelUp,
+                        weapon      = w,
+                        targetLevel = lv + 2  // 1-indexed display
+                    });
             }
         }
 
-        Debug.Log($"[Upgrade] ✅ {data.upgradeName} — stack {appliedStacks[data]}/{data.maxStacks}");
+        foreach (var s in allStats)
+        {
+            if (s == null) continue;
+            int lv = statManager.GetStatLevel(s.statType);
+            if (lv >= s.MaxLevel) continue;
+            if (lv == 0 && !statManager.HasStatSlotAvailable()) continue;
 
-        // แจ้ง Server ว่า player นี้เลือกเสร็จแล้ว
-        NotifyPicked();
+            pool.Add(new UpgradeCardInfo
+            {
+                type             = UpgradeCardType.Stat,
+                stat             = s,
+                currentStatLevel = lv
+            });
+        }
+
+        return pool;
     }
 
-    void NotifyPicked()
+    // ── Orb Pool — Super / Fusion / fallback Weapon/Stat ─────────────────
+    List<UpgradeCardInfo> BuildOrbPool()
     {
+        var pool = new List<UpgradeCardInfo>();
+
+        // 1. Super Upgrades — Normal Lv5 + conditions ครบ ยังไม่ได้ Super
+        foreach (var w in weaponManager.GetEquippedWeapons())
+        {
+            if (w == null || w.tier != WeaponTier.Normal) continue;
+            if (w.superVersion == null) continue;
+            int lv = weaponManager.GetWeaponLevel(w);
+            if (lv < w.MaxLevel - 1) continue;                       // ยังไม่ถึง Lv5
+            if (weaponManager.HasWeapon(w.superVersion)) continue;    // มี super แล้ว
+            if (!CheckSuperConditions(w)) continue;                   // conditions ไม่ครบ
+
+            pool.Add(new UpgradeCardInfo
+            {
+                type   = UpgradeCardType.WeaponSuper,
+                weapon = w
+            });
+        }
+
+        // 2. Fusion — Super คู่ที่ตรง recipe
+        var equipped = weaponManager.GetEquippedWeapons();
+        foreach (var recipe in allRecipes)
+        {
+            if (recipe == null || recipe.fusionResult == null) continue;
+            if (weaponManager.HasWeapon(recipe.fusionResult)) continue;  // มี fusion แล้ว
+
+            bool hasA = equipped.Contains(recipe.superWeaponA);
+            bool hasB = equipped.Contains(recipe.superWeaponB);
+            if (!hasA || !hasB) continue;
+
+            pool.Add(new UpgradeCardInfo
+            {
+                type        = UpgradeCardType.WeaponFusion,
+                weapon      = recipe.fusionResult,
+                fusionRecipe = recipe
+            });
+        }
+
+        // 3. Fallback — ถ้าไม่มี Super/Fusion → ใช้ pool เดียวกับ Level Up
+        if (pool.Count == 0)
+            return BuildLevelUpPool();
+
+        return pool;
+    }
+
+    // ── Apply ─────────────────────────────────────────────────────────────
+    public void ApplyCard(UpgradeCardInfo card)
+    {
+        if (card == null || hasPicked) return;
+        hasPicked = true;
+        LevelUpUI.Instance?.HideCards();
+        ApplyCardInternal(card);
+        NotifyLevelUpPicked();
+    }
+
+    void ApplyOrbCard(UpgradeCardInfo card)
+    {
+        if (card == null || hasPicked) return;
+        hasPicked = true;
+        LevelUpUI.Instance?.HideCards();
+        ApplyCardInternal(card);
+        NotifyOrbPicked();
+    }
+
+    void ApplyCardInternal(UpgradeCardInfo card)
+    {
+        switch (card.type)
+        {
+            case UpgradeCardType.WeaponNew:
+                weaponManager.AddWeapon(card.weapon);
+                break;
+            case UpgradeCardType.WeaponLevelUp:
+                weaponManager.UpgradeWeapon(card.weapon);
+                break;
+            case UpgradeCardType.WeaponSuper:
+                weaponManager.ReplaceWeapon(card.weapon, card.weapon.superVersion);
+                break;
+            case UpgradeCardType.WeaponFusion:
+                if (card.fusionRecipe != null)
+                    weaponManager.FuseWeapons(
+                        card.fusionRecipe.superWeaponA,
+                        card.fusionRecipe.superWeaponB,
+                        card.fusionRecipe.fusionResult);
+                break;
+            case UpgradeCardType.Stat:
+                statManager.ApplyStat(card.stat, playerMove);
+                break;
+        }
+    }
+
+    // ── Super Condition Check ─────────────────────────────────────────────
+    bool CheckSuperConditions(WeaponData w)
+    {
+        if (w.superConditions == null || w.superConditions.Length == 0) return true;
+
+        foreach (var c in w.superConditions)
+        {
+            bool pass = c.conditionType switch
+            {
+                SuperConditionType.StatAtLevel =>
+                    statManager.GetStatLevel(c.requiredStatType) >= c.requiredLevel,
+
+                SuperConditionType.WeaponAtLevel =>
+                    c.requiredWeapon != null &&
+                    weaponManager.GetWeaponLevel(c.requiredWeapon) + 1 >= c.requiredLevel,
+
+                SuperConditionType.PlayerLevel =>
+                    (SharedExperienceManager.Instance?.GetCurrentLevel() ?? 0) >= c.requiredLevel,
+
+                _ => true
+            };
+
+            if (!pass) return false;
+        }
+        return true;
+    }
+
+    // ── Notify ────────────────────────────────────────────────────────────
+    void NotifyLevelUpPicked() =>
         SharedExperienceManager.Instance?.PlayerUpgradePickedServerRpc();
-    }
 
-    // ── ServerRpc สำหรับ stats ที่ต้องเปลี่ยนบน Server ─────────────────
-    [ServerRpc]
-    void ApplyMaxHealthServerRpc(float amount)  => playerMove?.GainMaxHealth(amount);
-
-    [ServerRpc]
-    void ApplyHealthRegenServerRpc(float value)
-    {
-        if (playerMove) playerMove.healthRegenPerSecond = value;
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-    public int GetStacks(WeaponUpgradeData data) =>
-        appliedStacks.TryGetValue(data, out int s) ? s : 0;
-
-    List<WeaponUpgradeData> PickRandomUpgrades(int count)
-    {
-        var pool = new List<WeaponUpgradeData>();
-        foreach (var u in allUpgrades)
-        {
-            int s = GetStacks(u);
-            if (u.maxStacks <= 0 || s < u.maxStacks) pool.Add(u);
-        }
-
-        // Fisher-Yates shuffle
-        for (int i = pool.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            (pool[i], pool[j]) = (pool[j], pool[i]);
-        }
-
-        return pool.GetRange(0, Mathf.Min(count, pool.Count));
-    }
-
-    static float ApplyValue(float current, WeaponUpgradeData data) =>
-        data.mode == UpgradeApplicationMode.Additive
-            ? current + data.value
-            : current * (1f + data.value);
+    void NotifyOrbPicked() =>
+        SharedExperienceManager.Instance?.PlayerOrbPickedServerRpc();
 }

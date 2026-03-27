@@ -65,7 +65,14 @@ public class ExpOrb : NetworkBehaviour
     // ── Collect ───────────────────────────────────────────────────────────
     void Collect()
     {
-        SharedExperienceManager.Instance?.AddExp(expAmount);
+        float finalExp = expAmount;
+        // Find nearest player stat manager
+        if (currentTarget != null)
+        {
+            var sm = currentTarget.GetComponent<PlayerStatManager>();
+            if (sm != null) finalExp *= sm.GetExpMultiplier();
+        }
+        SharedExperienceManager.Instance?.AddExp(finalExp);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
         else Destroy(gameObject);
     }
@@ -80,12 +87,12 @@ public class ExpOrb : NetworkBehaviour
     // ── Helpers ───────────────────────────────────────────────────────────
     float GetAttractRadius()
     {
-        if (attractRadiusRatio > 0f && currentTarget != null)
-        {
-            var pw = currentTarget.GetComponent<PlayerWeapon>();
-            if (pw != null) return pw.attackRange * attractRadiusRatio;
-        }
-        return attractRadius;
+        if (currentTarget == null) return attractRadius;
+
+        // Use new PlayerStatManager PickupRadius multiplier
+        var sm = currentTarget.GetComponent<PlayerStatManager>();
+        float mult = sm != null ? sm.GetPickupRadiusMultiplier() : 1f;
+        return attractRadius * mult;
     }
 
     Transform FindNearestPlayer()

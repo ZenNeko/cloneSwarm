@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(git remote:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(git fetch:*)",
+      "Bash(powershell -Command \"Get-ChildItem ''C:\\\\Users\\\\choro'' -Recurse -Filter ''python.exe'' -ErrorAction SilentlyContinue | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem ''C:\\\\Program Files'' -Recurse -Filter ''python.exe'' -ErrorAction SilentlyContinue | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem ''C:\\\\Program Files \\(x86\\)'' -Recurse -Filter ''python.exe'' -ErrorAction SilentlyContinue | Select-Object FullName\")",
+      "Bash(\"/c/Program Files/Odoo 19.0.20251223/python/python.exe\" --version)",
+      "Bash(\"/c/Program Files/Odoo 19.0.20251223/python/python.exe\" -c \"import openpyxl; print\\(openpyxl.__version__\\)\")",
+      "Read(//c/Users/choro/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/70854a29-f161-45e4-9c6a-922883ed3dbb/0631b9ab-2885-4011-90a6-979ae3927bcc/skills/xlsx/**)",
+      "Bash(\"/c/Program Files/Odoo 19.0.20251223/python/python.exe\" create_heartbeat.py)",
+      "Bash(\"/c/Program Files/Odoo 19.0.20251223/python/python.exe\" scripts/recalc.py \"F:\\\\cloneSwarm\\\\HeartbeatGraph_SwarmClone.xlsx\")",
+      "Bash(powershell -Command \"Get-ChildItem ''C:\\\\'' -Filter ''soffice.exe'' -Recurse -ErrorAction SilentlyContinue | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-Item ''F:\\\\cloneSwarm\\\\HeartbeatGraph_SwarmClone.xlsx'' | Select-Object FullName, Length, LastWriteTime\")",
+      "Bash(python -c \"import sys; data=sys.stdin.read\\(\\); print\\(data.encode\\(''''ascii'''',''''replace''''\\).decode\\(''''ascii''''\\)\\)\")",
+      "Bash(\"C:\\\\Program Files\\\\Odoo 19.0.20251223\\\\python\\\\python.exe\" -c \":*)",
+      "Bash(\"C:\\\\Program Files\\\\Odoo 19.0.20251223\\\\python\\\\python.exe\" \"F:\\\\cloneSwarm\\\\add_level_up_sheet.py\")",
+      "Bash(head -10 grep -n \"AddExpServerRpc\\\\|AddExp\" \"F:/cloneSwarm/Assets/Script/SharedExperienceManager.cs\")",
+      "Bash(\"F:/cloneSwarm/Assets/Script/Data/StatData/SD_MoveSpeed.asset\":*)",
+      "Bash(del \"F:\\\\cloneSwarm\\\\.git\\\\index.lock\")",
+      "Bash(powershell.exe -Command \"Remove-Item -Force ''.git/index.lock''\")",
+      "Bash(powershell.exe -Command \"Get-Process | Where-Object {$_MainWindowTitle -like ''*Unity*'' -or $_Name -like ''*Unity*''} | Select-Object Name, Id, MainWindowTitle\")"
+    ]
+  }
+}

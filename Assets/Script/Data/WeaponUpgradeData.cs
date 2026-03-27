@@ -8,7 +8,7 @@ public enum UpgradeType
     MoveSpeed,
     MaxHealth,
     ProjectileSpeed,
-    ExpBonus,         // เพิ่ม EXP multiplier
+    ExpBonus,         // เพิ่ม EXP multiplier (shared)
     MultiProjectile,  // เพิ่มจำนวน projectile ต่อยิง
     HealthRegen       // ฟื้น HP ต่อวินาที
 }

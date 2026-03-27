@@ -8,8 +8,10 @@ public class Enemy : NetworkBehaviour
     public float speed = 3f;
 
     [Header("Contact Damage")]
-    public float contactDamage = 10f;
+    public float contactDamage  = 10f;
     public float damageCooldown = 1f;
+    [Tooltip("ระยะที่ถือว่าชนกับผู้เล่น (แทน OnTriggerStay)")]
+    public float damageRadius   = 1.2f;
 
     [Header("Health")]
     public float maxHealth = 30f;
@@ -44,22 +46,22 @@ public class Enemy : NetworkBehaviour
             currentTarget = FindNearestPlayer();
 
         if (currentTarget != null)
+        {
             transform.position = Vector3.MoveTowards(
                 transform.position, currentTarget.position, speed * Time.deltaTime);
 
-        damageTimer += Time.deltaTime;
-    }
-
-    void OnTriggerStay(Collider other)
-    {
-        if (!IsServer) return;
-        if (!other.CompareTag("Player") || damageTimer < damageCooldown) return;
-
-        playermove pm = other.GetComponent<playermove>();
-        if (pm == null) return;
-
-        pm.TakeDamage(contactDamage);
-        damageTimer = 0f;
+            // Distance-based damage (ไม่ต้องใช้ trigger collider)
+            damageTimer += Time.deltaTime;
+            if (damageTimer >= damageCooldown)
+            {
+                float dist = Vector3.Distance(transform.position, currentTarget.position);
+                if (dist <= damageRadius)
+                {
+                    currentTarget.GetComponent<playermove>()?.TakeDamage(contactDamage);
+                    damageTimer = 0f;
+                }
+            }
+        }
     }
 
     // ── Damage ────────────────────────────────────────────────────────────
@@ -104,6 +106,8 @@ public class Enemy : NetworkBehaviour
         {
             var playerObj = client.PlayerObject;
             if (playerObj == null) continue;
+            var pm = playerObj.GetComponent<playermove>();
+            if (pm != null && pm.isDead.Value) continue;   // ข้ามผู้เล่นที่ตายแล้ว
 
             float dist = Vector3.Distance(transform.position, playerObj.transform.position);
             if (dist < minDist) { minDist = dist; nearest = playerObj.transform; }

@@ -12,12 +12,19 @@ public class PlayerWeapon : NetworkBehaviour
     [Tooltip("มุมกระจายระหว่าง projectile (องศา)")]
     public float spreadAngle          = 15f;
 
-    private float attackTimer;
+    private float      attackTimer;
+    private playermove playerMove;
+
+    public override void OnNetworkSpawn()
+    {
+        playerMove = GetComponent<playermove>();
+    }
 
     // ── Update: Owner ตัดสินใจยิง, Server spawn projectile ─────────────────
     void Update()
     {
         if (!IsOwner) return;
+        if (playerMove != null && playerMove.isDead.Value) return;
 
         attackTimer += Time.deltaTime;
         if (attackTimer < 1f / attackSpeed) return;

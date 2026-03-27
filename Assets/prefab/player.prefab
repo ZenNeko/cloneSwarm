@@ -16,10 +16,12 @@ GameObject:
   - component: {fileID: 1746890018923511425}
   - component: {fileID: -5025853322421610712}
   - component: {fileID: 4250323636796052472}
-  - component: {fileID: 2672743675842583459}
+  - component: {fileID: 4642509835648411498}
   - component: {fileID: 8264601110927716481}
   - component: {fileID: 7655913753558015870}
   - component: {fileID: 1258628423518312534}
+  - component: {fileID: 4941737850633899768}
+  - component: {fileID: 8713204962959621646}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -315,12 +317,29 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   healthRegenPerSecond: 0
+  shieldHP: 0
   netHealth:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 100
---- !u!114 &2672743675842583459
+  netMaxHealth:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
+  isDead:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  respawnCountdown:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  tempMoveSpeedBonus: 0
+--- !u!114 &4642509835648411498
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -329,17 +348,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 7353199761178665806}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea015b747163f7243bf4074fde3db25d, type: 3}
+  m_Script: {fileID: 11500000, guid: 2b595320e73dd0f46b5563f75935c9b4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeapon
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponManager
   ShowTopMostFoldoutHeaderGroup: 1
   projectilePrefab: {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
-  attackRange: 8
-  attackSpeed: 1
-  damage: 20
-  projectileSpeed: 12
-  multiProjectileCount: 1
-  spreadAngle: 15
+  playerMove: {fileID: 0}
+  statManager: {fileID: 0}
+  characterData: {fileID: 0}
+  startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  grenadePrefab: {fileID: 0}
+  minePrefab: {fileID: 0}
 --- !u!114 &8264601110927716481
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -353,16 +372,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeManager
   ShowTopMostFoldoutHeaderGroup: 1
-  allUpgrades:
-  - {fileID: 11400000, guid: 4dbee36d8a733f14399ff4a00218b94b, type: 2}
-  - {fileID: 11400000, guid: d7dfeaaa054b18c46bcf11d57e9bf6d9, type: 2}
-  - {fileID: 11400000, guid: e44a7e629e1265d4c8f439a952d9f7d3, type: 2}
-  - {fileID: 11400000, guid: 9f8e287d9ce0011498e386015da6ae83, type: 2}
-  - {fileID: 11400000, guid: aea9ab25284b7fc49b91e416da9fbacf, type: 2}
-  - {fileID: 11400000, guid: 100db598764caca46871a36ff9faae06, type: 2}
-  - {fileID: 11400000, guid: c9d7fec216a978845b8b8054c766fe79, type: 2}
-  - {fileID: 11400000, guid: a3d8ebec44ec4da43951edb4edf763b8, type: 2}
-  cardsPerLevel: 5
+  allWeapons:
+  - {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
+  - {fileID: 11400000, guid: 21c29adfa9d3ac34697b827b0be41d81, type: 2}
+  - {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
+  - {fileID: 11400000, guid: 2627d41ba1d3f9b489d56c32b4e777ae, type: 2}
+  - {fileID: 11400000, guid: 941b65e36e8198f48b036bc3e0daa804, type: 2}
+  allStats:
+  - {fileID: 11400000, guid: baabf1a1a51e22241bfab42bb6367df4, type: 2}
+  - {fileID: 11400000, guid: ee3f6447d1cd59245bdcda73bb6ee14c, type: 2}
+  - {fileID: 11400000, guid: 228bffead1960494081236e5492b255b, type: 2}
+  - {fileID: 11400000, guid: 0e413a953a49b3445afac30246889bc4, type: 2}
+  - {fileID: 11400000, guid: 84c1b2553d347034798efb1cbdec66a6, type: 2}
+  - {fileID: 11400000, guid: 14e0cce2c441394408dceda8b986e15b, type: 2}
+  - {fileID: 11400000, guid: bd9caaf2eded46242816368ab2393813, type: 2}
+  - {fileID: 11400000, guid: 680f8ab49871d354eb52b9b15a6a481b, type: 2}
+  - {fileID: 11400000, guid: 3ab0453b690ae8445ab186027e53bc46, type: 2}
+  - {fileID: 11400000, guid: d69096f781a555749b29f7679ecd344a, type: 2}
+  - {fileID: 11400000, guid: b05f701fbe13e904c894c707da567f93, type: 2}
+  - {fileID: 11400000, guid: 1208c1e3404eff34d9a08d6928dfa45a, type: 2}
+  allRecipes:
+  - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
+  - {fileID: 11400000, guid: cc06f9f7f8663d74a9497b6778b35ae8, type: 2}
+  - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
+  cardsPerLevel: 3
 --- !u!114 &7655913753558015870
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -441,3 +475,29 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &4941737850633899768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97c8a2b7f9d084c4c8279f905127b2da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatManager
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &8713204962959621646
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34bdb65a810d64e4eb2bd427390071bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChargeManager
+  chargePerUnit: 5
