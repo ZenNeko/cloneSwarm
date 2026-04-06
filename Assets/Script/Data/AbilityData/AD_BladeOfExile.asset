@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
+  m_Name: AD_BladeOfExile
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityData
+  abilityName: Blade of Exile
+  description: Blade of Exile
+  icon: {fileID: 2037185278, guid: 16c624dce00d2f34e80083d085d2bf8d, type: 3}
+  prefab: {fileID: 7060057563466003552, guid: b498ce9fc7a7a10468ab3d0e86d0d854, type: 3}
+  levels:
+  - damage: 0
+    cooldown: 1
+    duration: 11
+    range: 0
+    levelUpText: 
+  - damage: 0
+    cooldown: 75
+    duration: 14
+    range: 0
+    levelUpText: 
+  - damage: 0
+    cooldown: 70
+    duration: 17
+    range: 0
+    levelUpText: 
+  - damage: 0
+    cooldown: 65
+    duration: 20
+    range: 0
+    levelUpText: 
+  - damage: 0
+    cooldown: 60
+    duration: 25
+    range: 0
+    levelUpText: 

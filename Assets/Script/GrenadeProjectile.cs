@@ -92,5 +92,7 @@ public class GrenadeProjectile : NetworkBehaviour
     {
         if (explosionVfxPrefab != null)
             Destroy(Instantiate(explosionVfxPrefab, pos, Quaternion.identity), 3f);
+        else
+            VFXFactory.Play(cluster ? VFXType.GrenadeExplosion : VFXType.GrenadeExplosion, pos);
     }
 }

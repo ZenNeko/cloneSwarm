@@ -8,7 +8,7 @@ using UnityEngine;
 /// — เมื่อ CHARGE ครบ 100 → ยิง BunnyHopWeapon ทันที
 /// — ทำงานบน Owner เท่านั้น
 /// </summary>
-public class ChargeManager : MonoBehaviour
+public class ChargeManager : MonoBehaviour, IHUDPassiveBar
 {
     [Header("Charge Settings")]
     [Tooltip("CHARGE ที่ได้ต่อ 1 unit ที่เดิน — default 5 = ต้องเดิน 20 units ต่อ 1 fire")]
@@ -22,6 +22,18 @@ public class ChargeManager : MonoBehaviour
 
     /// <summary>Blade of Exile เปิดอยู่ → charge rate ×2</summary>
     public bool IsExileActive   { get; set; }
+
+    // ── IHUDPassiveBar ────────────────────────────────────────────────────
+    /// <summary>active เฉพาะเมื่อ Riven (BunnyHopWeapon) อยู่ใน children</summary>
+    public bool  IsActivePassive   => GetComponentInChildren<BunnyHopWeapon>() != null;
+    public float NormalizedValue   => CurrentCharge / MaxCharge;
+    public bool  IsTriggered       => CurrentCharge >= MaxCharge;
+    public string BarText         => IsTriggered ? "READY!"
+                                   : $"{Mathf.RoundToInt(NormalizedValue * 100)}";
+    public UnityEngine.Color BarColor       => IsExileActive
+        ? new UnityEngine.Color(1f, 0.55f, 0.1f)   // ส้ม (Exile)
+        : new UnityEngine.Color(0.2f, 0.8f, 1f);    // ฟ้า (ปกติ)
+    public UnityEngine.Color TriggeredColor => new UnityEngine.Color(1f, 0.9f, 0f); // ทอง
 
     // ── Events ────────────────────────────────────────────────────────────
     public static event Action<float> OnChargeChanged;  // normalized 0–1

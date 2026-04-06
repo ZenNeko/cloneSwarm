@@ -25,7 +25,14 @@
       "Bash(\"F:/cloneSwarm/Assets/Script/Data/StatData/SD_MoveSpeed.asset\":*)",
       "Bash(del \"F:\\\\cloneSwarm\\\\.git\\\\index.lock\")",
       "Bash(powershell.exe -Command \"Remove-Item -Force ''.git/index.lock''\")",
-      "Bash(powershell.exe -Command \"Get-Process | Where-Object {$_MainWindowTitle -like ''*Unity*'' -or $_Name -like ''*Unity*''} | Select-Object Name, Id, MainWindowTitle\")"
+      "Bash(powershell.exe -Command \"Get-Process | Where-Object {$_MainWindowTitle -like ''*Unity*'' -or $_Name -like ''*Unity*''} | Select-Object Name, Id, MainWindowTitle\")",
+      "Bash(grep -E \"\\\\.\\(cs|asset\\)$\")",
+      "Bash(xargs grep:*)",
+      "Bash(find F:cloneSwarm/Assets/Prefabs -type f -name *.prefab)",
+      "Bash(find F:cloneSwarm/Assets -type d -name *VFX* -o -type d -name *vfx* -o -type d -name *Particle*)",
+      "Bash(claude --version)",
+      "Bash(claude remote-control:*)",
+      "Bash(find F:cloneSwarmAssetsScript -name *.cs -type f)"
     ]
   }
 }

@@ -34,12 +34,13 @@ public class ObjectiveOrb : NetworkBehaviour
 
     // ── Server ────────────────────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
-    void CollectServerRpc()
+    void CollectServerRpc(ServerRpcParams rpcParams = default)
     {
         if (!IsServer) return;
 
-        // แจ้ง SharedExperienceManager → pause ทุกคน + เริ่ม Orb Phase
-        SharedExperienceManager.Instance?.OrbCollectedServerRpc();
+        // ส่ง clientId ของคนที่เก็บ → แสดง card เฉพาะคนนั้น
+        ulong collectorId = rpcParams.Receive.SenderClientId;
+        SharedExperienceManager.Instance?.StartOrbPhaseForPlayer(collectorId);
 
         // Spawn collect effect
         if (collectEffect != null)

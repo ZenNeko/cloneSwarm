@@ -15,15 +15,20 @@ public class PlayerStatManager : NetworkBehaviour
     private Dictionary<StatType, float> statTotals    = new();   // type → total accumulated
     private List<StatData>              equippedStats = new();   // ordered list for HUD display
 
+    // ── Temporary stat bonuses (set by abilities / passives, cleared by them) ──
+    /// <summary>Ability Haste bonus ชั่วคราว — บวกกับค่า permanent จาก stat cards</summary>
+    [HideInInspector] public float tempAbilityHaste = 0f;
+
     // ── Weapon Multipliers (WeaponBase อ่าน) ─────────────────────────────
     /// <summary>+10% damage per Lv — 1.0 = no bonus</summary>
     public float GetPowerMultiplier()
         => 1f + GetTotal(StatType.Damage);
 
-    /// <summary>Ability Haste → cooldown multiplier  (Haste / (100 + Haste))</summary>
+    /// <summary>Ability Haste → cooldown multiplier (Haste / (100 + Haste))
+    /// รวม tempAbilityHaste จาก Gunner passive หรือ abilities อื่น</summary>
     public float GetCooldownMultiplier()
     {
-        float haste = GetTotal(StatType.AbilityHaste);
+        float haste = GetTotal(StatType.AbilityHaste) + tempAbilityHaste;
         return haste > 0f ? 100f / (100f + haste) : 1f;
     }
 

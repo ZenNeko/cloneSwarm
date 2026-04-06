@@ -3,10 +3,17 @@ using UnityEngine;
 
 public class Projectile : NetworkBehaviour
 {
-    public float speed    = 12f;
-    public float damage   = 20f;
-    public float maxRange = 20f;
-    public bool  piercing = false;   // ถ้า true = ไม่ destroy เมื่อชน enemy
+    public float   speed    = 12f;
+    public float   damage   = 20f;
+    public float   maxRange = 20f;
+    public bool    piercing = false;   // ถ้า true = ไม่ destroy เมื่อชน enemy
+
+    [Header("VFX")]
+    [Tooltip("Particle prefab ที่ spawn เมื่อชน — ตั้งค่าบน Projectile prefab แต่ละอัน\n" +
+             "ปล่อยว่าง = ใช้ hitVFX (procedural VFXFactory)")]
+    public GameObject hitVfxPrefab;
+    [Tooltip("Fallback เมื่อไม่มี hitVfxPrefab")]
+    public VFXType    hitVFX = VFXType.BulletHit;
 
     private Transform target;
     private Vector3   moveDirection;
@@ -57,6 +64,7 @@ public class Projectile : NetworkBehaviour
         if (!other.CompareTag("Enemy")) return;
 
         other.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        ShowHitVfxClientRpc(transform.position);
         if (!piercing) SafeDespawn();
     }
 
@@ -64,5 +72,24 @@ public class Projectile : NetworkBehaviour
     {
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
         else Destroy(gameObject);
+    }
+
+    [ClientRpc]
+    void ShowHitVfxClientRpc(Vector3 pos)
+    {
+        if (hitVfxPrefab != null)
+            PlayAndDestroy(hitVfxPrefab, pos);
+        else
+            VFXFactory.Play(hitVFX, pos);
+    }
+
+    static void PlayAndDestroy(GameObject prefab, Vector3 pos)
+    {
+        var go = Object.Instantiate(prefab, pos, Quaternion.identity);
+        var ps = go.GetComponent<ParticleSystem>();
+        float ttl = ps != null
+            ? ps.main.duration + ps.main.startLifetime.constantMax + 0.5f
+            : 3f;
+        Object.Destroy(go, ttl);
     }
 }

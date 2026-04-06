@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
+  m_Name: WD_DualSlash
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: DualSlash
+  description: DualSlash
+  icon: {fileID: 0}
+  tier: 0
+  prefab: {fileID: 2335222814107975521, guid: 996ed03821dc68149a1ceea5eb600a36, type: 3}
+  aimMode: 0
+  projectilePrefab: {fileID: 0}
+  hitVfxPrefab: {fileID: 0}
+  levels:
+  - damage: 35
+    cooldown: 1.8
+    projectileCount: 1
+    range: 2.5
+    projectileSpeed: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 44
+    cooldown: 1.6
+    projectileCount: 1
+    range: 2.8
+    projectileSpeed: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 55
+    cooldown: 1.4
+    projectileCount: 1
+    range: 3.2
+    projectileSpeed: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 68
+    cooldown: 1.2
+    projectileCount: 1
+    range: 3.6
+    projectileSpeed: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 85
+    cooldown: 1
+    projectileCount: 1
+    range: 4
+    projectileSpeed: 0
+    piercing: 0
+    levelUpText: 
+  superVersion: {fileID: 11400000, guid: 9f931c4b300bae7478f93523e50d1e68, type: 2}
+  superConditions:
+  - conditionType: 0
+    requiredStatType: 0
+    requiredLevel: 1
+    requiredWeapon: {fileID: 0}
+  weight: 100
+  exclusiveCharacter: {fileID: 0}

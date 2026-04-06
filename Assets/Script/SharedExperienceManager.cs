@@ -50,15 +50,16 @@ public class SharedExperienceManager : NetworkBehaviour
     public static event Action<int, int> OnPickedCountChanged;   // (picked, total)
 
     // ── Orb Reward Events ─────────────────────────────────────────────────
-    /// <summary>ผู้เล่นเก็บ Objective Orb — แสดง 1-card UI, หยุดเกม</summary>
+    /// <summary>ผู้เล่นเก็บ Objective Orb — ทุกคนได้ level-up card 1 ใบจาก weapon/stat ที่ตัวเองมี</summary>
     public static event Action OnOrbPhaseStart;
 
     // ── Server-side State ─────────────────────────────────────────────────
-    private Queue<int>     pendingLevels   = new();
-    private bool           isUpgradePhase  = false;
-    private bool           isOrbPhase      = false;
-    private HashSet<ulong> pickedPlayers   = new();
+    private Queue<int>     pendingLevels    = new();
+    private bool           isUpgradePhase   = false;
+    private bool           isOrbPhase       = false;
+    private HashSet<ulong> pickedPlayers    = new();
     private Coroutine      timerCoroutine;
+    private ulong          orbCollectorId   = ulong.MaxValue; // client ที่เก็บ orb
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -241,17 +242,23 @@ public class SharedExperienceManager : NetworkBehaviour
 
     // ── Orb Phase ─────────────────────────────────────────────────────────
 
-    /// <summary>ObjectiveOrb เรียกเมื่อถูกเก็บ — ทุกคนได้ reward พร้อมกัน</summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void OrbCollectedServerRpc()
+    /// <summary>
+    /// เรียกจาก ObjectiveOrb (server-side) — แสดง card เฉพาะ collector
+    /// </summary>
+    /// <summary>เรียกจาก ObjectiveOrb (server-side) — ทุกคนได้ card พร้อมกัน</summary>
+    public void StartOrbPhaseForPlayer(ulong collectorClientId)
     {
         if (!IsServer || isUpgradePhase || isOrbPhase) return;
-        isOrbPhase = true;
+        isOrbPhase     = true;
+        orbCollectorId = collectorClientId;   // เก็บไว้ log เท่านั้น
         pickedPlayers.Clear();
+
         int total = NetworkManager.ConnectedClients.Count;
-        BeginOrbPhaseClientRpc(total);
+        BeginOrbPhaseClientRpc(total);   // broadcast ทุกคน
+
         if (timerCoroutine != null) StopCoroutine(timerCoroutine);
         timerCoroutine = StartCoroutine(OrbTimerCoroutine());
+        Debug.Log($"[OrbPhase] Client {collectorClientId} เก็บ Orb — ทุกคนได้ card");
     }
 
     [ClientRpc]
@@ -262,7 +269,7 @@ public class SharedExperienceManager : NetworkBehaviour
         OnOrbPhaseStart?.Invoke();
     }
 
-    /// <summary>UpgradeManager เรียกหลังเลือก Orb card เสร็จ</summary>
+    /// <summary>UpgradeManager เรียกหลังเลือก card — รอทุกคนเลือกครบ</summary>
     [ServerRpc(RequireOwnership = false)]
     public void PlayerOrbPickedServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -276,9 +283,10 @@ public class SharedExperienceManager : NetworkBehaviour
     void CompleteOrbPhase()
     {
         if (timerCoroutine != null) { StopCoroutine(timerCoroutine); timerCoroutine = null; }
-        isOrbPhase = false;
+        isOrbPhase     = false;
+        orbCollectorId = ulong.MaxValue;
         pickedPlayers.Clear();
-        EndUpgradePhaseClientRpc();   // reuse same "resume" ClientRpc
+        EndUpgradePhaseClientRpc();   // reuse same "resume" ClientRpc (broadcast ทุกคน)
     }
 
     IEnumerator OrbTimerCoroutine()

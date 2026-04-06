@@ -7,8 +7,8 @@ using UnityEngine;
 ///
 /// Phases:
 ///   Phase 1 (100-60% HP): CircleAoE ทุก 4s
-///   Phase 2  (60-30% HP): CircleAoE + LineAoE สลับกัน ทุก 3s
-///   Phase 3  (30-0%  HP): Circle + Line ทุก 2s (enrage)
+///   Phase 2  (60-30% HP): Circle + Cross สลับกัน ทุก 3s
+///   Phase 3  (30-0%  HP): Circle + Spread ทุก 2s (enrage)
 ///
 /// TelegraphZone Prefab ต้องมี TelegraphZone.cs + NetworkObject
 /// </summary>
@@ -29,11 +29,25 @@ public class MainBoss : NetworkBehaviour
     public float circleDamage   = 25f;
     public float circleWarnTime = 2.5f;
 
-    [Header("Line AoE")]
+    [Header("Line AoE (Phase 1 fallback)")]
     public float lineLength     = 10f;
     public float lineWidth      = 2f;
     public float lineDamage     = 35f;
     public float lineWarnTime   = 2.5f;
+
+    [Header("Cross AoE (Phase 2)")]
+    public float crossLineLength = 8f;
+    public float crossLineWidth  = 2f;
+    public float crossDamage     = 30f;
+    public float crossWarnTime   = 2.5f;
+
+    [Header("Spread AoE (Phase 3)")]
+    public float spreadLineLength = 12f;
+    public float spreadLineWidth  = 1.2f;
+    public float spreadDamage     = 20f;
+    public float spreadWarnTime   = 2.5f;
+    public int   spreadCount      = 5;
+    public float spreadAngle      = 60f;
 
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี TelegraphZone.cs + NetworkObject")]
@@ -43,7 +57,7 @@ public class MainBoss : NetworkBehaviour
     private Enemy enemy;
     private int   currentPhase  = 0;
     private bool  attackLoopRunning;
-    private int   attackIndex   = 0;   // สลับ circle/line ใน phase 2+
+    private int   attackIndex   = 0;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -53,7 +67,6 @@ public class MainBoss : NetworkBehaviour
         enemy = GetComponent<Enemy>();
         if (enemy == null) { Debug.LogError("[MainBoss] Enemy component not found!"); return; }
 
-        // Subscribe ให้รู้เมื่อ HP เปลี่ยน
         enemy.netHealth.OnValueChanged += OnHealthChanged;
 
         StartCoroutine(AttackLoop());
@@ -88,14 +101,25 @@ public class MainBoss : NetworkBehaviour
     [ClientRpc]
     void PhaseChangedClientRpc(int phase)
     {
-        Debug.Log($"[MainBoss] ⚡ Phase {phase} started!");
-        // HUD สามารถ subscribe event นี้ได้ผ่าน static event ถ้าต้องการ
+        string msg = phase switch
+        {
+            2 => "PHASE 2 — ENRAGE",
+            3 => "PHASE 3 — FINAL FORM",
+            _ => $"PHASE {phase}",
+        };
+        Color col = phase switch
+        {
+            2 => new Color(1f, 0.5f, 0f),
+            3 => Color.red,
+            _ => Color.white,
+        };
+        UnityEngine.Object.FindAnyObjectByType<GameHUD>()?.ShowAnnouncement(msg, col);
     }
 
     // ── Attack Loop (Server only) ─────────────────────────────────────────
     IEnumerator AttackLoop()
     {
-        yield return new WaitForSeconds(3f);   // หน่วงก่อนโจมตีแรก
+        yield return new WaitForSeconds(3f);
 
         while (true)
         {
@@ -110,75 +134,100 @@ public class MainBoss : NetworkBehaviour
 
             if (!NetworkObject.IsSpawned) yield break;
 
-            // Phase 1: Circle เท่านั้น
-            // Phase 2+: สลับ Circle / Line
-            bool useCircle = currentPhase == 1 || attackIndex % 2 == 0;
-            attackIndex++;
-
-            if (useCircle)
-                SpawnCircleAoE();
-            else
-                SpawnLineAoE();
+            switch (currentPhase)
+            {
+                case 1:
+                    SpawnCircleAoE();
+                    break;
+                case 2:
+                    if (attackIndex % 2 == 0) SpawnCircleAoE();
+                    else                      SpawnCrossAoE();
+                    attackIndex++;
+                    break;
+                case 3:
+                    if (attackIndex % 2 == 0) SpawnCircleAoE();
+                    else                      SpawnSpreadAoE();
+                    attackIndex++;
+                    break;
+                default:
+                    SpawnCircleAoE();
+                    break;
+            }
         }
     }
 
     // ── Spawn AoE ─────────────────────────────────────────────────────────
     void SpawnCircleAoE()
     {
-        if (telegraphZonePrefab == null)
-        {
-            Debug.LogWarning("[MainBoss] telegraphZonePrefab not assigned!");
-            return;
-        }
-
-        // วางที่ตำแหน่ง boss
-        var go   = Instantiate(telegraphZonePrefab, transform.position, Quaternion.identity);
-        var zone = go.GetComponent<TelegraphZone>();
-        var no   = go.GetComponent<NetworkObject>();
-
-        if (zone == null || no == null) { Destroy(go); return; }
+        var zone = SpawnZone(transform.position, Quaternion.identity);
+        if (zone == null) return;
 
         zone.aoeType         = TelegraphZone.AoEType.Circle;
         zone.radius          = circleRadius;
         zone.warningDuration = circleWarnTime;
         zone.damage          = circleDamage;
 
-        no.Spawn(true);
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
         zone.BroadcastInit();
         Debug.Log("[MainBoss] 🔴 Circle AoE spawned");
     }
 
-    void SpawnLineAoE()
+    void SpawnCrossAoE()
     {
-        if (telegraphZonePrefab == null) return;
+        var zone = SpawnZone(transform.position, Quaternion.identity);
+        if (zone == null) return;
 
-        // หาผู้เล่นที่ใกล้ที่สุดแล้วยิงไปทิศนั้น
+        zone.aoeType         = TelegraphZone.AoEType.Cross;
+        zone.lineLength      = crossLineLength;
+        zone.lineWidth       = crossLineWidth;
+        zone.warningDuration = crossWarnTime;
+        zone.damage          = crossDamage;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log("[MainBoss] ✙ Cross AoE spawned");
+    }
+
+    void SpawnSpreadAoE()
+    {
         Transform target = FindNearestPlayer();
         Vector3 dir = target != null
             ? (target.position - transform.position).normalized
             : transform.forward;
         dir.y = 0f;
-
         Quaternion rot = dir != Vector3.zero ? Quaternion.LookRotation(dir) : Quaternion.identity;
 
-        // วางจุดกึ่งกลางไปข้างหน้า boss
-        Vector3 pos = transform.position + dir * (lineLength * 0.5f);
+        var zone = SpawnZone(transform.position, rot);
+        if (zone == null) return;
+
+        zone.aoeType         = TelegraphZone.AoEType.Spread;
+        zone.lineLength      = spreadLineLength;
+        zone.lineWidth       = spreadLineWidth;
+        zone.warningDuration = spreadWarnTime;
+        zone.damage          = spreadDamage;
+        zone.spreadCount     = spreadCount;
+        zone.spreadAngle     = spreadAngle;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log("[MainBoss] 🌊 Spread AoE spawned");
+    }
+
+    // SpawnZone สร้าง instance แต่ยังไม่ Spawn (caller จัดการ)
+    TelegraphZone SpawnZone(Vector3 pos, Quaternion rot)
+    {
+        if (telegraphZonePrefab == null)
+        {
+            Debug.LogWarning("[MainBoss] telegraphZonePrefab not assigned!");
+            return null;
+        }
 
         var go   = Instantiate(telegraphZonePrefab, pos, rot);
         var zone = go.GetComponent<TelegraphZone>();
-        var no   = go.GetComponent<NetworkObject>();
+        var no   = go.GetComponent<Unity.Netcode.NetworkObject>();
 
-        if (zone == null || no == null) { Destroy(go); return; }
-
-        zone.aoeType         = TelegraphZone.AoEType.Line;
-        zone.lineLength      = lineLength;
-        zone.lineWidth       = lineWidth;
-        zone.warningDuration = lineWarnTime;
-        zone.damage          = lineDamage;
-
-        no.Spawn(true);
-        zone.BroadcastInit();
-        Debug.Log("[MainBoss] 🟠 Line AoE spawned");
+        if (zone == null || no == null) { Destroy(go); return null; }
+        return zone;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

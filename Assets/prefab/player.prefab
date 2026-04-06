@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 1258628423518312534}
   - component: {fileID: 4941737850633899768}
   - component: {fileID: 8713204962959621646}
+  - component: {fileID: 7893533639906240797}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -317,7 +318,12 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   healthRegenPerSecond: 0
-  shieldHP: 0
+  shieldDuration: 3
+  netShieldHP:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   netHealth:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -338,6 +344,7 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+  isDashing: 0
   tempMoveSpeedBonus: 0
 --- !u!114 &4642509835648411498
 MonoBehaviour:
@@ -357,8 +364,12 @@ MonoBehaviour:
   statManager: {fileID: 0}
   characterData: {fileID: 0}
   startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
-  grenadePrefab: {fileID: 0}
-  minePrefab: {fileID: 0}
+  grenadePrefab: {fileID: 2175207568025715613, guid: 0795629bd4364eb4d9a8fed3d02839d9, type: 3}
+  minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}
+  stickyRocketPrefab: {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
+  giantRocketPrefab: {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
+  missilePrefab: {fileID: 1984855891988958910, guid: db87279f89c8ef546ac502d4e88bd0c9, type: 3}
+  funnelPrefab: {fileID: 6266392510070060659, guid: 6d4a5b6b1a623044e9a4057d037cc4ed, type: 3}
 --- !u!114 &8264601110927716481
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -373,11 +384,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeManager
   ShowTopMostFoldoutHeaderGroup: 1
   allWeapons:
-  - {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
-  - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
-  - {fileID: 11400000, guid: 21c29adfa9d3ac34697b827b0be41d81, type: 2}
-  - {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
+  - {fileID: 11400000, guid: 38823361fa45e6547a9801072865dfda, type: 2}
+  - {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
+  - {fileID: 11400000, guid: 5d6a54a1e6c6caa40ae093305e76c879, type: 2}
+  - {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}
+  - {fileID: 11400000, guid: 539da540417cbd04ab9b68faf03e8bee, type: 2}
   - {fileID: 11400000, guid: 2627d41ba1d3f9b489d56c32b4e777ae, type: 2}
+  - {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
+  - {fileID: 11400000, guid: ff3e9a3dcb66bc140a7c5cb6e0100f00, type: 2}
+  - {fileID: 11400000, guid: afc0e65b3612c1647a9e3bd5f6ece9d4, type: 2}
+  - {fileID: 11400000, guid: 492887282d5f46544b1cfbafc3464cc2, type: 2}
+  - {fileID: 11400000, guid: 21c29adfa9d3ac34697b827b0be41d81, type: 2}
+  - {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  - {fileID: 11400000, guid: 3bf30fb8ceee2204eb30d8151f2368fe, type: 2}
+  - {fileID: 11400000, guid: bb37c6397e1b3864089c22cfa0300e46, type: 2}
+  - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
+  - {fileID: 11400000, guid: 73d7c19550c28e44c81fee169b1155b3, type: 2}
+  - {fileID: 11400000, guid: bb8ae4cf41c4fdc4c85c6f0abab933b5, type: 2}
   - {fileID: 11400000, guid: 941b65e36e8198f48b036bc3e0daa804, type: 2}
   allStats:
   - {fileID: 11400000, guid: baabf1a1a51e22241bfab42bb6367df4, type: 2}
@@ -488,6 +511,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatManager
   ShowTopMostFoldoutHeaderGroup: 1
+  tempAbilityHaste: 0
 --- !u!114 &8713204962959621646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -500,4 +524,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34bdb65a810d64e4eb2bd427390071bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChargeManager
-  chargePerUnit: 5
+  chargePerUnit: 10
+--- !u!114 &7893533639906240797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b0457e71e70a754dbbb8421f49479bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilityManager

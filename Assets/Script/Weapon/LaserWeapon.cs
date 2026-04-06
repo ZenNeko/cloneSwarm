@@ -1,18 +1,23 @@
 using UnityEngine;
 
 /// <summary>
-/// Laser — MouseAim, Piercing projectile เร็ว
+/// Laser — Hunter's starting weapon
+/// AoE เส้นตรงแบบมีความกว้าง (Box AoE) — damage enemy ทุกตัวในแนวยิง
+/// ใช้ FireLineAoEServerRpc (Physics.OverlapBox) — ไม่มี projectile
+/// ยิงเส้นเดียวเสมอ — ไม่รับผลจาก projectileCount
 ///
 /// Level data แนะนำ:
-///   Lv1: dmg=30, cd=2.0s, count=1, range=12, projSpeed=25, piercing=true
-///   Lv2: dmg=38, cd=1.8s, count=1, range=14
-///   Lv3: dmg=48, cd=1.6s, count=1, range=15
-///   Lv4: dmg=60, cd=1.4s, count=2, range=16
-///   Lv5: dmg=75, cd=1.2s, count=2, range=18, piercing=true
+///   Lv1: dmg=35,  cd=1.8s, range=14
+///   Lv2: dmg=45,  cd=1.6s, range=16
+///   Lv3: dmg=58,  cd=1.4s, range=18
+///   Lv4: dmg=72,  cd=1.2s, range=20
+///   Lv5: dmg=90,  cd=1.0s, range=22
 /// </summary>
 public class LaserWeapon : WeaponBase
 {
-    protected override void OnInit() => aimMode = AimMode.MouseAim;
+    [Header("Laser Config")]
+    [Tooltip("ความกว้างของ AoE (หน่วย Unity) — ยิ่งมาก ยิ่งกว้าง")]
+    public float width = 1.5f;
 
     protected override void OnFire(WeaponLevelData ld)
     {
@@ -20,12 +25,27 @@ public class LaserWeapon : WeaponBase
         Vector3 dir = GetAimDirection();
         float   dmg = RollDamage(ld.damage);
 
-        manager.FireProjectileServerRpc(
-            pos, dir, dmg,
-            ld.projectileSpeed,
-            ld.projectileCount,
-            spreadDeg: 15f,
-            piercing: true          // Laser เจาะทะลุเสมอ
-        );
+        // ยิงเส้นเดียวเสมอ — ไม่สนใจ projectileCount
+        manager.FireLineAoEServerRpc(pos, dir, dmg, ld.range, width);
     }
+
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
+    {
+        if (data == null) return;
+        float range = data.GetLevelData(currentLevel).range;
+
+        Vector3 dir    = transform.forward;
+        Vector3 center = transform.position + dir * (range * 0.5f) + Vector3.up * 0.5f;
+
+        UnityEditor.Handles.color = new Color(0.1f, 0.95f, 1f, 0.20f);
+        // วาด box แบบ wireframe แทน (Handles ไม่มี DrawBox โดยตรง ใช้ matrix แทน)
+        UnityEngine.Gizmos.color  = new Color(0.1f, 0.95f, 1f, 0.35f);
+        UnityEngine.Gizmos.matrix = Matrix4x4.TRS(center,
+            Quaternion.LookRotation(dir), Vector3.one);
+        UnityEngine.Gizmos.DrawWireCube(Vector3.zero,
+            new Vector3(width, 2.4f, range));
+        UnityEngine.Gizmos.matrix = Matrix4x4.identity;
+    }
+#endif
 }

@@ -23,6 +23,7 @@ public class UpgradeManager : NetworkBehaviour
     private PlayerWeaponManager weaponManager;
     private PlayerStatManager   statManager;
     private playermove           playerMove;
+    private CharacterData        myCharacter;   // ตัวละครของ player นี้
 
     // ── State ─────────────────────────────────────────────────────────────
     private List<UpgradeCardInfo> currentOptions = new();
@@ -36,11 +37,13 @@ public class UpgradeManager : NetworkBehaviour
         weaponManager = GetComponent<PlayerWeaponManager>();
         statManager   = GetComponent<PlayerStatManager>();
         playerMove    = GetComponent<playermove>();
+        myCharacter   = GetComponent<PlayerWeaponManager>()?.characterData
+                        ?? CharacterSelectUI.SelectedCharacter;
 
         SharedExperienceManager.OnUpgradePhaseStart += OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   += OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     += OnForceAutoPick;
-        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;
+        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;   // Action<ulong>
     }
 
     public override void OnNetworkDespawn()
@@ -49,7 +52,7 @@ public class UpgradeManager : NetworkBehaviour
         SharedExperienceManager.OnUpgradePhaseStart -= OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   -= OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     -= OnForceAutoPick;
-        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;
+        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;   // Action<ulong>
     }
 
     // ── Level Up (3 cards) ────────────────────────────────────────────────
@@ -61,11 +64,11 @@ public class UpgradeManager : NetworkBehaviour
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);
     }
 
-    // ── Orb Reward (1 card) ───────────────────────────────────────────────
+    // ── Orb Reward — ทุกคนได้ 1 card จาก weapon/stat ที่ตัวเองมีอยู่แล้ว ──
     void OnOrbPhaseStart()
     {
         hasPicked      = false;
-        currentOptions = PickCards(1, isOrbReward: true);
+        currentOptions = PickCards(1, isOrbReward: false, ownedOnly: true);
         if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
         LevelUpUI.Instance?.Show(currentOptions, ApplyOrbCard, 0);
     }
@@ -80,9 +83,10 @@ public class UpgradeManager : NetworkBehaviour
     }
 
     // ── Card Pool ─────────────────────────────────────────────────────────
-    List<UpgradeCardInfo> PickCards(int count, bool isOrbReward)
+    List<UpgradeCardInfo> PickCards(int count, bool isOrbReward, bool ownedOnly = false)
     {
-        var pool = isOrbReward ? BuildOrbPool() : BuildLevelUpPool();
+        var pool = ownedOnly   ? BuildOwnedPool() :
+                   isOrbReward ? BuildOrbPool()   : BuildLevelUpPool();
         if (pool.Count == 0) return new List<UpgradeCardInfo>();
 
         var result = new List<UpgradeCardInfo>();
@@ -121,6 +125,7 @@ public class UpgradeManager : NetworkBehaviour
         foreach (var w in allWeapons)
         {
             if (w == null || w.tier != WeaponTier.Normal) continue;
+            if (!IsWeaponAvailable(w)) continue;   // exclusive ของตัวละครอื่น → ข้าม
 
             if (!weaponManager.HasWeapon(w))
             {
@@ -172,6 +177,7 @@ public class UpgradeManager : NetworkBehaviour
         foreach (var w in weaponManager.GetEquippedWeapons())
         {
             if (w == null || w.tier != WeaponTier.Normal) continue;
+            if (!IsWeaponAvailable(w)) continue;
             if (w.superVersion == null) continue;
             int lv = weaponManager.GetWeaponLevel(w);
             if (lv < w.MaxLevel - 1) continue;                       // ยังไม่ถึง Lv5
@@ -207,6 +213,79 @@ public class UpgradeManager : NetworkBehaviour
         // 3. Fallback — ถ้าไม่มี Super/Fusion → ใช้ pool เดียวกับ Level Up
         if (pool.Count == 0)
             return BuildLevelUpPool();
+
+        return pool;
+    }
+
+    // ── Owned Pool — weapon/stat ที่ผู้เล่นมีอยู่แล้ว + Super/Fusion ที่ทำได้ (ไม่มี WeaponNew) ──
+    List<UpgradeCardInfo> BuildOwnedPool()
+    {
+        var pool     = new List<UpgradeCardInfo>();
+        var equipped = weaponManager.GetEquippedWeapons();
+
+        // WeaponLevelUp — weapon ที่มีอยู่ + ยังไม่ max level
+        foreach (var w in equipped)
+        {
+            if (w == null) continue;
+            if (!IsWeaponAvailable(w)) continue;
+            int lv = weaponManager.GetWeaponLevel(w);
+            if (lv + 1 >= w.MaxLevel) continue;
+            pool.Add(new UpgradeCardInfo
+            {
+                type        = UpgradeCardType.WeaponLevelUp,
+                weapon      = w,
+                targetLevel = lv + 2
+            });
+        }
+
+        // WeaponSuper — Normal Lv5 + conditions ครบ + ยังไม่มี super
+        foreach (var w in equipped)
+        {
+            if (w == null || w.tier != WeaponTier.Normal) continue;
+            if (w.superVersion == null) continue;
+            if (weaponManager.GetWeaponLevel(w) < w.MaxLevel - 1) continue;
+            if (weaponManager.HasWeapon(w.superVersion)) continue;
+            if (!CheckSuperConditions(w)) continue;
+            pool.Add(new UpgradeCardInfo
+            {
+                type   = UpgradeCardType.WeaponSuper,
+                weapon = w
+            });
+        }
+
+        // WeaponFusion — Super คู่ที่ตรง recipe + ยังไม่มี fusion
+        foreach (var recipe in allRecipes)
+        {
+            if (recipe == null || recipe.fusionResult == null) continue;
+            if (weaponManager.HasWeapon(recipe.fusionResult)) continue;
+            if (!equipped.Contains(recipe.superWeaponA)) continue;
+            if (!equipped.Contains(recipe.superWeaponB)) continue;
+            pool.Add(new UpgradeCardInfo
+            {
+                type         = UpgradeCardType.WeaponFusion,
+                weapon       = recipe.fusionResult,
+                fusionRecipe = recipe
+            });
+        }
+
+        // Stat — stat ที่มีอยู่แล้ว (lv > 0) + ยังไม่ max
+        foreach (var s in allStats)
+        {
+            if (s == null) continue;
+            int lv = statManager.GetStatLevel(s.statType);
+            if (lv <= 0) continue;
+            if (lv >= s.MaxLevel) continue;
+            pool.Add(new UpgradeCardInfo
+            {
+                type             = UpgradeCardType.Stat,
+                stat             = s,
+                currentStatLevel = lv
+            });
+        }
+
+        // fallback — ถ้าไม่มีอะไรใน owned pool → ใช้ level-up pool ปกติ
+        if (pool.Count == 0)
+            pool = BuildLevelUpPool();
 
         return pool;
     }
@@ -254,6 +333,18 @@ public class UpgradeManager : NetworkBehaviour
                 statManager.ApplyStat(card.stat, playerMove);
                 break;
         }
+    }
+
+    // ── Character Exclusive Check ─────────────────────────────────────────
+    /// <summary>
+    /// true = weapon นี้ใช้ได้กับตัวละครของ player นี้
+    /// false = เป็น exclusive ของตัวละครอื่น → ไม่ขึ้นใน pool
+    /// </summary>
+    bool IsWeaponAvailable(WeaponData w)
+    {
+        if (w == null) return false;
+        if (w.exclusiveCharacter == null) return true;          // ไม่ exclusive → ทุกคนได้
+        return w.exclusiveCharacter == myCharacter;             // ตรงกับตัวละครของตัวเอง
     }
 
     // ── Super Condition Check ─────────────────────────────────────────────

@@ -18,12 +18,24 @@ MonoBehaviour:
     \u0E41\u0E25\u0E49\u0E27 Dash+Slash"
   portrait: {fileID: 0}
   icon: {fileID: 0}
-  startingWeapon: {fileID: 11400000, guid: 5d6a54a1e6c6caa40ae093305e76c879, type: 2}
-  additionalWeapons:
-  - {fileID: 11400000, guid: bb8ae4cf41c4fdc4c85c6f0abab933b5, type: 2}
-  - {fileID: 11400000, guid: 38823361fa45e6547a9801072865dfda, type: 2}
   baseHealth: 120
   baseMoveSpeed: 5.5
+  startingWeapon: {fileID: 11400000, guid: 5d6a54a1e6c6caa40ae093305e76c879, type: 2}
+  additionalWeapons: []
+  abilities:
+  - {fileID: 11400000, guid: 21229689a26c6d1429cf4646873534ee, type: 2}
+  - {fileID: 11400000, guid: 943409d2d4956014ab2987802397d1ef, type: 2}
+  passiveIcon: {fileID: 0}
+  passiveName: 
   passiveDescription: "Runic Blade \u2014 Dash \u0E17\u0E38\u0E01 20 units \u0E40\u0E14\u0E34\u0E19
     \u0E14\u0E32\u0E40\u0E21\u0E08 +0\u201315% \u0E15\u0E32\u0E21\u0E23\u0E30\u0E22\u0E30
     \u0E23\u0E31\u0E1A Shield 25% \u0E14\u0E32\u0E40\u0E21\u0E08\u0E17\u0E35\u0E48\u0E17\u0E33"
+  weaponIcon: {fileID: 0}
+  weaponAbilityName: 
+  weaponAbilityDescription: 
+  abilityIcon: {fileID: 0}
+  abilityName: 
+  abilityDescription: 
+  ultimateIcon: {fileID: 0}
+  ultimateName: 
+  ultimateDescription: 

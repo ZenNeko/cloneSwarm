@@ -3,11 +3,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Valor — Riven's Q ability (Player-activated)
+/// Valor — Riven's Q ability  (AbilityBase — ไม่ใช่ WeaponBase)
 /// กด Q → Dash หาศัตรูที่ใกล้ที่สุด + AoE damage at landing
 /// เมื่อ Blade of Exile active → Wind Slash radial เพิ่มเติม
+///
+/// AbilityData (cooldown, damage, range) อยู่ใน AbilityData asset
 /// </summary>
-public class ValorWeapon : WeaponBase
+public class ValorWeapon : AbilityBase, IHUDAbility
 {
     [Header("Input Key")]
     [Tooltip("ปุ่มที่กดเพื่อใช้สกิล")]
@@ -20,20 +22,24 @@ public class ValorWeapon : WeaponBase
     [Header("Wind Slash (during Exile)")]
     public int windSlashCount = 4;
 
-    // ── Cooldown (manual — ไม่ใช้ base timer) ────────────────────────────
+    // ── Cooldown state ────────────────────────────────────────────────────
     public bool  IsOnCooldown      { get; private set; }
     public float CooldownRemaining { get; private set; }
     public float CooldownMax       { get; private set; }
 
-    // ── Events ────────────────────────────────────────────────────────────
-    /// <summary>UI ฟัง — normalized cooldown (0 = ready, 1 = just used)</summary>
+    // ── Events (UI ฟัง) ───────────────────────────────────────────────────
     public static event System.Action<ValorWeapon, float> OnCooldownChanged;
     public static event System.Action<ValorWeapon>        OnActivated;
 
-    protected override bool UsesCooldownTimer => false;
-
     private ChargeManager chargeManager;
     private bool          isDashing;
+
+    // ── IHUDAbility ───────────────────────────────────────────────────────
+    public string HUDSlotKey       => "Q";   // Valor ของ Riven อยู่ Q เสมอ
+    public string HUDKeyLabel      => activateKey.ToString();
+    public bool   IsActiveMode     => false;
+    public float  ActiveRemaining  => 0f;
+    public float  ActiveMax        => 0f;
 
     // ── Init ──────────────────────────────────────────────────────────────
     protected override void OnInit()
@@ -41,10 +47,10 @@ public class ValorWeapon : WeaponBase
         chargeManager = manager.GetComponent<ChargeManager>();
     }
 
-    // ── Override Update — input + cooldown tick ───────────────────────────
-    protected override void Update()
+    // ── Update — input + cooldown tick ────────────────────────────────────
+    void Update()
     {
-        // Cooldown countdown (runs on all clients for UI sync)
+        // Cooldown countdown (ทุก client — เพื่อ UI sync)
         if (IsOnCooldown)
         {
             CooldownRemaining = Mathf.Max(0f, CooldownRemaining - Time.deltaTime);
@@ -63,11 +69,12 @@ public class ValorWeapon : WeaponBase
             Activate();
     }
 
-    // ── Activate (called on key press) ────────────────────────────────────
+    // ── Activate ──────────────────────────────────────────────────────────
     void Activate()
     {
         var ld = data.GetLevelData(currentLevel);
 
+        // Cooldown scale ตาม Ability Haste
         float cd = ld.cooldown;
         if (manager.statManager != null) cd *= manager.statManager.GetCooldownMultiplier();
         CooldownMax       = cd;
@@ -76,36 +83,51 @@ public class ValorWeapon : WeaponBase
         OnCooldownChanged?.Invoke(this, 1f);
         OnActivated?.Invoke(this);
 
-        Transform target = FindNearestEnemy(ld.range * 1.5f);
-        if (target == null) return;
-
-        Vector3 dir = target.position - transform.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude < 0.001f) return;
+        // ทิศ dash = ทิศที่ผู้เล่นกด input อยู่
+        // fallback → ทิศหาศัตรูที่ใกล้สุด → transform.forward
+        Vector3 dir = manager.playerMove?.MoveDirection ?? Vector3.zero;
+        if (dir.sqrMagnitude < 0.001f)
+        {
+            Transform nearest = FindNearestEnemy(ld.range * 1.5f);
+            dir = nearest != null
+                ? (nearest.position - transform.position)
+                : transform.forward;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.001f) dir = transform.forward;
+            dir = dir.normalized;
+        }
 
         float damage = RollDamage(ld.damage);
-        StartCoroutine(DashAndBlast(dir.normalized, ld.range, damage, ld));
+        StartCoroutine(DashAndBlast(dir, ld.range, damage));
     }
 
-    protected override void OnFire(WeaponLevelData ld) { /* ไม่ใช้ */ }
-
     // ── Dash coroutine ────────────────────────────────────────────────────
-    IEnumerator DashAndBlast(Vector3 dir, float radius, float damage, WeaponLevelData ld)
+    IEnumerator DashAndBlast(Vector3 dir, float radius, float damage)
     {
         isDashing = true;
 
-        var rb = manager.playerMove?.GetComponent<Rigidbody>();
-        if (rb != null)
+        var pm = manager.playerMove;
+        var rb = pm?.GetComponent<Rigidbody>();
+        if (rb != null && pm != null)
         {
-            float speed   = dashDistance / dashDuration;
-            float elapsed = 0f;
+            pm.isDashing      = true;
+            rb.velocity       = Vector3.zero;
+
+            Vector3 startPos  = rb.position;
+            Vector3 endPos    = startPos + dir * dashDistance;
+            float   elapsed   = 0f;
+
             while (elapsed < dashDuration)
             {
-                rb.velocity = new Vector3(dir.x * speed, rb.velocity.y, dir.z * speed);
-                elapsed    += Time.deltaTime;
-                yield return null;
+                elapsed += Time.deltaTime;
+                float t  = Mathf.SmoothStep(0f, 1f, elapsed / dashDuration);
+                rb.MovePosition(Vector3.Lerp(startPos, endPos, t));
+                yield return new WaitForFixedUpdate();
             }
-            rb.velocity = new Vector3(0f, rb.velocity.y, 0f);
+
+            rb.MovePosition(endPos);
+            rb.velocity  = Vector3.zero;
+            pm.isDashing = false;
         }
         else yield return null;
 
@@ -115,12 +137,13 @@ public class ValorWeapon : WeaponBase
         // Wind Slash — เฉพาะตอน Blade of Exile active
         if (chargeManager != null && chargeManager.IsExileActive)
         {
-            float windDmg = damage * 0.8f;
+            float windDmg  = damage * 0.8f;
+            float maxRange = data.GetLevelData(currentLevel).range * 2f;
             for (int i = 0; i < windSlashCount; i++)
             {
                 float   angle    = i * (360f / windSlashCount);
                 Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                manager.FireRaycastServerRpc(transform.position, slashDir, windDmg, ld.range * 2f);
+                manager.FireRaycastServerRpc(transform.position, slashDir, windDmg, maxRange);
             }
         }
 

@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
+  m_Name: WD_RadiantAura
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: RadiantAura
+  description: RadiantAura
+  icon: {fileID: 0}
+  tier: 0
+  prefab: {fileID: 3833827243480728698, guid: a455d33192da17d4cb89e94e366fdb70, type: 3}
+  aimMode: 0
+  projectilePrefab: {fileID: 0}
+  hitVfxPrefab: {fileID: 0}
+  levels:
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    piercing: 0
+    levelUpText: 
+  superVersion: {fileID: 11400000, guid: 78c82c6cdaac98d48ae8fe1b4f7219e8, type: 2}
+  superConditions:
+  - conditionType: 0
+    requiredStatType: 6
+    requiredLevel: 1
+    requiredWeapon: {fileID: 0}
+  weight: 100
+  exclusiveCharacter: {fileID: 0}

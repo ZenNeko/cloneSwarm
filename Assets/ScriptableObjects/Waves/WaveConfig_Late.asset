@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 766702d858a184344b36b0b34a61ab26, type: 3}
+  m_Name: WaveConfig_Late
+  m_EditorClassIdentifier: Assembly-CSharp::WaveConfig
+  enemies:
+  - prefab: {fileID: 8488229791825531515, guid: 4941ee9aeed687b41a2474d8405fce8c, type: 3}
+    weight: 3
+  - prefab: {fileID: 2402988415092806218, guid: eff16e8810434fc41ae8021a3f90042e, type: 3}
+    weight: 1
+  - prefab: {fileID: 4056246362314654098, guid: 82f067f2cd3a45443815f62ad9b592e1, type: 3}
+    weight: 3
+  - prefab: {fileID: 7186043349015820620, guid: 6dce6d264bf400a48a28c2ef541fb63e, type: 3}
+    weight: 3
+  spawnIntervalOverride: 0

@@ -13,8 +13,6 @@ using UnityEngine;
 /// </summary>
 public class PlasmaWhipWeapon : WeaponBase
 {
-    protected override void OnInit() => aimMode = AimMode.AutoNearest;
-
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 center = transform.position + Vector3.up * 0.5f;

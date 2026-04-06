@@ -5,26 +5,35 @@ using TMPro;
 
 /// <summary>
 /// HUD ในเกมทั้งหมด — HP, EXP, Level, Timer, Announcement
-/// + Charge Bar (Riven) + Ability Slots Q/E
-/// (รวม ChargeBarUI และ AbilityHUDUI เข้ามาแล้ว)
+///
+/// ── Extensible Ability Slots (Q / E / R) ──
+///   ค้นหา IHUDAbility ผ่าน GetComponentsInChildren อัตโนมัติ
+///   → ไม่ต้อง hardcode character ใดๆ ลงใน GameHUD
+///
+/// ── Extensible Passive Bar ──
+///   ค้นหา IHUDPassiveBar ผ่าน GetComponentInChildren อัตโนมัติ
+///   → รองรับ ChargeManager (Riven), GunnerPassive, HunterPassive ฯลฯ
+///
+/// เพิ่ม character ใหม่: สร้าง ability/weapon script ที่ implement
+///   IHUDAbility (ระบุ HUDSlotKey = "Q"/"E"/"R") หรือ IHUDPassiveBar
+///   แล้ว GameHUD จะ detect และแสดงผลอัตโนมัติ
 /// </summary>
 public class GameHUD : MonoBehaviour
 {
     [Header("HP")]
     public Image           hpFill;
-    public TextMeshProUGUI hpText;             // "85 / 100"
+    public TextMeshProUGUI hpText;
 
-    [Header("Shield Bar (Riven passive)")]
-    [Tooltip("Image ข้างบน HP bar แสดง shield — ซ่อนถ้าไม่มี shield")]
+    [Header("Shield Bar")]
     public Image           shieldFill;
-    public GameObject      shieldBarRoot;      // parent ที่ SetActive
+    public GameObject      shieldBarRoot;
 
     [Header("EXP")]
     public Image           expFill;
-    public TextMeshProUGUI levelText;          // "Lv 5"
+    public TextMeshProUGUI levelText;
 
     [Header("Timer")]
-    public TextMeshProUGUI timerLabel;         // "05:32"
+    public TextMeshProUGUI timerLabel;
 
     [Header("Announcement")]
     public TextMeshProUGUI announcementLabel;
@@ -35,58 +44,48 @@ public class GameHUD : MonoBehaviour
     public TextMeshProUGUI respawnCountdownText;
 
     // ─────────────────────────────────────────────────────────────────────
-    [Header("── Charge Bar (ซ่อนอัตโนมัติถ้าตัวละครไม่ใช่ Riven) ──")]
-    public GameObject      chargeBarRoot;      // parent — ซ่อน/แสดงทั้งก้อน
-    public Image           chargeBarFill;      // Image Type = Filled, Horizontal
-    public TextMeshProUGUI chargeBarText;      // แสดง "READY!" หรือ "0–100"
-
-    [Header("Charge Bar Colors")]
-    public Color chargeNormalColor = new Color(0.2f, 0.8f, 1f);
-    public Color chargeFillColor   = new Color(1f, 0.9f, 0f);
-    public Color chargeExileColor  = new Color(1f, 0.55f, 0.1f);
+    [Header("── Passive Bar ──")]
+    public GameObject      chargeBarRoot;
+    public Image           chargeBarFill;
+    public TextMeshProUGUI chargeBarText;
 
     // ─────────────────────────────────────────────────────────────────────
-    [Header("── Ability Slots Q / E (ซ่อนถ้าไม่ใช่ Riven) ──")]
+    [Header("── Ability Slots ──")]
     public AbilitySlotUI qSlot;
     public AbilitySlotUI eSlot;
 
     [Header("Ability Slot Colors")]
     public Color abilityReadyColor    = Color.white;
     public Color abilityCooldownColor = new Color(0.35f, 0.35f, 0.35f);
-    public Color abilityExileColor    = new Color(1f, 0.6f, 0.1f);
+    public Color abilityActiveColor   = new Color(1f, 0.85f, 0.1f);    // glow เมื่อ active mode
 
     // ─────────────────────────────────────────────────────────────────────
     [System.Serializable]
     public class AbilitySlotUI
     {
-        public GameObject      root;           // ซ่อน/แสดงทั้ง slot
+        public GameObject      root;
         public Image           iconImage;
-        public Image           cooldownFill;   // Image Type=Filled, Radial360, fillOrigin=Top
-        public TextMeshProUGUI cooldownText;   // วินาทีที่เหลือ / "!"
-        public TextMeshProUGUI keyHintText;    // "Q" / "E"
-        public GameObject      exileGlow;      // optional
+        public Image           cooldownFill;
+        public TextMeshProUGUI cooldownText;
+        public TextMeshProUGUI keyHintText;
+        [UnityEngine.Serialization.FormerlySerializedAs("exileGlow")]
+        public GameObject      activeGlow;
     }
 
     // ── Internal ──────────────────────────────────────────────────────────
-    private playermove            localPlayer;
-    private float                 localElapsed;
+    private playermove   localPlayer;
+    private float        localElapsed;
 
-    // Riven-specific
-    private ChargeManager         chargeManager;
-    private ValorWeapon           valorWeapon;
-    private BladeOfExileWeapon    exileWeapon;
-    private bool                  rivenEventsSubscribed;
-    private bool                  wasExileActive;
+    // Interface references — ค้นหาจาก player components
+    private IHUDAbility    qAbility;
+    private IHUDAbility    eAbility;
+    private IHUDPassiveBar passiveBar;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Start()
     {
         if (announcementLabel) announcementLabel.gameObject.SetActive(false);
 
-        // ซ่อน Riven UI จนกว่าจะยืนยัน
-        SetChargeBarVisible(false);
-        SetAbilitySlotVisible(qSlot, false);
-        SetAbilitySlotVisible(eSlot, false);
         if (shieldBarRoot) shieldBarRoot.SetActive(false);
 
         StartCoroutine(WaitAndSubscribeTimeline());
@@ -118,8 +117,6 @@ public class GameHUD : MonoBehaviour
 
         if (GameTimeline.Instance != null)
             GameTimeline.Instance.gameTime.OnValueChanged -= OnTimeChanged;
-
-        UnsubscribeRivenEvents();
     }
 
     // ── Update ────────────────────────────────────────────────────────────
@@ -128,22 +125,23 @@ public class GameHUD : MonoBehaviour
         localElapsed += Time.deltaTime;
         UpdateTimerLabel(localElapsed);
 
-        // Shield bar update (Server-side value → poll ทุก frame)
+        // Shield bar
         if (localPlayer != null && shieldBarRoot != null)
         {
-            float shield = localPlayer.shieldHP;
-            float maxHP  = localPlayer.netMaxHealth.Value;
+            float shield    = localPlayer.netShieldHP.Value;
+            float maxHP     = localPlayer.netMaxHealth.Value;
             bool  hasShield = shield > 0.5f;
             shieldBarRoot.SetActive(hasShield);
             if (hasShield && shieldFill)
-                shieldFill.fillAmount = Mathf.Clamp01(shield / (maxHP * 0.5f)); // แสดง relative to 50% max HP
+                shieldFill.fillAmount = Mathf.Clamp01(shield / (maxHP * 0.5f));
         }
 
-        // Ability cooldown text update (ต้องการ smooth countdown)
-        UpdateAbilityCooldown(qSlot, valorWeapon?.IsOnCooldown ?? false,
-                              valorWeapon?.CooldownRemaining ?? 0f,
-                              valorWeapon?.CooldownMax       ?? 8f);
-        UpdateAbilityCooldownExile();
+        // Ability slots — poll ทุก frame (ไม่ต้องใช้ events)
+        UpdateAbilitySlot(qSlot, qAbility);
+        UpdateAbilitySlot(eSlot, eAbility);
+
+        // Passive bar
+        UpdatePassiveBar();
     }
 
     // ── Timeline ──────────────────────────────────────────────────────────
@@ -156,66 +154,124 @@ public class GameHUD : MonoBehaviour
 
     void OnTimeChanged(float _, float v) => localElapsed = v;
 
-    // ── Find Local Player (+ Riven check) ─────────────────────────────────
+    // ── Find Local Player ─────────────────────────────────────────────────
     IEnumerator WaitAndFindLocalPlayer()
     {
         while (localPlayer == null)
         {
             foreach (var pm in FindObjectsByType<playermove>(FindObjectsSortMode.None))
-            {
                 if (pm.IsOwner) { OnPlayerSpawned(pm.transform); break; }
-            }
             yield return new WaitForSeconds(0.4f);
         }
-
-        // พยายามหา Riven weapons ซ้ำจนกว่าจะเจอ (weapon อาจ spawn ช้า)
-        StartCoroutine(WaitAndFindRivenAbilities());
+        StartCoroutine(WaitAndFindAbilities());
     }
 
-    IEnumerator WaitAndFindRivenAbilities()
+    // ── Ability Discovery (Interface-based) ───────────────────────────────
+    IEnumerator WaitAndFindAbilities()
     {
-        // รอนานสุด 5 วินาที
-        float timeout = 5f;
-        while (timeout > 0f && (chargeManager == null || valorWeapon == null || exileWeapon == null))
+        // รอ 0.5s ให้ OnNetworkSpawn + SpawnWeapon/SpawnAbility เสร็จก่อน
+        yield return new WaitForSeconds(0.5f);
+
+        // สแกนซ้ำสูงสุด 12 ครั้ง (6s) — apply ผลทันทีทุก iteration
+        for (int attempt = 0; attempt < 12; attempt++)
         {
             foreach (var pwm in FindObjectsByType<PlayerWeaponManager>(FindObjectsSortMode.None))
             {
                 if (!pwm.IsOwner) continue;
-                if (chargeManager == null) chargeManager = pwm.GetComponent<ChargeManager>();
-                if (valorWeapon   == null) valorWeapon   = pwm.GetComponentInChildren<ValorWeapon>();
-                if (exileWeapon   == null) exileWeapon   = pwm.GetComponentInChildren<BladeOfExileWeapon>();
+                ScanAbilities(pwm.gameObject);
             }
-            timeout -= 0.4f;
-            yield return new WaitForSeconds(0.4f);
-        }
 
-        bool isRiven = chargeManager != null &&
-                       pwm_HasBunnyHop();
+            // ครบทุกอย่างแล้ว → หยุดเลย
+            bool hasAbility = qAbility != null || eAbility != null;
+            if (hasAbility && passiveBar != null) break;
 
-        if (isRiven)
-        {
-            SubscribeRivenEvents();
-
-            SetChargeBarVisible(true);
-            if (chargeBarFill)  chargeBarFill.fillAmount = 0f;
-            if (chargeBarFill)  chargeBarFill.color      = chargeNormalColor;
-            if (chargeBarText)  chargeBarText.text        = "0";
-
-            SetAbilitySlotVisible(qSlot, valorWeapon != null);
-            SetAbilitySlotVisible(eSlot, exileWeapon != null);
-
-            if (qSlot.keyHintText != null)
-                qSlot.keyHintText.text = valorWeapon?.activateKey.ToString() ?? "Q";
-            if (eSlot.keyHintText != null)
-                eSlot.keyHintText.text = exileWeapon?.activateKey.ToString() ?? "E";
+            yield return new WaitForSeconds(0.5f);
         }
     }
 
-    bool pwm_HasBunnyHop()
+    void ScanAbilities(GameObject root)
     {
-        foreach (var pwm in FindObjectsByType<PlayerWeaponManager>(FindObjectsSortMode.None))
-            if (pwm.IsOwner && pwm.GetComponentInChildren<BunnyHopWeapon>() != null) return true;
-        return false;
+        // หา IHUDAbility ทุกตัว — assign ตาม HUDSlotKey
+        foreach (var ab in root.GetComponentsInChildren<IHUDAbility>(true))
+        {
+            switch (ab.HUDSlotKey)
+            {
+                case "Q": if (qAbility == null) qAbility = ab; break;
+                case "E": if (eAbility == null) eAbility = ab; break;
+            }
+        }
+
+        // หา IHUDPassiveBar ที่ IsActivePassive=true ก่อน (ถูก character)
+        // fallback → ตัวแรกที่เจอ (กรณีไม่มีตัวไหน active)
+        if (passiveBar == null)
+        {
+            foreach (var bar in root.GetComponentsInChildren<IHUDPassiveBar>(true))
+            {
+                if (bar.IsActivePassive) { passiveBar = bar; break; }
+            }
+            if (passiveBar == null)
+                passiveBar = root.GetComponentInChildren<IHUDPassiveBar>(true);
+        }
+    }
+
+    void ApplyAbilitySlots()
+    {
+        // slot และ passive bar แสดงตลอด — ตัวละครทุกตัวมีครบ
+        if (qSlot.keyHintText != null && qAbility != null) qSlot.keyHintText.text = qAbility.HUDKeyLabel;
+        if (eSlot.keyHintText != null && eAbility != null) eSlot.keyHintText.text = eAbility.HUDKeyLabel;
+    }
+
+    // ── Ability Slot Update (Polling) ─────────────────────────────────────
+    void UpdateAbilitySlot(AbilitySlotUI slot, IHUDAbility ab)
+    {
+        if (ab == null) return;
+
+        if (ab.IsActiveMode && ab.ActiveMax > 0f)
+        {
+            // Active Mode: แสดง countdown drain จาก max → 0
+            float norm = ab.ActiveRemaining / ab.ActiveMax;
+            if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
+            if (slot.iconImage     != null) slot.iconImage.color = abilityActiveColor;
+            if (slot.activeGlow    != null) slot.activeGlow.SetActive(true);
+            if (slot.cooldownText  != null)
+                slot.cooldownText.text = ab.ActiveRemaining > 0.5f
+                    ? $"{ab.ActiveRemaining:F1}" : "";
+        }
+        else if (ab.IsOnCooldown && ab.CooldownMax > 0f)
+        {
+            // Cooldown: fill drain จาก 1 → 0
+            float norm = ab.CooldownRemaining / ab.CooldownMax;
+            if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
+            if (slot.iconImage     != null) slot.iconImage.color = abilityCooldownColor;
+            if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
+            if (slot.cooldownText  != null)
+                slot.cooldownText.text = ab.CooldownRemaining > 1f
+                    ? $"{Mathf.CeilToInt(ab.CooldownRemaining)}" : $"{ab.CooldownRemaining:F1}";
+        }
+        else
+        {
+            // Ready
+            if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = 0f;
+            if (slot.iconImage     != null) slot.iconImage.color = abilityReadyColor;
+            if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
+            if (slot.cooldownText  != null) slot.cooldownText.text = "";
+        }
+    }
+
+    // ── Passive Bar Update (Polling) ──────────────────────────────────────
+    void UpdatePassiveBar()
+    {
+        if (passiveBar == null) return;
+
+        float norm = passiveBar.NormalizedValue;
+        if (chargeBarFill != null)
+        {
+            chargeBarFill.fillAmount = Mathf.Clamp01(norm);
+            chargeBarFill.color      = passiveBar.IsTriggered
+                ? passiveBar.TriggeredColor : passiveBar.BarColor;
+        }
+        if (chargeBarText != null)
+            chargeBarText.text = passiveBar.BarText;
     }
 
     // ── HP ────────────────────────────────────────────────────────────────
@@ -302,142 +358,6 @@ public class GameHUD : MonoBehaviour
         announcementLabel.gameObject.SetActive(false);
     }
 
-    // ── Riven: Subscribe / Unsubscribe ────────────────────────────────────
-    void SubscribeRivenEvents()
-    {
-        if (rivenEventsSubscribed) return;
-        rivenEventsSubscribed = true;
-
-        ChargeManager.OnChargeChanged              += OnChargeChanged;
-        ValorWeapon.OnCooldownChanged              += OnValorCooldown;
-        ValorWeapon.OnActivated                    += OnValorActivated;
-        BladeOfExileWeapon.OnCooldownChanged       += OnExileCooldown;
-        BladeOfExileWeapon.OnExileStateChanged     += OnExileState;
-    }
-
-    void UnsubscribeRivenEvents()
-    {
-        if (!rivenEventsSubscribed) return;
-        rivenEventsSubscribed = false;
-
-        ChargeManager.OnChargeChanged              -= OnChargeChanged;
-        ValorWeapon.OnCooldownChanged              -= OnValorCooldown;
-        ValorWeapon.OnActivated                    -= OnValorActivated;
-        BladeOfExileWeapon.OnCooldownChanged       -= OnExileCooldown;
-        BladeOfExileWeapon.OnExileStateChanged     -= OnExileState;
-    }
-
-    // ── Riven: Charge Bar ─────────────────────────────────────────────────
-    void OnChargeChanged(float normalized)
-    {
-        if (chargeBarFill == null) return;
-
-        bool exile = chargeManager != null && chargeManager.IsExileActive;
-
-        chargeBarFill.fillAmount = normalized;
-        chargeBarFill.color      = normalized >= 0.99f ? chargeFillColor
-                                 : exile                ? chargeExileColor
-                                                        : chargeNormalColor;
-        if (chargeBarText != null)
-            chargeBarText.text = normalized >= 0.99f ? "READY!"
-                               : $"{Mathf.RoundToInt(normalized * 100)}";
-    }
-
-    // ── Riven: Exile (charge bar color change) ───────────────────────────
-    void OnExileState(BladeOfExileWeapon src, bool active)
-    {
-        if (src != exileWeapon) return;
-
-        // อัปเดตสี Charge Bar
-        if (chargeBarFill && chargeBarFill.fillAmount < 0.99f)
-            chargeBarFill.color = active ? chargeExileColor : chargeNormalColor;
-
-        // Exile glow บน E slot
-        if (eSlot.exileGlow   != null) eSlot.exileGlow.SetActive(active);
-        if (eSlot.iconImage   != null) eSlot.iconImage.color = active ? abilityExileColor : abilityReadyColor;
-
-        wasExileActive = active;
-
-        if (!active)
-        {
-            // Exile หมด → เข้า cooldown ทันที
-            SetAbilityCD(eSlot, 1f, exileWeapon?.CooldownMax ?? 80f);
-        }
-    }
-
-    // ── Riven: Valor cooldown ─────────────────────────────────────────────
-    void OnValorCooldown(ValorWeapon src, float normalized)
-    {
-        if (src != valorWeapon) return;
-        SetAbilityCD(qSlot, normalized, valorWeapon.CooldownMax);
-    }
-
-    void OnValorActivated(ValorWeapon src)
-    {
-        if (src != valorWeapon) return;
-        // Flash effect สามารถเพิ่มได้ทีหลัง
-    }
-
-    // ── Riven: Exile cooldown ─────────────────────────────────────────────
-    void OnExileCooldown(BladeOfExileWeapon src, float normalized)
-    {
-        if (src != exileWeapon) return;
-        SetAbilityCD(eSlot, normalized, exileWeapon.CooldownMax);
-    }
-
-    // ── Ability slot helpers ──────────────────────────────────────────────
-    void SetAbilityCD(AbilitySlotUI slot, float normalized, float cdMax)
-    {
-        bool onCD = normalized > 0.001f;
-
-        if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = onCD ? normalized : 0f;
-        if (slot.iconImage     != null) slot.iconImage.color = onCD ? abilityCooldownColor : abilityReadyColor;
-
-        if (slot.cooldownText != null)
-        {
-            if (!onCD) { slot.cooldownText.text = ""; return; }
-            float remain = normalized * cdMax;
-            slot.cooldownText.text = remain > 1f ? $"{Mathf.CeilToInt(remain)}" : $"{remain:F1}";
-        }
-    }
-
-    void UpdateAbilityCooldown(AbilitySlotUI slot, bool onCD, float remaining, float cdMax)
-    {
-        // smooth text update ทุก frame (normalized คำนวณใหม่จาก remaining)
-        if (!onCD || cdMax <= 0f) return;
-        float norm = remaining / cdMax;
-        if (slot.cooldownFill != null) slot.cooldownFill.fillAmount = norm;
-        if (slot.cooldownText != null)
-            slot.cooldownText.text = remaining > 1f ? $"{Mathf.CeilToInt(remaining)}" : $"{remaining:F1}";
-    }
-
-    void UpdateAbilityCooldownExile()
-    {
-        if (exileWeapon == null) return;
-
-        if (exileWeapon.IsExileActive)
-        {
-            // แสดง exile duration ที่เหลือ
-            float norm = exileWeapon.exileDuration > 0f
-                       ? exileWeapon.ExileRemaining / exileWeapon.exileDuration
-                       : 0f;
-            if (eSlot.cooldownFill != null) eSlot.cooldownFill.fillAmount = norm;
-            if (eSlot.cooldownText != null)
-                eSlot.cooldownText.text = $"{exileWeapon.ExileRemaining:F0}";
-        }
-        else if (exileWeapon.IsOnCooldown && exileWeapon.CooldownMax > 0f)
-        {
-            UpdateAbilityCooldown(eSlot, true, exileWeapon.CooldownRemaining, exileWeapon.CooldownMax);
-        }
-    }
-
-    void SetChargeBarVisible(bool v)
-    {
-        if (chargeBarRoot) chargeBarRoot.SetActive(v);
-    }
-
-    void SetAbilitySlotVisible(AbilitySlotUI slot, bool v)
-    {
-        if (slot.root != null) slot.root.SetActive(v);
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────
+    void SetAbilitySlotVisible(AbilitySlotUI slot, bool v) { if (slot?.root) slot.root.SetActive(v); }
 }

@@ -17,10 +17,20 @@ public class CharacterData : ScriptableObject
     public float baseHealth    = 100f;
     public float baseMoveSpeed = 5f;
 
-    [Header("Starting Weapons")]
-    public WeaponData   startingWeapon;
-    [Tooltip("Kit weapons เพิ่มเติม เช่น Riven มี Valor + Blade of Exile")]
-    public WeaponData[] additionalWeapons;
+    [Header("Starting Weapon")]
+    public WeaponData startingWeapon;
+
+    [Header("Passive Weapons (ไม่นับ Weapon Slot)")]
+    [Tooltip("Passive scripts เช่น HunterPassiveWeapon, GunnerPassiveWeapon\n" +
+             "Spawn เป็น child player แต่ไม่นับ Weapon Slot และไม่แสดงใน Weapon UI")]
+    [UnityEngine.Serialization.FormerlySerializedAs("additionalWeapons")]
+    public WeaponData[] passiveWeapons;
+
+    [Header("Abilities (Q / E / R)")]
+    [Tooltip("Ability ของ character — ใช้ AbilityData (ไม่ใช่ WeaponData)\n" +
+             "บริหารโดย PlayerAbilityManager ไม่นับ Weapon Slot\n" +
+             "เช่น Riven: ใส่ Valor (Q) และ Blade of Exile (E) ที่นี่")]
+    public AbilityData[] abilities;
 
     // ─────────────────────────────────────────────────────────────────────
     [Header("Passive")]

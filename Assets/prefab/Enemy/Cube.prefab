@@ -156,10 +156,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 3
+  suppressDefaultMovement: 0
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.4
-  maxHealth: 40
+  maxHealth: 100
   onDeath:
     m_PersistentCalls:
       m_Calls: []

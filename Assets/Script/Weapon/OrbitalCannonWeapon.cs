@@ -26,7 +26,6 @@ public class OrbitalCannonWeapon : WeaponBase
 
     protected override void OnInit()
     {
-        aimMode = AimMode.AutoNearest;
         SpawnOrbs(data.GetLevelData(currentLevel).projectileCount);
     }
 
@@ -64,9 +63,7 @@ public class OrbitalCannonWeapon : WeaponBase
                 Vector3 dir = (enemy.position - orbPos);
                 dir.y = 0f;
                 if (dir.sqrMagnitude > 0.01f)
-                    manager.FireProjectileServerRpc(
-                        orbPos, dir.normalized, projDmg,
-                        ld.projectileSpeed, 1, 0f, piercing: false);
+                    FireProjectile(orbPos, dir.normalized, projDmg, ld.projectileSpeed);
             }
         }
     }

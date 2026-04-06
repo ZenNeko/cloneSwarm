@@ -16,8 +16,14 @@ public class playermove : NetworkBehaviour
     [Header("Health Regen")]
     [Tooltip("HP ที่ฟื้นต่อวินาที (0 = ปิด)")]
     public float healthRegenPerSecond = 0f;
-    public float shieldHP = 0f;
+    [Tooltip("วินาทีที่ shield ค่อยๆ สลายจนหมด (นับจากครั้งล่าสุดที่ AddShield)")]
+    public float shieldDuration = 1f;
 
+    // NetworkVariable เพื่อให้ทุก client อ่านค่า shield ของตัวเองได้ (HUD, damage absorb)
+    public NetworkVariable<float> netShieldHP = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    // ใช้เฉพาะบน Server สำหรับ decay interpolation
     private float shieldAtLastAdd = 0f;
     private float shieldAddTime   = -999f;
 
@@ -34,6 +40,10 @@ public class playermove : NetworkBehaviour
 
     private Vector2    moveInput;
     private Rigidbody  rb;
+
+    /// <summary>ทิศที่ผู้เล่นกด input อยู่ (world space XZ, normalized)
+    /// Vector3.zero ถ้าไม่ได้กด — ใช้โดย dash weapons</summary>
+    public Vector3 MoveDirection => new Vector3(moveInput.x, 0f, moveInput.y).normalized;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -88,17 +98,24 @@ public class playermove : NetworkBehaviour
         if (IsServer && healthRegenPerSecond > 0f && netHealth.Value < maxHealth)
             netHealth.Value = Mathf.Min(netHealth.Value + healthRegenPerSecond * Time.deltaTime, maxHealth);
 
-        // Shield decay — shield depletes to 0 over 1 second
-        if (IsServer && shieldHP > 0f)
+        // Shield decay — depletes to 0 over shieldDuration * Duration stat (Server only)
+        if (IsServer && netShieldHP.Value > 0f)
         {
-            float elapsed = Time.time - shieldAddTime;
-            shieldHP = elapsed >= 1f ? 0f : Mathf.Lerp(shieldAtLastAdd, 0f, elapsed);
+            float durationMult      = GetComponent<PlayerStatManager>()?.GetDurationMultiplier() ?? 1f;
+            float effectiveDuration = shieldDuration * durationMult;
+            float elapsed           = Time.time - shieldAddTime;
+            netShieldHP.Value = elapsed >= effectiveDuration ? 0f
+                              : Mathf.Lerp(shieldAtLastAdd, 0f, elapsed / effectiveDuration);
         }
     }
+
+    /// <summary>ตั้งเป็น true ระหว่าง dash — ทำให้ FixedUpdate ไม่เขียนทับ velocity</summary>
+    [HideInInspector] public bool isDashing;
 
     void FixedUpdate()
     {
         if (!IsOwner || rb == null || isDead.Value) return;
+        if (isDashing) return;   // ปล่อยให้ dash coroutine ควบคุม position เอง
 
         Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y);
         var   sm            = IsOwner ? GetComponent<PlayerStatManager>() : null;
@@ -124,11 +141,11 @@ public class playermove : NetworkBehaviour
         if (sm != null) amount = Mathf.Max(1f, amount - sm.GetArmorValue());
 
         // Shield absorption
-        if (shieldHP > 0f)
+        if (netShieldHP.Value > 0f)
         {
-            float absorbed = Mathf.Min(shieldHP, amount);
-            shieldHP -= absorbed;
-            amount   -= absorbed;
+            float absorbed = Mathf.Min(netShieldHP.Value, amount);
+            netShieldHP.Value -= absorbed;
+            amount            -= absorbed;
             if (amount <= 0f) return;
         }
 
@@ -219,9 +236,9 @@ public class playermove : NetworkBehaviour
     public void AddShield(float amount)
     {
         if (!IsServer) return;
-        shieldHP       += amount;
-        shieldAtLastAdd = shieldHP;
-        shieldAddTime   = Time.time;
+        netShieldHP.Value += amount;
+        shieldAtLastAdd    = netShieldHP.Value;
+        shieldAddTime      = Time.time;
     }
 
     /// <summary>Temporary move speed bonus (additive %) — จาก Blade of Exile</summary>
@@ -230,16 +247,32 @@ public class playermove : NetworkBehaviour
     public float GetHealthPercent() => netHealth.Value / maxHealth;
     public float GetCurrentHealth() => netHealth.Value;
 
-    /// <summary>ตั้งค่า base stats จาก CharacterData — เรียกก่อน OnNetworkSpawn</summary>
+    /// <summary>ตั้งค่า base stats จาก CharacterData — เรียกจาก PlayerWeaponManager.OnNetworkSpawn</summary>
     public void SetBaseStats(float hp, float speed)
     {
         maxHealth = hp;
         moveSpeed = speed;
-        // ถ้า spawn แล้ว (Server) ให้ sync ทันที
+
         if (IsServer)
         {
+            // Host: update NetworkVariables โดยตรง
             netHealth.Value    = hp;
             netMaxHealth.Value = hp;
         }
+        else if (IsSpawned)
+        {
+            // Non-host Client: บอก Server ให้ update NetworkVariables
+            // (Server ตั้งค่า default จาก prefab ไว้ใน OnNetworkSpawn ยังไม่รู้ว่า character คือตัวไหน)
+            SyncBaseStatsServerRpc(hp);
+        }
+    }
+
+    /// <summary>Client บอก Server ค่า HP จริงของตัวละครที่เลือก</summary>
+    [ServerRpc]   // RequireOwnership = true (default) — only owner calls
+    void SyncBaseStatsServerRpc(float hp)
+    {
+        maxHealth          = hp;
+        netHealth.Value    = hp;
+        netMaxHealth.Value = hp;
     }
 }

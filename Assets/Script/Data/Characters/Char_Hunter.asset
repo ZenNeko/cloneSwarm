@@ -17,10 +17,25 @@ MonoBehaviour:
     \u0E43\u0E0A\u0E49 shotgun \u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E25\u0E31\u0E01"
   portrait: {fileID: 0}
   icon: {fileID: 0}
-  startingWeapon: {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
-  additionalWeapons: []
   baseHealth: 120
   baseMoveSpeed: 5.5
+  startingWeapon: {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
+  passiveWeapons:
+  - {fileID: 11400000, guid: 3f3fc2f8633042c4aa9aa3ae28c7effd, type: 2}
+  abilities:
+  - {fileID: 11400000, guid: 5b1e9c929a043fd4ba9a2f06404d7221, type: 2}
+  - {fileID: 11400000, guid: 58b16d0767654f145b6421acd4ffb442, type: 2}
+  passiveIcon: {fileID: 0}
+  passiveName: 
   passiveDescription: "\u0E22\u0E34\u0E07\u0E43\u0E19\u0E23\u0E30\u0E22\u0E30\u0E43\u0E01\u0E25\u0E49
     \u2014 damage \u0E40\u0E1E\u0E34\u0E48\u0E21 25% \u0E16\u0E49\u0E32\u0E28\u0E31\u0E15\u0E23\u0E39\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E23\u0E30\u0E22\u0E30
     3"
+  weaponIcon: {fileID: 0}
+  weaponAbilityName: 
+  weaponAbilityDescription: 
+  abilityIcon: {fileID: 0}
+  abilityName: 
+  abilityDescription: 
+  ultimateIcon: {fileID: 0}
+  ultimateName: 
+  ultimateDescription: 

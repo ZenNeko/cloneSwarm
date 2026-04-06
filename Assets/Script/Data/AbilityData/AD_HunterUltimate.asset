@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
+  m_Name: AD_HunterUltimate
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityData
+  abilityName: AD_HunterUltimate
+  description: AD_HunterUltimate
+  icon: {fileID: 0}
+  prefab: {fileID: 1961272562416535874, guid: 45641f6b844fe1a429210c07b7e60c84, type: 3}
+  levels:
+  - damage: 80
+    cooldown: 60
+    duration: 12
+    range: 20
+    levelUpText: 

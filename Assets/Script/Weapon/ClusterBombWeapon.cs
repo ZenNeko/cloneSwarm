@@ -16,8 +16,6 @@ public class ClusterBombWeapon : WeaponBase
     public float explosionRadius = 4f;
     public float fuseTime        = 1.2f;
 
-    protected override void OnInit() => aimMode = AimMode.MouseAim;
-
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 spawnPos  = transform.position + Vector3.up * 0.5f;

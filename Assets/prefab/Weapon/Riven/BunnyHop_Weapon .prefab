@@ -50,5 +50,14 @@ MonoBehaviour:
   aimMode: 0
   dashDistance: 4
   dashDuration: 0.15
+  exileProjectileRangeMult: 7
   runicMaxRange: 12
   shieldPercent: 0.25
+  _isSuper: 0
+  exileAoeMult: 1.5
+  windSlashCount: 2
+  windSlashDmgRatio: 0.6
+  windSlashRange: 8
+  exileProjectileSpeed: 45
+  dashTrailPrefab: {fileID: 0}
+  vfxDesignedRadius: 3

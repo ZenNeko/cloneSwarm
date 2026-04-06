@@ -171,7 +171,7 @@ public static class SwarmAssetGenerator
         CreateCharacter("Char_Riven",   "Riven",   "นักรบใช้ดาบ — สะสม CHARGE ขณะเดิน แล้ว Dash+Slash",
             wd_BunnyHop, 120f, 5.5f,
             "Runic Blade — Dash ทุก 20 units เดิน ดาเมจ +0–15% ตามระยะ รับ Shield 25% ดาเมจที่ทำ",
-            additionalWeapons: new[]{ wd_Valor, wd_BladeExile });
+            passiveWeapons: new[]{ wd_Valor, wd_BladeExile });
 
         // ── 7. Update UpgradeManager on Player Prefab ─────────────────────
         PatchUpgradeManager(
@@ -304,7 +304,7 @@ public static class SwarmAssetGenerator
     // ── Character Builder ─────────────────────────────────────────────────
     static CharacterData CreateCharacter(string assetName, string charName, string desc,
         WeaponData startWep, float hp, float speed, string passive,
-        WeaponData[] additionalWeapons = null)
+        WeaponData[] passiveWeapons = null)
     {
         string path     = $"{CHAR_PATH}/{assetName}.asset";
         var    existing = AssetDatabase.LoadAssetAtPath<CharacterData>(path);
@@ -313,7 +313,7 @@ public static class SwarmAssetGenerator
             existing.characterName      = charName;
             existing.description        = desc;
             existing.startingWeapon     = startWep;
-            existing.additionalWeapons  = additionalWeapons;
+            existing.passiveWeapons  = passiveWeapons;
             existing.baseHealth         = hp;
             existing.baseMoveSpeed      = speed;
             existing.passiveDescription = passive;
@@ -325,7 +325,7 @@ public static class SwarmAssetGenerator
         cd.characterName      = charName;
         cd.description        = desc;
         cd.startingWeapon     = startWep;
-        cd.additionalWeapons  = additionalWeapons;
+        cd.passiveWeapons  = passiveWeapons;
         cd.baseHealth         = hp;
         cd.baseMoveSpeed      = speed;
         cd.passiveDescription = passive;

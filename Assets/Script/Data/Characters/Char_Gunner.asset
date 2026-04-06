@@ -16,10 +16,25 @@ MonoBehaviour:
   description: "\u0E19\u0E31\u0E01\u0E22\u0E34\u0E07\u0E1B\u0E37\u0E19 \u0E40\u0E0A\u0E35\u0E48\u0E22\u0E27\u0E0A\u0E32\u0E0D\u0E2D\u0E32\u0E27\u0E38\u0E18\u0E23\u0E30\u0E22\u0E30\u0E44\u0E01\u0E25"
   portrait: {fileID: 0}
   icon: {fileID: 0}
-  startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
-  additionalWeapons: []
   baseHealth: 100
   baseMoveSpeed: 5
-  passiveDescription: "\u0E1E\u0E25\u0E34\u0E01\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E2D\u0E2D\u0E01\u0E41\u0E1A\u0E1A\u0E1E\u0E34\u0E40\u0E28\u0E29
-    \u2014 Crit \u0E04\u0E23\u0E31\u0E49\u0E07\u0E41\u0E23\u0E01\u0E43\u0E19\u0E17\u0E38\u0E01
-    3 \u0E27\u0E34 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E23\u0E30\u0E22\u0E30 cool down"
+  startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  additionalWeapons:
+  - {fileID: 11400000, guid: 950c08e488ec74d418c78c4751fb0ea4, type: 2}
+  abilities:
+  - {fileID: 11400000, guid: 40d26a4b1dcfb144b8822b6f26fbaf48, type: 2}
+  - {fileID: 11400000, guid: 4f14fe56702ce994c921a1edabb31c36, type: 2}
+  passiveIcon: {fileID: 0}
+  passiveName: 
+  passiveDescription: "\u0E17\u0E38\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E06\u0E48\u0E32\u0E04\u0E23\u0E1A
+    30 enemy \u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A MOVE SPPED 50% \u0E41\u0E25\u0E30
+    AbilityHaste 50 \u0E40\u0E1B\u0E47\u0E19\u0E40\u0E27\u0E25\u0E32 10 \u0E27\u0E34"
+  weaponIcon: {fileID: 0}
+  weaponAbilityName: 
+  weaponAbilityDescription: 
+  abilityIcon: {fileID: 0}
+  abilityName: 
+  abilityDescription: 
+  ultimateIcon: {fileID: 0}
+  ultimateName: 
+  ultimateDescription: 

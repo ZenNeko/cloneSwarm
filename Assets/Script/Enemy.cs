@@ -4,8 +4,15 @@ using UnityEngine.Events;
 
 public class Enemy : NetworkBehaviour
 {
+    // ── Global kill broadcast (Server → all clients) ───────────────────────
+    /// <summary>ยิงบน ALL clients ทุกครั้งที่ enemy ตาย — subscribe ด้วย GunnerPassiveWeapon</summary>
+    public static event System.Action OnAnyEnemyDied;
+    /// <summary>ยิงบน ALL clients ทุกครั้งที่ enemy โดนดาเมจ — subscribe ด้วย HunterPassiveWeapon</summary>
+    public static event System.Action OnAnyEnemyHit;
+
     [Header("Movement")]
     public float speed = 3f;
+    [HideInInspector] public bool suppressDefaultMovement = false;
 
     [Header("Contact Damage")]
     public float contactDamage  = 10f;
@@ -47,8 +54,9 @@ public class Enemy : NetworkBehaviour
 
         if (currentTarget != null)
         {
-            transform.position = Vector3.MoveTowards(
-                transform.position, currentTarget.position, speed * Time.deltaTime);
+            if (!suppressDefaultMovement)
+                transform.position = Vector3.MoveTowards(
+                    transform.position, currentTarget.position, speed * Time.deltaTime);
 
             // Distance-based damage (ไม่ต้องใช้ trigger collider)
             damageTimer += Time.deltaTime;
@@ -70,10 +78,12 @@ public class Enemy : NetworkBehaviour
         if (!IsServer) return;
 
         netHealth.Value = Mathf.Max(0f, netHealth.Value - amount);
+        NotifyHitClientRpc();
         if (netHealth.Value > 0f) return;
 
         onDeath.Invoke();
         SpawnExpOrb();
+        NotifyDeathClientRpc();
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
         else Destroy(gameObject);
     }
@@ -131,6 +141,18 @@ public class Enemy : NetworkBehaviour
         netHealth.Value = maxHealth;
         speed           = speed * speedMult;
         expReward       = expReward * expMult;
+    }
+
+    [ClientRpc]
+    void NotifyHitClientRpc()
+    {
+        OnAnyEnemyHit?.Invoke();
+    }
+
+    [ClientRpc]
+    void NotifyDeathClientRpc()
+    {
+        OnAnyEnemyDied?.Invoke();
     }
 
     public float GetHealthPercent() => netHealth.Value / maxHealth;

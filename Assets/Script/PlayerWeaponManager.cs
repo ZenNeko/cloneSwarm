@@ -39,34 +39,41 @@ public class PlayerWeaponManager : NetworkBehaviour
     {
         if (playerMove  == null) playerMove  = GetComponent<playermove>();
         if (statManager == null) statManager = GetComponent<PlayerStatManager>();
-        if (IsOwner)
-        {
-            // CharacterData: use manually assigned → then selection UI → then fallback
-            var cd = characterData ?? CharacterSelectUI.SelectedCharacter;
-            if (cd != null)
-            {
-                if (playerMove != null)
-                    playerMove.SetBaseStats(cd.baseHealth, cd.baseMoveSpeed);
-                var startWep = cd.startingWeapon ?? startingWeapon;
-                if (startWep != null) AddWeapon(startWep);
 
-                // Kit weapons เพิ่มเติม (เช่น Riven: Valor + Blade of Exile)
-                if (cd.additionalWeapons != null)
-                    foreach (var w in cd.additionalWeapons)
-                        if (w != null) AddWeapon(w);
-            }
-            else if (startingWeapon != null)
-            {
-                AddWeapon(startingWeapon);
-            }
+        if (!IsOwner) return;
+
+        // CharacterData: use manually assigned → then selection UI → then fallback
+        var cd = characterData ?? CharacterSelectUI.SelectedCharacter;
+        if (cd != null)
+        {
+            if (playerMove != null)
+                playerMove.SetBaseStats(cd.baseHealth, cd.baseMoveSpeed);
+
+            // Starting weapon (ปกติ — นับ weapon slot)
+            var startWep = cd.startingWeapon ?? startingWeapon;
+            if (startWep != null) AddWeapon(startWep);
+
+            // Passive weapons (ไม่นับ weapon slot — ไม่แสดงใน Weapon UI)
+            if (cd.passiveWeapons != null)
+                foreach (var w in cd.passiveWeapons)
+                    if (w != null) SpawnPassiveWeapon(w);
+
+            // Abilities (Q/E/R) — ส่งให้ PlayerAbilityManager จัดการแยก
+            var abilityMgr = GetComponent<PlayerAbilityManager>();
+            abilityMgr?.InitAbilities(cd);
+        }
+        else if (startingWeapon != null)
+        {
+            AddWeapon(startingWeapon);
         }
     }
 
     // ── Public API ────────────────────────────────────────────────────────
-    /// <summary>เพิ่ม weapon ใหม่ — คืน false ถ้า slot เต็มหรือมีอยู่แล้ว</summary>
+    /// <summary>เพิ่ม weapon ใหม่ — คืน false ถ้า slot เต็มหรือมีอยู่แล้ว
+    /// Ability ใช้ PlayerAbilityManager.AddAbility(AbilityData) แทน</summary>
     public bool AddWeapon(WeaponData data)
     {
-        if (data == null || slots.Count >= MaxWeaponSlots || HasWeapon(data)) return false;
+        if (data == null || HasWeapon(data) || slots.Count >= MaxWeaponSlots) return false;
         SpawnWeapon(data, 0);
         return true;
     }
@@ -103,6 +110,7 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── Queries ───────────────────────────────────────────────────────────
     public bool HasWeapon(WeaponData data) => slots.Exists(s => s.data == data);
+    /// <summary>ยังมี weapon slot ว่าง (abilities ไม่นับ — อยู่ใน PlayerAbilityManager แล้ว)</summary>
     public bool HasFreeSlot()              => slots.Count < MaxWeaponSlots;
 
     /// <summary>คืน level 0-indexed, -1 ถ้าไม่มี</summary>
@@ -119,7 +127,42 @@ public class PlayerWeaponManager : NetworkBehaviour
         return list;
     }
 
+    /// <summary>คืน WeaponBase script ทุกตัวที่ equipped — ใช้โดย HunterPassive</summary>
+    public List<WeaponBase> GetAllWeaponScripts()
+    {
+        var list = new List<WeaponBase>();
+        foreach (var s in slots)
+            if (s.script != null) list.Add(s.script);
+        return list;
+    }
+
+    /// <summary>Force-fire ทุก weapon ทันที ไม่สน cooldown — Hunter Passive trigger</summary>
+    public void ForceFireAllWeapons()
+    {
+        foreach (var s in slots)
+            s.script?.ExecuteFire();
+    }
+
     // ── Internal ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Spawn passive weapon script เป็น child ของ player
+    /// — ไม่นับ Weapon Slot, ไม่แสดงใน Weapon UI
+    /// — ใช้สำหรับ HunterPassiveWeapon, GunnerPassiveWeapon ฯลฯ
+    /// </summary>
+    void SpawnPassiveWeapon(WeaponData data)
+    {
+        if (data?.prefab == null)
+        {
+            Debug.LogWarning($"[WeaponManager] Passive '{data?.weaponName}': ไม่มี prefab");
+            return;
+        }
+        var go     = Instantiate(data.prefab, transform);
+        var script = go.GetComponent<WeaponBase>();
+        script?.Init(data, 0, this);
+        Debug.Log($"[WeaponManager] 🔹 Passive '{data.weaponName}' spawned (no slot)");
+    }
+
     void SpawnWeapon(WeaponData data, int level)
     {
         var slot = new WeaponSlot { data = data, level = level };
@@ -148,17 +191,46 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     [Header("Weapon Prefabs")]
-    public GameObject grenadePrefab;    // GrenadeProjectile NetworkObject
-    public GameObject minePrefab;       // MineObject NetworkObject
+    public GameObject boomerangPrefab;   // BoomerangProjectile NetworkObject
+    public GameObject grenadePrefab;       // GrenadeProjectile NetworkObject
+    public GameObject minePrefab;          // MineObject NetworkObject
+    public GameObject stickyRocketPrefab;  // StickyRocketProjectile NetworkObject
+    public GameObject giantRocketPrefab;   // GiantRocketProjectile NetworkObject
+    public GameObject missilePrefab;       // MissileProjectile NetworkObject
+    public GameObject funnelPrefab;        // FunnelObject NetworkObject
+
+    // ── ServerRpc: Boomerang ──────────────────────────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnBoomerangServerRpc(
+        Vector3 spawnPos, Vector3 direction,
+        float damage, float speed, float maxRange)
+    {
+        if (boomerangPrefab == null) return;
+        Quaternion rot = direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity;
+        var go   = Instantiate(boomerangPrefab, spawnPos, rot);
+        var proj = go.GetComponent<BoomerangProjectile>();
+        var no   = go.GetComponent<NetworkObject>();
+        if (proj == null || no == null) { Destroy(go); return; }
+        proj.damage        = damage;
+        proj.speed         = speed;
+        proj.maxRange      = maxRange;
+        proj.ownerClientId = OwnerClientId;
+        no.Spawn(true);
+        proj.Init(direction);
+    }
 
     // ── ServerRpc: Projectile ─────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
     public void FireProjectileServerRpc(
         Vector3 spawnPos, Vector3 baseDir,
         float damage, float projSpeed, int count, float spreadDeg,
-        bool piercing = false)
+        bool piercing = false, int projPrefabId = -1, float maxRange = -1f)
     {
-        if (projectilePrefab == null) return;
+        // หา prefab จาก NetworkedVFXPool registry (ทุก client มีข้อมูลเดียวกัน)
+        // fallback → projectilePrefab default บน manager
+        GameObject prefab = NetworkedVFXPool.Instance?.GetProjectilePrefab(projPrefabId)
+                            ?? projectilePrefab;
+        if (prefab == null) return;
 
         baseDir.y = 0f;
         if (baseDir.sqrMagnitude < 0.001f) baseDir = Vector3.forward;
@@ -170,14 +242,20 @@ public class PlayerWeaponManager : NetworkBehaviour
             float   angle = (i - (count - 1) * 0.5f) * spreadDeg;
             Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * baseDir;
 
-            var proj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+            var proj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(dir));
             var p    = proj.GetComponent<Projectile>();
             if (p == null) { Destroy(proj); continue; }
             p.damage   = damage;
             p.speed    = projSpeed;
             p.piercing = piercing;
+            if (maxRange > 0f) p.maxRange = maxRange;   // -1 = ใช้ค่าบน prefab
             p.InitDirection(dir);
-            proj.GetComponent<NetworkObject>()?.Spawn(true);
+
+            var netObj = proj.GetComponent<NetworkObject>();
+            if (netObj == null)
+                Debug.LogWarning($"[Projectile] '{prefab.name}' ไม่มี NetworkObject component — projectile จะ spawn บน Server เท่านั้น ไม่ถูก replicate ไปยัง clients!");
+            else
+                netObj.Spawn(true);
         }
     }
 
@@ -228,6 +306,60 @@ public class PlayerWeaponManager : NetworkBehaviour
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
 
+    // ── ServerRpc: Line AoE Box (LaserWeapon) ────────────────────────────
+    /// <summary>
+    /// AoE เส้นตรงแบบมีความกว้าง — ใช้ Physics.OverlapBox ตามแนวยิง
+    /// damage enemy ทุกตัวในกล่องสี่เหลี่ยม (width × height × range)
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void FireLineAoEServerRpc(
+        Vector3 origin, Vector3 direction,
+        float damage, float range, float width = 1.5f)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) return;
+        direction = direction.normalized;
+
+        // Box center = origin + dir*(range/2) เพื่อให้ box เริ่มจาก origin
+        Vector3    center      = origin + direction * (range * 0.5f);
+        Vector3    halfExtents = new Vector3(width * 0.5f, 1.2f, range * 0.5f);
+        Quaternion rotation    = Quaternion.LookRotation(direction);
+
+        int mask = LayerMask.GetMask("Enemy");
+
+        Collider[] cols;
+        if (mask == 0)
+        {
+            // Enemy layer ไม่ได้ตั้งค่า → scan ทุก layer แล้วกรองด้วย Tag
+            var all = Physics.OverlapBox(center, halfExtents, rotation);
+            var list = new System.Collections.Generic.List<Collider>();
+            foreach (var c in all)
+                if (c.CompareTag("Enemy")) list.Add(c);
+            cols = list.ToArray();
+        }
+        else
+        {
+            cols = Physics.OverlapBox(center, halfExtents, rotation, mask);
+        }
+
+        // ป้องกัน hit ซ้ำ (collider หลายอันบน enemy เดียวกัน)
+        var seen = new System.Collections.Generic.HashSet<int>();
+        foreach (var c in cols)
+        {
+            int id = c.gameObject.GetInstanceID();
+            if (!seen.Add(id)) continue;
+            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        }
+
+        ShowLineAoEVfxClientRpc(origin, origin + direction * range);
+    }
+
+    [ClientRpc]
+    void ShowLineAoEVfxClientRpc(Vector3 from, Vector3 to)
+    {
+        VFXFactory.PlayBeam(VFXType.LaserHit, from, to, duration: 0.18f);
+    }
+
     // ── ServerRpc: Raycast Pierce (Railgun / PlasmaWhip) ──────────────────
     [ServerRpc(RequireOwnership = false)]
     public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage, float maxDist = 50f)
@@ -248,8 +380,8 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ClientRpc]
     void ShowRaycastVfxClientRpc(Vector3 from, Vector3 to)
     {
-        // TODO: ใส่ LineRenderer / VFX effect ที่นี่
-        Debug.DrawLine(from, to, Color.cyan, 0.2f);
+        // Railgun / PlasmaWhip — beam + hit burst
+        VFXFactory.PlayBeam(VFXType.RailgunBeam, from, to, duration: 0.12f);
     }
 
     // ── ServerRpc: Drop Mine ──────────────────────────────────────────────
@@ -263,10 +395,183 @@ public class PlayerWeaponManager : NetworkBehaviour
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
 
+    // ── ServerRpc: Hunter Missiles (Q) ───────────────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnMissilesServerRpc(
+        Vector3[] spawnPositions, ulong[] targetNetIds,
+        float damage, float explosionRadius)
+    {
+        if (missilePrefab == null) return;
+        int count = Mathf.Min(spawnPositions.Length, targetNetIds.Length);
+        for (int i = 0; i < count; i++)
+        {
+            var go = Instantiate(missilePrefab, spawnPositions[i], Quaternion.identity);
+            go.GetComponent<MissileProjectile>()?.Init(targetNetIds[i], damage, explosionRadius);
+            go.GetComponent<NetworkObject>()?.Spawn(true);
+        }
+    }
+
+    // ── ServerRpc: Hunter Funnels (Ultimate) ──────────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnFunnelsServerRpc(
+        Vector3 center, int count, float orbitRadius,
+        float laserDamage, float laserCooldown,
+        float attackRange, float lifetime, ulong ownerClientId,
+        int beamCount = 1)
+    {
+        if (funnelPrefab == null) return;
+        for (int i = 0; i < count; i++)
+        {
+            float   angle    = i * (360f / count);
+            Vector3 offset   = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * orbitRadius * 0.4f;
+            var     go       = Instantiate(funnelPrefab, center + offset + Vector3.up * 1.5f, Quaternion.identity);
+            go.GetComponent<FunnelObject>()?.Init(
+                center, orbitRadius, laserDamage, laserCooldown, attackRange, lifetime, ownerClientId, beamCount);
+            go.GetComponent<NetworkObject>()?.Spawn(true);
+        }
+    }
+
     // ── ServerRpc: Add Shield ─────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
     public void AddShieldServerRpc(float amount)
     {
         playerMove?.AddShield(amount);
+    }
+
+    // ── ServerRpc: Sticky Rocket (Gunner Q mode) ──────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnStickyRocketServerRpc(
+        Vector3 spawnPos, Vector3 direction,
+        float damage, float speed, float explosionRadius)
+    {
+        if (stickyRocketPrefab == null) return;
+        Quaternion stickyRot = Quaternion.LookRotation(direction) * stickyRocketPrefab.transform.localRotation;
+        var go = Instantiate(stickyRocketPrefab, spawnPos, stickyRot);
+        go.transform.localScale = stickyRocketPrefab.transform.localScale;
+        var sr = go.GetComponent<StickyRocketProjectile>();
+        if (sr != null)
+        {
+            sr.damage          = damage;
+            sr.moveSpeed       = speed;
+            sr.explosionRadius = explosionRadius;
+            sr.InitDirection(direction);
+        }
+        go.GetComponent<NetworkObject>()?.Spawn(true);
+    }
+
+    // ── ServerRpc: Giant Rocket (Gunner E) ────────────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnGiantRocketServerRpc(
+        Vector3 spawnPos, Vector3 direction,
+        float baseDamage, float speed,
+        float maxRange, float explosionRadius)
+    {
+        if (giantRocketPrefab == null) return;
+
+        // direction มาจาก client แล้ว (horizontal, normalized)
+        Vector3 dir = direction;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.001f) dir = Vector3.forward;
+        dir = dir.normalized;
+
+        Quaternion giantRot = Quaternion.LookRotation(dir) * giantRocketPrefab.transform.localRotation;
+        var go = Instantiate(giantRocketPrefab, spawnPos, giantRot);
+        go.transform.localScale = giantRocketPrefab.transform.localScale;
+        var gr = go.GetComponent<GiantRocketProjectile>();
+        if (gr != null)
+        {
+            gr.baseDamage      = baseDamage;
+            gr.moveSpeed       = speed;
+            gr.maxRange        = maxRange;
+            gr.explosionRadius = explosionRadius;
+            gr.InitDirection(spawnPos, dir);
+        }
+        go.GetComponent<NetworkObject>()?.Spawn(true);
+    }
+
+    // ── VFX Broadcast System (Pool-based) ────────────────────────────────
+    // owner → RequestVfxServerRpc → PlayVfxClientRpc → NetworkedVFXPool.PlayFromPool
+    // ทุก client เล่น VFX จาก local pool — ไม่มี Instantiate/Destroy GC spike
+
+    [ServerRpc(RequireOwnership = false)]
+    public void RequestVfxServerRpc(Vector3 pos, int vfxId, float scale = 1f)
+    {
+        PlayVfxClientRpc(pos, vfxId, scale);
+    }
+
+    [ClientRpc]
+    void PlayVfxClientRpc(Vector3 pos, int vfxId, float scale = 1f)
+    {
+        var pool = NetworkedVFXPool.Instance;
+        if (pool == null)
+        {
+            Debug.LogWarning("[VFX] NetworkedVFXPool not found in scene");
+            return;
+        }
+        pool.PlayFromPool(vfxId, pos, scale);
+    }
+
+    // ── VFX Broadcast by VFXType (ไม่ต้องใช้ Pool — procedural particle) ──
+    /// <summary>Whip/Chainsaw และ weapon อื่นที่ไม่มี hitVfxPrefab ใช้ช่องทางนี้</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void BroadcastVfxTypeServerRpc(Vector3 pos, int vfxTypeInt)
+        => BroadcastVfxTypeClientRpc(pos, vfxTypeInt);
+
+    [ClientRpc]
+    void BroadcastVfxTypeClientRpc(Vector3 pos, int vfxTypeInt)
+        => VFXFactory.Play((VFXType)vfxTypeInt, pos);
+
+    // ── Beam VFX Broadcast (Lightning Chain, Thunder Rail ฯลฯ) ───────────
+    /// <summary>วาด LineRenderer beam จาก from→to บนทุก client</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void BroadcastBeamServerRpc(Vector3 from, Vector3 to, int vfxTypeInt)
+        => BroadcastBeamClientRpc(from, to, vfxTypeInt);
+
+    [ClientRpc]
+    void BroadcastBeamClientRpc(Vector3 from, Vector3 to, int vfxTypeInt)
+        => VFXFactory.PlayBeam((VFXType)vfxTypeInt, from, to, duration: 0.15f);
+
+    // ── Orbiter Orb Sync — ตำแหน่ง orb สำหรับ client ที่ไม่ใช่ owner ────────
+    private readonly List<GameObject> _remoteOrbVisuals = new();
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SyncOrbPositionsServerRpc(Vector3[] positions)
+        => SyncOrbPositionsClientRpc(positions);
+
+    [ClientRpc]
+    void SyncOrbPositionsClientRpc(Vector3[] positions)
+    {
+        if (IsOwner) return;   // owner จัดการ local orb เอง
+
+        // ปรับจำนวน visual orb ให้ตรงกับ positions
+        while (_remoteOrbVisuals.Count < positions.Length)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.transform.localScale = Vector3.one * 0.4f;
+            Destroy(go.GetComponent<Collider>());
+            var rend = go.GetComponent<Renderer>();
+            if (rend != null) rend.material.color = new Color(0.1f, 0.9f, 0.8f);  // teal
+            _remoteOrbVisuals.Add(go);
+        }
+        while (_remoteOrbVisuals.Count > positions.Length)
+        {
+            int last = _remoteOrbVisuals.Count - 1;
+            if (_remoteOrbVisuals[last]) Destroy(_remoteOrbVisuals[last]);
+            _remoteOrbVisuals.RemoveAt(last);
+        }
+
+        for (int i = 0; i < positions.Length; i++)
+            if (_remoteOrbVisuals[i]) _remoteOrbVisuals[i].transform.position = positions[i];
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void HideRemoteOrbsServerRpc() => HideRemoteOrbsClientRpc();
+
+    [ClientRpc]
+    void HideRemoteOrbsClientRpc()
+    {
+        if (IsOwner) return;
+        foreach (var o in _remoteOrbVisuals) if (o) Destroy(o);
+        _remoteOrbVisuals.Clear();
     }
 }

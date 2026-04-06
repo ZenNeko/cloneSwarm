@@ -15,7 +15,10 @@ public abstract class WeaponBase : MonoBehaviour
     [HideInInspector] public int                 currentLevel;   // 0-indexed (0 = Lv1)
     [HideInInspector] public PlayerWeaponManager manager;
 
-    public AimMode aimMode = AimMode.AutoNearest;
+    [HideInInspector] public AimMode aimMode = AimMode.AutoNearest;
+
+    /// <summary>cooldown multiplier ชั่วคราว — 1 = ปกติ, 0.5 = เร็ว 2× (set โดย HunterUltimate)</summary>
+    [HideInInspector] public float tempCooldownMult = 1f;
 
     protected float     attackTimer;
     protected LayerMask enemyLayer;
@@ -26,11 +29,12 @@ public abstract class WeaponBase : MonoBehaviour
     // ── Init ──────────────────────────────────────────────────────────────
     public void Init(WeaponData weaponData, int level, PlayerWeaponManager mgr)
     {
-        data        = weaponData;
+        data         = weaponData;
         currentLevel = Mathf.Clamp(level, 0, weaponData.levels.Length - 1);
-        manager     = mgr;
-        enemyLayer  = LayerMask.GetMask("Enemy");
-        attackTimer = 0f;
+        manager      = mgr;
+        enemyLayer   = LayerMask.GetMask("Enemy");
+        attackTimer  = 0f;
+        aimMode      = weaponData.aimMode;   // อ่านจาก WeaponData — ตั้งค่าได้ใน Inspector
         OnInit();
     }
 
@@ -54,6 +58,7 @@ public abstract class WeaponBase : MonoBehaviour
 
         if (manager.statManager != null)
             effectiveCooldown *= manager.statManager.GetCooldownMultiplier();
+        effectiveCooldown *= tempCooldownMult;
 
         if (attackTimer < effectiveCooldown) return;
 
@@ -65,8 +70,8 @@ public abstract class WeaponBase : MonoBehaviour
     }
 
     // ── Build Effective Level Data ────────────────────────────────────────
-    /// <summary>Charge-based weapons เรียกเพื่อ fire ทันที โดยไม่ผ่าน cooldown timer</summary>
-    protected void ExecuteFire()
+    /// <summary>Fire ทันที โดยไม่ผ่าน cooldown timer — เรียกโดย HunterPassive หรือ charge weapons</summary>
+    public void ExecuteFire()
     {
         var ld        = data.GetLevelData(currentLevel);
         var effective = BuildEffectiveLevelData(ld);
@@ -87,6 +92,54 @@ public abstract class WeaponBase : MonoBehaviour
             projectileSpeed  = base_ld.projectileSpeed,
             piercing         = base_ld.piercing
         };
+    }
+
+    // ── Fire Helper ───────────────────────────────────────────────────────
+    /// <summary>
+    /// ยิง projectile ผ่าน NetworkedVFXPool registry
+    /// Server lookup prefab จาก projPrefabId — ไม่ต้องพึ่ง weapon children บน server
+    /// </summary>
+    protected void FireProjectile(
+        Vector3 pos, Vector3 dir,
+        float damage, float speed,
+        int   count     = 1,
+        float spreadDeg = 0f,
+        bool  piercing  = false,
+        float maxRange  = -1f)
+    {
+        var pool   = NetworkedVFXPool.Instance;
+        int projId = pool != null && data?.projectilePrefab != null
+            ? pool.GetProjectileId(data.projectilePrefab)
+            : -1;
+        manager.FireProjectileServerRpc(
+            pos, dir, damage, speed, count, spreadDeg,
+            piercing, projId, maxRange);
+    }
+
+    // ── VFX Helpers — broadcast ผ่าน Pool ไปทุก client ──────────────────
+
+    /// <summary>
+    /// แสดง WeaponData.hitVfxPrefab บนทุก client ผ่าน NetworkedVFXPool
+    /// prefab ต้องอยู่ใน NetworkedVFXPool.vfxEntries
+    /// </summary>
+    protected void ShowHitVfx(Vector3 pos, float vfxScale = 1f)
+    {
+        if (data?.hitVfxPrefab == null) return;
+        ShowVfx(data.hitVfxPrefab, pos, vfxScale);
+    }
+
+    /// <summary>
+    /// แสดง VFX prefab บนทุก client ผ่าน NetworkedVFXPool
+    /// prefab ต้องอยู่ใน NetworkedVFXPool.vfxEntries
+    /// </summary>
+    protected void ShowVfx(GameObject prefab, Vector3 pos, float vfxScale = 1f)
+    {
+        if (prefab == null) return;
+        var pool = NetworkedVFXPool.Instance;
+        if (pool == null) { Debug.LogWarning("[VFX] NetworkedVFXPool not found in scene"); return; }
+        int id = pool.GetVfxId(prefab);
+        if (id < 0) { Debug.LogWarning($"[VFX] '{prefab.name}' ไม่อยู่ใน NetworkedVFXPool.vfxEntries"); return; }
+        manager.RequestVfxServerRpc(pos, id, vfxScale);
     }
 
     // ── Crit Roll ─────────────────────────────────────────────────────────

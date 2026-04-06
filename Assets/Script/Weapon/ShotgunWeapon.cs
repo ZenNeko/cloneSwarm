@@ -24,8 +24,6 @@ public class ShotgunWeapon : WeaponBase
     public bool  explodeOnHit    = false;
     public float explosionRadius = 2.5f;
 
-    protected override void OnInit() => aimMode = AimMode.MouseAim;
-
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 pos = transform.position + Vector3.up * 0.5f;
@@ -44,12 +42,9 @@ public class ShotgunWeapon : WeaponBase
         }
         else
         {
-            manager.FireProjectileServerRpc(
-                pos, dir, crit,
-                ld.projectileSpeed,
+            FireProjectile(pos, dir, crit, ld.projectileSpeed,
                 ld.projectileCount,
-                spreadAngle / Mathf.Max(1, ld.projectileCount - 1)
-            );
+                spreadAngle / Mathf.Max(1, ld.projectileCount - 1));
         }
     }
 }

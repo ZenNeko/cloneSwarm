@@ -66,6 +66,20 @@ public class WeaponData : ScriptableObject
     [Tooltip("GameObject ที่มี WeaponBase component — จะ Instantiate เป็น child ของ player")]
     public GameObject prefab;
 
+    [Header("Targeting")]
+    [Tooltip("AutoNearest = ล็อกศัตรูที่ใกล้ที่สุดอัตโนมัติ\n" +
+             "MouseAim    = เล็งตามตำแหน่งเมาส์ของผู้เล่น")]
+    public AimMode aimMode = AimMode.AutoNearest;
+
+    [Tooltip("Projectile prefab ของ weapon นี้ (มี NetworkObject + Projectile script)\n" +
+             "ปล่อยว่าง = ใช้ projectilePrefab default บน PlayerWeaponManager")]
+    public GameObject projectilePrefab;
+
+    [Tooltip("Particle Effect prefab สำหรับ AoE / Melee hit\n" +
+             "เรียกผ่าน ShowHitVfx(pos) ใน OnFire() ของ weapon script\n" +
+             "ปล่อยว่าง = ไม่มี VFX")]
+    public GameObject hitVfxPrefab;
+
     [Header("Levels")]
     [Tooltip("Normal weapon: 5 levels | Super/Fusion: 1 level")]
     public WeaponLevelData[] levels = new WeaponLevelData[5];
@@ -80,6 +94,9 @@ public class WeaponData : ScriptableObject
     [Header("Card Pool")]
     [Tooltip("น้ำหนักสุ่มการ์ด — Common≈100, Uncommon≈60, Rare≈25, Epic≈8")]
     public float weight = 100f;
+    [Tooltip("ถ้าใส่ไว้ — weapon นี้จะออกให้เฉพาะผู้เล่นที่ใช้ตัวละครนั้นเท่านั้น\n" +
+             "ปล่อยว่าง = ทุกตัวละครสุ่มได้")]
+    public CharacterData exclusiveCharacter;
 
     // ── Helpers ───────────────────────────────────────────────────────────
     public int MaxLevel => (levels != null && levels.Length > 0) ? levels.Length : 1;
