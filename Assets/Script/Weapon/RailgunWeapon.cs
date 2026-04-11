@@ -14,7 +14,7 @@ public class RailgunWeapon : WeaponBase
     {
         Vector3 origin    = transform.position + Vector3.up * 0.5f;
         Vector3 dir       = GetAimDirection();
-        float   dmg       = RollDamage(ld.damage);
+        float   dmg       = RollDamage(ld.damage, out bool isCrit);
         int     beamCount = Mathf.Max(1, ld.projectileCount);
 
         float angleStep = 360f / beamCount;
@@ -22,7 +22,7 @@ public class RailgunWeapon : WeaponBase
         for (int i = 0; i < beamCount; i++)
         {
             Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * dir;
-            manager.FireRaycastServerRpc(origin, beamDir, dmg, maxDist: ld.range);
+            manager.FireRaycastServerRpc(origin, beamDir, dmg, maxDist: ld.range, isCrit: isCrit);
         }
     }
 }

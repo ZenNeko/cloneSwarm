@@ -7,6 +7,8 @@ public class Enemy : NetworkBehaviour
     // ── Global kill broadcast (Server → all clients) ───────────────────────
     /// <summary>ยิงบน ALL clients ทุกครั้งที่ enemy ตาย — subscribe ด้วย GunnerPassiveWeapon</summary>
     public static event System.Action OnAnyEnemyDied;
+    /// <summary>ยิงบน ALL clients ทุกครั้งที่ enemy ตาย พร้อม world position</summary>
+    public static event System.Action<Vector3> OnAnyEnemyDiedAt;
     /// <summary>ยิงบน ALL clients ทุกครั้งที่ enemy โดนดาเมจ — subscribe ด้วย HunterPassiveWeapon</summary>
     public static event System.Action OnAnyEnemyHit;
 
@@ -83,7 +85,7 @@ public class Enemy : NetworkBehaviour
 
         onDeath.Invoke();
         SpawnExpOrb();
-        NotifyDeathClientRpc();
+        NotifyDeathClientRpc(transform.position);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
         else Destroy(gameObject);
     }
@@ -150,9 +152,10 @@ public class Enemy : NetworkBehaviour
     }
 
     [ClientRpc]
-    void NotifyDeathClientRpc()
+    void NotifyDeathClientRpc(Vector3 deathPos)
     {
         OnAnyEnemyDied?.Invoke();
+        OnAnyEnemyDiedAt?.Invoke(deathPos);
     }
 
     public float GetHealthPercent() => netHealth.Value / maxHealth;

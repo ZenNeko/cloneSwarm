@@ -34,22 +34,22 @@ public class PistolWeapon : WeaponBase
 
         Vector3 pos = transform.position + Vector3.up * 0.5f;
         Vector3 dir = GetAimDirection();
-        float   dmg = RollDamage(ld.damage);
+        float   dmg = RollDamage(ld.damage, out bool isCrit);
 
         if (rocketMode != null && rocketMode.IsRocketModeActive)
-            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: true));
+            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: true, isCrit));
         else
-            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: false));
+            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: false, isCrit));
     }
 
-    IEnumerator BurstFire(Vector3 spawnPos, Vector3 dir, float dmg, float speed, int count, bool rocketMode)
+    IEnumerator BurstFire(Vector3 spawnPos, Vector3 dir, float dmg, float speed, int count, bool rocketMode, bool isCrit)
     {
         for (int i = 0; i < count; i++)
         {
             if (rocketMode)
                 manager.SpawnStickyRocketServerRpc(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius);
             else
-                FireProjectile(spawnPos, dir, dmg, speed);
+                FireProjectile(spawnPos, dir, dmg, speed, isCrit: isCrit);
 
             if (i < count - 1)
                 yield return new WaitForSeconds(burstInterval);

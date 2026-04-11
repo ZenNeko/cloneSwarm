@@ -12,43 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
   m_Name: WD_Stormcaller
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  weaponName: 
-  description: 
+  weaponName: Stormcaller
+  description: Stormcaller
   icon: {fileID: 0}
-  tier: 0
-  prefab: {fileID: 0}
+  tier: 1
+  prefab: {fileID: 3857138112386556378, guid: 457af63d404aea1498a095a4e355429d, type: 3}
   aimMode: 0
   projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
+  hitVfxType: 0
   levels:
-  - damage: 20
-    cooldown: 1
-    projectileCount: 1
-    range: 8
-    projectileSpeed: 12
-    piercing: 0
-    levelUpText: 
-  - damage: 20
-    cooldown: 1
-    projectileCount: 1
-    range: 8
-    projectileSpeed: 12
-    piercing: 0
-    levelUpText: 
-  - damage: 20
-    cooldown: 1
-    projectileCount: 1
-    range: 8
-    projectileSpeed: 12
-    piercing: 0
-    levelUpText: 
-  - damage: 20
-    cooldown: 1
-    projectileCount: 1
-    range: 8
-    projectileSpeed: 12
-    piercing: 0
-    levelUpText: 
   - damage: 20
     cooldown: 1
     projectileCount: 1

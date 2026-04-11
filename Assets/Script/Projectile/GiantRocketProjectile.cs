@@ -18,8 +18,8 @@ public class GiantRocketProjectile : NetworkBehaviour
     public float maxBonusMultiplier = 2f;
 
     [Header("VFX")]
-    [Tooltip("Index ใน NetworkedVFXPool.vfxEntries (-1 = ไม่มี)")]
-    public int explosionVfxId = 0;
+    [Tooltip("VFX ที่แสดงเมื่อระเบิด — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
+    public VFXType explosionVfxType = VFXType.GrenadeExplosion;
 
     private Vector3 direction;
     private Vector3 spawnPos;
@@ -77,8 +77,8 @@ public class GiantRocketProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos, float radius)
     {
-        if (explosionVfxId < 0) return;
-        NetworkedVFXPool.Instance?.PlayFromPool(explosionVfxId, pos, radius / 2f);
+        VFXFactory.Play(VFXType.HitEffect, pos);
+        VFXFactory.Play(explosionVfxType, pos);
     }
 
 #if UNITY_EDITOR

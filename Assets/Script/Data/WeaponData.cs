@@ -75,10 +75,10 @@ public class WeaponData : ScriptableObject
              "ปล่อยว่าง = ใช้ projectilePrefab default บน PlayerWeaponManager")]
     public GameObject projectilePrefab;
 
-    [Tooltip("Particle Effect prefab สำหรับ AoE / Melee hit\n" +
+    [Tooltip("VFX ที่ใช้เมื่อ weapon ชน / โจมตี\n" +
              "เรียกผ่าน ShowHitVfx(pos) ใน OnFire() ของ weapon script\n" +
-             "ปล่อยว่าง = ไม่มี VFX")]
-    public GameObject hitVfxPrefab;
+             "None = ไม่มี VFX — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
+    public VFXType hitVfxType = VFXType.None;
 
     [Header("Levels")]
     [Tooltip("Normal weapon: 5 levels | Super/Fusion: 1 level")]

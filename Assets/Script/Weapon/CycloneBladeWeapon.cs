@@ -20,7 +20,7 @@ public class CycloneBladeWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg    = RollDamage(ld.damage);
+        float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = ld.range;
 
         if (manager.statManager != null)
@@ -35,7 +35,7 @@ public class CycloneBladeWeapon : WeaponBase
         {
             // 360° spin
             manager.FireMeleeServerRpc(center, radius, dmg);
-            manager.BroadcastVfxTypeServerRpc(center, (int)VFXType.WhipSlash);
+            ShowVfx(VFXType.SlashHit, center, radius, isCrit, direction: transform.forward);
         }
         else
         {
@@ -49,7 +49,7 @@ public class CycloneBladeWeapon : WeaponBase
                 float   side   = (i % 2 == 0) ? -1f : 1f;
                 Vector3 pos    = center + forward * (radius * 0.6f) + right * slashOffset * side;
                 manager.FireMeleeServerRpc(pos, radius * 0.8f, fDmg);
-                manager.BroadcastVfxTypeServerRpc(pos, (int)VFXType.WhipSlash);
+                ShowVfx(VFXType.SlashHit, pos, radius * 0.8f, isCrit, direction: forward);
             }
         }
 

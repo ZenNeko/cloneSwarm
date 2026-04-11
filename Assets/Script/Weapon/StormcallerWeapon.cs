@@ -31,7 +31,7 @@ public class StormcallerWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg        = RollDamage(ld.damage);
+        float dmg        = RollDamage(ld.damage, out bool isCrit);
         int   chainCount = Mathf.Max(1, ld.projectileCount);
 
         if (manager.statManager != null)
@@ -56,7 +56,8 @@ public class StormcallerWeapon : WeaponBase
             Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
 
             current.EnemyTakeDamage(curDmg);
-            manager.BroadcastBeamServerRpc(prevPos, targetPos, (int)VFXType.RailgunBeam);
+            manager.BroadcastBeamServerRpc(prevPos, targetPos, (int)VFXType.None);
+            ShowBaseHitVfx(targetPos, isCrit);
 
             hitPositions.Add(current.transform.position);
             hitSet.Add(current.GetInstanceID());
@@ -67,10 +68,10 @@ public class StormcallerWeapon : WeaponBase
         }
 
         // Spawn mini lightning zone ที่ทุก target ที่โดน
-        StartCoroutine(SpawnLightningZones(hitPositions));
+        StartCoroutine(SpawnLightningZones(hitPositions, isCrit));
     }
 
-    IEnumerator SpawnLightningZones(List<Vector3> positions)
+    IEnumerator SpawnLightningZones(List<Vector3> positions, bool isCrit)
     {
         float effectiveZoneDmg = zoneDamage;
         if (manager.statManager != null)
@@ -82,7 +83,7 @@ public class StormcallerWeapon : WeaponBase
             foreach (var pos in positions)
             {
                 manager.FireMeleeServerRpc(pos + Vector3.up * 0.5f, zoneRadius, effectiveZoneDmg);
-                manager.BroadcastVfxTypeServerRpc(pos + Vector3.up * 0.5f, (int)VFXType.LaserHit);
+                ShowVfx(VFXType.HitEffect, pos + Vector3.up * 0.5f, isCrit: isCrit);
             }
         }
     }

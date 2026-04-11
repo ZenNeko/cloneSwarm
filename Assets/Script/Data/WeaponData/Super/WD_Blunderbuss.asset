@@ -17,6 +17,9 @@ MonoBehaviour:
   icon: {fileID: 0}
   tier: 1
   prefab: {fileID: 5546056588423154064, guid: 18e0b400db2998d47b755f5e76ed5975, type: 3}
+  aimMode: 0
+  projectilePrefab: {fileID: 0}
+  hitVfxType: 0
   levels:
   - damage: 45
     cooldown: 0.8
@@ -28,3 +31,4 @@ MonoBehaviour:
   superVersion: {fileID: 0}
   superConditions: []
   weight: 0
+  exclusiveCharacter: {fileID: 0}

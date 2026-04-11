@@ -50,6 +50,15 @@ public abstract class AbilityBase : MonoBehaviour
         return baseDamage;
     }
 
+    /// <summary>RollDamage + crit flag — ใช้เมื่อต้องรู้ว่า crit หรือไม่ (เช่น เลือก VFX)</summary>
+    protected float RollDamage(float baseDamage, out bool isCrit)
+    {
+        var sm = manager?.statManager;
+        if (sm != null && Random.value < sm.GetCritChance())
+        { isCrit = true; return baseDamage * 2f; }
+        isCrit = false; return baseDamage;
+    }
+
     // ── Enemy Finders ─────────────────────────────────────────────────────
     protected Transform FindNearestEnemy(float range)
     {

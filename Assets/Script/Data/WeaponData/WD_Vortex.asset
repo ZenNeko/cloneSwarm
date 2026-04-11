@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
   m_Name: WD_Vortex
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  weaponName: 
-  description: 
+  weaponName: Vortex
+  description: Vortex
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 9013770106347817692, guid: 5b56c64ad2bd2c043b8d1d3abab21855, type: 3}
   aimMode: 0
   projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
+  hitVfxType: 15
   levels:
   - damage: 20
     cooldown: 1

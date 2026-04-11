@@ -30,7 +30,7 @@ public class DeathFieldWeapon : WeaponBase
     {
         Vector3 center = transform.position + Vector3.up * 0.5f;
         float   radius = ld.range;
-        float   dmg    = RollDamage(ld.damage);
+        float   dmg    = RollDamage(ld.damage, out bool isCrit);
 
         if (manager.statManager != null)
         {
@@ -39,7 +39,7 @@ public class DeathFieldWeapon : WeaponBase
         }
 
         manager.FireMeleeServerRpc(center, radius, dmg);
-        manager.BroadcastVfxTypeServerRpc(center, (int)VFXType.OrbiterHit);
+        ShowVfx(VFXType.OrbiterHit, center, radius, isCrit);
     }
 
     void OnEnemyDied()
@@ -59,6 +59,6 @@ public class DeathFieldWeapon : WeaponBase
         // ตรวจว่ามี enemy อยู่ในรัศมีก่อนเสียชีวิต (เพิ่งตายออกไปแล้ว เป็น heuristic)
         // Trigger mini explosion รอบตัวผู้เล่น
         manager.FireMeleeServerRpc(center, deathExplosionRadius, deathExplosionDamage);
-        manager.BroadcastVfxTypeServerRpc(center, (int)VFXType.GrenadeExplosion);
+        ShowVfx(VFXType.GrenadeExplosion, center, deathExplosionRadius);
     }
 }

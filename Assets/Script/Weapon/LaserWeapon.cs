@@ -23,10 +23,10 @@ public class LaserWeapon : WeaponBase
     {
         Vector3 pos = transform.position + Vector3.up * 0.5f;
         Vector3 dir = GetAimDirection();
-        float   dmg = RollDamage(ld.damage);
+        float   dmg = RollDamage(ld.damage, out bool isCrit);
 
         // ยิงเส้นเดียวเสมอ — ไม่สนใจ projectileCount
-        manager.FireLineAoEServerRpc(pos, dir, dmg, ld.range, width);
+        manager.FireLineAoEServerRpc(pos, dir, dmg, ld.range, width, isCrit);
     }
 
 #if UNITY_EDITOR

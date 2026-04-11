@@ -24,7 +24,7 @@ public class LightningChainWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg        = RollDamage(ld.damage);
+        float dmg        = RollDamage(ld.damage, out bool isCrit);
         int   chainCount = Mathf.Max(1, ld.projectileCount);   // count = จำนวน chain targets
 
         if (manager.statManager != null)
@@ -48,9 +48,10 @@ public class LightningChainWeapon : WeaponBase
 
             Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
 
-            // ดาเมจ + VFX beam
+            // ดาเมจ + VFX beam + crit flash ที่จุด impact
             current.EnemyTakeDamage(curDmg);
             BroadcastLightningBeam(prevPos, targetPos);
+            if (isCrit) manager.BroadcastVfxTypeServerRpc(targetPos, (int)VFXType.CritHitEffect);
 
             hitSet.Add(current.GetInstanceID());
             prevPos = targetPos;
@@ -95,6 +96,6 @@ public class LightningChainWeapon : WeaponBase
 
     void BroadcastLightningBeam(Vector3 from, Vector3 to)
     {
-        manager.BroadcastBeamServerRpc(from, to, (int)VFXType.RailgunBeam);
+        manager.BroadcastBeamServerRpc(from, to, (int)VFXType.None);
     }
 }

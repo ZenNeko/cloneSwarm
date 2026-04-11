@@ -49,6 +49,19 @@ public class MainBoss : NetworkBehaviour
     public int   spreadCount      = 5;
     public float spreadAngle      = 60f;
 
+    [Header("Donut AoE (Phase 3)")]
+    public float donutRadius      = 6f;
+    public float donutInnerRadius = 2f;
+    public float donutDamage      = 35f;
+    public float donutWarnTime    = 2.5f;
+
+    [Header("Cone AoE (Phase 3)")]
+    public float coneRadius    = 8f;
+    public float coneAngle     = 90f;
+    public float coneLineWidth = 1.2f;
+    public float coneDamage    = 30f;
+    public float coneWarnTime  = 2.5f;
+
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี TelegraphZone.cs + NetworkObject")]
     public GameObject telegraphZonePrefab;
@@ -145,8 +158,13 @@ public class MainBoss : NetworkBehaviour
                     attackIndex++;
                     break;
                 case 3:
-                    if (attackIndex % 2 == 0) SpawnCircleAoE();
-                    else                      SpawnSpreadAoE();
+                    switch (attackIndex % 4)
+                    {
+                        case 0: SpawnCircleAoE(); break;
+                        case 1: SpawnSpreadAoE(); break;
+                        case 2: SpawnDonutAoE();  break;
+                        case 3: SpawnConeAoE();   break;
+                    }
                     attackIndex++;
                     break;
                 default:
@@ -211,6 +229,46 @@ public class MainBoss : NetworkBehaviour
         zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
         zone.BroadcastInit();
         Debug.Log("[MainBoss] 🌊 Spread AoE spawned");
+    }
+
+    void SpawnDonutAoE()
+    {
+        var zone = SpawnZone(transform.position, Quaternion.identity);
+        if (zone == null) return;
+
+        zone.aoeType         = TelegraphZone.AoEType.Donut;
+        zone.radius          = donutRadius;
+        zone.innerRadius     = donutInnerRadius;
+        zone.warningDuration = donutWarnTime;
+        zone.damage          = donutDamage;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log("[MainBoss] 🍩 Donut AoE spawned");
+    }
+
+    void SpawnConeAoE()
+    {
+        Transform target = FindNearestPlayer();
+        Vector3 dir = target != null
+            ? (target.position - transform.position).normalized
+            : transform.forward;
+        dir.y = 0f;
+        Quaternion rot = dir != Vector3.zero ? Quaternion.LookRotation(dir) : Quaternion.identity;
+
+        var zone = SpawnZone(transform.position, rot);
+        if (zone == null) return;
+
+        zone.aoeType         = TelegraphZone.AoEType.Cone;
+        zone.radius          = coneRadius;
+        zone.coneAngle       = coneAngle;
+        zone.lineWidth       = coneLineWidth;
+        zone.warningDuration = coneWarnTime;
+        zone.damage          = coneDamage;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log("[MainBoss] 🔺 Cone AoE spawned");
     }
 
     // SpawnZone สร้าง instance แต่ยังไม่ Spawn (caller จัดการ)

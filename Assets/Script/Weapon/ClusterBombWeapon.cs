@@ -1,23 +1,56 @@
 using UnityEngine;
 
 /// <summary>
-/// Cluster Bomb — FUSION: Blunderbuss (Super Shotgun) + Minefield (Super Grenade)
+/// Cluster Blunderbuss — FUSION: Blunderbuss (Super Shotgun) + Minefield (Super Grenade)
 ///
-/// กลไก:
-///   • ขว้าง Grenade ไปที่ mouse (เหมือน Grenade)
-///   • เมื่อระเบิด: ปล่อย pellets รอบทิศทาง (เหมือน Shotgun)
-///   • cluster = true ใน ThrowGrenadeServerRpc → GrenadeProjectile จัดการ
+/// OnFire: ยิง pellets + grenade พร้อมกัน (MouseAim)
+///   — Pellets: กระจาย spread เหมือน Shotgun
+///   — Grenade: บินไปที่ mouse ระเบิด AoE (cluster = false)
+///
+/// On Kill: เมื่อ enemy ตาย → ระเบิด AoE รอบตัว enemy
+///          + spawn Cluster Bombs (child grenades) กระจายรอบจุดที่ตาย
 ///
 /// Level data (Fusion tier, 1 level):
-///   dmg=100, cd=2.5s, count=2 (grenade), range=14, projSpeed=18
+///   dmg=80, cd=1.5s, count=5, range=12, projSpeed=18
 /// </summary>
 public class ClusterBombWeapon : WeaponBase
 {
-    public float explosionRadius = 4f;
-    public float fuseTime        = 1.2f;
+    [Header("Shotgun Part")]
+    [Tooltip("มุมกระจาย pellets ทั้งหมด (องศา)")]
+    public float spreadAngle     = 40f;
+
+    [Header("Grenade Part")]
+    public float grenadeRadius   = 3.5f;
+    public float fuseTime        = 1.0f;
+
+    [Header("On-Kill Explosion")]
+    [Tooltip("รัศมี AoE ทันทีที่ enemy ตาย")]
+    public float killExplosionRadius  = 3f;
+    [Tooltip("ดาเมจ AoE on-kill")]
+    public float killExplosionDamage  = 60f;
+    [Tooltip("จำนวน child grenades ที่ spawn รอบจุดที่ตาย")]
+    public int   childGrenadeCount    = 3;
+    [Tooltip("รัศมีกระจาย child grenades")]
+    public float childGrenadeSpread   = 4f;
+    [Tooltip("รัศมีระเบิด child grenade")]
+    public float childGrenadeRadius   = 2f;
+    [Tooltip("fuse time ของ child grenade")]
+    public float childGrenadeFuse     = 0.6f;
+
+    protected override void OnInit()
+    {
+        Enemy.OnAnyEnemyDiedAt += OnEnemyKilled;
+    }
+
+    void OnDestroy()
+    {
+        Enemy.OnAnyEnemyDiedAt -= OnEnemyKilled;
+    }
 
     protected override void OnFire(WeaponLevelData ld)
     {
+        if (manager == null || !manager.IsOwner) return;
+
         Vector3 spawnPos  = transform.position + Vector3.up * 0.5f;
         Vector3 targetPos = GetMouseWorldPosition();
 
@@ -25,16 +58,52 @@ public class ClusterBombWeapon : WeaponBase
         if (toTarget.magnitude > ld.range)
             targetPos = transform.position + toTarget.normalized * ld.range;
 
-        float dmg    = RollDamage(ld.damage);
-        float radius = explosionRadius;
+        Vector3 dir = toTarget.sqrMagnitude > 0.001f ? toTarget.normalized : transform.forward;
+        dir.y = 0f;
+        if (dir.sqrMagnitude > 0.001f) dir.Normalize(); else dir = transform.forward;
+
+        float dmg = RollDamage(ld.damage, out bool isCrit);
+
+        // ── Pellets (Shotgun) ─────────────────────────────────────────────
+        int pellets = Mathf.Max(1, ld.projectileCount);
+        FireProjectile(spawnPos, dir, dmg / pellets, ld.projectileSpeed,
+            count: pellets, spreadDeg: spreadAngle / Mathf.Max(1, pellets - 1),
+            isCrit: isCrit);
+
+        // ── Grenade (สุ่มรอบ player) ──────────────────────────────────────
+        float radius = grenadeRadius;
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
 
-        for (int i = 0; i < ld.projectileCount; i++)
+        Vector2 rnd         = Random.insideUnitCircle * ld.range;
+        Vector3 grenadePos  = transform.position + new Vector3(rnd.x, 0f, rnd.y);
+        manager.ThrowGrenadeServerRpc(spawnPos, grenadePos, dmg, radius, fuseTime, cluster: false);
+    }
+
+    void OnEnemyKilled(Vector3 deathPos)
+    {
+        if (manager == null || !manager.IsOwner) return;
+
+        // ── AoE ทันทีที่จุดตาย ────────────────────────────────────────────
+        float radius = killExplosionRadius;
+        if (manager.statManager != null)
+            radius *= manager.statManager.GetAreaMultiplier();
+
+        manager.FireMeleeServerRpc(deathPos + Vector3.up * 0.5f, radius, killExplosionDamage);
+        ShowVfx(VFXType.GrenadeExplosion, deathPos, radius);
+
+        // ── Cluster Bombs รอบจุดตาย ───────────────────────────────────────
+        Vector3 spawnPos = deathPos + Vector3.up * 0.5f;
+        float   childRad = childGrenadeRadius;
+        if (manager.statManager != null)
+            childRad *= manager.statManager.GetAreaMultiplier();
+
+        for (int i = 0; i < childGrenadeCount; i++)
         {
-            float   a   = (ld.projectileCount > 1) ? (i - (ld.projectileCount - 1) * 0.5f) * 10f : 0f;
-            Vector3 off = Quaternion.Euler(0, a, 0) * (targetPos - spawnPos).normalized * 1.5f;
-            manager.ThrowGrenadeServerRpc(spawnPos, targetPos + off, dmg, radius, fuseTime, cluster: true);
+            Vector2 rnd      = Random.insideUnitCircle * childGrenadeSpread;
+            Vector3 childPos = deathPos + new Vector3(rnd.x, 0f, rnd.y);
+            manager.ThrowGrenadeServerRpc(spawnPos, childPos, killExplosionDamage * 0.6f,
+                childRad, childGrenadeFuse, cluster: false);
         }
     }
 

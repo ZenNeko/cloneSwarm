@@ -19,6 +19,7 @@ MonoBehaviour:
   prefab: {fileID: 7269730001752335320, guid: ec753e3fcce46a5498beb41c53bec20b, type: 3}
   aimMode: 1
   projectilePrefab: {fileID: 9165026677116411631, guid: 015a9d8893b22174f82d11e1b08179e1, type: 3}
+  hitVfxType: 0
   levels:
   - damage: 80
     cooldown: 0.5
@@ -30,3 +31,4 @@ MonoBehaviour:
   superVersion: {fileID: 0}
   superConditions: []
   weight: 0
+  exclusiveCharacter: {fileID: 11400000, guid: 368c82f914f7df542b886ba0f76f288e, type: 2}

@@ -16,7 +16,7 @@ public class TriRangWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg   = RollDamage(ld.damage);
+        float dmg   = RollDamage(ld.damage, out bool isCrit);
         float range = ld.range;
         float speed = ld.projectileSpeed > 0f ? ld.projectileSpeed : 16f;
         int   count = Mathf.Max(1, ld.projectileCount);
@@ -37,7 +37,7 @@ public class TriRangWeapon : WeaponBase
         {
             float   angle   = -halfSpread + i * step;
             Vector3 fireDir = Quaternion.Euler(0f, angle, 0f) * dir;
-            manager.SpawnBoomerangServerRpc(spawnPos, fireDir, dmg, speed, range);
+            manager.SpawnBoomerangServerRpc(spawnPos, fireDir, dmg, speed, range, isCrit);
         }
     }
 

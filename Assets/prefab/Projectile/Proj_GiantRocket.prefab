@@ -144,7 +144,7 @@ MonoBehaviour:
   maxRange: 0
   explosionRadius: 0
   maxBonusMultiplier: 2
-  explosionVfxId: 0
+  explosionVfxType: 3
 --- !u!54 &6477180753547766563
 Rigidbody:
   m_ObjectHideFlags: 0

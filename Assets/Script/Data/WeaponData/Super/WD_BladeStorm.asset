@@ -15,11 +15,11 @@ MonoBehaviour:
   weaponName: BladeStorm
   description: BladeStorm
   icon: {fileID: 0}
-  tier: 0
+  tier: 1
   prefab: {fileID: 7338137246408476109, guid: 8a08b6d096a54e748b48e5afa17ca137, type: 3}
   aimMode: 0
   projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
+  hitVfxType: 11
   levels:
   - damage: 20
     cooldown: 1

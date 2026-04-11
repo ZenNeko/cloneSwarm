@@ -1,9 +1,14 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// รับ event จาก GameTimeline แล้ว spawn ZoneObjective ทุก 2 นาที
-/// Server only
+/// รับ event จาก GameTimeline แล้ว spawn ZoneObjective
+///
+/// Placement:
+///   ใช้ ZoneObjectiveLocation[] เป็นจุดที่กำหนดไว้ใน scene
+///   สุ่มเลือก objectiveCount จุด โดยกรองออกจุดที่ใกล้ผู้เล่นเกินไป
+///   ถ้าจุดที่เหลือน้อยกว่า objectiveCount → ใช้ทั้งหมดที่มี
 /// </summary>
 public class ObjectiveManager : NetworkBehaviour
 {
@@ -11,64 +16,87 @@ public class ObjectiveManager : NetworkBehaviour
     [Tooltip("Prefab ที่มี ZoneObjective.cs + NetworkObject")]
     public GameObject zoneObjectivePrefab;
 
-    [Header("Placement")]
-    [Tooltip("spawn ห่างจาก player กี่ unit (min)")]
-    public float minSpawnDistance = 5f;
-    [Tooltip("spawn ห่างจาก player กี่ unit (max)")]
-    public float maxSpawnDistance = 12f;
+    [Header("Spawn Locations")]
+    [Tooltip("จุดที่กำหนดไว้ใน scene — เลือกสุ่มจากนี้")]
+    public GameObject[] ZoneObjectiveLocation = new GameObject[3];
+
+    [Header("Player Distance Filter")]
+    [Tooltip("ไม่ spawn จุดที่ใกล้ผู้เล่นคนใดคนหนึ่งน้อยกว่านี้")]
+    public float minSpawnDistance = 10f;
 
     public override void OnNetworkSpawn()
     {
         if (!IsServer) return;
-        GameTimeline.OnObjectiveTime += SpawnObjective;
+        GameTimeline.OnObjectiveTime += SpawnObjectives;
     }
 
     public override void OnNetworkDespawn()
     {
-        GameTimeline.OnObjectiveTime -= SpawnObjective;
+        GameTimeline.OnObjectiveTime -= SpawnObjectives;
     }
 
-    void SpawnObjective()
+    void SpawnObjectives()
     {
         if (!IsServer || zoneObjectivePrefab == null) return;
 
-        Vector3 pos = GetSpawnPosition();
-        var go = Instantiate(zoneObjectivePrefab, pos, Quaternion.identity);
+        var candidates = GetValidLocations();
+
+        if (candidates.Count == 0)
+        {
+            Debug.LogWarning("[ObjectiveManager] ไม่มีจุดที่ห่างผู้เล่นพอ — ไม่มี objective spawn รอบนี้");
+            return;
+        }
+
+        // สุ่มเลือก 1 จุด
+        Vector3 chosen = candidates[Random.Range(0, candidates.Count)];
+        var go = Instantiate(zoneObjectivePrefab, chosen, Quaternion.identity);
         go.GetComponent<NetworkObject>()?.Spawn(true);
-        Debug.Log($"[ObjectiveManager] 🎯 Zone Objective spawned at {pos}");
+        Debug.Log($"[ObjectiveManager] 🎯 Zone Objective spawned at {chosen}");
     }
 
-    Vector3 GetSpawnPosition()
+    // ── กรองจุดที่ใกล้ผู้เล่นเกินไปออก ───────────────────────────────────
+    List<Vector3> GetValidLocations()
     {
-        var clients = NetworkManager.Singleton.ConnectedClientsList;
-        Vector3 center = Vector3.zero;
+        var result  = new List<Vector3>();
+        var players = GetAllPlayerPositions();
 
-        if (clients.Count > 0)
+        foreach (var loc in ZoneObjectiveLocation)
         {
-            foreach (var c in clients)
-                if (c.PlayerObject != null) center += c.PlayerObject.transform.position;
-            center /= clients.Count;
-        }
+            if (loc == null) continue;
+            Vector3 pos = loc.transform.position;
 
-        // หาจุดที่ไม่ซ้อนกับผู้เล่นมากเกินไป
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            Vector2 rand  = Random.insideUnitCircle.normalized;
-            float   dist  = Random.Range(minSpawnDistance, maxSpawnDistance);
-            Vector3 candidate = center + new Vector3(rand.x, 0f, rand.y) * dist;
-
-            // ตรวจว่าห่างจาก player พอ
             bool tooClose = false;
-            foreach (var c in clients)
+            foreach (var p in players)
             {
-                if (c.PlayerObject == null) continue;
-                if (Vector3.Distance(candidate, c.PlayerObject.transform.position) < minSpawnDistance)
+                if (Vector3.Distance(pos, p) < minSpawnDistance)
                 { tooClose = true; break; }
             }
-            if (!tooClose) return candidate;
+
+            if (!tooClose) result.Add(pos);
         }
 
-        // Fallback
-        return center + Vector3.right * maxSpawnDistance;
+        return result;
+    }
+
+    List<Vector3> GetAllPlayerPositions()
+    {
+        var list = new List<Vector3>();
+        if (NetworkManager.Singleton == null) return list;
+        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (c.PlayerObject != null)
+                list.Add(c.PlayerObject.transform.position);
+        }
+        return list;
+    }
+
+    // Fisher-Yates shuffle
+    void Shuffle(List<Vector3> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
     }
 }

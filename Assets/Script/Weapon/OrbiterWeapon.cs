@@ -134,13 +134,14 @@ public class OrbiterWeapon : WeaponBase
     // ── Damage ─────────────────────────────────────────────────────────────
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg    = RollDamage(ld.damage);
+        float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = aoeOnHit ? aoeRadius : 0.6f;
 
         foreach (var orb in orbs)
         {
             if (orb == null) continue;
             manager.FireMeleeServerRpc(orb.position, radius, dmg);
+            ShowBaseHitVfx(orb.position, isCrit);
         }
     }
 

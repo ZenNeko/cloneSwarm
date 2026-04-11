@@ -34,7 +34,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
 
     // Override DashAndFire เพื่อเพิ่ม chain lightning หลัง AoE
     protected override IEnumerator DashAndFire(Vector3 dir, float radius, float damage,
-                                                bool bigSlash, bool exileActive)
+                                                bool bigSlash, bool exileActive, bool isCrit = false)
     {
         var pm = manager.playerMove;
         var rb = pm?.GetComponent<Rigidbody>();
@@ -49,7 +49,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
             Vector3 endPos   = startPos + dir * dashDistance;
             float   elapsed  = 0f;
 
-            ShowVfx(dashTrailPrefab, startPos);
+            ShowVfx(dashTrailVfxType, startPos, isAttackHit: false);
 
             while (elapsed < dashDuration)
             {
@@ -68,13 +68,11 @@ public class StormBunnyWeapon : BunnyHopWeapon
         Vector3 center      = transform.position;
         int     aoeHitCount = (IsSuper && bigSlash) ? 2 : 1;
 
-        float vfxScale = vfxDesignedRadius > 0f ? radius / vfxDesignedRadius : 1f;
-
         // ── AoE 360° ─────────────────────────────────────────────────────
         for (int i = 0; i < aoeHitCount; i++)
         {
             manager.FireMeleeServerRpc(center, radius, damage);
-            ShowHitVfx(center, vfxScale);
+            ShowVfx(VFXType.MeteorAoE, center, radius);
         }
 
         // ── Shield ────────────────────────────────────────────────────────
@@ -100,7 +98,8 @@ public class StormBunnyWeapon : BunnyHopWeapon
                 float   angle   = i * angleStep;
                 Vector3 projDir = Quaternion.Euler(0f, angle, 0f) * dir;
                 FireProjectile(center, projDir, damage, projSpeed,
-                               piercing: projLd.piercing, maxRange: projMaxRange);
+                               piercing: projLd.piercing, maxRange: projMaxRange,
+                               isCrit: isCrit);
             }
 
             // Wind Slash radial 360°
@@ -109,7 +108,9 @@ public class StormBunnyWeapon : BunnyHopWeapon
             {
                 float   angle    = i * (360f / windSlashCount);
                 Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                manager.FireRaycastServerRpc(center, slashDir, slashDmg, windSlashRange);
+                manager.FireRaycastServerRpc(center, slashDir, slashDmg, windSlashRange,
+                                             vfxTypeInt: (int)VFXType.SlashHit,
+                                             isCrit: isCrit);
             }
 
             // Mini chain lightning จาก projectile + wind slash hits (delayed)
@@ -137,7 +138,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
             next.EnemyTakeDamage(curDmg);
             hitSet.Add(next.GetInstanceID());
 
-            manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.RailgunBeam);
+            manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.None);
 
             prevPos  = nextPos;
             curDmg  *= chainDamageMult;
@@ -175,7 +176,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
                 next.EnemyTakeDamage(curDmg);
                 hitSet.Add(next.GetInstanceID());
 
-                manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.RailgunBeam);
+                manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.None);
 
                 prevPos  = nextPos;
                 curDmg  *= chainDamageMult;

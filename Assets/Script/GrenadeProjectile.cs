@@ -90,9 +90,10 @@ public class GrenadeProjectile : NetworkBehaviour
     [ClientRpc]
     void SpawnVfxClientRpc(Vector3 pos)
     {
+        VFXFactory.Play(VFXType.HitEffect, pos);          // base hit
         if (explosionVfxPrefab != null)
             Destroy(Instantiate(explosionVfxPrefab, pos, Quaternion.identity), 3f);
         else
-            VFXFactory.Play(cluster ? VFXType.GrenadeExplosion : VFXType.GrenadeExplosion, pos);
+            VFXFactory.Play(VFXType.GrenadeExplosion, pos);
     }
 }

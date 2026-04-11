@@ -27,7 +27,7 @@ public class ChainsawWeapon : WhipWeapon
     {
         Vector3 origin = transform.position + Vector3.up * 0.5f;
         Vector3 dir    = GetForwardDirection();
-        float   dmg    = RollDamage(ld.damage);
+        float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
 
         if (manager.statManager != null)
@@ -61,7 +61,7 @@ public class ChainsawWeapon : WhipWeapon
 
         // VFX ที่จุดกลางของ line
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        manager.BroadcastVfxTypeServerRpc(vfxPos, (int)VFXType.WhipSlash);
+        ShowVfx(VFXType.SlashHit, vfxPos, range, isCrit, direction: dir);
 
         // ── Chain จาก enemy ตัวสุดท้ายที่โดน ──────────────────────────────
         if (lastHit != null)
@@ -86,7 +86,7 @@ public class ChainsawWeapon : WhipWeapon
                     next.transform.position += pushDir.normalized * knockbackForce * 0.5f;
 
                 // VFX beam chain
-                manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.RailgunBeam);
+                manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.None);
                 prevPos = nextPos;
             }
         }

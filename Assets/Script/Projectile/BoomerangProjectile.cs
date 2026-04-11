@@ -17,6 +17,7 @@ public class BoomerangProjectile : NetworkBehaviour
     [HideInInspector] public float   speed    = 14f;
     [HideInInspector] public float   maxRange = 8f;
     [HideInInspector] public ulong   ownerClientId;
+    [HideInInspector] public bool    isCrit;
 
     // ── State ────────────────────────────────────────────────────────────
     private enum Phase { Forward, Returning }
@@ -87,7 +88,7 @@ public class BoomerangProjectile : NetworkBehaviour
 
         hitIds.Add(id);
         enemy.EnemyTakeDamage(damage);
-        VFXFactory.Play(VFXType.WhipSlash, transform.position);
+        VFXFactory.Play(isCrit ? VFXType.CritHitEffect : VFXType.HitEffect, transform.position);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

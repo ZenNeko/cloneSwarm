@@ -19,7 +19,7 @@ public class RadiantAuraWeapon : WeaponBase
     {
         Vector3 center = transform.position + Vector3.up * 0.5f;
         float   radius = ld.range;
-        float   dmg    = RollDamage(ld.damage);
+        float   dmg    = RollDamage(ld.damage, out bool isCrit);
 
         if (manager.statManager != null)
         {
@@ -28,6 +28,6 @@ public class RadiantAuraWeapon : WeaponBase
         }
 
         manager.FireMeleeServerRpc(center, radius, dmg);
-        manager.BroadcastVfxTypeServerRpc(center, (int)VFXType.OrbiterHit);
+        ShowVfx(VFXType.OrbiterHit, center, radius, isCrit);
     }
 }

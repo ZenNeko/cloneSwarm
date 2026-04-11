@@ -72,7 +72,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         float radius = explosionRadius * (manager.statManager != null
             ? manager.statManager.GetAreaMultiplier() : 1f);
         float dmg = RollDamage(ld.damage * (manager.statManager != null
-            ? manager.statManager.GetPowerMultiplier() : 1f));
+            ? manager.statManager.GetPowerMultiplier() : 1f), out bool _);
 
         // หา enemy — base missileCount + bonus จาก ProjectileCount stat
         int totalCount = missileCount + (manager.statManager != null

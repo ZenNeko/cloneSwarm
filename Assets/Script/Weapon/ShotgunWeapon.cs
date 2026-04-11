@@ -31,7 +31,7 @@ public class ShotgunWeapon : WeaponBase
 
         // damage แบ่งต่อ pellet แต่ขั้นต่ำ 1
         float dmgPerPellet = Mathf.Max(1f, ld.damage / Mathf.Max(1, ld.projectileCount));
-        float crit         = RollDamage(dmgPerPellet);
+        float pelletDmg    = RollDamage(dmgPerPellet, out bool isCrit);
 
         if (explodeOnHit)
         {
@@ -42,9 +42,10 @@ public class ShotgunWeapon : WeaponBase
         }
         else
         {
-            FireProjectile(pos, dir, crit, ld.projectileSpeed,
+            FireProjectile(pos, dir, pelletDmg, ld.projectileSpeed,
                 ld.projectileCount,
-                spreadAngle / Mathf.Max(1, ld.projectileCount - 1));
+                spreadAngle / Mathf.Max(1, ld.projectileCount - 1),
+                isCrit: isCrit);
         }
     }
 }

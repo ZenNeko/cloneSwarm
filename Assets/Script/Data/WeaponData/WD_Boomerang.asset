@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: WD_Boomerang
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Boomerang
-  description: 
+  description: Boomerang
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 5993201688506033904, guid: 68e9b37e85365db44b48625513869dc2, type: 3}
   aimMode: 0
-  projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
+  projectilePrefab: {fileID: 131468, guid: 345e53b3b1d238c4b9cb80b7b76301e2, type: 3}
+  hitVfxType: 0
   levels:
   - damage: 20
     cooldown: 1

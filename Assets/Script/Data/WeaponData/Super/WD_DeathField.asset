@@ -15,11 +15,11 @@ MonoBehaviour:
   weaponName: DeathField
   description: DeathField
   icon: {fileID: 0}
-  tier: 0
-  prefab: {fileID: 0}
+  tier: 1
+  prefab: {fileID: 3939981178889688897, guid: 959972edeac44a240b78719d9074d71f, type: 3}
   aimMode: 0
   projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
+  hitVfxType: 5
   levels:
   - damage: 20
     cooldown: 1

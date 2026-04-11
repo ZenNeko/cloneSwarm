@@ -14,7 +14,7 @@ using UnityEngine;
 /// </summary>
 public class TelegraphZone : NetworkBehaviour
 {
-    public enum AoEType { Circle, Line, Cross, Spread }
+    public enum AoEType { Circle, Line, Cross, Spread, Donut, Cone }
 
     [Header("Materials (ถ้าปล่อยว่างจะสร้าง runtime)")]
     public Material warningMaterial;   // transparent red — assign in Inspector
@@ -22,7 +22,8 @@ public class TelegraphZone : NetworkBehaviour
 
     // ── Client-side visual ────────────────────────────────────────────────
     private GameObject         visual;
-    private List<Renderer>     visualRenderers = new List<Renderer>();
+    private List<Renderer>     visualRenderers     = new List<Renderer>();
+    private List<Renderer>     safeZoneRenderers   = new List<Renderer>();
     private float              totalWarning;
     private float              elapsed;
     private bool               initialized;
@@ -36,6 +37,8 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public float   damage          = 30f;
     [HideInInspector] public int     spreadCount     = 5;
     [HideInInspector] public float   spreadAngle     = 60f;
+    [HideInInspector] public float   innerRadius     = 1.5f;   // Donut: safe zone inner radius
+    [HideInInspector] public float   coneAngle       = 90f;    // Cone: sweep angle (degrees)
 
     // ── Spawn Entry Point ─────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -47,12 +50,14 @@ public class TelegraphZone : NetworkBehaviour
     /// <summary>Server เรียกทันทีหลัง Spawn เพื่อส่งพารามิเตอร์ไปทุก client</summary>
     public void BroadcastInit()
     {
-        InitClientRpc((int)aoeType, radius, lineLength, lineWidth, warningDuration, damage, spreadCount, spreadAngle);
+        InitClientRpc((int)aoeType, radius, lineLength, lineWidth, warningDuration, damage,
+                      spreadCount, spreadAngle, innerRadius, coneAngle);
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
     [ClientRpc]
-    void InitClientRpc(int type, float r, float len, float wid, float warn, float dmg, int sCnt, float sAngle)
+    void InitClientRpc(int type, float r, float len, float wid, float warn, float dmg,
+                       int sCnt, float sAngle, float innerR, float coneAng)
     {
         aoeType         = (AoEType)type;
         radius          = r;
@@ -62,6 +67,8 @@ public class TelegraphZone : NetworkBehaviour
         damage          = dmg;
         spreadCount     = sCnt;
         spreadAngle     = sAngle;
+        innerRadius     = innerR;
+        coneAngle       = coneAng;
         totalWarning    = warn;
         elapsed         = 0f;
         initialized     = true;
@@ -102,6 +109,8 @@ public class TelegraphZone : NetworkBehaviour
                 AoEType.Circle => IsInCircle(playerPos),
                 AoEType.Cross  => IsInLine(playerPos) || IsInLineCross(playerPos),
                 AoEType.Spread => IsInSpread(playerPos),
+                AoEType.Donut  => IsInDonut(playerPos),
+                AoEType.Cone   => IsInCone(playerPos),
                 _              => IsInLine(playerPos),   // Line
             };
 
@@ -133,6 +142,22 @@ public class TelegraphZone : NetworkBehaviour
         Vector3 local = Quaternion.Inverse(rot90) * (pos - transform.position);
         return Mathf.Abs(local.x) <= lineWidth * 0.5f
             && Mathf.Abs(local.z) <= lineLength * 0.5f;
+    }
+
+    bool IsInDonut(Vector3 pos)
+    {
+        float dist = new Vector2(pos.x - transform.position.x,
+                                 pos.z - transform.position.z).magnitude;
+        return dist >= innerRadius && dist <= radius;
+    }
+
+    bool IsInCone(Vector3 pos)
+    {
+        Vector3 toTarget = pos - transform.position;
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude < 0.001f) return true;
+        return toTarget.magnitude <= radius
+            && Vector3.Angle(transform.forward, toTarget) <= coneAngle * 0.5f;
     }
 
     // Spread: ตรวจว่า pos อยู่ใน fan-shaped ray ใดๆ
@@ -193,11 +218,54 @@ public class TelegraphZone : NetworkBehaviour
                 {
                     float angle = -halfSpread + i * step;
                     Quaternion rot = Quaternion.Euler(0f, angle, 0f);
-                    // center bar at half-length forward
                     Vector3 barCenter = rot * (Vector3.forward * lineLength * 0.5f);
                     CreateLinePrimitive(visual.transform, barCenter, rot, lineWidth, lineLength);
                 }
                 break;
+
+            case AoEType.Donut:
+                visual = new GameObject("Visual_Donut");
+                visual.transform.SetParent(transform);
+                visual.transform.localPosition = Vector3.zero;
+                // outer danger ring
+                CreateCylinderPrimitive(visual.transform, Vector3.zero, Quaternion.identity, radius * 2f);
+                // inner safe zone — teal, slightly higher to avoid z-fighting
+                CreateSafeCylinderPrimitive(visual.transform, new Vector3(0f, 0.001f, 0f),
+                                            Quaternion.identity, innerRadius * 2f);
+                break;
+
+            case AoEType.Cone:
+                visual = new GameObject("Visual_Cone");
+                visual.transform.SetParent(transform);
+                visual.transform.localPosition = Vector3.zero;
+                int   fanLines = Mathf.Max(4, Mathf.RoundToInt(coneAngle / 10f));
+                float fanStep  = fanLines > 1 ? coneAngle / (fanLines - 1) : 0f;
+                float halfCone = coneAngle * 0.5f;
+                for (int i = 0; i < fanLines; i++)
+                {
+                    float      fanAngle = -halfCone + i * fanStep;
+                    Quaternion fanRot   = Quaternion.Euler(0f, fanAngle, 0f);
+                    Vector3    fanCen   = fanRot * (Vector3.forward * radius * 0.5f);
+                    CreateLinePrimitive(visual.transform, fanCen, fanRot, lineWidth * 0.4f, radius);
+                }
+                break;
+        }
+    }
+
+    void CreateSafeCylinderPrimitive(Transform parent, Vector3 localPos, Quaternion localRot, float diameter)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.transform.SetParent(parent);
+        go.transform.localPosition = localPos;
+        go.transform.localRotation = localRot;
+        go.transform.localScale    = new Vector3(diameter, 0.02f, diameter);
+        Destroy(go.GetComponent<Collider>());
+        var r = go.GetComponent<Renderer>();
+        if (r)
+        {
+            r.material       = GetWarningMaterial();
+            r.material.color = new Color(0.1f, 0.8f, 0.9f, 0.3f);   // teal — safe zone
+            safeZoneRenderers.Add(r);
         }
     }
 
@@ -239,6 +307,10 @@ public class TelegraphZone : NetworkBehaviour
 
         foreach (var r in visualRenderers)
             if (r) r.material.color = finalCol;
+
+        // safe zone (Donut center) — fixed teal, no blink
+        foreach (var r in safeZoneRenderers)
+            if (r) r.material.color = new Color(0.1f, 0.8f, 0.9f, 0.3f);
     }
 
     Material GetWarningMaterial()

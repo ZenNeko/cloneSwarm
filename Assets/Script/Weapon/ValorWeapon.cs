@@ -97,12 +97,12 @@ public class ValorWeapon : AbilityBase, IHUDAbility
             dir = dir.normalized;
         }
 
-        float damage = RollDamage(ld.damage);
-        StartCoroutine(DashAndBlast(dir, ld.range, damage));
+        float damage = RollDamage(ld.damage, out bool isCrit);
+        StartCoroutine(DashAndBlast(dir, ld.range, damage, isCrit));
     }
 
     // ── Dash coroutine ────────────────────────────────────────────────────
-    IEnumerator DashAndBlast(Vector3 dir, float radius, float damage)
+    IEnumerator DashAndBlast(Vector3 dir, float radius, float damage, bool isCrit)
     {
         isDashing = true;
 
@@ -133,6 +133,8 @@ public class ValorWeapon : AbilityBase, IHUDAbility
 
         // AoE blast at landing
         manager.FireMeleeServerRpc(transform.position, radius, damage);
+        VFXType baseHit = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
+        manager.BroadcastVfxTypeServerRpc(transform.position, (int)baseHit);
 
         // Wind Slash — เฉพาะตอน Blade of Exile active
         if (chargeManager != null && chargeManager.IsExileActive)
@@ -143,7 +145,8 @@ public class ValorWeapon : AbilityBase, IHUDAbility
             {
                 float   angle    = i * (360f / windSlashCount);
                 Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                manager.FireRaycastServerRpc(transform.position, slashDir, windDmg, maxRange);
+                manager.FireRaycastServerRpc(transform.position, slashDir, windDmg, maxRange,
+                                             isCrit: isCrit);
             }
         }
 

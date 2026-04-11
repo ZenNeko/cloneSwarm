@@ -17,7 +17,7 @@ public class MinefieldWeapon : WeaponBase
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
-        float   dmg      = RollDamage(ld.damage);
+        float   dmg      = RollDamage(ld.damage, out bool _);
         float   radius   = explosionRadius;
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();

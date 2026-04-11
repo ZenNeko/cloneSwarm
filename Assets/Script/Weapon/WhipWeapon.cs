@@ -24,17 +24,17 @@ public class WhipWeapon : WeaponBase
     {
         Vector3 origin = transform.position + Vector3.up * 0.5f;
         Vector3 dir    = GetForwardDirection();
-        float   dmg    = RollDamage(ld.damage);
+        float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
 
         if (manager.statManager != null)
             range *= manager.statManager.GetAreaMultiplier();
 
         // Line AoE ข้างหน้า (Physics.OverlapBox ผ่าน server)
-        manager.FireLineAoEServerRpc(origin, dir, dmg, range, width);
+        manager.FireLineAoEServerRpc(origin, dir, dmg, range, width, isCrit);
         // VFX ที่จุดกลางของ line
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        manager.BroadcastVfxTypeServerRpc(vfxPos, (int)VFXType.WhipSlash);
+        ShowVfx(VFXType.WhipSlash, vfxPos, range, isCrit, direction: dir);
     }
 
     /// <summary>หา nearest enemy แล้วหันหน้าไป — ใช้ใน subclass ได้</summary>

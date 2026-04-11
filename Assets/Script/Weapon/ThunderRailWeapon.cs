@@ -19,7 +19,7 @@ public class ThunderRailWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg = RollDamage(ld.damage);
+        float dmg = RollDamage(ld.damage, out bool isCrit);
         if (manager.statManager != null)
             dmg *= manager.statManager.GetPowerMultiplier();
 
@@ -38,7 +38,7 @@ public class ThunderRailWeapon : WeaponBase
         Vector3 endPoint = origin + dir * ld.range;
 
         // Railgun beam VFX
-        manager.BroadcastBeamServerRpc(origin, endPoint, (int)VFXType.RailgunBeam);
+        manager.BroadcastBeamServerRpc(origin, endPoint, (int)VFXType.None);
 
         foreach (var hit in hits)
         {
@@ -46,6 +46,7 @@ public class ThunderRailWeapon : WeaponBase
             if (enemy == null) continue;
 
             enemy.EnemyTakeDamage(dmg);
+            ShowBaseHitVfx(hit.point + Vector3.up * 0.5f, isCrit);
 
             // Chain lightning จาก enemy ที่โดน
             FireChainFrom(hit.point + Vector3.up * 0.8f, enemy.GetInstanceID(), chainDamage, chainTargets, mask);
@@ -69,7 +70,7 @@ public class ThunderRailWeapon : WeaponBase
         if (best == null) return;
 
         Vector3 targetPos = best.transform.position + Vector3.up * 0.8f;
-        manager.BroadcastBeamServerRpc(pos, targetPos, (int)VFXType.RailgunBeam);
+        manager.BroadcastBeamServerRpc(pos, targetPos, (int)VFXType.None);
         best.EnemyTakeDamage(chainDmg);
 
         FireChainFrom(targetPos, best.GetInstanceID(), chainDmg * 0.7f, remaining - 1, mask);

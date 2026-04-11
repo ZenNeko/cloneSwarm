@@ -37,7 +37,7 @@ public class VortexWeapon : WeaponBase
 
     protected void SpawnOrbAt(float angleDeg, WeaponLevelData ld)
     {
-        float   dmg   = RollDamage(ld.damage);
+        float   dmg   = RollDamage(ld.damage, out bool isCrit);
         float   speed = ld.projectileSpeed > 0f ? ld.projectileSpeed : 10f;
         float   range = ld.range;
 
@@ -54,6 +54,7 @@ public class VortexWeapon : WeaponBase
         // ทิศยิง = tangent ของ orbit (หมุน 90° จาก radial)
         Vector3 tangent = new Vector3(-Mathf.Sin(rad), 0f, Mathf.Cos(rad));
 
-        FireProjectile(spawnPos, tangent, dmg, speed, count: 1, spreadDeg: 0f, maxRange: range);
+        FireProjectile(spawnPos, tangent, dmg, speed, count: 1, spreadDeg: 0f, maxRange: range, isCrit: isCrit);
+        ShowVfx(VFXType.VortexSpawn, spawnPos, isAttackHit: false);
     }
 }

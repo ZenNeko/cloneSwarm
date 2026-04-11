@@ -48,6 +48,7 @@ MonoBehaviour:
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
+  tempCooldownMult: 1
   dashDistance: 4
   dashDuration: 0.15
   exileProjectileRangeMult: 7
@@ -58,6 +59,5 @@ MonoBehaviour:
   windSlashCount: 2
   windSlashDmgRatio: 0.6
   windSlashRange: 8
-  exileProjectileSpeed: 45
-  dashTrailPrefab: {fileID: 0}
+  dashTrailPrefab: {fileID: 8475491197590333196, guid: daf3b95fa19e52e4d88fdea63b67718a, type: 3}
   vfxDesignedRadius: 3

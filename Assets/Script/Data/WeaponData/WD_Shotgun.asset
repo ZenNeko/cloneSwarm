@@ -19,7 +19,7 @@ MonoBehaviour:
   prefab: {fileID: 5546056588423154064, guid: 18e0b400db2998d47b755f5e76ed5975, type: 3}
   aimMode: 0
   projectilePrefab: {fileID: 8074367145943022193, guid: d5effb961510faa458b89651ea468b1c, type: 3}
-  hitVfxPrefab: {fileID: 0}
+  hitVfxType: 0
   levels:
   - damage: 12
     cooldown: 1.2

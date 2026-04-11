@@ -45,7 +45,7 @@ public class OrbitalCannonWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float projDmg  = RollDamage(ld.damage);
+        float projDmg  = RollDamage(ld.damage, out bool isCrit);
         float meleeDmg = projDmg * meleeDmgMult;
 
         foreach (var orb in orbs)
@@ -63,7 +63,7 @@ public class OrbitalCannonWeapon : WeaponBase
                 Vector3 dir = (enemy.position - orbPos);
                 dir.y = 0f;
                 if (dir.sqrMagnitude > 0.01f)
-                    FireProjectile(orbPos, dir.normalized, projDmg, ld.projectileSpeed);
+                    FireProjectile(orbPos, dir.normalized, projDmg, ld.projectileSpeed, isCrit: isCrit);
             }
         }
     }

@@ -218,7 +218,7 @@ public class ZoneObjective : NetworkBehaviour
     void OnPlayersInZoneChanged(int _, int count)
     {
         if (count > 0)
-            VFXFactory.Play(VFXType.LaserHit, transform.position + Vector3.up * 0.1f);
+            VFXFactory.Play(VFXType.HitEffect, transform.position + Vector3.up * 0.1f);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

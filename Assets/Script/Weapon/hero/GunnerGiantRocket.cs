@@ -65,7 +65,7 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
 
         float maxRange     = ld.range * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
         float radius       = explosionRadius * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
-        float baseDmg      = RollDamage(ld.damage);
+        float baseDmg      = RollDamage(ld.damage, out bool _);
 
         Vector3 playerPos  = transform.position;
         Vector3 spawnPos   = playerPos + Vector3.up * 0.5f;

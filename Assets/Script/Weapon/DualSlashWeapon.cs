@@ -20,7 +20,7 @@ public class DualSlashWeapon : WeaponBase
 
     protected override void OnFire(WeaponLevelData ld)
     {
-        float dmg    = RollDamage(ld.damage);
+        float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = ld.range;
 
         if (manager.statManager != null)
@@ -39,8 +39,8 @@ public class DualSlashWeapon : WeaponBase
         manager.FireMeleeServerRpc(leftPos,  radius, dmg);
         manager.FireMeleeServerRpc(rightPos, radius, dmg);
 
-        manager.BroadcastVfxTypeServerRpc(leftPos,  (int)VFXType.WhipSlash);
-        manager.BroadcastVfxTypeServerRpc(rightPos, (int)VFXType.WhipSlash);
+        ShowVfx(VFXType.SlashHit, leftPos,  radius, isCrit, direction: -right);
+        ShowVfx(VFXType.SlashHit, rightPos, radius, isCrit, direction:  right);
     }
 
     Vector3 GetAimDirection()

@@ -15,11 +15,11 @@ MonoBehaviour:
   weaponName: CycloneBlade
   description: CycloneBlade
   icon: {fileID: 0}
-  tier: 0
+  tier: 2
   prefab: {fileID: 8923030569189250659, guid: e5f144f611923504fa6b37f51083c0f5, type: 3}
   aimMode: 0
   projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
+  hitVfxType: 11
   levels:
   - damage: 20
     cooldown: 1

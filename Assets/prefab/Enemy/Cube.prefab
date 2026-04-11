@@ -160,7 +160,7 @@ MonoBehaviour:
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.4
-  maxHealth: 100
+  maxHealth: 30
   onDeath:
     m_PersistentCalls:
       m_Calls: []

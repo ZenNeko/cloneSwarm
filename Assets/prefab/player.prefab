@@ -364,6 +364,7 @@ MonoBehaviour:
   statManager: {fileID: 0}
   characterData: {fileID: 0}
   startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  boomerangPrefab: {fileID: 0}
   grenadePrefab: {fileID: 2175207568025715613, guid: 0795629bd4364eb4d9a8fed3d02839d9, type: 3}
   minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}
   stickyRocketPrefab: {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
@@ -384,24 +385,35 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeManager
   ShowTopMostFoldoutHeaderGroup: 1
   allWeapons:
-  - {fileID: 11400000, guid: 38823361fa45e6547a9801072865dfda, type: 2}
-  - {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
-  - {fileID: 11400000, guid: 5d6a54a1e6c6caa40ae093305e76c879, type: 2}
-  - {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}
-  - {fileID: 11400000, guid: 539da540417cbd04ab9b68faf03e8bee, type: 2}
+  - {fileID: 11400000, guid: b4772df56ffbf0b4a8cfdc424d2ce158, type: 2}
+  - {fileID: 11400000, guid: 205dbdfc59253c843b06bd64dd6a015c, type: 2}
   - {fileID: 11400000, guid: 2627d41ba1d3f9b489d56c32b4e777ae, type: 2}
-  - {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
+  - {fileID: 11400000, guid: b60695dce44716e499caf05ac14d135b, type: 2}
+  - {fileID: 11400000, guid: 21c29adfa9d3ac34697b827b0be41d81, type: 2}
+  - {fileID: 11400000, guid: 57bb557a1524634449faf332d404a910, type: 2}
+  - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
+  - {fileID: 11400000, guid: f730031a333f4094495d738700ec6188, type: 2}
+  - {fileID: 11400000, guid: 941b65e36e8198f48b036bc3e0daa804, type: 2}
+  - {fileID: 11400000, guid: 9f931c4b300bae7478f93523e50d1e68, type: 2}
+  - {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
+  - {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}
+  - {fileID: 11400000, guid: 78c82c6cdaac98d48ae8fe1b4f7219e8, type: 2}
   - {fileID: 11400000, guid: ff3e9a3dcb66bc140a7c5cb6e0100f00, type: 2}
   - {fileID: 11400000, guid: afc0e65b3612c1647a9e3bd5f6ece9d4, type: 2}
-  - {fileID: 11400000, guid: 492887282d5f46544b1cfbafc3464cc2, type: 2}
-  - {fileID: 11400000, guid: 21c29adfa9d3ac34697b827b0be41d81, type: 2}
-  - {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
-  - {fileID: 11400000, guid: 3bf30fb8ceee2204eb30d8151f2368fe, type: 2}
   - {fileID: 11400000, guid: bb37c6397e1b3864089c22cfa0300e46, type: 2}
-  - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
+  - {fileID: 11400000, guid: 63cd38928f570194ebf1d53e608c553f, type: 2}
   - {fileID: 11400000, guid: 73d7c19550c28e44c81fee169b1155b3, type: 2}
-  - {fileID: 11400000, guid: bb8ae4cf41c4fdc4c85c6f0abab933b5, type: 2}
-  - {fileID: 11400000, guid: 941b65e36e8198f48b036bc3e0daa804, type: 2}
+  - {fileID: 11400000, guid: 84700ba28e6339644b518a87cdd51f86, type: 2}
+  - {fileID: 11400000, guid: c5a4a137eee152243a36cc412d127855, type: 2}
+  - {fileID: 11400000, guid: 5d6a54a1e6c6caa40ae093305e76c879, type: 2}
+  - {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  - {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
+  - {fileID: 11400000, guid: 56d064c4bc69e6646b855a071b262d53, type: 2}
+  - {fileID: 11400000, guid: 539da540417cbd04ab9b68faf03e8bee, type: 2}
+  - {fileID: 11400000, guid: 1207c6eec5e8cbb4b9b68e1987c53f56, type: 2}
+  - {fileID: 11400000, guid: 492887282d5f46544b1cfbafc3464cc2, type: 2}
+  - {fileID: 11400000, guid: 3bf30fb8ceee2204eb30d8151f2368fe, type: 2}
+  - {fileID: 11400000, guid: f2391673500fdb341b17be4751471342, type: 2}
   allStats:
   - {fileID: 11400000, guid: baabf1a1a51e22241bfab42bb6367df4, type: 2}
   - {fileID: 11400000, guid: ee3f6447d1cd59245bdcda73bb6ee14c, type: 2}
@@ -416,9 +428,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b05f701fbe13e904c894c707da567f93, type: 2}
   - {fileID: 11400000, guid: 1208c1e3404eff34d9a08d6928dfa45a, type: 2}
   allRecipes:
-  - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
   - {fileID: 11400000, guid: cc06f9f7f8663d74a9497b6778b35ae8, type: 2}
+  - {fileID: 11400000, guid: 13add57572c889d42a33f0bc0829598b, type: 2}
+  - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
   - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
+  - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
   cardsPerLevel: 3
 --- !u!114 &7655913753558015870
 MonoBehaviour:

@@ -203,7 +203,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SpawnBoomerangServerRpc(
         Vector3 spawnPos, Vector3 direction,
-        float damage, float speed, float maxRange)
+        float damage, float speed, float maxRange, bool isCrit = false)
     {
         if (boomerangPrefab == null) return;
         Quaternion rot = direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity;
@@ -215,6 +215,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         proj.speed         = speed;
         proj.maxRange      = maxRange;
         proj.ownerClientId = OwnerClientId;
+        proj.isCrit        = isCrit;
         no.Spawn(true);
         proj.Init(direction);
     }
@@ -224,7 +225,8 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void FireProjectileServerRpc(
         Vector3 spawnPos, Vector3 baseDir,
         float damage, float projSpeed, int count, float spreadDeg,
-        bool piercing = false, int projPrefabId = -1, float maxRange = -1f)
+        bool piercing = false, int projPrefabId = -1, float maxRange = -1f,
+        bool isCrit = false)
     {
         // หา prefab จาก NetworkedVFXPool registry (ทุก client มีข้อมูลเดียวกัน)
         // fallback → projectilePrefab default บน manager
@@ -248,6 +250,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             p.damage   = damage;
             p.speed    = projSpeed;
             p.piercing = piercing;
+            p.isCrit   = isCrit;
             if (maxRange > 0f) p.maxRange = maxRange;   // -1 = ใช้ค่าบน prefab
             p.InitDirection(dir);
 
@@ -314,7 +317,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void FireLineAoEServerRpc(
         Vector3 origin, Vector3 direction,
-        float damage, float range, float width = 1.5f)
+        float damage, float range, float width = 1.5f, bool isCrit = false)
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -349,6 +352,9 @@ public class PlayerWeaponManager : NetworkBehaviour
             int id = c.gameObject.GetInstanceID();
             if (!seen.Add(id)) continue;
             c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+            // base hit VFX ที่ตำแหน่ง enemy
+            int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
+            BroadcastVfxTypeClientRpc(c.transform.position + Vector3.up * 0.5f, hitType);
         }
 
         ShowLineAoEVfxClientRpc(origin, origin + direction * range);
@@ -357,12 +363,14 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ClientRpc]
     void ShowLineAoEVfxClientRpc(Vector3 from, Vector3 to)
     {
-        VFXFactory.PlayBeam(VFXType.LaserHit, from, to, duration: 0.18f);
+        VFXFactory.PlayBeam(VFXType.None, from, to, duration: 0.18f);
     }
 
-    // ── ServerRpc: Raycast Pierce (Railgun / PlasmaWhip) ──────────────────
+    // ── ServerRpc: Raycast Pierce (Railgun / PlasmaWhip / WindSlash) ────────
     [ServerRpc(RequireOwnership = false)]
-    public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage, float maxDist = 50f)
+    public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage,
+                                     float maxDist = 50f, int vfxTypeInt = (int)VFXType.None,
+                                     bool isCrit = false)
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -371,17 +379,20 @@ public class PlayerWeaponManager : NetworkBehaviour
         var mask = LayerMask.GetMask("Enemy");
         var hits = Physics.RaycastAll(origin, direction, maxDist, mask);
         foreach (var h in hits)
+        {
             h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+            // base hit VFX ที่ตำแหน่งที่โดน
+            int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
+            BroadcastVfxTypeClientRpc(h.point, hitType);
+        }
 
-        // Notify all clients to show beam VFX
-        ShowRaycastVfxClientRpc(origin, origin + direction * maxDist);
+        ShowRaycastVfxClientRpc(origin, origin + direction * maxDist, vfxTypeInt);
     }
 
     [ClientRpc]
-    void ShowRaycastVfxClientRpc(Vector3 from, Vector3 to)
+    void ShowRaycastVfxClientRpc(Vector3 from, Vector3 to, int vfxTypeInt)
     {
-        // Railgun / PlasmaWhip — beam + hit burst
-        VFXFactory.PlayBeam(VFXType.RailgunBeam, from, to, duration: 0.12f);
+        VFXFactory.PlayBeam((VFXType)vfxTypeInt, from, to, duration: 0.12f);
     }
 
     // ── ServerRpc: Drop Mine ──────────────────────────────────────────────
@@ -489,37 +500,15 @@ public class PlayerWeaponManager : NetworkBehaviour
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
 
-    // ── VFX Broadcast System (Pool-based) ────────────────────────────────
-    // owner → RequestVfxServerRpc → PlayVfxClientRpc → NetworkedVFXPool.PlayFromPool
-    // ทุก client เล่น VFX จาก local pool — ไม่มี Instantiate/Destroy GC spike
-
+    // ── VFX Broadcast by VFXType → NetworkedVFXPool ──────────────────────
+    /// <summary>Weapon scripts ทุกตัวใช้ช่องทางนี้ผ่าน ShowHitVfx() หรือ BroadcastVfxTypeServerRpc โดยตรง</summary>
     [ServerRpc(RequireOwnership = false)]
-    public void RequestVfxServerRpc(Vector3 pos, int vfxId, float scale = 1f)
-    {
-        PlayVfxClientRpc(pos, vfxId, scale);
-    }
+    public void BroadcastVfxTypeServerRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default)
+        => BroadcastVfxTypeClientRpc(pos, vfxTypeInt, scale, direction);
 
     [ClientRpc]
-    void PlayVfxClientRpc(Vector3 pos, int vfxId, float scale = 1f)
-    {
-        var pool = NetworkedVFXPool.Instance;
-        if (pool == null)
-        {
-            Debug.LogWarning("[VFX] NetworkedVFXPool not found in scene");
-            return;
-        }
-        pool.PlayFromPool(vfxId, pos, scale);
-    }
-
-    // ── VFX Broadcast by VFXType (ไม่ต้องใช้ Pool — procedural particle) ──
-    /// <summary>Whip/Chainsaw และ weapon อื่นที่ไม่มี hitVfxPrefab ใช้ช่องทางนี้</summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void BroadcastVfxTypeServerRpc(Vector3 pos, int vfxTypeInt)
-        => BroadcastVfxTypeClientRpc(pos, vfxTypeInt);
-
-    [ClientRpc]
-    void BroadcastVfxTypeClientRpc(Vector3 pos, int vfxTypeInt)
-        => VFXFactory.Play((VFXType)vfxTypeInt, pos);
+    void BroadcastVfxTypeClientRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default)
+        => NetworkedVFXPool.Instance?.PlayByType((VFXType)vfxTypeInt, pos, scale, direction);
 
     // ── Beam VFX Broadcast (Lightning Chain, Thunder Rail ฯลฯ) ───────────
     /// <summary>วาด LineRenderer beam จาก from→to บนทุก client</summary>

@@ -419,8 +419,7 @@ MonoBehaviour:
   damage: 20
   maxRange: 20
   piercing: 1
-  hitVfxPrefab: {fileID: 0}
-  hitVFX: 0
+  hitVFX: -1
 --- !u!114 &236222806596963256
 MonoBehaviour:
   m_ObjectHideFlags: 0

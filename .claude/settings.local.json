@@ -32,7 +32,11 @@
       "Bash(find F:cloneSwarm/Assets -type d -name *VFX* -o -type d -name *vfx* -o -type d -name *Particle*)",
       "Bash(claude --version)",
       "Bash(claude remote-control:*)",
-      "Bash(find F:cloneSwarmAssetsScript -name *.cs -type f)"
+      "Bash(find F:cloneSwarmAssetsScript -name *.cs -type f)",
+      "Bash(find F:cloneSwarmAssets -type d \\\\\\(-iname *VFX* -o -iname *Effect* -o -iname *Particle* -o -iname *FX \\\\\\))",
+      "Bash(grep -l \"ShowHitVfx\\\\|ShowVfx\\\\|RollDamage\" /f/cloneSwarm/Assets/Script/Weapon/*.cs)",
+      "Bash(python extract_logs.py)",
+      "Bash(python -c ':*)"
     ]
   }
 }

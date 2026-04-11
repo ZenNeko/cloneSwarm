@@ -16,7 +16,7 @@ public class PlasmaWhipWeapon : WeaponBase
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 center = transform.position + Vector3.up * 0.5f;
-        float   dmg    = RollDamage(ld.damage);
+        float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
 
         if (manager.statManager != null)
@@ -24,6 +24,7 @@ public class PlasmaWhipWeapon : WeaponBase
 
         // 1. Melee spin รอบตัว
         manager.FireMeleeServerRpc(center, range, dmg * 0.6f);
+        ShowBaseHitVfx(center, isCrit);
 
         // 2. Raycast N ทิศ ตามจำนวน projectileCount
         int rays = Mathf.Max(1, ld.projectileCount);
@@ -31,7 +32,7 @@ public class PlasmaWhipWeapon : WeaponBase
         {
             float   angle = (360f / rays) * i;
             Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-            manager.FireRaycastServerRpc(center, dir, dmg, range);
+            manager.FireRaycastServerRpc(center, dir, dmg, range, isCrit: isCrit);
         }
     }
 }

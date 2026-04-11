@@ -105,7 +105,8 @@ public abstract class WeaponBase : MonoBehaviour
         int   count     = 1,
         float spreadDeg = 0f,
         bool  piercing  = false,
-        float maxRange  = -1f)
+        float maxRange  = -1f,
+        bool  isCrit    = false)
     {
         var pool   = NetworkedVFXPool.Instance;
         int projId = pool != null && data?.projectilePrefab != null
@@ -113,33 +114,72 @@ public abstract class WeaponBase : MonoBehaviour
             : -1;
         manager.FireProjectileServerRpc(
             pos, dir, damage, speed, count, spreadDeg,
-            piercing, projId, maxRange);
+            piercing, projId, maxRange, isCrit);
     }
 
     // ── VFX Helpers — broadcast ผ่าน Pool ไปทุก client ──────────────────
 
     /// <summary>
-    /// แสดง WeaponData.hitVfxPrefab บนทุก client ผ่าน NetworkedVFXPool
-    /// prefab ต้องอยู่ใน NetworkedVFXPool.vfxEntries
+    /// คำนวณ VFX scale จาก actualRange เทียบกับ designedRadius ของ prefab
+    /// actualRange = radius/range จริงที่ weapon ใช้ (หลัง stat multiplier)
+    /// คืน 1f ถ้า designedRadius = 0 (fixed size) หรือไม่พบ type
     /// </summary>
-    protected void ShowHitVfx(Vector3 pos, float vfxScale = 1f)
+    protected float ComputeVfxScale(VFXType type, float actualRange)
     {
-        if (data?.hitVfxPrefab == null) return;
-        ShowVfx(data.hitVfxPrefab, pos, vfxScale);
+        var pool = NetworkedVFXPool.Instance;
+        if (pool == null) return 1f;
+        float designed = pool.GetDesignedRadius(type);
+        if (designed <= 0f) return 1f;
+        return actualRange / designed;
     }
 
     /// <summary>
-    /// แสดง VFX prefab บนทุก client ผ่าน NetworkedVFXPool
-    /// prefab ต้องอยู่ใน NetworkedVFXPool.vfxEntries
+    /// แสดง base hit VFX (HitEffect / CritHitEffect) ที่ตำแหน่ง pos
+    /// ทุก weapon ควรเรียกเมื่อโจมตีโดน enemy เพื่อให้มี feedback พื้นฐาน
     /// </summary>
-    protected void ShowVfx(GameObject prefab, Vector3 pos, float vfxScale = 1f)
+    protected void ShowBaseHitVfx(Vector3 pos, bool isCrit = false)
     {
-        if (prefab == null) return;
-        var pool = NetworkedVFXPool.Instance;
-        if (pool == null) { Debug.LogWarning("[VFX] NetworkedVFXPool not found in scene"); return; }
-        int id = pool.GetVfxId(prefab);
-        if (id < 0) { Debug.LogWarning($"[VFX] '{prefab.name}' ไม่อยู่ใน NetworkedVFXPool.vfxEntries"); return; }
-        manager.RequestVfxServerRpc(pos, id, vfxScale);
+        VFXType baseHit = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
+        manager.BroadcastVfxTypeServerRpc(pos, (int)baseHit);
+    }
+
+    /// <summary>
+    /// แสดง WeaponData.hitVfxType — ใช้สำหรับ projectile weapon ที่ hit VFX อยู่ใน data
+    /// ถ้า isCrit → แสดง CritHitEffect แทน | ปกติ → แสดง hitVfxType
+    /// </summary>
+    protected void ShowHitVfx(Vector3 pos, float actualRange = 0f, bool isCrit = false)
+    {
+        // base hit effect เสมอ
+        ShowBaseHitVfx(pos, isCrit);
+
+        // weapon-specific hit VFX (ถ้ามี + ไม่ซ้ำกับ base)
+        if (data == null || data.hitVfxType == VFXType.None) return;
+        if (data.hitVfxType == VFXType.HitEffect || data.hitVfxType == VFXType.CritHitEffect) return;
+        float scale = actualRange > 0f ? ComputeVfxScale(data.hitVfxType, actualRange) : 1f;
+        manager.BroadcastVfxTypeServerRpc(pos, (int)data.hitVfxType, scale);
+    }
+
+    /// <summary>
+    /// แสดง VFX จาก VFXType บนทุก client + base HitEffect/CritHitEffect ซ้อนทับ
+    /// actualRange = 0 → scale=1f | actualRange > 0 → auto scale จาก designedRadius
+    /// isAttackHit = true → เพิ่ม base HitEffect/CritHitEffect (default)
+    /// isAttackHit = false → แสดงเฉพาะ type (สำหรับ non-hit เช่น DashTrail, VortexSpawn)
+    /// </summary>
+    /// <summary>
+    /// แสดง VFX จาก VFXType บนทุก client + base HitEffect/CritHitEffect ซ้อนทับ
+    /// direction = ทิศที่ VFX หันหน้าไป — ใช้กับ Slash/Melee VFX Graph (default = ไม่หมุน)
+    /// </summary>
+    protected void ShowVfx(VFXType type, Vector3 pos, float actualRange = 0f,
+                           bool isCrit = false, bool isAttackHit = true,
+                           Vector3 direction = default)
+    {
+        if (type == VFXType.None) return;
+        float scale = actualRange > 0f ? ComputeVfxScale(type, actualRange) : 1f;
+        manager.BroadcastVfxTypeServerRpc(pos, (int)type, scale, direction);
+
+        // base hit effect ซ้อนทับ — ทุก attack hit ต้องมี
+        if (isAttackHit && type != VFXType.HitEffect && type != VFXType.CritHitEffect)
+            ShowBaseHitVfx(pos, isCrit);
     }
 
     // ── Crit Roll ─────────────────────────────────────────────────────────
@@ -148,6 +188,19 @@ public abstract class WeaponBase : MonoBehaviour
         var sm = manager.statManager;
         if (sm != null && Random.value < sm.GetCritChance())
             return baseDamage * 2f;
+        return baseDamage;
+    }
+
+    /// <summary>RollDamage + crit flag — ใช้เมื่อต้องรู้ว่า crit หรือไม่ (เช่น เลือก VFX)</summary>
+    protected float RollDamage(float baseDamage, out bool isCrit)
+    {
+        var sm = manager.statManager;
+        if (sm != null && Random.value < sm.GetCritChance())
+        {
+            isCrit = true;
+            return baseDamage * 2f;
+        }
+        isCrit = false;
         return baseDamage;
     }
 

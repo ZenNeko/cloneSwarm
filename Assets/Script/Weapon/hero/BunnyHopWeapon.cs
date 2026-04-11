@@ -58,13 +58,8 @@ public class BunnyHopWeapon : WeaponBase
     // Projectile speed + count อ่านจาก WeaponData → levels → projectileSpeed / projectileCount
 
     [Header("VFX")]
-    [Tooltip("Dash trail — broadcast ทุก client ผ่าน NetworkedVFXPool\nต้องอยู่ใน NetworkedVFXPool.vfxEntries\nAoE VFX → WeaponData → Hit Vfx Prefab (ก็ต้องอยู่ใน pool เช่นกัน)")]
-    public GameObject dashTrailPrefab;
-    [Tooltip("radius ที่ AoE VFX prefab ถูกออกแบบมา\n" +
-             "ดูได้จาก Particle System → Shape → Radius ของ prefab นั้น\n" +
-             "ระบบจะ scale VFX ให้ตรงกับ radius จริงอัตโนมัติ\n" +
-             "เช่น prefab radius=1, actual radius=3 → scale=3x")]
-    public float vfxDesignedRadius = 1f;
+    [Tooltip("Dash trail VFX type — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
+    public VFXType dashTrailVfxType = VFXType.DashTrail;
 
     protected override bool UsesCooldownTimer => false;
 
@@ -105,7 +100,7 @@ public class BunnyHopWeapon : WeaponBase
             damage *= (1f + bonus);
         }
 
-        damage = RollDamage(damage);
+        damage = RollDamage(damage, out bool isCrit);
 
         // ทิศ dash = ทิศที่ผู้เล่นกด input อยู่
         Vector3 dashDir = manager.playerMove?.MoveDirection ?? Vector3.zero;
@@ -119,11 +114,11 @@ public class BunnyHopWeapon : WeaponBase
             else dashDir = transform.forward;
         }
 
-        StartCoroutine(DashAndFire(dashDir, aoeRadius, damage, bigSlash, exileActive));
+        StartCoroutine(DashAndFire(dashDir, aoeRadius, damage, bigSlash, exileActive, isCrit));
     }
 
     protected virtual IEnumerator DashAndFire(Vector3 dir, float radius, float damage,
-                            bool bigSlash, bool exileActive)
+                            bool bigSlash, bool exileActive, bool isCrit = false)
     {
         var pm = manager.playerMove;
         var rb = pm?.GetComponent<Rigidbody>();
@@ -138,7 +133,7 @@ public class BunnyHopWeapon : WeaponBase
             Vector3 endPos   = startPos + dir * dashDistance;
             float   elapsed  = 0f;
 
-            ShowVfx(dashTrailPrefab, startPos);   // dashTrailPrefab → ทุก client เห็น
+            ShowVfx(dashTrailVfxType, startPos, isAttackHit: false);
 
             while (elapsed < dashDuration)
             {
@@ -157,15 +152,11 @@ public class BunnyHopWeapon : WeaponBase
         Vector3 center     = transform.position;
         int     aoeHitCount = (_isSuper && bigSlash) ? 2 : 1;
 
-        // scale VFX ให้ตรงกับ radius จริง
-        // vfxDesignedRadius = ขนาดที่ prefab ถูกออกแบบมา (Shape Radius ใน Particle System)
-        float vfxScale = vfxDesignedRadius > 0f ? radius / vfxDesignedRadius : 1f;
-
         // ── AoE radial 360° รอบตัว — ทุก cast ────────────────────────────
         for (int i = 0; i < aoeHitCount; i++)
         {
             manager.FireMeleeServerRpc(center, radius, damage);
-            ShowHitVfx(center, vfxScale);
+            ShowVfx(VFXType.MeteorAoE, center, radius);
         }
 
         // ── Shield ────────────────────────────────────────────────────────
@@ -190,7 +181,8 @@ public class BunnyHopWeapon : WeaponBase
                 float   angle   = i * angleStep;
                 Vector3 projDir = Quaternion.Euler(0f, angle, 0f) * dir; // dir = ทิศที่กำลังไป
                 FireProjectile(center, projDir, damage, projSpeed,
-                               piercing: projLd.piercing, maxRange: projMaxRange);
+                               piercing: projLd.piercing, maxRange: projMaxRange,
+                               isCrit: isCrit);
             }
 
             // Wind Slash radial 360°
@@ -199,7 +191,9 @@ public class BunnyHopWeapon : WeaponBase
             {
                 float   angle    = i * (360f / windSlashCount);
                 Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                manager.FireRaycastServerRpc(center, slashDir, slashDmg, windSlashRange);
+                manager.FireRaycastServerRpc(center, slashDir, slashDmg, windSlashRange,
+                                             vfxTypeInt: (int)VFXType.SlashHit,
+                                             isCrit: isCrit);
             }
         }
     }

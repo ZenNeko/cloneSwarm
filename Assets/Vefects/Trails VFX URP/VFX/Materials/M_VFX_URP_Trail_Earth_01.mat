@@ -156,8 +156,8 @@ Material:
     - __dirty: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color01: {r: 1, g: 0.7490196, b: 0.5019608, a: 0}
-    - _Color02: {r: 1, g: 0.8235295, b: 0.7019608, a: 0}
+    - _Color01: {r: 0.91730744, g: 1, b: 0.16509432, a: 0}
+    - _Color02: {r: 1, g: 1, b: 0.4292453, a: 0}
     - _ColorPanSpeed: {r: -2, g: 0.113, b: 0, a: 0}
     - _ColorUVScale: {r: 0.2, g: 0.5, b: 0, a: 0}
     - _Color_01: {r: 0.5323144, g: 0.3, b: 1, a: 0}
@@ -179,3 +179,4 @@ Material:
     - _Mask_Scale: {r: 0.5, g: 1, b: 0, a: 0}
     - _Mask_Speed: {r: 0.5, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
