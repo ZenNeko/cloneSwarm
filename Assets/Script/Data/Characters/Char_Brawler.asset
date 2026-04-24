@@ -17,9 +17,21 @@ MonoBehaviour:
     \u0E41\u0E02\u0E47\u0E07\u0E41\u0E01\u0E23\u0E48\u0E07\u0E21\u0E32\u0E01"
   portrait: {fileID: 0}
   icon: {fileID: 0}
-  startingWeapon: {fileID: 11400000, guid: 941b65e36e8198f48b036bc3e0daa804, type: 2}
-  additionalWeapons: []
   baseHealth: 150
   baseMoveSpeed: 4.5
+  startingWeapon: {fileID: 11400000, guid: 205dbdfc59253c843b06bd64dd6a015c, type: 2}
+  passiveWeapons: []
+  abilities: []
+  passiveIcon: {fileID: 0}
+  passiveName: 
   passiveDescription: "\u0E40\u0E01\u0E23\u0E32\u0E30\u0E2B\u0E19\u0E32 \u2014 \u0E25\u0E14\u0E14\u0E32\u0E40\u0E21\u0E08\u0E17\u0E35\u0E48\u0E23\u0E31\u0E1A
     10% \u0E15\u0E25\u0E2D\u0E14\u0E40\u0E27\u0E25\u0E32"
+  weaponIcon: {fileID: 0}
+  weaponAbilityName: 
+  weaponAbilityDescription: 
+  abilityIcon: {fileID: 0}
+  abilityName: 
+  abilityDescription: 
+  ultimateIcon: {fileID: 0}
+  ultimateName: 
+  ultimateDescription: 

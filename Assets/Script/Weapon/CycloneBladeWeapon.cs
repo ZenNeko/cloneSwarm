@@ -35,7 +35,7 @@ public class CycloneBladeWeapon : WeaponBase
         {
             // 360° spin
             manager.FireMeleeServerRpc(center, radius, dmg);
-            ShowVfx(VFXType.SlashHit, center, radius, isCrit, direction: transform.forward);
+            ShowVfx(VFXType.SlashAoE360, center, radius, isCrit, isAttackHit: false);
         }
         else
         {
@@ -49,7 +49,7 @@ public class CycloneBladeWeapon : WeaponBase
                 float   side   = (i % 2 == 0) ? -1f : 1f;
                 Vector3 pos    = center + forward * (radius * 0.6f) + right * slashOffset * side;
                 manager.FireMeleeServerRpc(pos, radius * 0.8f, fDmg);
-                ShowVfx(VFXType.SlashHit, pos, radius * 0.8f, isCrit, direction: forward);
+                ShowVfx(VFXType.SlashHit, pos, radius * 0.8f, isCrit, isAttackHit: false, direction: forward);
             }
         }
 

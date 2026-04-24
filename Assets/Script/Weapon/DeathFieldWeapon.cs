@@ -18,12 +18,12 @@ public class DeathFieldWeapon : WeaponBase
 
     protected override void OnInit()
     {
-        Enemy.OnAnyEnemyDied += OnEnemyDied;
+        Enemy.OnAnyEnemyDiedAt += OnEnemyDiedAt;
     }
 
     void OnDestroy()
     {
-        Enemy.OnAnyEnemyDied -= OnEnemyDied;
+        Enemy.OnAnyEnemyDiedAt -= OnEnemyDiedAt;
     }
 
     protected override void OnFire(WeaponLevelData ld)
@@ -42,23 +42,21 @@ public class DeathFieldWeapon : WeaponBase
         ShowVfx(VFXType.OrbiterHit, center, radius, isCrit);
     }
 
-    void OnEnemyDied()
+    void OnEnemyDiedAt(Vector3 deathPos)
     {
-        // ไม่รู้ตำแหน่ง enemy ที่ตายจาก static event — ใช้ OverlapSphere ตรวจ
-        // ถ้า enemy เพิ่งตาย จะอยู่ในตำแหน่งที่ยัง spawn อยู่ชั่วขณะ
-        // วิธีง่าย: เมื่อ enemy ตายใน field → สั่ง AoE เล็กๆ รอบตัวผู้เล่น
-        // (ไม่แม่น 100% แต่ gameplay ยังถูกต้อง)
         if (manager == null || !manager.IsOwner) return;
 
         var ld = data?.GetLevelData(currentLevel);
         if (ld == null) return;
 
         float fieldRadius = ld.range * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
-        Vector3 center    = transform.position + Vector3.up * 0.5f;
 
-        // ตรวจว่ามี enemy อยู่ในรัศมีก่อนเสียชีวิต (เพิ่งตายออกไปแล้ว เป็น heuristic)
-        // Trigger mini explosion รอบตัวผู้เล่น
-        manager.FireMeleeServerRpc(center, deathExplosionRadius, deathExplosionDamage);
-        ShowVfx(VFXType.GrenadeExplosion, center, deathExplosionRadius);
+        // ระเบิดเฉพาะ enemy ที่ตายอยู่ใน field ของเรา
+        float dist = Vector3.Distance(transform.position, deathPos);
+        if (dist > fieldRadius) return;
+
+        Vector3 explosionCenter = deathPos + Vector3.up * 0.5f;
+        manager.FireMeleeServerRpc(explosionCenter, deathExplosionRadius, deathExplosionDamage);
+        ShowVfx(VFXType.GrenadeExplosion, explosionCenter, deathExplosionRadius);
     }
 }

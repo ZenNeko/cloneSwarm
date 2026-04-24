@@ -34,18 +34,28 @@ public class Enemy : NetworkBehaviour
     public NetworkVariable<float> netHealth = new NetworkVariable<float>(
         30f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    private Transform currentTarget;
-    private float     damageTimer;
+    private Transform  currentTarget;
+    private float      damageTimer;
+    private Rigidbody  rb;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
+        rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic  = false;
+            rb.useGravity   = false;
+            rb.constraints   = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        }
+
         if (!IsServer) return;
         netHealth.Value = maxHealth;
         currentTarget   = FindNearestPlayer();
     }
 
-    // ── Update: Server only ───────────────────────────────────────────────
+    // ── Update: Server only (targeting + damage) ──────────────────────────
     void Update()
     {
         if (!IsServer) return;
@@ -56,10 +66,6 @@ public class Enemy : NetworkBehaviour
 
         if (currentTarget != null)
         {
-            if (!suppressDefaultMovement)
-                transform.position = Vector3.MoveTowards(
-                    transform.position, currentTarget.position, speed * Time.deltaTime);
-
             // Distance-based damage (ไม่ต้องใช้ trigger collider)
             damageTimer += Time.deltaTime;
             if (damageTimer >= damageCooldown)
@@ -74,13 +80,31 @@ public class Enemy : NetworkBehaviour
         }
     }
 
+    // ── FixedUpdate: Server only (movement with physics) ────────────────
+    void FixedUpdate()
+    {
+        if (!IsServer || suppressDefaultMovement || currentTarget == null) return;
+
+        Vector3 dir = (currentTarget.position - transform.position);
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.01f) return;
+
+        Vector3 move = dir.normalized * speed * Time.fixedDeltaTime;
+        Vector3 next = transform.position + move;
+
+        if (rb != null)
+            rb.MovePosition(next);
+        else
+            transform.position = next;
+    }
+
     // ── Damage ────────────────────────────────────────────────────────────
-    public void EnemyTakeDamage(float amount)
+    public void EnemyTakeDamage(float amount, bool isCrit = false)
     {
         if (!IsServer) return;
 
         netHealth.Value = Mathf.Max(0f, netHealth.Value - amount);
-        NotifyHitClientRpc();
+        NotifyHitClientRpc(transform.position, isCrit);
         if (netHealth.Value > 0f) return;
 
         onDeath.Invoke();
@@ -146,9 +170,11 @@ public class Enemy : NetworkBehaviour
     }
 
     [ClientRpc]
-    void NotifyHitClientRpc()
+    void NotifyHitClientRpc(Vector3 pos, bool isCrit)
     {
         OnAnyEnemyHit?.Invoke();
+        VFXType hitType = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
+        NetworkedVFXPool.Instance?.PlayByType(hitType, pos);
     }
 
     [ClientRpc]
@@ -156,6 +182,7 @@ public class Enemy : NetworkBehaviour
     {
         OnAnyEnemyDied?.Invoke();
         OnAnyEnemyDiedAt?.Invoke(deathPos);
+        NetworkedVFXPool.Instance?.PlayByType(VFXType.EnemyDeath, deathPos);
     }
 
     public float GetHealthPercent() => netHealth.Value / maxHealth;

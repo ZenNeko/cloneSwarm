@@ -45,8 +45,8 @@ public class ThunderRailWeapon : WeaponBase
             var enemy = hit.collider.GetComponent<Enemy>();
             if (enemy == null) continue;
 
-            enemy.EnemyTakeDamage(dmg);
-            ShowBaseHitVfx(hit.point + Vector3.up * 0.5f, isCrit);
+            // HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
+            enemy.EnemyTakeDamage(dmg, isCrit);
 
             // Chain lightning จาก enemy ที่โดน
             FireChainFrom(hit.point + Vector3.up * 0.8f, enemy.GetInstanceID(), chainDamage, chainTargets, mask);
@@ -71,7 +71,7 @@ public class ThunderRailWeapon : WeaponBase
 
         Vector3 targetPos = best.transform.position + Vector3.up * 0.8f;
         manager.BroadcastBeamServerRpc(pos, targetPos, (int)VFXType.None);
-        best.EnemyTakeDamage(chainDmg);
+        best.EnemyTakeDamage(chainDmg);   // chain hits ไม่ crit
 
         FireChainFrom(targetPos, best.GetInstanceID(), chainDmg * 0.7f, remaining - 1, mask);
     }

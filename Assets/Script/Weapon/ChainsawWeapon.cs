@@ -47,7 +47,7 @@ public class ChainsawWeapon : WhipWeapon
             var e = c.GetComponent<Enemy>();
             if (e == null || hitSet.Contains(e.GetInstanceID())) continue;
 
-            e.EnemyTakeDamage(dmg);
+            e.EnemyTakeDamage(dmg, isCrit);
             hitSet.Add(e.GetInstanceID());
 
             // Knockback
@@ -61,7 +61,7 @@ public class ChainsawWeapon : WhipWeapon
 
         // VFX ที่จุดกลางของ line
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        ShowVfx(VFXType.SlashHit, vfxPos, range, isCrit, direction: dir);
+        ShowVfx(VFXType.SlashHit, vfxPos, range, isCrit, isAttackHit: false, direction: dir);
 
         // ── Chain จาก enemy ตัวสุดท้ายที่โดน ──────────────────────────────
         if (lastHit != null)
@@ -76,7 +76,7 @@ public class ChainsawWeapon : WhipWeapon
                 if (next == null) break;
 
                 Vector3 nextPos = next.transform.position + Vector3.up * 0.5f;
-                next.EnemyTakeDamage(curDmg);
+                next.EnemyTakeDamage(curDmg, isCrit);
                 hitSet.Add(next.GetInstanceID());
 
                 // Knockback

@@ -147,14 +147,14 @@ public class NetworkedVFXPool : MonoBehaviour
     /// เล่น VFX จาก VFXType enum — ใช้โดย VFXFactory.Play() และ weapon scripts โดยตรง
     /// direction = ทิศที่ VFX หันหน้าไป (สำหรับ VFX Graph / mesh-based VFX)
     /// </summary>
-    public void PlayByType(VFXType type, Vector3 pos, float scale = 1f, Vector3 direction = default)
+    public void PlayByType(VFXType type, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
     {
         if (!_typeToPoolId.TryGetValue(type, out int id))
         {
             Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFXType.{type} — กำหนดใน vfxTypeMappings");
             return;
         }
-        PlayFromPool(id, pos, scale, direction);
+        PlayFromPool(id, pos, scale, direction, arcAngle, roll);
     }
 
     /// <summary>
@@ -201,7 +201,7 @@ public class NetworkedVFXPool : MonoBehaviour
     /// เล่น VFX จาก pool บน client ที่เรียก (ถูกเรียกจาก ClientRpc ใน PlayerWeaponManager)
     /// direction = ทิศที่ VFX หันหน้าไป — ใช้กับ Slash/Melee VFX Graph
     /// </summary>
-    public void PlayFromPool(int poolId, Vector3 pos, float scale = 1f, Vector3 direction = default)
+    public void PlayFromPool(int poolId, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
     {
         if (poolId < 0) return;
         if (!_pools.TryGetValue(poolId, out var q)) return;
@@ -232,9 +232,12 @@ public class NetworkedVFXPool : MonoBehaviour
 
         // ── Position + Rotation ──────────────────────────────────────────
         go.transform.position   = pos;
-        go.transform.rotation   = direction.sqrMagnitude > 0.001f
+        Quaternion baseRot = direction.sqrMagnitude > 0.001f
             ? Quaternion.LookRotation(direction, Vector3.up)
             : Quaternion.identity;
+        go.transform.rotation = Mathf.Abs(roll) > 0.01f
+            ? baseRot * Quaternion.Euler(0f, 0f, roll)
+            : baseRot;
         go.transform.localScale = Vector3.one * scale;
         go.SetActive(true);
 
@@ -242,6 +245,12 @@ public class NetworkedVFXPool : MonoBehaviour
         var vfxGraph = go.GetComponent<VisualEffect>();
         if (vfxGraph != null)
         {
+            // maxAngle = เป้าหมาย sweep (VFX Graph animate จาก 0 → maxAngle)
+            if (vfxGraph.HasFloat("maxAngle"))
+                vfxGraph.SetFloat("maxAngle", arcAngle);
+            // fallback สำหรับ VFX Graph ที่ set ArcAngle ตรงๆ (ไม่มี animation)
+            else if (vfxGraph.HasFloat("ArcAngle"))
+                vfxGraph.SetFloat("ArcAngle", arcAngle);
             vfxGraph.Stop();
             vfxGraph.Play();
         }

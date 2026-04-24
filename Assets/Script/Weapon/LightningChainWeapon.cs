@@ -48,10 +48,9 @@ public class LightningChainWeapon : WeaponBase
 
             Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
 
-            // ดาเมจ + VFX beam + crit flash ที่จุด impact
-            current.EnemyTakeDamage(curDmg);
+            // ดาเมจ + VFX beam — HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
+            current.EnemyTakeDamage(curDmg, isCrit);
             BroadcastLightningBeam(prevPos, targetPos);
-            if (isCrit) manager.BroadcastVfxTypeServerRpc(targetPos, (int)VFXType.CritHitEffect);
 
             hitSet.Add(current.GetInstanceID());
             prevPos = targetPos;

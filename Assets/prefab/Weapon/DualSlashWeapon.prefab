@@ -44,9 +44,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f8978883958ab646b93ccd026b17d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DualSlashWeapon
-  data: {fileID: 0}
+  data: {fileID: 11400000, guid: 205dbdfc59253c843b06bd64dd6a015c, type: 2}
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  slashOffset: 0.6
+  slash1:
+    forwardOffset: 0.7
+    rightOffset: -0.2
+    rotationX: 0
+    rotationY: 120
+    rotationZ: 0
+  slash2:
+    forwardOffset: 0.7
+    rightOffset: 0.2
+    rotationX: 0
+    rotationY: 240
+    rotationZ: 180
+  slashDelay: 0.15
+  alternatePerFire: 1

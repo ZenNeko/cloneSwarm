@@ -21,8 +21,9 @@ public enum VFXType
     EnemyDeath      =  7,   // ศัตรูตาย
     // slot 8 reserved (RailgunBeam removed — ใช้ BeamHit แทน)
     // slot 9 reserved
-    WhipSlash       = 10,   // Whip tentacle
-    SlashHit        = 11,   // DualSlash / BladeStorm / CycloneBlade
+    WhipSlash       = 10,   // Whip tentacle — arc shader
+    SlashHit        = 11,   // DualSlash / BladeStorm / Chainsaw — arc shader (30°-240°)
+    SlashAoE360     = 18,   // CycloneBlade / RadiantAura — full circle shader (360°)
     // slot 12 reserved (LightningHit removed — ใช้ BeamHit แทน)
     // slot 13 reserved (BoomerangHit removed — ใช้ HitEffect แทน)
     // slot 14 reserved (ChainsawSlash removed — ใช้ HitEffect แทน)

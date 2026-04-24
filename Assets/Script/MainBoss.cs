@@ -62,6 +62,14 @@ public class MainBoss : NetworkBehaviour
     public float coneDamage    = 30f;
     public float coneWarnTime  = 2.5f;
 
+    [Header("Chase AoE (Phase 2 / Phase 3)")]
+    [Tooltip("รัศมีวงกลม Chase")]
+    public float chaseRadius   = 3f;
+    [Tooltip("ดาเมจเมื่อ detonate")]
+    public float chaseDamage   = 35f;
+    [Tooltip("ระยะเวลา warning (ยาวกว่า AoE ปกติ — ให้เวลาผู้เล่นวิ่งหนี)")]
+    public float chaseWarnTime = 4f;
+
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี TelegraphZone.cs + NetworkObject")]
     public GameObject telegraphZonePrefab;
@@ -153,17 +161,23 @@ public class MainBoss : NetworkBehaviour
                     SpawnCircleAoE();
                     break;
                 case 2:
-                    if (attackIndex % 2 == 0) SpawnCircleAoE();
-                    else                      SpawnCrossAoE();
+                    // Phase 2 rotation: Circle → Cross → Chase
+                    switch (attackIndex % 3)
+                    {
+                        case 0: SpawnCircleAoE(); break;
+                        case 1: SpawnCrossAoE();  break;
+                        case 2: SpawnChaseAoE();  break;
+                    }
                     attackIndex++;
                     break;
                 case 3:
+                    // Phase 3 rotation: Circle → Spread → Donut → Chase
                     switch (attackIndex % 4)
                     {
                         case 0: SpawnCircleAoE(); break;
                         case 1: SpawnSpreadAoE(); break;
                         case 2: SpawnDonutAoE();  break;
-                        case 3: SpawnConeAoE();   break;
+                        case 3: SpawnChaseAoE();  break;
                     }
                     attackIndex++;
                     break;
@@ -269,6 +283,36 @@ public class MainBoss : NetworkBehaviour
         zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
         zone.BroadcastInit();
         Debug.Log("[MainBoss] 🔺 Cone AoE spawned");
+    }
+
+    void SpawnChaseAoE()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        // สุ่มเลือก player เป็น target
+        var clients = new System.Collections.Generic.List<Unity.Netcode.NetworkClient>(
+            NetworkManager.Singleton.ConnectedClientsList);
+        if (clients.Count == 0) return;
+
+        var target = clients[UnityEngine.Random.Range(0, clients.Count)];
+        if (target.PlayerObject == null) return;
+
+        // Spawn zone ที่ตำแหน่งเริ่มต้นของ target player
+        Vector3 startPos = target.PlayerObject.transform.position;
+        startPos.y = transform.position.y;  // คง Y เท่ากับ boss
+
+        var zone = SpawnZone(startPos, Quaternion.identity);
+        if (zone == null) return;
+
+        zone.aoeType             = TelegraphZone.AoEType.Chase;
+        zone.radius              = chaseRadius;
+        zone.warningDuration     = chaseWarnTime;
+        zone.damage              = chaseDamage;
+        zone.chaseTargetClientId = target.ClientId;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log($"[MainBoss] 🎯 Chase AoE → Client {target.ClientId}");
     }
 
     // SpawnZone สร้าง instance แต่ยังไม่ Spawn (caller จัดการ)
