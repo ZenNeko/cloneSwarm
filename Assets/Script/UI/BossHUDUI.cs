@@ -126,7 +126,7 @@ public class BossHUDUI : MonoBehaviour
         if (remaining <= enrageWarningTime && remaining > 0f)
         {
             enrageWarned = true;
-            FindAnyObjectOfType<GameHUD>()
+            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
                 ?.ShowAnnouncement($"⚠ ENRAGE IN {Mathf.CeilToInt(remaining)}s!", new Color(1f, 0.4f, 0f));
         }
     }
