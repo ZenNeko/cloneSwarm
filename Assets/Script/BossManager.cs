@@ -13,8 +13,10 @@ public class BossManager : NetworkBehaviour
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + MainBoss.cs (attacks)")]
     public GameObject mainBossPrefab;
-    [Tooltip("Prefab enemy ทั่วไปที่ scale stats ขึ้น — ไม่มี MainBoss.cs")]
+    [Tooltip("Mini Boss Type A — Chase AoE mechanic (ต้องมี MiniBossAI.cs + MiniBossConfig ChaseAoE)")]
     public GameObject miniBossPrefab;
+    [Tooltip("Mini Boss Type B — Floor Hazard mechanic (ต้องมี MiniBossAI.cs + MiniBossConfig FloorHazard)")]
+    public GameObject miniBossPrefab_B;
 
     [Header("Mini Boss Scaling")]
     [Tooltip("ค่า x ใน:  bossHP = enemyBaseHP  ×  x  ×  waveHealthMult")]
@@ -56,18 +58,35 @@ public class BossManager : NetworkBehaviour
     // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnMiniBoss()
     {
-        if (!IsServer || miniBossPrefab == null) return;
+        if (!IsServer) return;
+
+        // สลับสุ่มระหว่าง Type A (ChaseAoE) และ Type B (FloorHazard)
+        GameObject prefab = PickMiniBossPrefab();
+        if (prefab == null) return;
 
         Vector3 pos = GetSpawnPosition();
-        var go = Instantiate(miniBossPrefab, pos, Quaternion.identity);
+        var go = Instantiate(prefab, pos, Quaternion.identity);
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
-        // bossHP = baseHP × miniBossBaseHealthMult × waveHealthMult
-        float waveHealthMult   = WaveManager.Instance?.CurrentHealthMultiplier ?? 1f;
-        float finalHealthMult  = miniBossBaseHealthMult * waveHealthMult;
+        // HP = baseHP × miniBossBaseHealthMult × waveHealthMult
+        float waveHealthMult  = WaveManager.Instance?.CurrentHealthMultiplier ?? 1f;
+        float finalHealthMult = miniBossBaseHealthMult * waveHealthMult;
 
         go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
-        Debug.Log($"[BossManager] 🟡 Mini Boss spawned — HP×{finalHealthMult:F2} (base×{miniBossBaseHealthMult} × wave×{waveHealthMult:F2})");
+        Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
+    }
+
+    GameObject PickMiniBossPrefab()
+    {
+        bool hasA = miniBossPrefab   != null;
+        bool hasB = miniBossPrefab_B != null;
+
+        if (hasA && hasB) return Random.value < 0.5f ? miniBossPrefab : miniBossPrefab_B;
+        if (hasA) return miniBossPrefab;
+        if (hasB) return miniBossPrefab_B;
+
+        Debug.LogWarning("[BossManager] No mini boss prefab assigned!");
+        return null;
     }
 
     void SpawnMainBoss()
