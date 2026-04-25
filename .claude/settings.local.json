@@ -36,7 +36,10 @@
       "Bash(find F:cloneSwarmAssets -type d \\\\\\(-iname *VFX* -o -iname *Effect* -o -iname *Particle* -o -iname *FX \\\\\\))",
       "Bash(grep -l \"ShowHitVfx\\\\|ShowVfx\\\\|RollDamage\" /f/cloneSwarm/Assets/Script/Weapon/*.cs)",
       "Bash(python extract_logs.py)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "PowerShell(notepad \"$env:USERPROFILE\\\\.claude.json\")",
+      "Bash(sed -n '130,145p' Assets/Script/Weapon/StormBunnyWeapon.cs)",
+      "Bash(sed -n '170,182p' Assets/Script/Weapon/StormBunnyWeapon.cs)"
     ]
   }
 }

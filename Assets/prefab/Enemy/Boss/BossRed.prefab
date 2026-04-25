@@ -1251,6 +1251,28 @@ MonoBehaviour:
   spreadWarnTime: 2.5
   spreadCount: 5
   spreadAngle: 60
+  donutRadius: 6
+  donutInnerRadius: 2
+  donutDamage: 35
+  donutWarnTime: 2.5
+  coneRadius: 8
+  coneAngle: 90
+  coneLineWidth: 1.2
+  coneDamage: 30
+  coneWarnTime: 2.5
+  chaseRadius: 3
+  chaseDamage: 35
+  chaseWarnTime: 4
+  tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
+  tetherDistance: 8
+  tetherDuration: 6
+  tetherFailDamage: 40
+  floorHazardPrefab: {fileID: 3669286103453573845, guid: 74cf6e11577dc154fa968303abcc6d2f, type: 3}
+  floorArenaRadius: 18
+  floorSafeZoneCount: 1
+  floorSafeZoneRadius: 3
+  floorWarnTime: 6
+  floorDamage: 50
   telegraphZonePrefab: {fileID: 4932088507883938021, guid: 53a576e3fe3a9ef4d825edf0dc38c8da, type: 3}
 --- !u!1 &3503917040628601915
 GameObject:
