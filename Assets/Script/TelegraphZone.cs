@@ -14,7 +14,7 @@ using UnityEngine;
 /// </summary>
 public class TelegraphZone : NetworkBehaviour
 {
-    public enum AoEType { Circle, Line, Cross, Spread, Donut, Cone }
+    public enum AoEType { Circle, Line, Cross, Spread, Donut, Cone, Chase }
 
     [Header("Materials (ถ้าปล่อยว่างจะสร้าง runtime)")]
     public Material warningMaterial;   // transparent red — assign in Inspector
@@ -39,6 +39,7 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public float   spreadAngle     = 60f;
     [HideInInspector] public float   innerRadius     = 1.5f;   // Donut: safe zone inner radius
     [HideInInspector] public float   coneAngle       = 90f;    // Cone: sweep angle (degrees)
+    [HideInInspector] public ulong   chaseTargetClientId = ulong.MaxValue; // Chase: target player
 
     // ── Spawn Entry Point ─────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -51,27 +52,36 @@ public class TelegraphZone : NetworkBehaviour
     public void BroadcastInit()
     {
         InitClientRpc((int)aoeType, radius, lineLength, lineWidth, warningDuration, damage,
-                      spreadCount, spreadAngle, innerRadius, coneAngle);
+                      spreadCount, spreadAngle, innerRadius, coneAngle, chaseTargetClientId);
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
     [ClientRpc]
     void InitClientRpc(int type, float r, float len, float wid, float warn, float dmg,
-                       int sCnt, float sAngle, float innerR, float coneAng)
+                       int sCnt, float sAngle, float innerR, float coneAng, ulong chaseId)
     {
-        aoeType         = (AoEType)type;
-        radius          = r;
-        lineLength      = len;
-        lineWidth       = wid;
-        warningDuration = warn;
-        damage          = dmg;
-        spreadCount     = sCnt;
-        spreadAngle     = sAngle;
-        innerRadius     = innerR;
-        coneAngle       = coneAng;
-        totalWarning    = warn;
-        elapsed         = 0f;
-        initialized     = true;
+        aoeType               = (AoEType)type;
+        radius                = r;
+        lineLength            = len;
+        lineWidth             = wid;
+        warningDuration       = warn;
+        damage                = dmg;
+        spreadCount           = sCnt;
+        spreadAngle           = sAngle;
+        innerRadius           = innerR;
+        coneAngle             = coneAng;
+        chaseTargetClientId   = chaseId;
+        totalWarning          = warn;
+        elapsed               = 0f;
+        initialized           = true;
+
+        // Chase: แจ้ง player ที่ถูก target ว่าต้องวิ่งหนี
+        if (aoeType == AoEType.Chase && NetworkManager.Singleton != null
+            && NetworkManager.Singleton.LocalClientId == chaseTargetClientId)
+        {
+            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+                ?.ShowAnnouncement("⚡ TARGETED — RUN AWAY!", Color.magenta);
+        }
 
         CreateVisual();
     }
@@ -85,13 +95,55 @@ public class TelegraphZone : NetworkBehaviour
     // ── Server Sequence ────────────────────────────────────────────────────
     IEnumerator TelegraphSequence()
     {
-        yield return new WaitForSeconds(warningDuration);
+        if (aoeType == AoEType.Chase)
+            yield return StartCoroutine(ChaseSequence());
+        else
+            yield return new WaitForSeconds(warningDuration);
 
         DealDamage();
         ExplodeClientRpc();
 
         yield return new WaitForSeconds(0.1f);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
+    }
+
+    /// <summary>
+    /// Chase: server อัปเดตตำแหน่ง zone ตาม target player ตลอด warningDuration
+    /// sync ไป clients ทุก 80ms
+    /// </summary>
+    IEnumerator ChaseSequence()
+    {
+        float timer     = 0f;
+        float syncTimer = 0f;
+        const float syncInterval = 0.08f;
+
+        while (timer < warningDuration)
+        {
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.ConnectedClients.TryGetValue(chaseTargetClientId, out var client) &&
+                client.PlayerObject != null)
+            {
+                Vector3 tp = client.PlayerObject.transform.position;
+                transform.position = new Vector3(tp.x, transform.position.y, tp.z);
+
+                syncTimer += Time.deltaTime;
+                if (syncTimer >= syncInterval)
+                {
+                    SyncChasePositionClientRpc(transform.position);
+                    syncTimer = 0f;
+                }
+            }
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    [ClientRpc]
+    void SyncChasePositionClientRpc(Vector3 newPos)
+    {
+        // อัปเดตตำแหน่ง zone บน client — visual เป็น child จะเลื่อนตามอัตโนมัติ
+        transform.position = newPos;
     }
 
     void DealDamage()
@@ -111,7 +163,8 @@ public class TelegraphZone : NetworkBehaviour
                 AoEType.Spread => IsInSpread(playerPos),
                 AoEType.Donut  => IsInDonut(playerPos),
                 AoEType.Cone   => IsInCone(playerPos),
-                _              => IsInLine(playerPos),   // Line
+                AoEType.Chase  => IsInCircle(playerPos),  // detonate ที่ตำแหน่งสุดท้ายที่ zone หยุด
+                _              => IsInLine(playerPos),    // Line
             };
 
             if (inZone)
@@ -249,6 +302,17 @@ public class TelegraphZone : NetworkBehaviour
                     CreateLinePrimitive(visual.transform, fanCen, fanRot, lineWidth * 0.4f, radius);
                 }
                 break;
+
+            case AoEType.Chase:
+                // วงกลม magenta ที่วิ่งตาม target (ตัว zone เลื่อน = visual เลื่อน)
+                visual = new GameObject("Visual_Chase");
+                visual.transform.SetParent(transform);
+                visual.transform.localPosition = Vector3.zero;
+                CreateCylinderPrimitive(visual.transform, Vector3.zero, Quaternion.identity, radius * 2f);
+                // เปลี่ยนสีเริ่มต้นเป็น magenta เพื่อให้แยกออกจาก AoE ปกติ
+                foreach (var rr in visualRenderers)
+                    if (rr) rr.material.color = new Color(1f, 0f, 1f, 0.4f);
+                break;
         }
     }
 
@@ -300,10 +364,13 @@ public class TelegraphZone : NetworkBehaviour
         elapsed += Time.deltaTime;
         float progress = Mathf.Clamp01(elapsed / totalWarning);
 
-        float urgency   = Mathf.Lerp(1f, 8f, progress);
-        float blink     = Mathf.Sin(Time.time * urgency * Mathf.PI) * 0.5f + 0.5f;
-        Color baseColor = new Color(1f, 1f - progress * 0.8f, 0f, Mathf.Lerp(0.35f, 0.75f, progress));
-        Color finalCol  = baseColor * (0.7f + blink * 0.3f);
+        float urgency  = Mathf.Lerp(1f, 8f, progress);
+        float blink    = Mathf.Sin(Time.time * urgency * Mathf.PI) * 0.5f + 0.5f;
+        // Chase: magenta; อื่นๆ: yellow → orange
+        Color baseColor = aoeType == AoEType.Chase
+            ? new Color(1f, 0f, Mathf.Lerp(1f, 0.3f, progress), Mathf.Lerp(0.35f, 0.75f, progress))
+            : new Color(1f, 1f - progress * 0.8f, 0f, Mathf.Lerp(0.35f, 0.75f, progress));
+        Color finalCol = baseColor * (0.7f + blink * 0.3f);
 
         foreach (var r in visualRenderers)
             if (r) r.material.color = finalCol;

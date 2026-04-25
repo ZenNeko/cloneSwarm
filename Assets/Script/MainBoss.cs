@@ -7,14 +7,21 @@ using UnityEngine;
 ///
 /// Phases:
 ///   Phase 1 (100-60% HP): CircleAoE ทุก 4s
-///   Phase 2  (60-30% HP): Circle + Cross สลับกัน ทุก 3s
-///   Phase 3  (30-0%  HP): Circle + Spread ทุก 2s (enrage)
+///   Phase 2  (60-30% HP): Circle → Cross → Chase ทุก 3s
+///   Phase 3  (30-0%  HP): Circle → Spread → Chase → Tether → FloorHazard (enrage)
+///
+/// Static Events:
+///   OnAnyBossSpawned  — fired on ALL clients when boss spawns (BossHUDUI subscribes)
+///   OnAnyBossDespawned — fired on ALL clients when boss despawns
 ///
 /// TelegraphZone Prefab ต้องมี TelegraphZone.cs + NetworkObject
 /// </summary>
 [RequireComponent(typeof(Enemy))]
 public class MainBoss : NetworkBehaviour
 {
+    // ── Static Events (subscribe on all clients) ──────────────────────────
+    public static event System.Action<MainBoss> OnAnyBossSpawned;
+    public static event System.Action           OnAnyBossDespawned;
     [Header("Phase Thresholds (% HP)")]
     public float phase2Threshold = 0.60f;
     public float phase3Threshold = 0.30f;
@@ -62,6 +69,39 @@ public class MainBoss : NetworkBehaviour
     public float coneDamage    = 30f;
     public float coneWarnTime  = 2.5f;
 
+    [Header("Chase AoE (Phase 2 / Phase 3)")]
+    [Tooltip("รัศมีวงกลม Chase")]
+    public float chaseRadius   = 3f;
+    [Tooltip("ดาเมจเมื่อ detonate")]
+    public float chaseDamage   = 35f;
+    [Tooltip("ระยะเวลา warning (ยาวกว่า AoE ปกติ — ให้เวลาผู้เล่นวิ่งหนี)")]
+    public float chaseWarnTime = 4f;
+
+    [Header("Tether (Phase 3)")]
+    [Tooltip("Prefab ที่มี BossTether.cs + NetworkObject")]
+    public GameObject tetherPrefab;
+    [Tooltip("ระยะที่ต้องวิ่งแยก (เมตร)")]
+    public float tetherDistance  = 8f;
+    [Tooltip("เวลา tether (วินาที)")]
+    public float tetherDuration  = 6f;
+    [Tooltip("ดาเมจถ้าไม่แยกทัน")]
+    public float tetherFailDamage = 40f;
+
+    [Header("Floor Hazard (Phase 3)")]
+    [Tooltip("Prefab ที่มี FloorHazard.cs + NetworkObject")]
+    public GameObject floorHazardPrefab;
+    [Tooltip("รัศมี arena อันตราย")]
+    public float floorArenaRadius     = 18f;
+    [Tooltip("จำนวน Safe Zone (1–2 สำหรับ boss หลัก)")]
+    [Range(1, 2)]
+    public int   floorSafeZoneCount   = 1;
+    [Tooltip("รัศมีแต่ละ Safe Zone")]
+    public float floorSafeZoneRadius  = 3f;
+    [Tooltip("ระยะ warning")]
+    public float floorWarnTime        = 6f;
+    [Tooltip("ดาเมจผู้เล่นที่อยู่นอก Safe Zone")]
+    public float floorDamage          = 50f;
+
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี TelegraphZone.cs + NetworkObject")]
     public GameObject telegraphZonePrefab;
@@ -75,6 +115,9 @@ public class MainBoss : NetworkBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
+        // Fire on ALL clients so BossHUDUI can subscribe to HP
+        OnAnyBossSpawned?.Invoke(this);
+
         if (!IsServer) return;
 
         enemy = GetComponent<Enemy>();
@@ -89,6 +132,9 @@ public class MainBoss : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        // Fire on ALL clients
+        OnAnyBossDespawned?.Invoke();
+
         if (enemy != null)
             enemy.netHealth.OnValueChanged -= OnHealthChanged;
     }
@@ -153,17 +199,24 @@ public class MainBoss : NetworkBehaviour
                     SpawnCircleAoE();
                     break;
                 case 2:
-                    if (attackIndex % 2 == 0) SpawnCircleAoE();
-                    else                      SpawnCrossAoE();
+                    // Phase 2 rotation: Circle → Cross → Chase
+                    switch (attackIndex % 3)
+                    {
+                        case 0: SpawnCircleAoE(); break;
+                        case 1: SpawnCrossAoE();  break;
+                        case 2: SpawnChaseAoE();  break;
+                    }
                     attackIndex++;
                     break;
                 case 3:
-                    switch (attackIndex % 4)
+                    // Phase 3 rotation: Circle → Spread → Chase → Tether → FloorHazard
+                    switch (attackIndex % 5)
                     {
-                        case 0: SpawnCircleAoE(); break;
-                        case 1: SpawnSpreadAoE(); break;
-                        case 2: SpawnDonutAoE();  break;
-                        case 3: SpawnConeAoE();   break;
+                        case 0: SpawnCircleAoE();    break;
+                        case 1: SpawnSpreadAoE();    break;
+                        case 2: SpawnChaseAoE();     break;
+                        case 3: SpawnTether();       break;
+                        case 4: SpawnFloorHazard();  break;
                     }
                     attackIndex++;
                     break;
@@ -269,6 +322,106 @@ public class MainBoss : NetworkBehaviour
         zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
         zone.BroadcastInit();
         Debug.Log("[MainBoss] 🔺 Cone AoE spawned");
+    }
+
+    void SpawnChaseAoE()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        // สุ่มเลือก player เป็น target
+        var clients = new System.Collections.Generic.List<Unity.Netcode.NetworkClient>(
+            NetworkManager.Singleton.ConnectedClientsList);
+        if (clients.Count == 0) return;
+
+        var target = clients[UnityEngine.Random.Range(0, clients.Count)];
+        if (target.PlayerObject == null) return;
+
+        // Spawn zone ที่ตำแหน่งเริ่มต้นของ target player
+        Vector3 startPos = target.PlayerObject.transform.position;
+        startPos.y = transform.position.y;  // คง Y เท่ากับ boss
+
+        var zone = SpawnZone(startPos, Quaternion.identity);
+        if (zone == null) return;
+
+        zone.aoeType             = TelegraphZone.AoEType.Chase;
+        zone.radius              = chaseRadius;
+        zone.warningDuration     = chaseWarnTime;
+        zone.damage              = chaseDamage;
+        zone.chaseTargetClientId = target.ClientId;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log($"[MainBoss] 🎯 Chase AoE → Client {target.ClientId}");
+    }
+
+    void SpawnTether()
+    {
+        if (tetherPrefab == null)
+        {
+            Debug.LogWarning("[MainBoss] tetherPrefab not assigned — skipping tether");
+            return;
+        }
+        if (NetworkManager.Singleton == null) return;
+
+        var clients = new System.Collections.Generic.List<Unity.Netcode.NetworkClient>(
+            NetworkManager.Singleton.ConnectedClientsList);
+        if (clients.Count == 0) return;
+
+        // Spawn tether ที่ตำแหน่ง boss (ใช้เป็นจุด anchor ในโหมด solo)
+        var go     = Instantiate(tetherPrefab, transform.position, Quaternion.identity);
+        var tether = go.GetComponent<BossTether>();
+        var no     = go.GetComponent<Unity.Netcode.NetworkObject>();
+        if (tether == null || no == null) { Destroy(go); return; }
+
+        // ปรับค่าจาก inspector
+        tether.requiredDistance = tetherDistance;
+        tether.duration         = tetherDuration;
+        tether.failDamage       = tetherFailDamage;
+
+        no.Spawn(true);
+
+        if (clients.Count == 1)
+        {
+            // SOLO MODE — เสา anchor ที่ boss
+            tether.ActivateSolo(clients[0].ClientId);
+            Debug.Log($"[MainBoss] 🔗 Solo Tether → Client {clients[0].ClientId} (pillar at boss)");
+        }
+        else
+        {
+            // CO-OP MODE — สุ่ม 2 players ที่แตกต่างกัน
+            int idxA = Random.Range(0, clients.Count);
+            int idxB;
+            do { idxB = Random.Range(0, clients.Count); } while (idxB == idxA);
+
+            tether.Activate(clients[idxA].ClientId, clients[idxB].ClientId);
+            Debug.Log($"[MainBoss] 🔗 Tether: Client {clients[idxA].ClientId} ↔ Client {clients[idxB].ClientId}");
+        }
+    }
+
+    void SpawnFloorHazard()
+    {
+        if (floorHazardPrefab == null)
+        {
+            Debug.LogWarning("[MainBoss] floorHazardPrefab not assigned — skipping floor hazard");
+            return;
+        }
+
+        Vector3 center = transform.position;
+
+        var go     = Instantiate(floorHazardPrefab, center, Quaternion.identity);
+        var hazard = go.GetComponent<FloorHazard>();
+        var no     = go.GetComponent<Unity.Netcode.NetworkObject>();
+        if (hazard == null || no == null) { Destroy(go); return; }
+
+        no.Spawn(true);
+        hazard.Activate(
+            center,
+            floorArenaRadius,
+            floorSafeZoneCount,
+            floorSafeZoneRadius,
+            floorWarnTime,
+            floorDamage);
+        Debug.Log($"[MainBoss] ☢ Floor Hazard — {floorSafeZoneCount} safe zone(s)");
     }
 
     // SpawnZone สร้าง instance แต่ยังไม่ Spawn (caller จัดการ)

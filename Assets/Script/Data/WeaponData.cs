@@ -71,6 +71,10 @@ public class WeaponData : ScriptableObject
              "MouseAim    = เล็งตามตำแหน่งเมาส์ของผู้เล่น")]
     public AimMode aimMode = AimMode.AutoNearest;
 
+    [Tooltip("มุม arc ของการโจมตี melee (องศา)\n360 = รอบทิศทาง | 120 = หน้ากว้าง | 60 = โคนแคบ\nใช้กับ FireArcMeleeServerRpc เท่านั้น")]
+    [Range(10f, 360f)]
+    public float arcAngle = 360f;
+
     [Tooltip("Projectile prefab ของ weapon นี้ (มี NetworkObject + Projectile script)\n" +
              "ปล่อยว่าง = ใช้ projectilePrefab default บน PlayerWeaponManager")]
     public GameObject projectilePrefab;

@@ -1,7 +1,8 @@
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
-/// Dual Slash — slash 2 ครั้งพร้อมกัน ซ้าย/ขวาของทิศหน้า
+/// Dual Slash — slash 2 ครั้ง ตั้งค่า offset / rotation / timing แยกแต่ละ slash
 ///
 /// Level data แนะนำ:
 ///   Lv1: dmg=30, cd=1.5s, range=2.0
@@ -15,8 +16,57 @@ using UnityEngine;
 /// </summary>
 public class DualSlashWeapon : WeaponBase
 {
-    [Tooltip("ระยะ offset ซ้าย/ขวา (เมตร) ของ slash แต่ละครั้ง")]
-    public float slashOffset = 0.6f;
+    // ── Slash Config ────────────────────────────────────────────────────
+    [System.Serializable]
+    public class SlashConfig
+    {
+        [Tooltip("Offset ไปข้างหน้า (คูณ radius)")]
+        [Range(-1f, 1f)]
+        public float forwardOffset = 0.6f;
+
+        [Tooltip("Offset ไปทางขวา (คูณ radius) — ค่าลบ = ซ้าย")]
+        [Range(-1f, 1f)]
+        public float rightOffset = -0.3f;
+
+        [Tooltip("หมุนรอบแกน X (ก้ม/เงย)")]
+        [Range(0f, 360f)]
+        public float rotationX = 0f;
+
+        [Tooltip("หมุนรอบแกน Y (ซ้าย/ขวา) — 90 = ขวา, 180 = หลัง, 270 = ซ้าย")]
+        [Range(0f, 360f)]
+        public float rotationY = 0f;
+
+        [Tooltip("หมุนรอบแกน Z (เอียง/หมุนตัว)")]
+        [Range(0f, 360f)]
+        public float rotationZ = 0f;
+    }
+
+    [Header("Slash 1")]
+    public SlashConfig slash1 = new SlashConfig
+    {
+        forwardOffset = 0.6f, rightOffset = -0.3f,
+        rotationY = 30f
+    };
+
+    [Header("Slash 2")]
+    public SlashConfig slash2 = new SlashConfig
+    {
+        forwardOffset = 0.6f, rightOffset = 0.3f,
+        rotationY = 330f, rotationZ = 180f
+    };
+
+    [Header("Timing")]
+    [Tooltip("ดีเลย์ระหว่าง slash 1 กับ 2 (วินาที) — 0 = พร้อมกัน")]
+    [Range(0f, 0.5f)]
+    public float slashDelay = 0.15f;
+
+    [Header("Alternate")]
+    [Tooltip("สลับลำดับ slash ทุกครั้งที่ยิง (1→2, 2→1, 1→2, ...)")]
+    public bool alternatePerFire = true;
+
+    // ── Internal ────────────────────────────────────────────────────────
+    Vector3 _lastMoveDir = Vector3.forward;
+    bool    _swapState;
 
     protected override void OnFire(WeaponLevelData ld)
     {
@@ -26,40 +76,62 @@ public class DualSlashWeapon : WeaponBase
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
 
-        // หาทิศหน้าจาก nearest enemy หรือ forward
         Vector3 forward = GetAimDirection();
-        Vector3 right   = Vector3.Cross(Vector3.up, forward).normalized;
-        Vector3 origin  = transform.position + Vector3.up * 0.5f;
+        float   arc     = data != null ? data.arcAngle : 360f;
 
-        // Slash ซ้าย
-        Vector3 leftPos  = origin + forward * (radius * 0.6f) - right * slashOffset;
-        // Slash ขวา
-        Vector3 rightPos = origin + forward * (radius * 0.6f) + right * slashOffset;
+        // สลับลำดับ slash ทุก fire
+        SlashConfig first  = _swapState ? slash2 : slash1;
+        SlashConfig second = _swapState ? slash1 : slash2;
+        if (alternatePerFire) _swapState = !_swapState;
 
-        manager.FireMeleeServerRpc(leftPos,  radius, dmg);
-        manager.FireMeleeServerRpc(rightPos, radius, dmg);
+        StartCoroutine(SlashSequence(forward, radius, arc, dmg, isCrit, first, second));
+    }
 
-        ShowVfx(VFXType.SlashHit, leftPos,  radius, isCrit, direction: -right);
-        ShowVfx(VFXType.SlashHit, rightPos, radius, isCrit, direction:  right);
+    IEnumerator SlashSequence(Vector3 forward, float radius, float arc,
+                              float dmg, bool isCrit,
+                              SlashConfig first, SlashConfig second)
+    {
+        // ── Slash 1 ─────────────────────────────────────────────────
+        FireSlash(forward, radius, arc, dmg, isCrit, first);
+
+        if (slashDelay > 0f)
+            yield return new WaitForSeconds(slashDelay);
+
+        // ── Slash 2 ─────────────────────────────────────────────────
+        FireSlash(forward, radius, arc, dmg, isCrit, second);
+    }
+
+    void FireSlash(Vector3 forward, float radius, float arc,
+                   float dmg, bool isCrit, SlashConfig cfg)
+    {
+        Vector3 right  = Vector3.Cross(Vector3.up, forward).normalized;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+
+        // ── ตำแหน่ง slash ─────────────────────────────────────────
+        Vector3 pos = origin
+                    + forward * (radius * cfg.forwardOffset)
+                    + right   * (radius * cfg.rightOffset);
+
+        // ── ทิศ VFX (rotation XYZ) ────────────────────────────────
+        // X,Y → เปลี่ยนทิศ direction | Z → roll (เอียง VFX)
+        Quaternion rot = Quaternion.LookRotation(forward, Vector3.up)
+                       * Quaternion.Euler(cfg.rotationX, cfg.rotationY, 0f);
+        Vector3 dir = rot * Vector3.forward;
+
+        // ── Damage + VFX ──────────────────────────────────────────
+        manager.FireArcMeleeServerRpc(pos, forward, radius, arc, dmg, isCrit);
+        ShowVfx(VFXType.SlashHit, pos, radius, isCrit,
+                isAttackHit: false, direction: dir, arcAngle: arc, roll: cfg.rotationZ);
     }
 
     Vector3 GetAimDirection()
     {
-        // หา nearest enemy แล้วหันหน้าไป
-        int mask = LayerMask.GetMask("Enemy");
-        var cols = Physics.OverlapSphere(transform.position, 20f, mask);
-        float   minDist = float.MaxValue;
-        Vector3 dir     = transform.forward;
-        foreach (var c in cols)
+        if (manager?.playerMove != null)
         {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minDist)
-            {
-                minDist = d;
-                dir     = (c.transform.position - transform.position).normalized;
-            }
+            Vector3 move = manager.playerMove.MoveDirection;
+            if (move.sqrMagnitude > 0.01f)
+                _lastMoveDir = move.normalized;
         }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
+        return _lastMoveDir;
     }
 }

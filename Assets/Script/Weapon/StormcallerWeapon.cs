@@ -55,9 +55,9 @@ public class StormcallerWeapon : WeaponBase
 
             Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
 
-            current.EnemyTakeDamage(curDmg);
+            // HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
+            current.EnemyTakeDamage(curDmg, isCrit);
             manager.BroadcastBeamServerRpc(prevPos, targetPos, (int)VFXType.None);
-            ShowBaseHitVfx(targetPos, isCrit);
 
             hitPositions.Add(current.transform.position);
             hitSet.Add(current.GetInstanceID());

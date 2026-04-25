@@ -47,8 +47,8 @@ public class BladeStormWeapon : WeaponBase
         {
             // สลับหน้า-หลัง: 0=หน้า, 1=หลัง, 2=หน้า
             Vector3 slashDir = (i % 2 == 0) ? dir : -dir;
-            HitEnemiesInArc(center, slashDir, radius, arcAngle, dmg);
-            ShowVfx(VFXType.SlashHit, center + slashDir * (radius * 0.4f), radius, isCrit, direction: slashDir);
+            HitEnemiesInArc(center, slashDir, radius, arcAngle, dmg, isCrit);
+            ShowVfx(VFXType.SlashHit, center + slashDir * (radius * 0.4f), radius, isCrit, isAttackHit: false, direction: slashDir);
 
             if (i < burstCount - 1)
                 yield return new WaitForSeconds(burstInterval);
@@ -58,7 +58,7 @@ public class BladeStormWeapon : WeaponBase
     }
 
     /// <summary>OverlapSphere + angle filter — damage enemy ที่อยู่ใน arc</summary>
-    void HitEnemiesInArc(Vector3 center, Vector3 forward, float radius, float arc, float damage)
+    void HitEnemiesInArc(Vector3 center, Vector3 forward, float radius, float arc, float damage, bool isCrit = false)
     {
         float halfArc = arc * 0.5f;
         int   mask    = LayerMask.GetMask("Enemy");
@@ -72,12 +72,12 @@ public class BladeStormWeapon : WeaponBase
 
             Vector3 toEnemy = (e.transform.position - center);
             toEnemy.y = 0f;
-            if (toEnemy.sqrMagnitude < 0.001f) { e.EnemyTakeDamage(damage); hitSet.Add(e.GetInstanceID()); continue; }
+            if (toEnemy.sqrMagnitude < 0.001f) { e.EnemyTakeDamage(damage, isCrit); hitSet.Add(e.GetInstanceID()); continue; }
 
             float angle = Vector3.Angle(forward, toEnemy);
             if (angle <= halfArc)
             {
-                e.EnemyTakeDamage(damage);
+                e.EnemyTakeDamage(damage, isCrit);
                 hitSet.Add(e.GetInstanceID());
             }
         }

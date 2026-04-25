@@ -264,10 +264,24 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── ServerRpc: Melee AoE ──────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
-    public void FireMeleeServerRpc(Vector3 center, float radius, float damage)
+    public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false)
     {
         foreach (var c in OverlapEnemy(center, radius))
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
+    }
+
+    /// <summary>Melee AoE แบบ arc — เฉพาะ enemy ที่อยู่ใน cone ทิศ forward</summary>
+    [ServerRpc(RequireOwnership = false)]
+    public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false)
+    {
+        float halfArc = arcAngle * 0.5f;
+        foreach (var c in OverlapEnemy(center, radius))
+        {
+            Vector3 toEnemy = c.transform.position - center;
+            toEnemy.y = 0f;
+            if (toEnemy.sqrMagnitude < 0.001f || Vector3.Angle(forward, toEnemy) <= halfArc)
+                c.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
+        }
     }
 
     // ── Helper: หาศัตรูในรัศมี (Layer + Tag fallback) ─────────────────────
@@ -503,12 +517,12 @@ public class PlayerWeaponManager : NetworkBehaviour
     // ── VFX Broadcast by VFXType → NetworkedVFXPool ──────────────────────
     /// <summary>Weapon scripts ทุกตัวใช้ช่องทางนี้ผ่าน ShowHitVfx() หรือ BroadcastVfxTypeServerRpc โดยตรง</summary>
     [ServerRpc(RequireOwnership = false)]
-    public void BroadcastVfxTypeServerRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default)
-        => BroadcastVfxTypeClientRpc(pos, vfxTypeInt, scale, direction);
+    public void BroadcastVfxTypeServerRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+        => BroadcastVfxTypeClientRpc(pos, vfxTypeInt, scale, direction, arcAngle, roll);
 
     [ClientRpc]
-    void BroadcastVfxTypeClientRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default)
-        => NetworkedVFXPool.Instance?.PlayByType((VFXType)vfxTypeInt, pos, scale, direction);
+    void BroadcastVfxTypeClientRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+        => NetworkedVFXPool.Instance?.PlayByType((VFXType)vfxTypeInt, pos, scale, direction, arcAngle, roll);
 
     // ── Beam VFX Broadcast (Lightning Chain, Thunder Rail ฯลฯ) ───────────
     /// <summary>วาด LineRenderer beam จาก from→to บนทุก client</summary>

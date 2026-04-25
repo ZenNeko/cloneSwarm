@@ -171,11 +171,11 @@ public abstract class WeaponBase : MonoBehaviour
     /// </summary>
     protected void ShowVfx(VFXType type, Vector3 pos, float actualRange = 0f,
                            bool isCrit = false, bool isAttackHit = true,
-                           Vector3 direction = default)
+                           Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
     {
         if (type == VFXType.None) return;
         float scale = actualRange > 0f ? ComputeVfxScale(type, actualRange) : 1f;
-        manager.BroadcastVfxTypeServerRpc(pos, (int)type, scale, direction);
+        manager.BroadcastVfxTypeServerRpc(pos, (int)type, scale, direction, arcAngle, roll);
 
         // base hit effect ซ้อนทับ — ทุก attack hit ต้องมี
         if (isAttackHit && type != VFXType.HitEffect && type != VFXType.CritHitEffect)
