@@ -5,18 +5,22 @@ using UnityEngine;
 /// <summary>
 /// Boss Tether — Raid Mechanic
 ///
-/// Server flow:
-///   1. Spawn → SetPlayersClientRpc(clientIdA, clientIdB)
-///   2. ถ้า player < 2 → ข้ามทันที
-///   3. Server ตรวจระยะทุก frame
-///      - ห่างพอ (>= requiredDistance) → TETHER BROKEN! → despawn
-///      - หมดเวลา (>= duration)        → ดาเมจทั้งคู่ → despawn
+/// Co-op flow (>= 2 players):
+///   1. Activate(playerA, playerB) → SetPlayersClientRpc(A, B)
+///   2. Server ตรวจระยะ player A vs player B ทุก frame
+///      - ห่างพอ → TETHER BROKEN!
+///      - หมดเวลา → ดาเมจทั้งคู่
+///
+/// Solo flow (== 1 player):
+///   1. ActivateSolo(playerA) → SetSoloPlayerClientRpc(A)
+///   2. ทุก client สร้าง "เสา anchor" ที่ตำแหน่ง tether transform
+///   3. Server ตรวจระยะ player A vs pillar (= transform.position)
+///      - ห่างพอ → TETHER BROKEN!
+///      - หมดเวลา → ดาเมจ player A คนเดียว
 ///
 /// Client visual:
-///   LineRenderer เปล่งแสง cyan ระหว่างผู้เล่น 2 คน
-///   กระพริบแดงเมื่อเหลือเวลา < 2s
-///
-/// Edge case: player online คนเดียว → ข้าม mechanic โดยอัตโนมัติ
+///   LineRenderer cyan ระหว่าง playerA → (playerB | pillar)
+///   กระพริบแดงเมื่อเหลือเวลา < 2s (ใช้ clientTimer ที่ขึ้นทุก client)
 ///
 /// Prefab ต้องการ: NetworkObject + BossTether.cs
 /// </summary>
@@ -38,27 +42,50 @@ public class BossTether : NetworkBehaviour
     [Tooltip("ความหนาสาย")]
     public float lineWidth       = 0.12f;
 
+    [Header("Solo Mode (Pillar)")]
+    [Tooltip("สีเสา anchor ในโหมด solo")]
+    public Color pillarColor  = new Color(0.7f, 0.75f, 0.85f, 1f);
+    [Tooltip("ความสูงเสา (เมตร)")]
+    public float pillarHeight = 3f;
+    [Tooltip("รัศมีเสา (เมตร)")]
+    public float pillarRadius = 0.5f;
+
     // ── Server-side state ─────────────────────────────────────────────────
     private ulong     clientIdA   = ulong.MaxValue;
     private ulong     clientIdB   = ulong.MaxValue;
     private float     timer       = 0f;
     private bool      resolved    = false;
+    private bool      soloMode    = false;
 
     // ── Client-side visual ────────────────────────────────────────────────
     private LineRenderer lineRenderer;
     private Transform    playerATransform;
     private Transform    playerBTransform;
     private bool         clientInitialized;
+    private GameObject   pillarVisual;
+    private float        clientTimer;     // ขึ้นทุก client (ใช้คำนวณ remaining สำหรับ urgent flash)
 
-    // ── Entry Point (Server calls this right after Spawn) ─────────────────
+    // ── Entry Points (Server calls this right after Spawn) ────────────────
+
+    /// <summary>โหมด co-op — tether ระหว่างผู้เล่น 2 คน</summary>
     public void Activate(ulong playerA, ulong playerB)
     {
+        soloMode  = false;
         clientIdA = playerA;
         clientIdB = playerB;
         SetPlayersClientRpc(playerA, playerB);
     }
 
-    /// <summary>ไม่มี player คู่ → ข้ามทันที</summary>
+    /// <summary>โหมด solo — tether ระหว่างผู้เล่น 1 คนกับเสา anchor (= transform.position)</summary>
+    public void ActivateSolo(ulong playerA)
+    {
+        soloMode  = true;
+        clientIdA = playerA;
+        clientIdB = ulong.MaxValue;
+        SetSoloPlayerClientRpc(playerA);
+    }
+
+    /// <summary>ไม่มี player → ข้ามทันที</summary>
     public void SkipTether()
     {
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
@@ -69,8 +96,10 @@ public class BossTether : NetworkBehaviour
     [ClientRpc]
     void SetPlayersClientRpc(ulong pA, ulong pB)
     {
-        clientIdA = pA;
-        clientIdB = pB;
+        soloMode    = false;
+        clientIdA   = pA;
+        clientIdB   = pB;
+        clientTimer = 0f;
         SetupLineRenderer();
         FindPlayerTransforms();
         clientInitialized = true;
@@ -81,6 +110,27 @@ public class BossTether : NetworkBehaviour
         {
             UnityEngine.Object.FindAnyObjectByType<GameHUD>()
                 ?.ShowAnnouncement("🔗 TETHER! วิ่งออกจากกัน!", new Color(0f, 1f, 1f));
+        }
+    }
+
+    [ClientRpc]
+    void SetSoloPlayerClientRpc(ulong pA)
+    {
+        soloMode    = true;
+        clientIdA   = pA;
+        clientIdB   = ulong.MaxValue;
+        clientTimer = 0f;
+        SetupLineRenderer();
+        SetupPillarVisual();
+        FindPlayerTransforms();
+        clientInitialized = true;
+
+        // แจ้ง local player ถ้าโดน tether
+        ulong myId = NetworkManager.Singleton.LocalClientId;
+        if (myId == pA)
+        {
+            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+                ?.ShowAnnouncement("🔗 TETHER! วิ่งออกจากเสา!", new Color(0f, 1f, 1f));
         }
     }
 
@@ -107,11 +157,13 @@ public class BossTether : NetworkBehaviour
 
         // ตรวจระยะ
         Transform tA = GetPlayerTransform(clientIdA);
-        Transform tB = GetPlayerTransform(clientIdB);
+        Vector3?  anchorPos = soloMode
+            ? (Vector3?)transform.position
+            : GetPlayerTransform(clientIdB)?.position;
 
-        if (tA != null && tB != null)
+        if (tA != null && anchorPos.HasValue)
         {
-            float dist = Vector3.Distance(tA.position, tB.position);
+            float dist = Vector3.Distance(tA.position, anchorPos.Value);
             if (dist >= requiredDistance)
             {
                 resolved = true;
@@ -125,7 +177,10 @@ public class BossTether : NetworkBehaviour
         if (timer >= duration)
         {
             resolved = true;
-            DealFailDamage(tA, tB);
+            if (soloMode)
+                DealSoloFailDamage(tA);
+            else
+                DealFailDamage(tA, GetPlayerTransform(clientIdB));
             TetherFailedClientRpc();
             StartCoroutine(DespawnDelayed(0.5f));
         }
@@ -136,11 +191,15 @@ public class BossTether : NetworkBehaviour
     {
         if (!clientInitialized || lineRenderer == null) return;
 
-        // หา transforms ถ้ายังไม่ได้
-        if (playerATransform == null || playerBTransform == null)
-            FindPlayerTransforms();
+        // นับเวลาฝั่ง client (ทำงานทุก client รวม pure client)
+        clientTimer += Time.deltaTime;
 
-        if (playerATransform == null || playerBTransform == null)
+        // หา transforms ถ้ายังไม่ได้
+        if (playerATransform == null) FindPlayerTransforms();
+        if (!soloMode && playerBTransform == null) FindPlayerTransforms();
+
+        bool missing = playerATransform == null || (!soloMode && playerBTransform == null);
+        if (missing)
         {
             lineRenderer.enabled = false;
             return;
@@ -148,10 +207,14 @@ public class BossTether : NetworkBehaviour
 
         lineRenderer.enabled = true;
         lineRenderer.SetPosition(0, playerATransform.position + Vector3.up * 1f);
-        lineRenderer.SetPosition(1, playerBTransform.position + Vector3.up * 1f);
+
+        Vector3 endPos = soloMode
+            ? transform.position + Vector3.up * 1f
+            : playerBTransform.position + Vector3.up * 1f;
+        lineRenderer.SetPosition(1, endPos);
 
         // กระพริบแดงเมื่อเหลือน้อยกว่า 2 วินาที
-        float remaining = duration - timer;
+        float remaining = duration - clientTimer;
         bool  urgent    = remaining < 2f;
         Color col       = urgent
             ? Color.Lerp(urgentColor, tetherColor, Mathf.Sin(Time.time * 10f) * 0.5f + 0.5f)
@@ -160,7 +223,7 @@ public class BossTether : NetworkBehaviour
         lineRenderer.endColor   = col;
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // ── Visual Setup ──────────────────────────────────────────────────────
     void SetupLineRenderer()
     {
         lineRenderer = gameObject.AddComponent<LineRenderer>();
@@ -184,6 +247,34 @@ public class BossTether : NetworkBehaviour
         }
     }
 
+    void SetupPillarVisual()
+    {
+        pillarVisual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        pillarVisual.name = "TetherPillar";
+        pillarVisual.transform.SetParent(transform, worldPositionStays: false);
+        // Cylinder primitive's mesh height is 2 units, so scale.y = height/2
+        pillarVisual.transform.localPosition = new Vector3(0f, pillarHeight * 0.5f, 0f);
+        pillarVisual.transform.localScale    = new Vector3(pillarRadius * 2f, pillarHeight * 0.5f, pillarRadius * 2f);
+        Destroy(pillarVisual.GetComponent<Collider>());
+
+        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default")
+                  ?? Shader.Find("Unlit/Color");
+        var rend = pillarVisual.GetComponent<Renderer>();
+        if (shader != null)
+        {
+            var mat = new Material(shader);
+            mat.color = pillarColor;
+            rend.material = mat;
+        }
+        else
+        {
+            rend.material.color = pillarColor;
+        }
+        rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
     void FindPlayerTransforms()
     {
         if (NetworkManager.Singleton == null) return;
@@ -191,7 +282,8 @@ public class BossTether : NetworkBehaviour
         if (playerATransform == null && NetworkManager.Singleton.ConnectedClients.TryGetValue(clientIdA, out var cA))
             playerATransform = cA.PlayerObject?.transform;
 
-        if (playerBTransform == null && NetworkManager.Singleton.ConnectedClients.TryGetValue(clientIdB, out var cB))
+        if (!soloMode && playerBTransform == null
+            && NetworkManager.Singleton.ConnectedClients.TryGetValue(clientIdB, out var cB))
             playerBTransform = cB.PlayerObject?.transform;
     }
 
@@ -209,10 +301,23 @@ public class BossTether : NetworkBehaviour
         Debug.Log($"[BossTether] 💥 Tether failed — dealt {failDamage} dmg to both players");
     }
 
+    void DealSoloFailDamage(Transform tA)
+    {
+        tA?.GetComponent<playermove>()?.TakeDamage(failDamage);
+        Debug.Log($"[BossTether] 💥 Solo tether failed — dealt {failDamage} dmg to player");
+    }
+
     IEnumerator DespawnDelayed(float delay)
     {
         yield return new WaitForSeconds(delay);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
         else Destroy(gameObject);
+    }
+
+    // ── Cleanup ───────────────────────────────────────────────────────────
+    public override void OnNetworkDespawn()
+    {
+        if (pillarVisual) Destroy(pillarVisual);
+        pillarVisual = null;
     }
 }

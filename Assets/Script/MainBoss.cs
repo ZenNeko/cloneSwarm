@@ -365,19 +365,9 @@ public class MainBoss : NetworkBehaviour
 
         var clients = new System.Collections.Generic.List<Unity.Netcode.NetworkClient>(
             NetworkManager.Singleton.ConnectedClientsList);
+        if (clients.Count == 0) return;
 
-        // ต้องการผู้เล่นอย่างน้อย 2 คน
-        if (clients.Count < 2)
-        {
-            Debug.Log("[MainBoss] Tether skipped — only 1 player online");
-            return;
-        }
-
-        // สุ่มเลือก 2 players ที่แตกต่างกัน
-        int idxA = Random.Range(0, clients.Count);
-        int idxB;
-        do { idxB = Random.Range(0, clients.Count); } while (idxB == idxA);
-
+        // Spawn tether ที่ตำแหน่ง boss (ใช้เป็นจุด anchor ในโหมด solo)
         var go     = Instantiate(tetherPrefab, transform.position, Quaternion.identity);
         var tether = go.GetComponent<BossTether>();
         var no     = go.GetComponent<Unity.Netcode.NetworkObject>();
@@ -389,8 +379,23 @@ public class MainBoss : NetworkBehaviour
         tether.failDamage       = tetherFailDamage;
 
         no.Spawn(true);
-        tether.Activate(clients[idxA].ClientId, clients[idxB].ClientId);
-        Debug.Log($"[MainBoss] 🔗 Tether: Client {clients[idxA].ClientId} ↔ Client {clients[idxB].ClientId}");
+
+        if (clients.Count == 1)
+        {
+            // SOLO MODE — เสา anchor ที่ boss
+            tether.ActivateSolo(clients[0].ClientId);
+            Debug.Log($"[MainBoss] 🔗 Solo Tether → Client {clients[0].ClientId} (pillar at boss)");
+        }
+        else
+        {
+            // CO-OP MODE — สุ่ม 2 players ที่แตกต่างกัน
+            int idxA = Random.Range(0, clients.Count);
+            int idxB;
+            do { idxB = Random.Range(0, clients.Count); } while (idxB == idxA);
+
+            tether.Activate(clients[idxA].ClientId, clients[idxB].ClientId);
+            Debug.Log($"[MainBoss] 🔗 Tether: Client {clients[idxA].ClientId} ↔ Client {clients[idxB].ClientId}");
+        }
     }
 
     void SpawnFloorHazard()
