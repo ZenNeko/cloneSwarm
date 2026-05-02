@@ -157,6 +157,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 3
   suppressDefaultMovement: 0
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  wallCheckRadius: 0.4
+  wallCheckDistance: 0.6
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.4
@@ -171,6 +176,7 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 30
+  serverInvincible: 0
 --- !u!54 &1271662588879709939
 Rigidbody:
   m_ObjectHideFlags: 0

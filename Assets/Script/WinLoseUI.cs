@@ -12,6 +12,12 @@ public class WinLoseUI : MonoBehaviour
 {
     public static WinLoseUI Instance { get; private set; }
 
+    /// <summary>true เมื่อ panel ถูกเรียกแสดง (Win/Lose triggered) — UI อื่นใช้เช็คเพื่อซ่อนตัวเอง</summary>
+    public static bool IsShowing { get; private set; }
+
+    /// <summary>ยิงเมื่อ Win/Lose ถูก trigger — UI อื่น subscribe เพื่อซ่อนตัวเอง</summary>
+    public static event System.Action OnAnyResultTriggered;
+
     [Header("Panel")]
     public GameObject panelRoot;
 
@@ -65,6 +71,8 @@ public class WinLoseUI : MonoBehaviour
     {
         string timeStr  = FormatTime(gameTimeSec);
         int    wave     = WaveManager.Instance?.GetCurrentWave() ?? 0;
+        IsShowing = true;
+        OnAnyResultTriggered?.Invoke();
         StartCoroutine(ShowPanel(true, timeStr, level, wave));
     }
 
@@ -72,6 +80,8 @@ public class WinLoseUI : MonoBehaviour
     {
         string timeStr = FormatTime(gameTimeSec);
         int    wave    = WaveManager.Instance?.GetCurrentWave() ?? 0;
+        IsShowing = true;
+        OnAnyResultTriggered?.Invoke();
         StartCoroutine(ShowPanel(false, timeStr, level, wave));
     }
 
@@ -113,6 +123,7 @@ public class WinLoseUI : MonoBehaviour
     // ── Return to Menu ────────────────────────────────────────────────────
     void ReturnToMenu()
     {
+        IsShowing = false;
         Time.timeScale = 1f;
 
         var nm = Unity.Netcode.NetworkManager.Singleton;

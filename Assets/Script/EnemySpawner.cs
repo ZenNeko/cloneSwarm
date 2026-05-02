@@ -15,6 +15,16 @@ public class EnemySpawner : NetworkBehaviour
     [Tooltip("รัศมีที่ spawn รอบผู้เล่น")]
     public float spawnRadius   = 12f;
 
+    [Header("Elite Spawn")]
+    [Tooltip("EliteRegistry — ปล่อยว่าง = ไม่ spawn elite")]
+    public EliteRegistry eliteRegistry;
+    [Tooltip("โอกาสที่ enemy spawn จะเป็น elite (0-1)")]
+    [Range(0f, 1f)]
+    public float eliteSpawnRate = 0.05f;
+    [Tooltip("จำนวน modifier สูงสุดต่อ elite ตัวเดียว (stack)")]
+    [Range(1, 3)]
+    public int   maxStackedMods = 1;
+
     // ── Wave-controlled params (Server only) ──────────────────────────────
     private float      currentHealthMult = 1f;
     private float      currentSpeedMult  = 1f;
@@ -70,6 +80,36 @@ public class EnemySpawner : NetworkBehaviour
 
         // Apply wave scaling หลัง Spawn (OnNetworkSpawn set base health แล้ว)
         go.GetComponent<Enemy>()?.ApplyWaveScaling(currentHealthMult, currentSpeedMult, currentExpMult);
+
+        // Roll elite
+        TryApplyElite(go);
+    }
+
+    void TryApplyElite(GameObject enemyGo)
+    {
+        if (eliteRegistry == null || eliteRegistry.Count == 0) return;
+        if (Random.value > eliteSpawnRate) return;
+
+        var elite = enemyGo.GetComponent<EliteController>()
+                 ?? enemyGo.AddComponent<EliteController>();
+
+        // Pick N defs (no duplicates within same enemy)
+        int count = Random.Range(1, maxStackedMods + 1);
+        var picks = new System.Collections.Generic.List<EliteModifierDef>();
+        var pool  = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < eliteRegistry.Count; i++) pool.Add(i);
+
+        for (int i = 0; i < count && pool.Count > 0; i++)
+        {
+            int rndIdx = Random.Range(0, pool.Count);
+            int defIdx = pool[rndIdx];
+            pool.RemoveAt(rndIdx);
+
+            var def = eliteRegistry.GetById(defIdx);
+            if (def != null) picks.Add(def);
+        }
+
+        elite.ApplyServer(picks.ToArray());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

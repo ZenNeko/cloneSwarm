@@ -32,8 +32,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 10, y: 10, z: 10}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 150814041402654137}
   m_Father: {fileID: 0}
@@ -203,7 +203,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.16800001
+  m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1519011837744908987
 MonoBehaviour:
@@ -247,8 +247,8 @@ MonoBehaviour:
   damage: 20
   maxRange: 20
   piercing: 0
-  hitVfxPrefab: {fileID: 0}
-  hitVFX: 5
+  hitVFX: 0
+  isCrit: 0
 --- !u!114 &-7115432637223128664
 MonoBehaviour:
   m_ObjectHideFlags: 0

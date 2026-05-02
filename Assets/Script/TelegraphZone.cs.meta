@@ -1,2 +1,16 @@
 fileFormatVersion: 2
 guid: 1cc8bac5e96d2e548b44b71540d76217
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - detonateVfxPrefab: {instanceID: 0}
+  - warningMaterial: {instanceID: 0}
+  - dangerMaterial: {instanceID: 0}
+  - warningClip: {fileID: 8300000, guid: 3474e0823d8f1c546a57cadb99cf27fc, type: 3}
+  - detonateClip: {fileID: 8300000, guid: 216ca49885f56024bb0f049e57eff813, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

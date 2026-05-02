@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e46114c39e1194b47a3cbd284b27c6ed, type: 3}
+  m_Name: Mod_Split
+  m_EditorClassIdentifier: Assembly-CSharp::EliteModifierDef
+  id: 2
+  displayName: Split
+  outlineColor: {r: 0.9528864, g: 0.015686274, b: 1, a: 1}
+  crownPrefab: {fileID: 3275935734518220201, guid: e33e03b555f5df145b2bc38185abf1fd, type: 3}
+  healthMultBonus: 1.2
+  speedMultBonus: 1.1
+  expMultBonus: 3
+  behaviorType: 2
+  shieldHP: 50
+  rageHpThreshold: 0.3
+  rageSpeedMult: 1.8
+  splitPrefab: {fileID: 9014505396291406032, guid: a762b11ba96f2504b842435f11ce258b, type: 3}
+  splitCount: 2
+  exploderRadius: 3
+  exploderDamage: 30
+  exploderVfxType: 3

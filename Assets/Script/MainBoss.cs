@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -6,9 +8,13 @@ using UnityEngine;
 /// Boss AI — อยู่บน Boss Prefab ร่วมกับ Enemy.cs
 ///
 /// Phases:
-///   Phase 1 (100-60% HP): CircleAoE ทุก 4s
+///   Phase 1 (100-60% HP): Circle ↔ Line สลับกัน ทุก 4s
 ///   Phase 2  (60-30% HP): Circle → Cross → Chase ทุก 3s
-///   Phase 3  (30-0%  HP): Circle → Spread → Chase → Tether → FloorHazard (enrage)
+///   Phase 3  (30-0%  HP): สลับ 1/2 AoE ต่อ tick (random pick) ทุก 2s
+///                          • tick 0,2,4… → 1 AoE | tick 1,3,5… → 2 AoE
+///                          • Pool 7 อย่าง: Circle / Cross+ / CrossX / Line / Donut / Chase / Tether
+///                          • ห้ามใช้ซ้ำของที่เพิ่งใช้ — ต้องรอ AoE อื่น 1 ครั้งก่อน
+///                          • Cross+ และ CrossX แยกกัน — ใช้ Cross+ ติดต่อกันก็ได้ (ถ้าเลือก CrossX แทรก)
 ///
 /// Static Events:
 ///   OnAnyBossSpawned  — fired on ALL clients when boss spawns (BossHUDUI subscribes)
@@ -36,7 +42,7 @@ public class MainBoss : NetworkBehaviour
     public float circleDamage   = 25f;
     public float circleWarnTime = 2.5f;
 
-    [Header("Line AoE (Phase 1 fallback)")]
+    [Header("Line AoE (Phase 1 / Phase 3)")]
     public float lineLength     = 10f;
     public float lineWidth      = 2f;
     public float lineDamage     = 35f;
@@ -48,26 +54,11 @@ public class MainBoss : NetworkBehaviour
     public float crossDamage     = 30f;
     public float crossWarnTime   = 2.5f;
 
-    [Header("Spread AoE (Phase 3)")]
-    public float spreadLineLength = 12f;
-    public float spreadLineWidth  = 1.2f;
-    public float spreadDamage     = 20f;
-    public float spreadWarnTime   = 2.5f;
-    public int   spreadCount      = 5;
-    public float spreadAngle      = 60f;
-
     [Header("Donut AoE (Phase 3)")]
     public float donutRadius      = 6f;
     public float donutInnerRadius = 2f;
     public float donutDamage      = 35f;
     public float donutWarnTime    = 2.5f;
-
-    [Header("Cone AoE (Phase 3)")]
-    public float coneRadius    = 8f;
-    public float coneAngle     = 90f;
-    public float coneLineWidth = 1.2f;
-    public float coneDamage    = 30f;
-    public float coneWarnTime  = 2.5f;
 
     [Header("Chase AoE (Phase 2 / Phase 3)")]
     [Tooltip("รัศมีวงกลม Chase")]
@@ -86,21 +77,9 @@ public class MainBoss : NetworkBehaviour
     public float tetherDuration  = 6f;
     [Tooltip("ดาเมจถ้าไม่แยกทัน")]
     public float tetherFailDamage = 40f;
-
-    [Header("Floor Hazard (Phase 3)")]
-    [Tooltip("Prefab ที่มี FloorHazard.cs + NetworkObject")]
-    public GameObject floorHazardPrefab;
-    [Tooltip("รัศมี arena อันตราย")]
-    public float floorArenaRadius     = 18f;
-    [Tooltip("จำนวน Safe Zone (1–2 สำหรับ boss หลัก)")]
-    [Range(1, 2)]
-    public int   floorSafeZoneCount   = 1;
-    [Tooltip("รัศมีแต่ละ Safe Zone")]
-    public float floorSafeZoneRadius  = 3f;
-    [Tooltip("ระยะ warning")]
-    public float floorWarnTime        = 6f;
-    [Tooltip("ดาเมจผู้เล่นที่อยู่นอก Safe Zone")]
-    public float floorDamage          = 50f;
+    [Tooltip("Solo: ระยะ offset จากผู้เล่นที่จะ spawn เสา anchor (เมตร)\n" +
+             "เล็กๆ ก็พอ เพื่อให้ผู้เล่นต้องวิ่งหนีจริงๆ")]
+    public float tetherSoloSpawnOffset = 2f;
 
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี TelegraphZone.cs + NetworkObject")]
@@ -111,6 +90,11 @@ public class MainBoss : NetworkBehaviour
     private int   currentPhase  = 0;
     private bool  attackLoopRunning;
     private int   attackIndex   = 0;
+
+    // Phase 3: queue เก็บ AoE ที่ใช้ไปครั้งล่าสุด — ห้ามใช้ซ้ำ (cooldown 1 ครั้ง)
+    private readonly Queue<int> phase3RecentAttacks = new Queue<int>();
+    private const int PHASE3_COOLDOWN_USES = 1;
+    private const int PHASE3_POOL_SIZE     = 7;   // Circle, Cross+, CrossX, Line, Donut, Chase, Tether
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -139,6 +123,12 @@ public class MainBoss : NetworkBehaviour
             enemy.netHealth.OnValueChanged -= OnHealthChanged;
     }
 
+    [Header("Phase Transition")]
+    [Tooltip("วินาทีที่บอส invincible ตอนเปลี่ยน phase (block damage + skip attack)")]
+    public float phaseTransitionDuration = 1.5f;
+    [Tooltip("camera shake magnitude")]
+    public float phaseShakeMagnitude     = 0.4f;
+
     // ── Phase Tracking ────────────────────────────────────────────────────
     void OnHealthChanged(float _, float hp)
     {
@@ -153,8 +143,18 @@ public class MainBoss : NetworkBehaviour
         {
             currentPhase = newPhase;
             PhaseChangedClientRpc(currentPhase);
+            StartCoroutine(PhaseTransitionInvincibility());
             Debug.Log($"[MainBoss] Phase → {currentPhase} ({pct:P0} HP)");
         }
+    }
+
+    /// <summary>Server-side: ทำให้บอส invincible ระหว่างเปลี่ยน phase</summary>
+    IEnumerator PhaseTransitionInvincibility()
+    {
+        if (enemy == null) yield break;
+        enemy.serverInvincible = true;
+        yield return new WaitForSeconds(phaseTransitionDuration);
+        enemy.serverInvincible = false;
     }
 
     [ClientRpc]
@@ -173,6 +173,10 @@ public class MainBoss : NetworkBehaviour
             _ => Color.white,
         };
         UnityEngine.Object.FindAnyObjectByType<GameHUD>()?.ShowAnnouncement(msg, col);
+
+        // Shockwave VFX + camera shake บนทุก client
+        NetworkedVFXPool.Instance?.PlayByType(VFXType.PhaseShockwave, transform.position);
+        CameraShake.Instance?.Shake(0.5f, phaseShakeMagnitude);
     }
 
     // ── Attack Loop (Server only) ─────────────────────────────────────────
@@ -192,32 +196,34 @@ public class MainBoss : NetworkBehaviour
             yield return new WaitForSeconds(interval);
 
             if (!NetworkObject.IsSpawned) yield break;
+            if (enemy != null && enemy.serverInvincible) continue;  // skip attack during phase transition
 
             switch (currentPhase)
             {
                 case 1:
-                    SpawnCircleAoE();
-                    break;
-                case 2:
-                    // Phase 2 rotation: Circle → Cross → Chase
-                    switch (attackIndex % 3)
+                    // Phase 1 rotation: Circle ↔ Line
+                    switch (attackIndex % 2)
                     {
                         case 0: SpawnCircleAoE(); break;
-                        case 1: SpawnCrossAoE();  break;
-                        case 2: SpawnChaseAoE();  break;
+                        case 1: SpawnLineAoE();   break;
+                    }
+                    attackIndex++;
+                    break;
+                case 2:
+                    // Phase 2 rotation: Circle → Cross (random +/X) → Chase
+                    switch (attackIndex % 3)
+                    {
+                        case 0: SpawnCircleAoE();                       break;
+                        case 1: SpawnCrossAoE(isX: Random.value < 0.5f); break;
+                        case 2: SpawnChaseAoE();                        break;
                     }
                     attackIndex++;
                     break;
                 case 3:
-                    // Phase 3 rotation: Circle → Spread → Chase → Tether → FloorHazard
-                    switch (attackIndex % 5)
-                    {
-                        case 0: SpawnCircleAoE();    break;
-                        case 1: SpawnSpreadAoE();    break;
-                        case 2: SpawnChaseAoE();     break;
-                        case 3: SpawnTether();       break;
-                        case 4: SpawnFloorHazard();  break;
-                    }
+                    // Phase 3 — สลับ 1/2 AoE per tick, random pick, cooldown 2 ครั้ง
+                    int aoeCount = (attackIndex % 2 == 0) ? 1 : 2;
+                    foreach (int idx in PickPhase3Attacks(aoeCount))
+                        ExecutePhase3Attack(idx);
                     attackIndex++;
                     break;
                 default:
@@ -227,13 +233,52 @@ public class MainBoss : NetworkBehaviour
         }
     }
 
+    // ── Phase 3 Picker ────────────────────────────────────────────────────
+    /// <summary>
+    /// สุ่ม AoE indices สำหรับ Phase 3 — ห้ามใช้ซ้ำของที่อยู่ใน recent queue
+    /// (cap = PHASE3_COOLDOWN_USES). อัปเดต queue หลังเลือกแต่ละครั้ง
+    /// </summary>
+    IEnumerable<int> PickPhase3Attacks(int count)
+    {
+        var picks = new List<int>(count);
+        for (int i = 0; i < count; i++)
+        {
+            var available = Enumerable.Range(0, PHASE3_POOL_SIZE)
+                .Where(idx => !phase3RecentAttacks.Contains(idx))
+                .ToList();
+            if (available.Count == 0) break;
+
+            int pick = available[Random.Range(0, available.Count)];
+            picks.Add(pick);
+
+            phase3RecentAttacks.Enqueue(pick);
+            if (phase3RecentAttacks.Count > PHASE3_COOLDOWN_USES)
+                phase3RecentAttacks.Dequeue();
+        }
+        return picks;
+    }
+
+    void ExecutePhase3Attack(int idx)
+    {
+        switch (idx)
+        {
+            case 0: SpawnCircleAoE();        break;
+            case 1: SpawnCrossAoE(isX: false); break;  // +
+            case 2: SpawnCrossAoE(isX: true);  break;  // X
+            case 3: SpawnLineAoE();          break;
+            case 4: SpawnDonutAoE();         break;
+            case 5: SpawnChaseAoE();         break;
+            case 6: SpawnTether();           break;
+        }
+    }
+
     // ── Spawn AoE ─────────────────────────────────────────────────────────
     void SpawnCircleAoE()
     {
         var zone = SpawnZone(transform.position, Quaternion.identity);
         if (zone == null) return;
 
-        zone.aoeType         = TelegraphZone.AoEType.Circle;
+        zone.aoeType         = AoEType.Circle;
         zone.radius          = circleRadius;
         zone.warningDuration = circleWarnTime;
         zone.damage          = circleDamage;
@@ -243,24 +288,9 @@ public class MainBoss : NetworkBehaviour
         Debug.Log("[MainBoss] 🔴 Circle AoE spawned");
     }
 
-    void SpawnCrossAoE()
+    void SpawnLineAoE()
     {
-        var zone = SpawnZone(transform.position, Quaternion.identity);
-        if (zone == null) return;
-
-        zone.aoeType         = TelegraphZone.AoEType.Cross;
-        zone.lineLength      = crossLineLength;
-        zone.lineWidth       = crossLineWidth;
-        zone.warningDuration = crossWarnTime;
-        zone.damage          = crossDamage;
-
-        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
-        zone.BroadcastInit();
-        Debug.Log("[MainBoss] ✙ Cross AoE spawned");
-    }
-
-    void SpawnSpreadAoE()
-    {
+        // หันแถบ Line ไปทาง player ที่ใกล้ที่สุด เพื่อให้ลำตัว Line ผ่านเข้ามาที่บอส
         Transform target = FindNearestPlayer();
         Vector3 dir = target != null
             ? (target.position - transform.position).normalized
@@ -271,17 +301,34 @@ public class MainBoss : NetworkBehaviour
         var zone = SpawnZone(transform.position, rot);
         if (zone == null) return;
 
-        zone.aoeType         = TelegraphZone.AoEType.Spread;
-        zone.lineLength      = spreadLineLength;
-        zone.lineWidth       = spreadLineWidth;
-        zone.warningDuration = spreadWarnTime;
-        zone.damage          = spreadDamage;
-        zone.spreadCount     = spreadCount;
-        zone.spreadAngle     = spreadAngle;
+        zone.aoeType         = AoEType.Line;
+        zone.lineLength      = lineLength;
+        zone.lineWidth       = lineWidth;
+        zone.warningDuration = lineWarnTime;
+        zone.damage          = lineDamage;
 
         zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
         zone.BroadcastInit();
-        Debug.Log("[MainBoss] 🌊 Spread AoE spawned");
+        Debug.Log("[MainBoss] ▬ Line AoE spawned");
+    }
+
+    /// <summary>Cross AoE — isX=true → หมุน 45° (X form), isX=false → axis-aligned (+ form)</summary>
+    void SpawnCrossAoE(bool isX)
+    {
+        Quaternion rot = isX ? Quaternion.Euler(0f, 45f, 0f) : Quaternion.identity;
+
+        var zone = SpawnZone(transform.position, rot);
+        if (zone == null) return;
+
+        zone.aoeType         = AoEType.Cross;
+        zone.lineLength      = crossLineLength;
+        zone.lineWidth       = crossLineWidth;
+        zone.warningDuration = crossWarnTime;
+        zone.damage          = crossDamage;
+
+        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log($"[MainBoss] {(isX ? "✕" : "✙")} Cross AoE spawned ({(isX ? "X" : "+")})");
     }
 
     void SpawnDonutAoE()
@@ -289,7 +336,7 @@ public class MainBoss : NetworkBehaviour
         var zone = SpawnZone(transform.position, Quaternion.identity);
         if (zone == null) return;
 
-        zone.aoeType         = TelegraphZone.AoEType.Donut;
+        zone.aoeType         = AoEType.Donut;
         zone.radius          = donutRadius;
         zone.innerRadius     = donutInnerRadius;
         zone.warningDuration = donutWarnTime;
@@ -298,30 +345,6 @@ public class MainBoss : NetworkBehaviour
         zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
         zone.BroadcastInit();
         Debug.Log("[MainBoss] 🍩 Donut AoE spawned");
-    }
-
-    void SpawnConeAoE()
-    {
-        Transform target = FindNearestPlayer();
-        Vector3 dir = target != null
-            ? (target.position - transform.position).normalized
-            : transform.forward;
-        dir.y = 0f;
-        Quaternion rot = dir != Vector3.zero ? Quaternion.LookRotation(dir) : Quaternion.identity;
-
-        var zone = SpawnZone(transform.position, rot);
-        if (zone == null) return;
-
-        zone.aoeType         = TelegraphZone.AoEType.Cone;
-        zone.radius          = coneRadius;
-        zone.coneAngle       = coneAngle;
-        zone.lineWidth       = coneLineWidth;
-        zone.warningDuration = coneWarnTime;
-        zone.damage          = coneDamage;
-
-        zone.GetComponent<Unity.Netcode.NetworkObject>().Spawn(true);
-        zone.BroadcastInit();
-        Debug.Log("[MainBoss] 🔺 Cone AoE spawned");
     }
 
     void SpawnChaseAoE()
@@ -343,7 +366,7 @@ public class MainBoss : NetworkBehaviour
         var zone = SpawnZone(startPos, Quaternion.identity);
         if (zone == null) return;
 
-        zone.aoeType             = TelegraphZone.AoEType.Chase;
+        zone.aoeType             = AoEType.Chase;
         zone.radius              = chaseRadius;
         zone.warningDuration     = chaseWarnTime;
         zone.damage              = chaseDamage;
@@ -367,8 +390,18 @@ public class MainBoss : NetworkBehaviour
             NetworkManager.Singleton.ConnectedClientsList);
         if (clients.Count == 0) return;
 
-        // Spawn tether ที่ตำแหน่ง boss (ใช้เป็นจุด anchor ในโหมด solo)
-        var go     = Instantiate(tetherPrefab, transform.position, Quaternion.identity);
+        // เลือกตำแหน่ง spawn:
+        //   Solo  → offset random direction ใกล้ผู้เล่น (ผู้เล่นต้องวิ่งหนีเสา)
+        //   Co-op → ตำแหน่งบอส (เป็นแค่ logical link ระหว่าง 2 players)
+        Vector3 spawnPos = transform.position;
+        if (clients.Count == 1 && clients[0].PlayerObject != null)
+        {
+            Vector3 playerPos = clients[0].PlayerObject.transform.position;
+            Vector2 rand      = Random.insideUnitCircle.normalized * tetherSoloSpawnOffset;
+            spawnPos = new Vector3(playerPos.x + rand.x, playerPos.y, playerPos.z + rand.y);
+        }
+
+        var go     = Instantiate(tetherPrefab, spawnPos, Quaternion.identity);
         var tether = go.GetComponent<BossTether>();
         var no     = go.GetComponent<Unity.Netcode.NetworkObject>();
         if (tether == null || no == null) { Destroy(go); return; }
@@ -382,9 +415,9 @@ public class MainBoss : NetworkBehaviour
 
         if (clients.Count == 1)
         {
-            // SOLO MODE — เสา anchor ที่ boss
+            // SOLO MODE — เสา anchor ใกล้ผู้เล่น
             tether.ActivateSolo(clients[0].ClientId);
-            Debug.Log($"[MainBoss] 🔗 Solo Tether → Client {clients[0].ClientId} (pillar at boss)");
+            Debug.Log($"[MainBoss] 🔗 Solo Tether → Client {clients[0].ClientId} (pillar at {spawnPos})");
         }
         else
         {
@@ -396,32 +429,6 @@ public class MainBoss : NetworkBehaviour
             tether.Activate(clients[idxA].ClientId, clients[idxB].ClientId);
             Debug.Log($"[MainBoss] 🔗 Tether: Client {clients[idxA].ClientId} ↔ Client {clients[idxB].ClientId}");
         }
-    }
-
-    void SpawnFloorHazard()
-    {
-        if (floorHazardPrefab == null)
-        {
-            Debug.LogWarning("[MainBoss] floorHazardPrefab not assigned — skipping floor hazard");
-            return;
-        }
-
-        Vector3 center = transform.position;
-
-        var go     = Instantiate(floorHazardPrefab, center, Quaternion.identity);
-        var hazard = go.GetComponent<FloorHazard>();
-        var no     = go.GetComponent<Unity.Netcode.NetworkObject>();
-        if (hazard == null || no == null) { Destroy(go); return; }
-
-        no.Spawn(true);
-        hazard.Activate(
-            center,
-            floorArenaRadius,
-            floorSafeZoneCount,
-            floorSafeZoneRadius,
-            floorWarnTime,
-            floorDamage);
-        Debug.Log($"[MainBoss] ☢ Floor Hazard — {floorSafeZoneCount} safe zone(s)");
     }
 
     // SpawnZone สร้าง instance แต่ยังไม่ Spawn (caller จัดการ)

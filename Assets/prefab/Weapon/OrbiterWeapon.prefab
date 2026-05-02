@@ -48,8 +48,14 @@ MonoBehaviour:
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
+  tempCooldownMult: 1
   orbPrefab: {fileID: 1942644075807370077, guid: 63dad2987e922444099544f206147b50, type: 3}
-  orbSize: 0.4
+  orbSize: 1
   rotSpeed: 90
+  summonCooldown: 8
+  activeDuration: 5
+  orbHitRadius: 1.4
+  hitCheckInterval: 0.08
+  perEnemyHitCooldown: 0.5
   aoeOnHit: 0
   aoeRadius: 1.5

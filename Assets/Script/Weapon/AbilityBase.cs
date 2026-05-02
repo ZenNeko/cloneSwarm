@@ -59,6 +59,21 @@ public abstract class AbilityBase : MonoBehaviour
         isCrit = false; return baseDamage;
     }
 
+    // ── SFX Helpers (delegate to SoundManager) ───────────────────────────
+    /// <summary>เล่น random clip จาก data.castSfx[] ที่ตำแหน่งผู้เล่น</summary>
+    protected void PlayCastSfx()
+    {
+        if (data == null) return;
+        SoundManager.Instance.PlayRandomSfx(data.castSfx, transform.position, data.castVolume, data.pitchVariance);
+    }
+
+    /// <summary>เล่น random clip จาก data.hitSfx[] ที่จุดกระทบ</summary>
+    protected void PlayHitSfx(Vector3 pos)
+    {
+        if (data == null) return;
+        SoundManager.Instance.PlayRandomSfx(data.hitSfx, pos, data.hitVolume, data.pitchVariance);
+    }
+
     // ── Enemy Finders ─────────────────────────────────────────────────────
     protected Transform FindNearestEnemy(float range)
     {

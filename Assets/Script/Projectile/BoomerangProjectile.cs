@@ -37,18 +37,14 @@ public class BoomerangProjectile : NetworkBehaviour
         phase    = Phase.Forward;
     }
 
-    public override void OnNetworkSpawn()
-    {
-        // หมุน visual ต่อเนื่อง (ทำบน client ผ่าน Update)
-    }
-
-    // ── Update (Server) ───────────────────────────────────────────────────
+    // ── Update ────────────────────────────────────────────────────────────
     void Update()
     {
-        if (!IsServer || !NetworkObject.IsSpawned) return;
-
-        // หมุน visual
+        // Visual spin — ทุก client (smooth), หมุนรอบ world Y คง prefab offset
         transform.Rotate(Vector3.up, 360f * Time.deltaTime, Space.World);
+
+        if (!IsServer || !NetworkObject.IsSpawned) return;
+        // ── Movement + Collision (server only) ─────────────────────────────
 
         if (phase == Phase.Forward)
         {

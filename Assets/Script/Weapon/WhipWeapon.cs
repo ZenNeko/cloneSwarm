@@ -23,12 +23,15 @@ public class WhipWeapon : WeaponBase
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 origin = transform.position + Vector3.up * 0.5f;
-        Vector3 dir    = GetForwardDirection();
+        Vector3 dir    = GetAimDirection();
         float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
 
         if (manager.statManager != null)
+        {
+            dmg   *= manager.statManager.GetPowerMultiplier();
             range *= manager.statManager.GetAreaMultiplier();
+        }
 
         // Line AoE ข้างหน้า (Physics.OverlapBox ผ่าน server)
         manager.FireLineAoEServerRpc(origin, dir, dmg, range, width, isCrit);

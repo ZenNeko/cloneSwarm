@@ -5,14 +5,9 @@ using UnityEngine;
 /// <summary>
 /// Mini-Boss AI — driven by MiniBossConfig ScriptableObject
 ///
-/// Type A (ChaseAoE):
-///   Boss สุ่มเลือก player 1 คน → AoE วงกลมตามหลัง (radius/damage เล็กกว่า Boss หลัก)
-///
-/// Type B (FloorHazard):
-///   พื้นที่อันตราย + Safe Zone 2 จุด (ใหญ่กว่า Boss หลัก = เล่นง่ายกว่า)
-///
-/// Attack Loop:
-///   รอ firstAttackDelay → attack ตาม mechanic ทุก attackInterval วินาที
+/// Mechanic: Circle ↔ Line สลับ (Phase 1 ของ MainBoss)
+///   tick 0,2,4… → Circle AoE ที่ตำแหน่งบอส
+///   tick 1,3,5… → Line AoE หันไปทาง player ที่ใกล้ที่สุด
 ///
 /// Prefab ต้องการ: NetworkObject + Enemy.cs + MiniBossAI.cs
 /// </summary>
@@ -20,17 +15,16 @@ using UnityEngine;
 public class MiniBossAI : NetworkBehaviour
 {
     [Header("Config")]
-    [Tooltip("ScriptableObject กำหนด mechanic type + parameters (สร้างจาก Game/MiniBossConfig)")]
+    [Tooltip("ScriptableObject กำหนด attack parameters (สร้างจาก Game/MiniBossConfig)")]
     public MiniBossConfig config;
 
     [Header("Prefabs")]
     [Tooltip("TelegraphZone prefab (NetworkObject + TelegraphZone.cs)")]
     public GameObject telegraphZonePrefab;
-    [Tooltip("FloorHazard prefab (NetworkObject + FloorHazard.cs)")]
-    public GameObject floorHazardPrefab;
 
     // ── Internal ──────────────────────────────────────────────────────────
     private Enemy enemy;
+    private int   attackIndex = 0;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -44,7 +38,7 @@ public class MiniBossAI : NetworkBehaviour
 
         enemy = GetComponent<Enemy>();
         StartCoroutine(AttackLoop());
-        Debug.Log($"[MiniBossAI] Spawned — Type: {config.mechanic}");
+        Debug.Log("[MiniBossAI] Spawned — Circle ↔ Line");
     }
 
     // ── Attack Loop (Server only) ─────────────────────────────────────────
@@ -56,80 +50,83 @@ public class MiniBossAI : NetworkBehaviour
         {
             if (!NetworkObject.IsSpawned) yield break;
 
-            switch (config.mechanic)
-            {
-                case MiniBossConfig.MiniBossType.ChaseAoE:
-                    SpawnChaseAoE();
-                    break;
-                case MiniBossConfig.MiniBossType.FloorHazard:
-                    SpawnFloorHazard();
-                    break;
-            }
+            // สลับ Circle ↔ Line
+            if (attackIndex % 2 == 0) SpawnCircleAoE();
+            else                      SpawnLineAoE();
+            attackIndex++;
 
             yield return new WaitForSeconds(config.attackInterval);
         }
     }
 
-    // ── Type A: Chase AoE ─────────────────────────────────────────────────
-    void SpawnChaseAoE()
+    // ── Spawn AoE ─────────────────────────────────────────────────────────
+    void SpawnCircleAoE()
+    {
+        var zone = SpawnZone(transform.position, Quaternion.identity);
+        if (zone == null) return;
+
+        zone.aoeType         = AoEType.Circle;
+        zone.radius          = config.circleRadius;
+        zone.warningDuration = config.circleWarnTime;
+        zone.damage          = config.circleDamage;
+
+        zone.GetComponent<NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log("[MiniBossAI] 🔴 Circle AoE spawned");
+    }
+
+    void SpawnLineAoE()
+    {
+        Transform target = FindNearestPlayer();
+        Vector3 dir = target != null
+            ? (target.position - transform.position).normalized
+            : transform.forward;
+        dir.y = 0f;
+        Quaternion rot = dir != Vector3.zero ? Quaternion.LookRotation(dir) : Quaternion.identity;
+
+        var zone = SpawnZone(transform.position, rot);
+        if (zone == null) return;
+
+        zone.aoeType         = AoEType.Line;
+        zone.lineLength      = config.lineLength;
+        zone.lineWidth       = config.lineWidth;
+        zone.warningDuration = config.lineWarnTime;
+        zone.damage          = config.lineDamage;
+
+        zone.GetComponent<NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log("[MiniBossAI] ▬ Line AoE spawned");
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    TelegraphZone SpawnZone(Vector3 pos, Quaternion rot)
     {
         if (telegraphZonePrefab == null)
         {
             Debug.LogWarning("[MiniBossAI] telegraphZonePrefab not assigned!");
-            return;
+            return null;
         }
-        if (NetworkManager.Singleton == null) return;
 
-        var clients = NetworkManager.Singleton.ConnectedClientsList;
-        if (clients.Count == 0) return;
-
-        var target = clients[Random.Range(0, clients.Count)];
-        if (target.PlayerObject == null) return;
-
-        Vector3 startPos = target.PlayerObject.transform.position;
-        startPos.y = transform.position.y;
-
-        var go   = Instantiate(telegraphZonePrefab, startPos, Quaternion.identity);
+        var go   = Instantiate(telegraphZonePrefab, pos, rot);
         var zone = go.GetComponent<TelegraphZone>();
         var no   = go.GetComponent<NetworkObject>();
-        if (zone == null || no == null) { Destroy(go); return; }
 
-        zone.aoeType             = TelegraphZone.AoEType.Chase;
-        zone.radius              = config.chaseRadius;
-        zone.warningDuration     = config.chaseWarnTime;
-        zone.damage              = config.chaseDamage;
-        zone.chaseTargetClientId = target.ClientId;
-
-        no.Spawn(true);
-        zone.BroadcastInit();
-        Debug.Log($"[MiniBossAI] 🎯 Chase AoE → Client {target.ClientId}");
+        if (zone == null || no == null) { Destroy(go); return null; }
+        return zone;
     }
 
-    // ── Type B: Floor Hazard ──────────────────────────────────────────────
-    void SpawnFloorHazard()
+    Transform FindNearestPlayer()
     {
-        if (floorHazardPrefab == null)
+        if (NetworkManager.Singleton == null) return null;
+        Transform nearest = null;
+        float     minDist = float.MaxValue;
+        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
         {
-            Debug.LogWarning("[MiniBossAI] floorHazardPrefab not assigned!");
-            return;
+            var obj = c.PlayerObject;
+            if (obj == null) continue;
+            float d = Vector3.Distance(transform.position, obj.transform.position);
+            if (d < minDist) { minDist = d; nearest = obj.transform; }
         }
-
-        Vector3 center = transform.position;
-
-        var go     = Instantiate(floorHazardPrefab, center, Quaternion.identity);
-        var hazard = go.GetComponent<FloorHazard>();
-        var no     = go.GetComponent<NetworkObject>();
-        if (hazard == null || no == null) { Destroy(go); return; }
-
-        no.Spawn(true);
-        hazard.Activate(
-            center,
-            config.hazardArenaRadius,
-            config.hazardSafeZoneCount,
-            config.hazardSafeZoneRadius,
-            config.hazardWarnTime,
-            config.hazardDamage);
-
-        Debug.Log($"[MiniBossAI] ☢ Floor Hazard — {config.hazardSafeZoneCount} safe zone(s)");
+        return nearest;
     }
 }

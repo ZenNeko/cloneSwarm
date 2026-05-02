@@ -21,6 +21,12 @@ MonoBehaviour:
   arcAngle: 120
   projectilePrefab: {fileID: 0}
   hitVfxType: 11
+  fireSfx:
+  - {fileID: 8300000, guid: 48b7a3c2182504f4cb57859d9113a115, type: 3}
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.09
   levels:
   - damage: 35
     cooldown: 1.8

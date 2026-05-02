@@ -7,11 +7,14 @@ using UnityEngine;
 ///
 /// Cycle:
 ///   1. ซ่อน orb → รอ summonCooldown วินาที
-///   2. ร่าย → orb ปรากฏ activeDuration * DurationStat วินาที + ส่ง damage ทุก level.cooldown
+///   2. ร่าย → orb ปรากฏ activeDuration * DurationStat วินาที
+///      → ตรวจ collision ทุก hitCheckInterval (continuous)
+///      → enemy แต่ละตัวมี hit cooldown ป้องกัน spam
 ///   3. ซ่อนอีกครั้ง → วนซ้ำ
 ///
-/// Orb เป็น Local GameObject (ไม่ใช่ NetworkObject) — visual only บน Owner
-/// Damage ส่งผ่าน FireMeleeServerRpc ที่ตำแหน่ง orb ทุก cooldown
+/// Orb เป็น Local GameObject (ไม่ใช่ NetworkObject) — visual บน Owner
+///   → ปลด parent ออกจาก player → orbit angle ไม่ผูกกับ rotation ของผู้เล่น
+/// Damage ส่งผ่าน FireMeleeServerRpc ที่ตำแหน่ง orb เมื่อ overlap enemy จริง
 ///
 /// StarRing ต่างกัน: orbCount มากขึ้น, aoeOnHit = true
 ///
@@ -27,13 +30,21 @@ public class OrbiterWeapon : WeaponBase
     [Header("Orb Visual")]
     public GameObject orbPrefab;      // Simple sphere mesh (no NetworkObject)
     public float      orbSize  = 0.4f;
-    public float      rotSpeed = 90f; // องศา/วินาที
+    public float      rotSpeed = 90f; // องศา/วินาที (คงที่ — ไม่ขึ้นกับ player)
 
     [Header("Summon Cycle")]
     [Tooltip("วินาทีระหว่างการร่าย orb แต่ละรอบ (นับจากที่ orb ซ่อนจนถึงร่ายครั้งถัดไป)")]
     public float summonCooldown = 8f;
     [Tooltip("วินาทีที่ orb แสดงผลต่อรอบ (สเกลตาม Duration stat)")]
     public float activeDuration = 3f;
+
+    [Header("Damage on Contact")]
+    [Tooltip("รัศมีตรวจ enemy รอบ orb (ควรใกล้กับขนาด visual)")]
+    public float orbHitRadius = 0.8f;
+    [Tooltip("ตรวจ collision ทุกกี่วินาที (ค่าน้อย = ตอบสนองไว แต่ใช้ CPU มากขึ้น)")]
+    public float hitCheckInterval = 0.08f;
+    [Tooltip("เวลาที่ enemy แต่ละตัวต้องรอก่อนถูก orb เดิมตีอีก (กัน multi-hit ต่อรอบ)")]
+    public float perEnemyHitCooldown = 0.5f;
 
     [Header("Star Ring Super")]
     public bool  aoeOnHit  = false;
@@ -42,20 +53,24 @@ public class OrbiterWeapon : WeaponBase
     // ── State ──────────────────────────────────────────────────────────────
     protected override bool UsesCooldownTimer => false;   // เราจัดการ timer เอง
 
-    private List<Transform> orbs        = new();
-    private float           orbitAngle;
-    private bool            isActive;      // orb กำลังแสดงผลอยู่
-    private float           summonTimer;   // นับขึ้นสู่ summonCooldown (inactive phase)
-    private float           activeTimer;   // นับลง — เวลาที่เหลือขณะ active
-    private float           damageTimer;   // damage tick ขณะ active
-    private float           orbSyncTimer;  // sync orb positions ไปยัง non-owner clients
-    private const float     OrbSyncInterval = 0.05f;
+    private List<Transform>          orbs     = new();
+    private float                    orbitAngle;
+    private bool                     isActive;
+    private float                    summonTimer;
+    private float                    activeTimer;
+    private float                    hitCheckTimer;
+    private float                    orbSyncTimer;
+    private const float              OrbSyncInterval = 0.05f;
+
+    // ป้องกัน multi-hit: enemyInstanceID → unscaledTime ที่จะ hit ได้อีก
+    private readonly Dictionary<int, float> _hitCooldowns = new();
 
     // ── Init ───────────────────────────────────────────────────────────────
     protected override void OnInit()
     {
         SpawnOrbs(data.GetLevelData(currentLevel).projectileCount);
-        SetOrbsVisible(false);   // เริ่มซ่อน — รอ summonCooldown แรก
+        SetOrbsVisible(false);
+        Summon(); // แสดง orb ทันทีที่ได้ weapon
     }
 
     protected override void OnLevelUp()
@@ -64,22 +79,21 @@ public class OrbiterWeapon : WeaponBase
         if (orbs.Count < needed) SpawnOrbs(needed - orbs.Count);
     }
 
-    // ── Update (override ถูกต้อง — ไม่ hide base) ─────────────────────────
+    // OnFire ไม่ใช้ — เราจัดการ damage ผ่าน CheckHits() ทุก frame (continuous)
+    protected override void OnFire(WeaponLevelData ld) { }
+
+    // ── Update ─────────────────────────────────────────────────────────────
     protected override void Update()
     {
-        // base.Update() ไม่ต้องเรียก — UsesCooldownTimer=false ทำให้ base ออกเร็ว
-        // แต่ต้องการ ownership + alive check เหมือน base
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
 
-        // Rotate orbs every frame (visual)
+        // หมุน orb ด้วยอัตราคงที่ — ไม่ขึ้นกับการหมุน player
         orbitAngle += rotSpeed * Time.deltaTime;
         UpdateOrbPositions();
 
-        if (isActive)
-            TickActive();
-        else
-            TickInactive();
+        if (isActive) TickActive();
+        else          TickInactive();
     }
 
     // ── Active Phase ───────────────────────────────────────────────────────
@@ -88,17 +102,12 @@ public class OrbiterWeapon : WeaponBase
         activeTimer -= Time.deltaTime;
         if (activeTimer <= 0f) { Deactivate(); return; }
 
-        // Damage tick
-        var   ld = data.GetLevelData(currentLevel);
-        float cd = ld.cooldown * (manager.statManager != null ? manager.statManager.GetCooldownMultiplier() : 1f);
+        // ตรวจ collision อย่างต่อเนื่อง
+        hitCheckTimer += Time.deltaTime;
+        if (hitCheckTimer < hitCheckInterval) return;
+        hitCheckTimer = 0f;
 
-        damageTimer += Time.deltaTime;
-        if (damageTimer >= cd)
-        {
-            damageTimer = 0f;
-            var effective = BuildEffectiveLevelData(ld);
-            OnFire(effective);
-        }
+        CheckHits();
     }
 
     // ── Inactive Phase ─────────────────────────────────────────────────────
@@ -115,11 +124,12 @@ public class OrbiterWeapon : WeaponBase
     void Summon()
     {
         float durationMult = manager.statManager != null ? manager.statManager.GetDurationMultiplier() : 1f;
-        activeTimer = activeDuration * durationMult;
-        damageTimer = 0f;
-        isActive    = true;
+        activeTimer  = activeDuration * durationMult;
+        hitCheckTimer = 0f;
+        isActive     = true;
+        _hitCooldowns.Clear();
         SetOrbsVisible(true);
-        Debug.Log($"[Orbiter] ✨ Summoned — active {activeTimer:F1}s");
+        Debug.Log($"[Orbiter] ✨ Summoned — {orbs.Count} orbs, active {activeTimer:F1}s, hitRadius={orbHitRadius}");
     }
 
     void Deactivate()
@@ -131,30 +141,79 @@ public class OrbiterWeapon : WeaponBase
         Debug.Log($"[Orbiter] 💤 Deactivated — next summon in {summonCooldown:F0}s");
     }
 
-    // ── Damage ─────────────────────────────────────────────────────────────
-    protected override void OnFire(WeaponLevelData ld)
+    // ── Damage on Contact ─────────────────────────────────────────────────
+    void CheckHits()
     {
-        float dmg    = RollDamage(ld.damage, out bool isCrit);
-        float radius = aoeOnHit ? aoeRadius : 0.6f;
+        var ld         = data.GetLevelData(currentLevel);
+        var sm         = manager.statManager;
+        float dmgMult  = sm != null ? sm.GetPowerMultiplier() : 1f;
+        float baseDmg  = ld.damage * dmgMult;
+        float now      = Time.time;
+        float radius   = orbHitRadius;
+
+        // ลบ entry ที่หมดอายุ (กัน dictionary โต)
+        if (_hitCooldowns.Count > 32)
+            CleanupCooldowns(now);
 
         foreach (var orb in orbs)
         {
-            if (orb == null) continue;
-            manager.FireMeleeServerRpc(orb.position, radius, dmg);
-            ShowBaseHitVfx(orb.position, isCrit);
+            if (orb == null || !orb.gameObject.activeSelf) continue;
+
+            var hits = Physics.OverlapSphere(orb.position, radius);
+            if (hits.Length == 0) continue;
+
+            foreach (var c in hits)
+            {
+                if (!c.CompareTag("Enemy")) continue;
+                var e = c.GetComponent<Enemy>();
+                if (e == null) continue;
+
+                int id = e.GetInstanceID();
+                if (_hitCooldowns.TryGetValue(id, out float nextHitAt) && now < nextHitAt) continue;
+                _hitCooldowns[id] = now + perEnemyHitCooldown;
+
+                float dmg = RollDamage(baseDmg, out bool isCrit);
+
+                if (aoeOnHit)
+                {
+                    // StarRing: ทำ AoE รอบ orb (ตี enemy หลายตัวพร้อมกัน)
+                    manager.FireMeleeServerRpc(orb.position, aoeRadius, dmg, isCrit);
+                    ShowBaseHitVfx(orb.position, isCrit);
+                    Debug.Log($"[Orbiter] 💥 AoE hit at orb pos — dmg {dmg:F0}");
+                    break; // 1 hit ต่อ orb ต่อ tick (AoE ครอบไปทั้งกลุ่มแล้ว)
+                }
+                else
+                {
+                    // ตีเฉพาะตัวที่ชน — server-side damage ผ่าน RPC + VFX ที่ enemy
+                    manager.FireMeleeServerRpc(e.transform.position, 0.5f, dmg, isCrit);
+                    ShowBaseHitVfx(e.transform.position + Vector3.up * 0.5f, isCrit);
+                    Debug.Log($"[Orbiter] 💥 Hit enemy {e.name} — dmg {dmg:F0}");
+                }
+            }
         }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+    void CleanupCooldowns(float now)
+    {
+        var stale = new List<int>();
+        foreach (var kv in _hitCooldowns)
+            if (kv.Value < now) stale.Add(kv.Key);
+        foreach (var id in stale) _hitCooldowns.Remove(id);
+    }
+
+    // ── Orb Position (world-space, ไม่ผูก parent rotation) ────────────────
     void UpdateOrbPositions()
     {
+        Vector3 center = transform.position + Vector3.up * 0.5f;
         float r = data.GetLevelData(currentLevel).range;
+
         for (int i = 0; i < orbs.Count; i++)
         {
             if (orbs[i] == null) continue;
-            float a = orbitAngle + (360f / orbs.Count) * i;
+            float a   = orbitAngle + (360f / orbs.Count) * i;
             float rad = Mathf.Deg2Rad * a;
-            orbs[i].localPosition = new Vector3(Mathf.Cos(rad) * r, 0.5f, Mathf.Sin(rad) * r);
+            // world-space position — ไม่ใช้ localPosition เพื่อกันการหมุนตาม player
+            orbs[i].position = center + new Vector3(Mathf.Cos(rad) * r, 0f, Mathf.Sin(rad) * r);
         }
 
         // Sync ตำแหน่ง world-space ไปยัง client อื่น (เฉพาะตอน active)
@@ -171,12 +230,28 @@ public class OrbiterWeapon : WeaponBase
 
     void SpawnOrbs(int count)
     {
-        if (orbPrefab == null) return;
+        if (orbPrefab == null)
+        {
+            Debug.LogError($"[OrbiterWeapon] orbPrefab ไม่ถูก assign บน weapon prefab — orb จะไม่ปรากฏ");
+            return;
+        }
         for (int i = 0; i < count; i++)
         {
-            var go = Instantiate(orbPrefab, transform);
+            // parent = null → ไม่รับการหมุนของ player
+            var go = Instantiate(orbPrefab);
             go.transform.localScale = Vector3.one * orbSize;
-            go.SetActive(false);   // เริ่มซ่อน
+            go.SetActive(false);
+
+            // ── Strip components ที่อาจ interfere ──
+            // OrbiterWeapon จัดการ damage + position เอง ไม่ต้องการ network/physics behavior
+            var no = go.GetComponent<Unity.Netcode.NetworkObject>();
+            if (no != null) Destroy(no);
+            var proj = go.GetComponent<Projectile>();
+            if (proj != null) Destroy(proj);
+            var rb = go.GetComponent<Rigidbody>();
+            if (rb != null) Destroy(rb);
+            // เก็บ Collider isTrigger ไว้ก็ได้ — ไม่กระทบ Physics.OverlapSphere
+
             orbs.Add(go.transform);
         }
     }

@@ -21,6 +21,11 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     [Tooltip("Prefab indicator 1 อัน — ต้องมี Image + TextMeshProUGUI")]
     public GameObject indicatorPrefab;
 
+    [Header("Render Order")]
+    [Tooltip("Canvas sortingOrder ของ indicator — ตั้งสูงกว่า LevelUpPanel เพื่อให้ลอยทับ\n" +
+             "LevelUpUI canvas ปกติ ≈ 0 / DevTools = 999 / แนะนำ 200-500")]
+    public int canvasSortingOrder = 200;
+
     [Header("Edge Margin")]
     [Tooltip("ระยะห่างจากขอบจอ (px)")]
     public float edgeMargin = 48f;
@@ -64,6 +69,23 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     void Start()
     {
         _cam = Camera.main;
+        ApplySortingOrder();
+    }
+
+    /// <summary>
+    /// เพิ่ม Canvas + override sortingOrder บน GameObject นี้
+    /// เพื่อให้ indicator render บน LevelUpPanel เสมอ
+    /// </summary>
+    void ApplySortingOrder()
+    {
+        var canvas = GetComponent<Canvas>();
+        if (canvas == null)
+        {
+            canvas = gameObject.AddComponent<Canvas>();
+            // ต้องมี GraphicRaycaster ถ้าจะรับคลิก (indicator แค่แสดงผลก็ไม่จำเป็น)
+        }
+        canvas.overrideSorting = true;
+        canvas.sortingOrder    = canvasSortingOrder;
     }
 
     // ── Events ─────────────────────────────────────────────────────────────

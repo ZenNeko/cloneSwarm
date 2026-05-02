@@ -18,38 +18,47 @@ MonoBehaviour:
   tier: 0
   prefab: {fileID: 5642432581615302053, guid: 5335a55d0549be6428b5c1a04d51b261, type: 3}
   aimMode: 1
+  arcAngle: 360
   projectilePrefab: {fileID: 4913074562992064063, guid: 3c556c1709c300249b70eb88824d9394, type: 3}
   hitVfxType: 0
+  fireSfx:
+  - {fileID: 8300000, guid: 17ae0ab528219cb48b39fe1e25902259, type: 3}
+  - {fileID: 8300000, guid: aa3170ea355bec94998b98f8e120d1e0, type: 3}
+  - {fileID: 8300000, guid: fd37ca23aa221b046b59b90865eceb93, type: 3}
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   levels:
-  - damage: 28
+  - damage: 35
     cooldown: 2
     projectileCount: 1
     range: 16
     projectileSpeed: 25
     piercing: 1
     levelUpText: 
-  - damage: 38
+  - damage: 45
     cooldown: 1.8
     projectileCount: 1
     range: 20
     projectileSpeed: 25
     piercing: 1
     levelUpText: 
-  - damage: 48
+  - damage: 58
     cooldown: 1.6
     projectileCount: 1
     range: 24
     projectileSpeed: 26
     piercing: 1
     levelUpText: 
-  - damage: 60
+  - damage: 75
     cooldown: 1.4
     projectileCount: 2
-    range: 28
+    range: 26
     projectileSpeed: 26
     piercing: 1
     levelUpText: 
-  - damage: 75
+  - damage: 89
     cooldown: 1
     projectileCount: 2
     range: 28
@@ -59,8 +68,8 @@ MonoBehaviour:
   superVersion: {fileID: 11400000, guid: bb37c6397e1b3864089c22cfa0300e46, type: 2}
   superConditions:
   - conditionType: 0
-    requiredStatType: 4
+    requiredStatType: 1
     requiredLevel: 5
-    requiredWeapon: {fileID: 11400000}
+    requiredWeapon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}

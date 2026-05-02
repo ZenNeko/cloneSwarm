@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 8330123794831941679}
   m_Layer: 0
   m_Name: 'BossTether '
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -160,3 +160,6 @@ MonoBehaviour:
   tetherColor: {r: 0, g: 1, b: 1, a: 0.9}
   urgentColor: {r: 1, g: 0.2, b: 0.2, a: 1}
   lineWidth: 0.12
+  pillarColor: {r: 0.7, g: 0.75, b: 0.85, a: 1}
+  pillarHeight: 3
+  pillarRadius: 0.5

@@ -5,7 +5,8 @@ using UnityEngine;
 /// <summary>
 /// Storm Bunny — Fusion: BunnyHop Super + Stormcaller
 /// Dash + 360° AoE + chain lightning ที่จุดลงจอด
-/// เมื่อ Exile active → projectile + wind slash ยิงออกไป มีผล lightning chain ด้วย
+/// เมื่อ Exile active → projectile ยิงออกไป มีผล lightning chain ด้วย
+/// (Wind Slash ถูกถอดออก — รอ design ใหม่)
 ///
 /// Fusion tier — 1 level
 /// WeaponData: superWeaponA = BunnyHop Super, superWeaponB = Stormcaller
@@ -49,8 +50,6 @@ public class StormBunnyWeapon : BunnyHopWeapon
             Vector3 endPos   = startPos + dir * dashDistance;
             float   elapsed  = 0f;
 
-            ShowVfx(dashTrailVfxType, startPos, isAttackHit: false);
-
             while (elapsed < dashDuration)
             {
                 elapsed += Time.deltaTime;
@@ -69,11 +68,11 @@ public class StormBunnyWeapon : BunnyHopWeapon
         int     aoeHitCount = (IsSuper && bigSlash) ? 2 : 1;
 
         // ── AoE 360° ─────────────────────────────────────────────────────
+        // Damage เรียกตาม aoeHitCount (Super double hit) แต่ VFX แสดง 1 ครั้งพอ
         for (int i = 0; i < aoeHitCount; i++)
-        {
             manager.FireMeleeServerRpc(center, radius, damage);
-            ShowVfx(VFXType.MeteorAoE, center, radius);
-        }
+        // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
+        ShowVfx(VFXType.MeteorAoE, center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────────────
         float shieldAmount = damage * shieldPercent
@@ -83,7 +82,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
         // ── Chain Lightning ที่จุดลงจอด ───────────────────────────────────
         StartCoroutine(ChainLightningFromLanding(center, damage));
 
-        // ── Exile Bonus: Projectile + Wind Slash + Lightning ─────────────
+        // ── Exile Bonus: Projectile + Lightning ──────────────────────────
         if (exileActive)
         {
             var rawLd          = data != null ? data.GetLevelData(currentLevel) : new WeaponLevelData();
@@ -102,18 +101,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
                                isCrit: isCrit);
             }
 
-            // Wind Slash radial 360°
-            float slashDmg = damage * windSlashDmgRatio;
-            for (int i = 0; i < windSlashCount; i++)
-            {
-                float   angle    = i * (360f / windSlashCount);
-                Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                manager.FireRaycastServerRpc(center, slashDir, slashDmg, windSlashRange,
-                                             vfxTypeInt: (int)VFXType.SlashHit,
-                                             isCrit: isCrit);
-            }
-
-            // Mini chain lightning จาก projectile + wind slash hits (delayed)
+            // Mini chain lightning จาก projectile hits (delayed)
             StartCoroutine(ExileLightningBonus(center, damage, radius));
         }
     }

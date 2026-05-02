@@ -1807,7 +1807,7 @@ GameObject:
   - component: {fileID: 1555570024868395970}
   m_Layer: 0
   m_Name: Dragon
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2305,6 +2305,8 @@ GameObject:
   - component: {fileID: 2552331773787271212}
   - component: {fileID: -5348873358217957744}
   - component: {fileID: -2841833470111248556}
+  - component: {fileID: 5937117970808829876}
+  - component: {fileID: 1399113990670407210}
   m_Layer: 0
   m_Name: newRed
   m_TagString: Enemy
@@ -2391,20 +2393,62 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 3
   suppressDefaultMovement: 0
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  wallCheckRadius: 0.4
+  wallCheckDistance: 0.6
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
-  maxHealth: 30
+  maxHealth: 300
   onDeath:
     m_PersistentCalls:
       m_Calls: []
-  expReward: 10
+  expReward: 100
   expOrbPrefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
   netHealth:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 30
+  serverInvincible: 0
+--- !u!114 &5937117970808829876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5361871700786666957}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccf9886d35e8d814f98f4940cc607f86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MiniBossAI
+  ShowTopMostFoldoutHeaderGroup: 1
+  config: {fileID: 11400000, guid: dc7d4e54db3a62f468b3ace731162303, type: 2}
+  telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
+--- !u!65 &1399113990670407210
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5361871700786666957}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 8.013794, y: 4.522838, z: 10}
+  m_Center: {x: 0.23718667, y: 2.961952, z: 0}
 --- !u!1 &5464850497879895927
 GameObject:
   m_ObjectHideFlags: 0
@@ -2573,7 +2617,7 @@ GameObject:
   - component: {fileID: 823082288939196159}
   m_Layer: 0
   m_Name: Root
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

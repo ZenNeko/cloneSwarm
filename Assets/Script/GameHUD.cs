@@ -98,6 +98,7 @@ public class GameHUD : MonoBehaviour
         SharedExperienceManager.OnSharedExpChanged   += UpdateExpBar;
         SharedExperienceManager.OnSharedLevelChanged += UpdateLevel;
         GameTimeline.OnMainBossTime                  += OnMainBossPhase;
+        WinLoseUI.OnAnyResultTriggered               += HideRespawnOverlay;
     }
 
     void OnDisable()
@@ -106,6 +107,7 @@ public class GameHUD : MonoBehaviour
         SharedExperienceManager.OnSharedExpChanged   -= UpdateExpBar;
         SharedExperienceManager.OnSharedLevelChanged -= UpdateLevel;
         GameTimeline.OnMainBossTime                  -= OnMainBossPhase;
+        WinLoseUI.OnAnyResultTriggered               -= HideRespawnOverlay;
 
         if (localPlayer != null)
         {
@@ -291,13 +293,22 @@ public class GameHUD : MonoBehaviour
 
     void OnDeadChanged(bool _, bool isDead)
     {
+        // ถ้า WinLoseUI กำลังแสดง → ไม่ต้องโชว์ respawn overlay (เกมจบแล้ว)
+        if (WinLoseUI.IsShowing) { if (respawnPanel) respawnPanel.SetActive(false); return; }
         if (respawnPanel) respawnPanel.SetActive(isDead);
     }
 
     void OnCountdownChanged(float _, float v)
     {
+        if (WinLoseUI.IsShowing) return;   // ไม่ update countdown หลังเกมจบ
         if (respawnCountdownText)
             respawnCountdownText.text = v > 0 ? $"RESPAWN IN: {Mathf.CeilToInt(v)}" : "RESPAWNING...";
+    }
+
+    /// <summary>เรียกจาก WinLoseUI.OnAnyResultTriggered — ซ่อน respawn overlay ทันที</summary>
+    void HideRespawnOverlay()
+    {
+        if (respawnPanel) respawnPanel.SetActive(false);
     }
 
     void RefreshHP()

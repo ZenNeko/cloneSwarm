@@ -16,6 +16,14 @@ public class Enemy : NetworkBehaviour
     public float speed = 3f;
     [HideInInspector] public bool suppressDefaultMovement = false;
 
+    [Header("Wall Avoidance")]
+    [Tooltip("Layer ที่ถือว่าเป็นกำแพง — enemy จะไถลตามกำแพงแทนติดอยู่กับที่")]
+    public LayerMask wallLayer = ~0;            // default: ทุก layer
+    [Tooltip("รัศมี SphereCast เพื่อตรวจกำแพงข้างหน้า")]
+    public float wallCheckRadius = 0.4f;
+    [Tooltip("ระยะ probe ข้างหน้า")]
+    public float wallCheckDistance = 0.6f;
+
     [Header("Contact Damage")]
     public float contactDamage  = 10f;
     public float damageCooldown = 1f;
@@ -89,7 +97,12 @@ public class Enemy : NetworkBehaviour
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.01f) return;
 
-        Vector3 move = dir.normalized * speed * Time.fixedDeltaTime;
+        dir.Normalize();
+
+        // Wall sliding: ถ้าเจอกำแพงข้างหน้า → projection ลงบน wall plane
+        Vector3 finalDir = ResolveWallSlide(dir);
+
+        Vector3 move = finalDir * speed * Time.fixedDeltaTime;
         Vector3 next = transform.position + move;
 
         if (rb != null)
@@ -98,10 +111,41 @@ public class Enemy : NetworkBehaviour
             transform.position = next;
     }
 
+    /// <summary>
+    /// ถ้ามีกำแพงข้างหน้า → ฉาย direction บน wall plane เพื่อให้ enemy ไถลตามกำแพง
+    /// ลอง slide ทั้งซ้ายและขวา เลือกอันที่เข้าใกล้ player มากกว่า
+    /// </summary>
+    Vector3 ResolveWallSlide(Vector3 dir)
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        if (!Physics.SphereCast(origin, wallCheckRadius, dir, out RaycastHit hit,
+                                wallCheckDistance, wallLayer, QueryTriggerInteraction.Ignore))
+            return dir;   // ทางสะดวก
+
+        // ข้าม collider ของผู้เล่น/ศัตรูเอง
+        if (hit.collider.GetComponent<playermove>() != null) return dir;
+        if (hit.collider.GetComponent<Enemy>()       != null) return dir;
+
+        // โปรเจกต์ direction บน wall plane — ลบส่วนที่ pushed เข้ากำแพง
+        Vector3 wallNormal = hit.normal; wallNormal.y = 0f;
+        if (wallNormal.sqrMagnitude < 0.001f) return dir;
+        wallNormal.Normalize();
+
+        Vector3 slid = Vector3.ProjectOnPlane(dir, wallNormal);
+        slid.y = 0f;
+        if (slid.sqrMagnitude < 0.001f) return Vector3.zero;
+        return slid.normalized;
+    }
+
+    // ── Invincibility (Server-side) ───────────────────────────────────────
+    /// <summary>Server flag — บอสใช้ระหว่าง phase transition</summary>
+    [HideInInspector] public bool serverInvincible = false;
+
     // ── Damage ────────────────────────────────────────────────────────────
     public void EnemyTakeDamage(float amount, bool isCrit = false)
     {
         if (!IsServer) return;
+        if (serverInvincible) return;   // skip damage ระหว่าง phase transition
 
         netHealth.Value = Mathf.Max(0f, netHealth.Value - amount);
         NotifyHitClientRpc(transform.position, isCrit);

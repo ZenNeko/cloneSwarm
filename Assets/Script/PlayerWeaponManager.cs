@@ -205,9 +205,15 @@ public class PlayerWeaponManager : NetworkBehaviour
         Vector3 spawnPos, Vector3 direction,
         float damage, float speed, float maxRange, bool isCrit = false)
     {
-        if (boomerangPrefab == null) return;
-        Quaternion rot = direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity;
+        if (boomerangPrefab == null)
+        {
+            Debug.LogError("[PlayerWeaponManager] boomerangPrefab ไม่ได้ assign — ลาก Proj_Boomerang.prefab ใส่ Inspector");
+            return;
+        }
+        Quaternion rot = (direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity)
+                       * boomerangPrefab.transform.localRotation;   // คง prefab offset ไว้ (เหมือน StickyRocket)
         var go   = Instantiate(boomerangPrefab, spawnPos, rot);
+        go.transform.localScale = boomerangPrefab.transform.localScale;
         var proj = go.GetComponent<BoomerangProjectile>();
         var no   = go.GetComponent<NetworkObject>();
         if (proj == null || no == null) { Destroy(go); return; }
@@ -307,7 +313,11 @@ public class PlayerWeaponManager : NetworkBehaviour
         float damage, float radius,
         float fuseTime = 1.5f, bool cluster = false)
     {
-        if (grenadePrefab == null) return;
+        if (grenadePrefab == null)
+        {
+            Debug.LogError("[PlayerWeaponManager] grenadePrefab ไม่ได้ assign — ต้องการ NetworkObject prefab ที่มี GrenadeProjectile.cs");
+            return;
+        }
         var go = Instantiate(grenadePrefab, spawnPos, Quaternion.identity);
         var gp = go.GetComponent<GrenadeProjectile>();
         if (gp != null)
@@ -331,7 +341,8 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void FireLineAoEServerRpc(
         Vector3 origin, Vector3 direction,
-        float damage, float range, float width = 1.5f, bool isCrit = false)
+        float damage, float range, float width = 1.5f, bool isCrit = false,
+        float knockbackForce = 0f)
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -366,6 +377,12 @@ public class PlayerWeaponManager : NetworkBehaviour
             int id = c.gameObject.GetInstanceID();
             if (!seen.Add(id)) continue;
             c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+            // Knockback (server-authoritative push along line direction)
+            if (knockbackForce > 0f)
+            {
+                Vector3 push = direction * knockbackForce;
+                c.transform.position += push;
+            }
             // base hit VFX ที่ตำแหน่ง enemy
             int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
             BroadcastVfxTypeClientRpc(c.transform.position + Vector3.up * 0.5f, hitType);
@@ -384,7 +401,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage,
                                      float maxDist = 50f, int vfxTypeInt = (int)VFXType.None,
-                                     bool isCrit = false)
+                                     bool isCrit = false, bool playHitVfx = true)
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -395,9 +412,12 @@ public class PlayerWeaponManager : NetworkBehaviour
         foreach (var h in hits)
         {
             h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
-            // base hit VFX ที่ตำแหน่งที่โดน
-            int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
-            BroadcastVfxTypeClientRpc(h.point, hitType);
+            // ใช้ playHitVfx=false ถ้าจะเลี่ยง HitEffect ซ้อนกับ Enemy.EnemyTakeDamage auto-VFX
+            if (playHitVfx)
+            {
+                int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
+                BroadcastVfxTypeClientRpc(h.point, hitType);
+            }
         }
 
         ShowRaycastVfxClientRpc(origin, origin + direction * maxDist, vfxTypeInt);
@@ -430,7 +450,8 @@ public class PlayerWeaponManager : NetworkBehaviour
         int count = Mathf.Min(spawnPositions.Length, targetNetIds.Length);
         for (int i = 0; i < count; i++)
         {
-            var go = Instantiate(missilePrefab, spawnPositions[i], Quaternion.identity);
+            var go = Instantiate(missilePrefab, spawnPositions[i], missilePrefab.transform.localRotation);
+            go.transform.localScale = missilePrefab.transform.localScale;
             go.GetComponent<MissileProjectile>()?.Init(targetNetIds[i], damage, explosionRadius);
             go.GetComponent<NetworkObject>()?.Spawn(true);
         }
