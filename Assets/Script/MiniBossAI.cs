@@ -5,9 +5,12 @@ using UnityEngine;
 /// <summary>
 /// Mini-Boss AI — driven by MiniBossConfig ScriptableObject
 ///
-/// Mechanic: Circle ↔ Line สลับ (Phase 1 ของ MainBoss)
-///   tick 0,2,4… → Circle AoE ที่ตำแหน่งบอส
-///   tick 1,3,5… → Line AoE หันไปทาง player ที่ใกล้ที่สุด
+/// Mechanic ทั้ง 3 แบบ (เลือกใน config):
+///   • CircleLine — Circle ↔ Line สลับกัน (Phase 1 ของ MainBoss)
+///   • Tether    — เสาผูกกับผู้เล่น ต้องวิ่งหนี
+///   • Chase     — วงแดงตามหลังผู้เล่น
+///
+/// Death Drops: spawn extra ExpOrb กระจายรอบบอส
 ///
 /// Prefab ต้องการ: NetworkObject + Enemy.cs + MiniBossAI.cs
 /// </summary>
@@ -19,12 +22,15 @@ public class MiniBossAI : NetworkBehaviour
     public MiniBossConfig config;
 
     [Header("Prefabs")]
-    [Tooltip("TelegraphZone prefab (NetworkObject + TelegraphZone.cs)")]
+    [Tooltip("TelegraphZone prefab (NetworkObject + TelegraphZone.cs) — ใช้กับ CircleLine + Chase")]
     public GameObject telegraphZonePrefab;
+    [Tooltip("BossTether prefab (NetworkObject + BossTether.cs) — ใช้กับ Tether mechanic")]
+    public GameObject tetherPrefab;
 
     // ── Internal ──────────────────────────────────────────────────────────
     private Enemy enemy;
     private int   attackIndex = 0;
+    private bool  deathHandled;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -37,8 +43,15 @@ public class MiniBossAI : NetworkBehaviour
         }
 
         enemy = GetComponent<Enemy>();
+        if (enemy != null) enemy.onDeath.AddListener(OnDeath);
+
         StartCoroutine(AttackLoop());
-        Debug.Log("[MiniBossAI] Spawned — Circle ↔ Line");
+        Debug.Log($"[MiniBossAI] Spawned — Mechanic: {config.mechanic}");
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (enemy != null) enemy.onDeath.RemoveListener(OnDeath);
     }
 
     // ── Attack Loop (Server only) ─────────────────────────────────────────
@@ -50,16 +63,26 @@ public class MiniBossAI : NetworkBehaviour
         {
             if (!NetworkObject.IsSpawned) yield break;
 
-            // สลับ Circle ↔ Line
-            if (attackIndex % 2 == 0) SpawnCircleAoE();
-            else                      SpawnLineAoE();
+            switch (config.mechanic)
+            {
+                case MiniBossConfig.Mechanic.CircleLine:
+                    if (attackIndex % 2 == 0) SpawnCircleAoE();
+                    else                      SpawnLineAoE();
+                    break;
+                case MiniBossConfig.Mechanic.Tether:
+                    SpawnTether();
+                    break;
+                case MiniBossConfig.Mechanic.Chase:
+                    SpawnChaseAoE();
+                    break;
+            }
             attackIndex++;
 
             yield return new WaitForSeconds(config.attackInterval);
         }
     }
 
-    // ── Spawn AoE ─────────────────────────────────────────────────────────
+    // ── Mechanic: CircleLine ──────────────────────────────────────────────
     void SpawnCircleAoE()
     {
         var zone = SpawnZone(transform.position, Quaternion.identity);
@@ -72,7 +95,7 @@ public class MiniBossAI : NetworkBehaviour
 
         zone.GetComponent<NetworkObject>().Spawn(true);
         zone.BroadcastInit();
-        Debug.Log("[MiniBossAI] 🔴 Circle AoE spawned");
+        Debug.Log("[MiniBossAI] 🔴 Circle AoE");
     }
 
     void SpawnLineAoE()
@@ -95,7 +118,116 @@ public class MiniBossAI : NetworkBehaviour
 
         zone.GetComponent<NetworkObject>().Spawn(true);
         zone.BroadcastInit();
-        Debug.Log("[MiniBossAI] ▬ Line AoE spawned");
+        Debug.Log("[MiniBossAI] ▬ Line AoE");
+    }
+
+    // ── Mechanic: Chase ───────────────────────────────────────────────────
+    void SpawnChaseAoE()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        var clients = NetworkManager.Singleton.ConnectedClientsList;
+        if (clients.Count == 0) return;
+
+        var target = clients[Random.Range(0, clients.Count)];
+        if (target.PlayerObject == null) return;
+
+        Vector3 startPos = target.PlayerObject.transform.position;
+        startPos.y = transform.position.y;
+
+        var zone = SpawnZone(startPos, Quaternion.identity);
+        if (zone == null) return;
+
+        zone.aoeType             = AoEType.Chase;
+        zone.radius              = config.chaseRadius;
+        zone.warningDuration     = config.chaseWarnTime;
+        zone.damage              = config.chaseDamage;
+        zone.chaseTargetClientId = target.ClientId;
+
+        zone.GetComponent<NetworkObject>().Spawn(true);
+        zone.BroadcastInit();
+        Debug.Log($"[MiniBossAI] 🎯 Chase AoE → Client {target.ClientId}");
+    }
+
+    // ── Mechanic: Tether ──────────────────────────────────────────────────
+    void SpawnTether()
+    {
+        if (tetherPrefab == null)
+        {
+            Debug.LogWarning("[MiniBossAI] tetherPrefab not assigned!");
+            return;
+        }
+        if (NetworkManager.Singleton == null) return;
+
+        var clients = new System.Collections.Generic.List<NetworkClient>(
+            NetworkManager.Singleton.ConnectedClientsList);
+        if (clients.Count == 0) return;
+
+        // เลือกตำแหน่ง spawn:
+        //   Solo  → offset random direction ใกล้ผู้เล่น
+        //   Co-op → ตำแหน่งบอส (logical link เท่านั้น)
+        Vector3 spawnPos = transform.position;
+        if (clients.Count == 1 && clients[0].PlayerObject != null)
+        {
+            Vector3 playerPos = clients[0].PlayerObject.transform.position;
+            Vector2 rand      = Random.insideUnitCircle.normalized * config.tetherSoloOffset;
+            spawnPos = new Vector3(playerPos.x + rand.x, playerPos.y, playerPos.z + rand.y);
+        }
+
+        var go     = Instantiate(tetherPrefab, spawnPos, Quaternion.identity);
+        var tether = go.GetComponent<BossTether>();
+        var no     = go.GetComponent<NetworkObject>();
+        if (tether == null || no == null) { Destroy(go); return; }
+
+        tether.requiredDistance = config.tetherDistance;
+        tether.duration         = config.tetherDuration;
+        tether.failDamage       = config.tetherFailDamage;
+
+        no.Spawn(true);
+
+        if (clients.Count == 1)
+        {
+            tether.ActivateSolo(clients[0].ClientId);
+            Debug.Log($"[MiniBossAI] 🔗 Solo Tether → Client {clients[0].ClientId}");
+        }
+        else
+        {
+            int idxA = Random.Range(0, clients.Count);
+            int idxB;
+            do { idxB = Random.Range(0, clients.Count); } while (idxB == idxA);
+
+            tether.Activate(clients[idxA].ClientId, clients[idxB].ClientId);
+            Debug.Log($"[MiniBossAI] 🔗 Tether: Client {clients[idxA].ClientId} ↔ Client {clients[idxB].ClientId}");
+        }
+    }
+
+    // ── Death Drops ───────────────────────────────────────────────────────
+    void OnDeath()
+    {
+        if (!IsServer || deathHandled) return;
+        deathHandled = true;
+        SpawnExtraDrops();
+    }
+
+    void SpawnExtraDrops()
+    {
+        if (config == null || config.extraExpOrbs <= 0) return;
+        if (enemy == null || enemy.expOrbPrefab == null)
+        {
+            Debug.LogWarning("[MiniBossAI] expOrbPrefab not assigned on Enemy — no extra drops");
+            return;
+        }
+
+        for (int i = 0; i < config.extraExpOrbs; i++)
+        {
+            Vector2 rand = Random.insideUnitCircle * config.dropScatterRadius;
+            Vector3 pos  = transform.position + new Vector3(rand.x, 0f, rand.y);
+
+            var orb = Instantiate(enemy.expOrbPrefab, pos, Quaternion.identity);
+            orb.GetComponent<NetworkObject>()?.Spawn(true);
+            orb.GetComponent<ExpOrb>()?.SetExpAmount(config.extraExpPerOrb);
+        }
+        Debug.Log($"[MiniBossAI] 💎 Dropped {config.extraExpOrbs} extra exp orbs ({config.extraExpPerOrb} each)");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -106,11 +238,9 @@ public class MiniBossAI : NetworkBehaviour
             Debug.LogWarning("[MiniBossAI] telegraphZonePrefab not assigned!");
             return null;
         }
-
         var go   = Instantiate(telegraphZonePrefab, pos, rot);
         var zone = go.GetComponent<TelegraphZone>();
         var no   = go.GetComponent<NetworkObject>();
-
         if (zone == null || no == null) { Destroy(go); return null; }
         return zone;
     }
