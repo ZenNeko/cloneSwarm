@@ -936,7 +936,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7186043349015820620}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 9000000, guid: 599b2dc9e6c44a8ebc02ddea1f18d215, type: 3}
   m_Controller: {fileID: 9100000, guid: 1f68948a5bb74f2fa9e9087a872750e9, type: 2}
   m_CullingMode: 1
@@ -990,6 +990,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 2
   suppressDefaultMovement: 0
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  wallCheckRadius: 0.4
+  wallCheckDistance: 0.6
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
@@ -1004,6 +1009,7 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 150
+  serverInvincible: 0
 --- !u!135 &-8004896936436739533
 SphereCollider:
   m_ObjectHideFlags: 0

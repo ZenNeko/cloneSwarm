@@ -31,11 +31,10 @@ public class LightningChainWeapon : WeaponBase
             dmg *= manager.statManager.GetPowerMultiplier();
 
         // หา enemy HP สูงสุดในรัศมี range เป็นเป้าแรก
-        int   mask    = LayerMask.GetMask("Enemy");
         var   origin  = transform.position;
         var   hitSet  = new HashSet<int>();
 
-        Enemy firstTarget = FindHighestHPEnemy(origin, ld.range, mask, hitSet);
+        Enemy firstTarget = FindHighestHPEnemy(origin, ld.range, hitSet);
         if (firstTarget == null) return;
 
         Vector3 prevPos = transform.position + Vector3.up * 0.8f;
@@ -48,8 +47,8 @@ public class LightningChainWeapon : WeaponBase
 
             Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
 
-            // ดาเมจ + VFX beam — HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
-            current.EnemyTakeDamage(curDmg, isCrit);
+            // server-authoritative damage (radius 0.5 = ตีเฉพาะตัวนั้น)
+            manager.FireMeleeServerRpc(current.transform.position, 0.5f, curDmg, isCrit);
             BroadcastLightningBeam(prevPos, targetPos);
 
             hitSet.Add(current.GetInstanceID());
@@ -57,17 +56,18 @@ public class LightningChainWeapon : WeaponBase
             curDmg  *= chainDamageMult;
 
             // หา chain target ถัดไป (ยังไม่โดน, ใกล้ที่สุด)
-            current = FindNearestUnhitEnemy(targetPos, chainSearchRadius, mask, hitSet);
+            current = FindNearestUnhitEnemy(targetPos, chainSearchRadius, hitSet);
         }
     }
 
-    Enemy FindHighestHPEnemy(Vector3 center, float radius, int mask, HashSet<int> exclude)
+    Enemy FindHighestHPEnemy(Vector3 center, float radius, HashSet<int> exclude)
     {
-        var cols    = Physics.OverlapSphere(center, radius, mask);
+        var cols    = Physics.OverlapSphere(center, radius);
         Enemy best  = null;
         float bestHP = -1f;
         foreach (var c in cols)
         {
+            if (!c.CompareTag("Enemy")) continue;
             var e = c.GetComponent<Enemy>();
             if (e == null) continue;
             if (exclude.Contains(e.GetInstanceID())) continue;
@@ -77,13 +77,14 @@ public class LightningChainWeapon : WeaponBase
         return best;
     }
 
-    Enemy FindNearestUnhitEnemy(Vector3 center, float radius, int mask, HashSet<int> exclude)
+    Enemy FindNearestUnhitEnemy(Vector3 center, float radius, HashSet<int> exclude)
     {
-        var cols   = Physics.OverlapSphere(center, radius, mask);
+        var cols   = Physics.OverlapSphere(center, radius);
         Enemy best = null;
         float minD = float.MaxValue;
         foreach (var c in cols)
         {
+            if (!c.CompareTag("Enemy")) continue;
             var e = c.GetComponent<Enemy>();
             if (e == null) continue;
             if (exclude.Contains(e.GetInstanceID())) continue;
@@ -95,6 +96,7 @@ public class LightningChainWeapon : WeaponBase
 
     void BroadcastLightningBeam(Vector3 from, Vector3 to)
     {
-        manager.BroadcastBeamServerRpc(from, to, (int)VFXType.None);
+        // ใช้ HitEffect เป็น burst ที่ปลาย → มี spark ที่ chain target แม้ beamPrefab ไม่ assign
+        manager.BroadcastBeamServerRpc(from, to, (int)VFXType.HitEffect);
     }
 }

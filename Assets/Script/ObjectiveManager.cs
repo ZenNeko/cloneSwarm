@@ -35,6 +35,9 @@ public class ObjectiveManager : NetworkBehaviour
         GameTimeline.OnObjectiveTime -= SpawnObjectives;
     }
 
+    /// <summary>Force spawn objective (dev tool only — server only)</summary>
+    public void DevSpawnObjective() => SpawnObjectives();
+
     void SpawnObjectives()
     {
         if (!IsServer || zoneObjectivePrefab == null) return;

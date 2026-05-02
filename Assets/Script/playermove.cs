@@ -88,6 +88,15 @@ public class playermove : NetworkBehaviour
 
     void OnHealthChanged(float prev, float curr)
     {
+        // Damage feedback (owner only) — fires when HP decreases
+        if (curr < prev && IsOwner)
+        {
+            float dmg       = prev - curr;
+            float intensity = Mathf.Clamp01(dmg / maxHealth * 3f); // small hits = small flash
+            DamageFeedbackUI.Instance?.ShowFlash(intensity);
+            CameraShake.Instance?.Shake(0.2f, 0.25f * Mathf.Max(intensity, 0.4f));
+        }
+
         if (curr <= 0f) onDeath.Invoke();
     }
 

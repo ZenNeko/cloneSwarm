@@ -908,7 +908,7 @@ GameObject:
   - component: {fileID: 7912008274005657987}
   m_Layer: 0
   m_Name: DragonMesh
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1116,6 +1116,7 @@ GameObject:
   - component: {fileID: 3292833587643845836}
   - component: {fileID: 3342183759522062933}
   - component: {fileID: 5664926950133900031}
+  - component: {fileID: 4194741810231641617}
   m_Layer: 0
   m_Name: BossRed
   m_TagString: Enemy
@@ -1131,8 +1132,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3485055626465523296}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.053493824, z: 0, w: 0.99856824}
-  m_LocalPosition: {x: 0, y: 0.38, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.49}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1181,7 +1182,7 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
+  SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -1202,20 +1203,26 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 3
   suppressDefaultMovement: 0
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  wallCheckRadius: 0.4
+  wallCheckDistance: 0.6
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
-  maxHealth: 30
+  maxHealth: 5000
   onDeath:
     m_PersistentCalls:
       m_Calls: []
   expReward: 10
-  expOrbPrefab: {fileID: 1276859104628764932, guid: 05b33c50f6e4ac44da9d9381c810e5e5, type: 3}
+  expOrbPrefab: {fileID: 0}
   netHealth:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 30
+  serverInvincible: 0
 --- !u!114 &5664926950133900031
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1231,49 +1238,56 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   phase2Threshold: 0.6
   phase3Threshold: 0.3
-  phase1Interval: 4
-  phase2Interval: 3
-  phase3Interval: 2
-  circleRadius: 4
+  phase1Interval: 3
+  phase2Interval: 2
+  phase3Interval: 1
+  circleRadius: 15
   circleDamage: 25
   circleWarnTime: 2.5
-  lineLength: 10
-  lineWidth: 2
+  lineLength: 100
+  lineWidth: 10
   lineDamage: 35
   lineWarnTime: 2.5
-  crossLineLength: 8
-  crossLineWidth: 2
+  crossLineLength: 300
+  crossLineWidth: 10
   crossDamage: 30
   crossWarnTime: 2.5
-  spreadLineLength: 12
-  spreadLineWidth: 1.2
-  spreadDamage: 20
-  spreadWarnTime: 2.5
-  spreadCount: 5
-  spreadAngle: 60
-  donutRadius: 6
-  donutInnerRadius: 2
+  donutRadius: 30
+  donutInnerRadius: 30
   donutDamage: 35
   donutWarnTime: 2.5
-  coneRadius: 8
-  coneAngle: 90
-  coneLineWidth: 1.2
-  coneDamage: 30
-  coneWarnTime: 2.5
   chaseRadius: 3
   chaseDamage: 35
   chaseWarnTime: 4
   tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
-  tetherDistance: 8
+  tetherDistance: 20
   tetherDuration: 6
   tetherFailDamage: 40
-  floorHazardPrefab: {fileID: 3669286103453573845, guid: 74cf6e11577dc154fa968303abcc6d2f, type: 3}
-  floorArenaRadius: 18
-  floorSafeZoneCount: 1
-  floorSafeZoneRadius: 3
-  floorWarnTime: 6
-  floorDamage: 50
-  telegraphZonePrefab: {fileID: 4932088507883938021, guid: 53a576e3fe3a9ef4d825edf0dc38c8da, type: 3}
+  tetherSoloSpawnOffset: 5
+  telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
+  phaseTransitionDuration: 1.5
+  phaseShakeMagnitude: 0.4
+--- !u!65 &4194741810231641617
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3485055626465523296}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 8.550927, y: 5.0409327, z: 9.447472}
+  m_Center: {x: -0.27364588, y: 2.4381018, z: -2.3229704}
 --- !u!1 &3503917040628601915
 GameObject:
   m_ObjectHideFlags: 0

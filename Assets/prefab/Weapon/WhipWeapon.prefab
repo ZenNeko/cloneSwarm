@@ -48,3 +48,5 @@ MonoBehaviour:
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
+  tempCooldownMult: 1
+  width: 3

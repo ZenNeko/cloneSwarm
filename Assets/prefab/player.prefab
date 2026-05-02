@@ -364,12 +364,12 @@ MonoBehaviour:
   statManager: {fileID: 0}
   characterData: {fileID: 0}
   startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
-  boomerangPrefab: {fileID: 0}
-  grenadePrefab: {fileID: 2175207568025715613, guid: 0795629bd4364eb4d9a8fed3d02839d9, type: 3}
+  boomerangPrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
+  grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
   minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}
   stickyRocketPrefab: {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
   giantRocketPrefab: {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
-  missilePrefab: {fileID: 1984855891988958910, guid: db87279f89c8ef546ac502d4e88bd0c9, type: 3}
+  missilePrefab: {fileID: 1437254519778189906, guid: db87279f89c8ef546ac502d4e88bd0c9, type: 3}
   funnelPrefab: {fileID: 6266392510070060659, guid: 6d4a5b6b1a623044e9a4057d037cc4ed, type: 3}
 --- !u!114 &8264601110927716481
 MonoBehaviour:
@@ -392,8 +392,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 21c29adfa9d3ac34697b827b0be41d81, type: 2}
   - {fileID: 11400000, guid: 57bb557a1524634449faf332d404a910, type: 2}
   - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
-  - {fileID: 11400000, guid: f730031a333f4094495d738700ec6188, type: 2}
-  - {fileID: 11400000, guid: 941b65e36e8198f48b036bc3e0daa804, type: 2}
   - {fileID: 11400000, guid: 9f931c4b300bae7478f93523e50d1e68, type: 2}
   - {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
   - {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}

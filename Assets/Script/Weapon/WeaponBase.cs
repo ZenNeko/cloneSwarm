@@ -66,6 +66,7 @@ public abstract class WeaponBase : MonoBehaviour
 
         // Build effective level data (stat-modified copy)
         var effective = BuildEffectiveLevelData(ld);
+        PlayFireSfx();        // auto fire SFX สำหรับ weapon ทุกตัว
         OnFire(effective);
     }
 
@@ -75,6 +76,7 @@ public abstract class WeaponBase : MonoBehaviour
     {
         var ld        = data.GetLevelData(currentLevel);
         var effective = BuildEffectiveLevelData(ld);
+        PlayFireSfx();        // auto fire SFX สำหรับ HunterPassive / charge weapons
         OnFire(effective);
     }
 
@@ -141,6 +143,21 @@ public abstract class WeaponBase : MonoBehaviour
     {
         VFXType baseHit = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
         manager.BroadcastVfxTypeServerRpc(pos, (int)baseHit);
+    }
+
+    // ── SFX Helpers (delegate to SoundManager) ───────────────────────────
+    /// <summary>เล่น random clip จาก data.fireSfx[] ที่ตำแหน่งผู้เล่น</summary>
+    protected void PlayFireSfx()
+    {
+        if (data == null) return;
+        SoundManager.Instance.PlayRandomSfx(data.fireSfx, transform.position, data.fireVolume, data.pitchVariance);
+    }
+
+    /// <summary>เล่น random clip จาก data.hitSfx[] ที่จุดกระทบ</summary>
+    protected void PlayHitSfx(Vector3 pos)
+    {
+        if (data == null) return;
+        SoundManager.Instance.PlayRandomSfx(data.hitSfx, pos, data.hitVolume, data.pitchVariance);
     }
 
     /// <summary>

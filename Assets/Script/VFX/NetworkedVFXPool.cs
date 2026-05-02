@@ -158,16 +158,38 @@ public class NetworkedVFXPool : MonoBehaviour
     }
 
     /// <summary>
+    /// Overload: pass non-uniform Vector3 scale — ใช้สำหรับ Telegraph Line/Cross/Cone ที่ scale แต่ละแกนต่างกัน
+    /// </summary>
+    public void PlayByType3D(VFXType type, Vector3 pos, Vector3 scale3D, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    {
+        if (!_typeToPoolId.TryGetValue(type, out int id))
+        {
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFXType.{type}");
+            return;
+        }
+        PlayFromPool3D(id, pos, scale3D, direction, arcAngle, roll);
+    }
+
+    /// <summary>คืน true ถ้ามี prefab assign สำหรับ type นี้ใน pool</summary>
+    public bool HasMapping(VFXType type) => _typeToPoolId.ContainsKey(type);
+
+    /// <summary>
     /// Spawn beam (LineRenderer) จาก from → to แล้วคืน pool หลัง duration
     /// ใช้โดย VFXFactory.PlayBeam()
     /// </summary>
     public void PlayBeam(Vector3 from, Vector3 to, float duration = 0.15f)
     {
-        if (beamPrefab == null) { Debug.LogWarning("[VFXPool] beamPrefab ไม่ได้กำหนด"); return; }
-
-        GameObject go = _beamPool.Count > 0
-            ? _beamPool.Dequeue()
-            : CreateInstance(beamPrefab);
+        // Fallback: ถ้าไม่มี beamPrefab assign → สร้าง runtime LineRenderer แบบเรียบง่าย
+        // จะได้ใช้ได้ทันทีโดยไม่ต้อง setup ใน Inspector
+        GameObject go;
+        if (beamPrefab != null)
+        {
+            go = _beamPool.Count > 0 ? _beamPool.Dequeue() : CreateInstance(beamPrefab);
+        }
+        else
+        {
+            go = _beamPool.Count > 0 ? _beamPool.Dequeue() : CreateFallbackBeam();
+        }
 
         go.SetActive(true);
         go.transform.position = from;
@@ -189,6 +211,30 @@ public class NetworkedVFXPool : MonoBehaviour
         StartCoroutine(ReturnBeamToPool(go, duration));
     }
 
+    /// <summary>สร้าง LineRenderer แบบ runtime — ใช้เมื่อ beamPrefab ไม่ได้ assign</summary>
+    GameObject CreateFallbackBeam()
+    {
+        var go = new GameObject("BeamFallback");
+        go.transform.SetParent(transform, false);
+        var lr = go.AddComponent<LineRenderer>();
+        lr.startWidth = 0.18f;
+        lr.endWidth   = 0.06f;
+        lr.useWorldSpace = true;
+
+        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default")
+                  ?? Shader.Find("Unlit/Color");
+        if (shader != null)
+        {
+            var mat = new Material(shader) { color = new Color(0.4f, 0.8f, 1f, 1f) };
+            lr.material = mat;
+            lr.startColor = new Color(0.7f, 0.9f, 1f, 1f);
+            lr.endColor   = new Color(0.3f, 0.6f, 1f, 0.5f);
+        }
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return go;
+    }
+
     IEnumerator ReturnBeamToPool(GameObject go, float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -197,11 +243,22 @@ public class NetworkedVFXPool : MonoBehaviour
         _beamPool.Enqueue(go);
     }
 
+    /// <summary>Internal: 3D scale variant — ใช้โดย PlayByType3D</summary>
+    void PlayFromPool3D(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll)
+    {
+        PlayFromPoolCore(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale: false, uniformScale: 1f);
+    }
+
     /// <summary>
     /// เล่น VFX จาก pool บน client ที่เรียก (ถูกเรียกจาก ClientRpc ใน PlayerWeaponManager)
     /// direction = ทิศที่ VFX หันหน้าไป — ใช้กับ Slash/Melee VFX Graph
     /// </summary>
     public void PlayFromPool(int poolId, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    {
+        PlayFromPoolCore(poolId, pos, Vector3.one * scale, direction, arcAngle, roll, useUniformScale: true, uniformScale: scale);
+    }
+
+    void PlayFromPoolCore(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale)
     {
         if (poolId < 0) return;
         if (!_pools.TryGetValue(poolId, out var q)) return;
@@ -238,7 +295,7 @@ public class NetworkedVFXPool : MonoBehaviour
         go.transform.rotation = Mathf.Abs(roll) > 0.01f
             ? baseRot * Quaternion.Euler(0f, 0f, roll)
             : baseRot;
-        go.transform.localScale = Vector3.one * scale;
+        go.transform.localScale = scale3D;
         go.SetActive(true);
 
         // ── Play: VFX Graph หรือ ParticleSystem ──────────────────────────

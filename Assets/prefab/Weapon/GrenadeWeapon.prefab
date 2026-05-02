@@ -48,5 +48,7 @@ MonoBehaviour:
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
+  tempCooldownMult: 1
   explosionRadius: 3
   fuseTime: 1.5
+  grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}

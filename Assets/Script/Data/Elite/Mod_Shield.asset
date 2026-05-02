@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e46114c39e1194b47a3cbd284b27c6ed, type: 3}
+  m_Name: Mod_Shield
+  m_EditorClassIdentifier: Assembly-CSharp::EliteModifierDef
+  id: 0
+  displayName: Shield
+  outlineColor: {r: 1, g: 0.851273, b: 0.015686274, a: 1}
+  crownPrefab: {fileID: 3275935734518220201, guid: e33e03b555f5df145b2bc38185abf1fd, type: 3}
+  healthMultBonus: 1.5
+  speedMultBonus: 1
+  expMultBonus: 2
+  behaviorType: 0
+  shieldHP: 80
+  rageHpThreshold: 0.3
+  rageSpeedMult: 1.8
+  splitPrefab: {fileID: 0}
+  splitCount: 2
+  exploderRadius: 3
+  exploderDamage: 30
+  exploderVfxType: 3

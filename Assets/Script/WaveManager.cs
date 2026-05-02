@@ -15,14 +15,28 @@ public class WaveManager : NetworkBehaviour
     public static WaveManager Instance { get; private set; }
 
     [Header("Wave Timing")]
+    [Tooltip("ดีเลย์ก่อน wave 1 จะเริ่ม (วินาที) — ให้ผู้เล่นได้ตั้งตัว")]
     public float startDelay   = 5f;
-    public float waveDuration = 60f;   // ระยะเวลาก่อนขึ้น scaling ถัดไป
+    [Tooltip("ระยะเวลาของแต่ละ wave (วินาที) ก่อนเลื่อนขึ้น scaling ถัดไป\n" +
+             "60 = wave ละ 1 นาที | 90 = ช้าหน่อย")]
+    public float waveDuration = 60f;
 
     [Header("Enemy Scaling per Wave")]
+    [Tooltip("HP ของศัตรูเพิ่มขึ้นกี่ % ต่อ wave (เป็นทศนิยม)\n" +
+             "0.20 = +20% ต่อ wave | wave 5 → HP × 1.80")]
     public float healthMultPerWave    = 0.20f;
+    [Tooltip("ความเร็วศัตรูเพิ่มขึ้นกี่ % ต่อ wave\n" +
+             "0.05 = +5% ต่อ wave | จำกัดด้วย maxSpeedMultiplier")]
     public float speedMultPerWave     = 0.05f;
-    public float expMultPerWave       = 0.15f;   // EXP reward เพิ่ม +15% ต่อ wave
+    [Tooltip("EXP reward เพิ่มขึ้นกี่ % ต่อ wave\n" +
+             "0.15 = +15% ต่อ wave (ชดเชย scaling ของศัตรู)")]
+    public float expMultPerWave       = 0.15f;
+    [Tooltip("เพดาน speed multiplier — ป้องกันศัตรูเร็วเกิน\n" +
+             "2 = เร็วได้สุด 2 เท่าของ base")]
     public float maxSpeedMultiplier   = 2f;
+    [Tooltip("Spawn rate เร็วขึ้นกี่ % ต่อ wave (เป็นทศนิยม)\n" +
+             "0.10 = -10% ต่อ wave (interval สั้นลง)\n" +
+             "wave 5 → interval × (1-0.10)^5 ≈ 0.59 ของ base")]
     public float spawnRateAccel       = 0.10f;
 
     [Header("Wave Configs (by wave bracket)")]

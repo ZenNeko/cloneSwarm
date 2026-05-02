@@ -14,19 +14,40 @@ using UnityEngine;
 /// </summary>
 public class TelegraphZone : NetworkBehaviour
 {
-    public enum AoEType { Circle, Line, Cross, Spread, Donut, Cone, Chase }
 
-    [Header("Materials (ถ้าปล่อยว่างจะสร้าง runtime)")]
+    [Header("3D Visual Prefabs — ออกแบบ scale=1 ให้มีขนาดมาตรฐาน 1 unit")]
+    [Tooltip("Disc Ø1 unit (Cylinder/Plane นอนบน XZ)\n" +
+             "ใช้กับ AoEType.Circle และ AoEType.Chase")]
+    public GameObject circlePrefab;
+    [Tooltip("Line 1×1 unit — ยาว 1 unit ทาง +Z, กว้าง 1 unit ทาง X\n" +
+             "ใช้กับ AoEType.Line และ AoEType.Cross (Cross spawn 2 ตัว scale คนละแกน)")]
+    public GameObject linePrefab;
+    [Tooltip("Donut Ø1 unit — ห่วงนอนบน XZ\n" +
+             "ใช้กับ AoEType.Donut")]
+    public GameObject donutPrefab;
+
+    [Tooltip("VFX ตอนระเบิด (impact shockwave) — ปล่อยว่างได้")]
+    public GameObject detonateVfxPrefab;
+
+    [Header("Materials (fallback primitive mode — ใช้เมื่อไม่ใส่ prefab)")]
     public Material warningMaterial;   // transparent red — assign in Inspector
     public Material dangerMaterial;    // brighter red ตอนใกล้ระเบิด
 
+    [Header("Audio (Optional)")]
+    [Tooltip("เสียงเตือนตอน telegraph เริ่ม (one-shot)")]
+    public AudioClip warningClip;
+    [Tooltip("เสียงระเบิดตอน detonate")]
+    public AudioClip detonateClip;
+    [Range(0f, 1f)] public float warningVolume  = 0.5f;
+    [Range(0f, 1f)] public float detonateVolume = 0.7f;
+
     // ── Client-side visual ────────────────────────────────────────────────
-    private GameObject         visual;
-    private List<Renderer>     visualRenderers     = new List<Renderer>();
-    private List<Renderer>     safeZoneRenderers   = new List<Renderer>();
-    private float              totalWarning;
-    private float              elapsed;
-    private bool               initialized;
+    private GameObject     visual;
+    private List<Renderer> visualRenderers   = new List<Renderer>();
+    private List<Renderer> safeZoneRenderers = new List<Renderer>();
+    private float          totalWarning;
+    private float          elapsed;
+    private bool           initialized;
 
     // ── Server-side params (set before Spawn, read via InitClientRpc) ─────
     [HideInInspector] public AoEType aoeType         = AoEType.Circle;
@@ -35,11 +56,17 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public float   lineWidth       = 1.5f;
     [HideInInspector] public float   warningDuration = 2.5f;
     [HideInInspector] public float   damage          = 30f;
-    [HideInInspector] public int     spreadCount     = 5;
-    [HideInInspector] public float   spreadAngle     = 60f;
     [HideInInspector] public float   innerRadius     = 1.5f;   // Donut: safe zone inner radius
-    [HideInInspector] public float   coneAngle       = 90f;    // Cone: sweep angle (degrees)
     [HideInInspector] public ulong   chaseTargetClientId = ulong.MaxValue; // Chase: target player
+
+    [Header("Chase Settings")]
+    [Tooltip("Chase: ระยะเวลาก่อนระเบิดที่ zone หยุดติดตาม (วินาที)\n" +
+             "ให้ผู้เล่นมีเวลาวิ่งหนี — 0.8 = lock-in 0.8 วินาทีสุดท้าย")]
+    [Range(0f, 3f)]
+    public float chaseLockInTime = 0.8f;
+    [Tooltip("Chase: smoothing — 0 = snap | 1 = lazy follow")]
+    [Range(0f, 1f)]
+    public float chaseSmoothing = 0.15f;
 
     // ── Spawn Entry Point ─────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -52,13 +79,13 @@ public class TelegraphZone : NetworkBehaviour
     public void BroadcastInit()
     {
         InitClientRpc((int)aoeType, radius, lineLength, lineWidth, warningDuration, damage,
-                      spreadCount, spreadAngle, innerRadius, coneAngle, chaseTargetClientId);
+                      innerRadius, chaseTargetClientId);
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
     [ClientRpc]
     void InitClientRpc(int type, float r, float len, float wid, float warn, float dmg,
-                       int sCnt, float sAngle, float innerR, float coneAng, ulong chaseId)
+                       float innerR, ulong chaseId)
     {
         aoeType               = (AoEType)type;
         radius                = r;
@@ -66,10 +93,7 @@ public class TelegraphZone : NetworkBehaviour
         lineWidth             = wid;
         warningDuration       = warn;
         damage                = dmg;
-        spreadCount           = sCnt;
-        spreadAngle           = sAngle;
         innerRadius           = innerR;
-        coneAngle             = coneAng;
         chaseTargetClientId   = chaseId;
         totalWarning          = warn;
         elapsed               = 0f;
@@ -83,13 +107,132 @@ public class TelegraphZone : NetworkBehaviour
                 ?.ShowAnnouncement("⚡ TARGETED — RUN AWAY!", Color.magenta);
         }
 
-        CreateVisual();
+        // Visual: 3D prefab (preferred) > runtime primitive (fallback)
+        if (!TrySpawnVfxPrefab())
+            CreateVisual();
+
+        // Audio: warning cue ตอน telegraph เริ่ม
+        if (warningClip != null)
+            SoundManager.Instance.PlaySfx(warningClip, transform.position, warningVolume);
+    }
+
+    /// <summary>
+    /// Instantiate 3D prefab สำหรับ aoeType ปัจจุบัน + scale ตาม params
+    /// คืน true ถ้าใช้ prefab สำเร็จ → caller skip primitive creation
+    ///
+    /// **Prefab convention** — ออกแบบในขนาดมาตรฐานที่ scale=1:
+    ///   • circlePrefab : เส้นผ่านศูนย์กลาง 1 unit นอนบน XZ (Circle, Chase, Donut fallback)
+    ///   • linePrefab   : ยาว 1 unit ทาง +Z, กว้าง 1 unit ทาง X (Line, Cross ×2)
+    ///   • donutPrefab  : เส้นผ่านศูนย์กลาง 1 unit นอนบน XZ
+    ///
+    /// **Cross logic** — spawn linePrefab 2 ตัว scale คนละแกน (ไม่ต้องหมุน):
+    ///   arm1 = (lineWidth, 1, lineLength)  → ยาวทาง Z
+    ///   arm2 = (lineLength, 1, lineWidth)  → ยาวทาง X
+    /// </summary>
+    bool TrySpawnVfxPrefab()
+    {
+        // เลือก prefab ตาม AoEType (Cross/Chase reuse Line/Circle)
+        GameObject prefab = aoeType switch
+        {
+            AoEType.Circle => circlePrefab,
+            AoEType.Chase  => circlePrefab,   // Chase ใช้ Circle prefab
+            AoEType.Donut  => donutPrefab,
+            AoEType.Line   => linePrefab,
+            AoEType.Cross  => linePrefab,     // Cross ใช้ Line prefab (arm 1)
+            _              => null,
+        };
+        if (prefab == null) return false;
+
+        visual = Instantiate(prefab, transform);
+        visual.transform.localPosition = Vector3.zero;
+        visual.transform.localRotation = Quaternion.identity;
+
+        // ── 3D Scale Mapping (XZ plane — Y stays at prefab's design height) ──
+        Vector3 s = aoeType switch
+        {
+            AoEType.Circle => new Vector3(radius * 2f, 1f, radius * 2f),
+            AoEType.Donut  => new Vector3(radius * 2f, 1f, radius * 2f),
+            AoEType.Chase  => new Vector3(radius * 2f, 1f, radius * 2f),
+            AoEType.Line   => new Vector3(lineWidth,   1f, lineLength),
+            AoEType.Cross  => new Vector3(lineWidth,   1f, lineLength),   // arm 1
+            _              => Vector3.one,
+        };
+        visual.transform.localScale = s;
+
+        // Cross: spawn arm 2 (perpendicular, scale แกน X/Z สลับ)
+        GameObject arm2 = null;
+        if (aoeType == AoEType.Cross)
+        {
+            arm2 = Instantiate(linePrefab, transform);
+            arm2.transform.localPosition = Vector3.zero;
+            arm2.transform.localRotation = Quaternion.identity;
+            arm2.transform.localScale    = new Vector3(lineLength, 1f, lineWidth);
+        }
+
+        // ส่ง params เข้า VFX Graph (ถ้ามี)
+        var vfx = visual.GetComponent<UnityEngine.VFX.VisualEffect>();
+        if (vfx != null)
+        {
+            if (vfx.HasFloat("WarningDuration")) vfx.SetFloat("WarningDuration", warningDuration);
+            if (vfx.HasFloat("InnerRadius"))     vfx.SetFloat("InnerRadius",     innerRadius);
+        }
+
+        // เก็บ renderer ทั้งหมด (visual + arm2) เพื่อให้ Update() ปรับสี warning→danger ได้
+        // + ส่ง shader-graph params (Donut)
+        CollectRenderersAndApplyShaderParams(visual);
+        if (arm2 != null) CollectRenderersAndApplyShaderParams(arm2);
+
+        return true;
+    }
+
+    void CollectRenderersAndApplyShaderParams(GameObject root)
+    {
+        var rends = root.GetComponentsInChildren<Renderer>();
+        foreach (var r in rends)
+        {
+            if (r == null) continue;
+            visualRenderers.Add(r);
+
+            var mat = r.material;
+
+            // Chase: override สีเป็น magenta เพื่อแยกจาก AoE ปกติ
+            if (aoeType == AoEType.Chase)
+            {
+                if (mat.HasProperty("_WarningColor"))
+                    mat.SetColor("_WarningColor", new Color(1f, 0.2f, 1f, 1f));
+                if (mat.HasProperty("_DangerColor"))
+                    mat.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
+            }
+
+            // เริ่ม fill ที่ 0 (กันค่าค้างจาก material asset)
+            if (mat.HasProperty("_FillProgress")) mat.SetFloat("_FillProgress", 0f);
+        }
     }
 
     [ClientRpc]
     void ExplodeClientRpc()
     {
         if (visual) visual.SetActive(false);
+
+        // Detonate VFX (impact shockwave)
+        if (detonateVfxPrefab != null)
+        {
+            var fx = Instantiate(detonateVfxPrefab, transform.position, Quaternion.identity);
+            // Scale ตาม radius ของ AoE
+            float scale = aoeType switch
+            {
+                AoEType.Circle => radius,
+                AoEType.Donut  => radius,
+                AoEType.Chase  => radius,
+                _              => Mathf.Max(lineWidth, lineLength * 0.3f),
+            };
+            fx.transform.localScale = Vector3.one * scale;
+            Destroy(fx, 3f);   // auto cleanup หลัง 3 วินาที
+        }
+
+        // Audio: detonate boom
+        if (detonateClip != null)
+            SoundManager.Instance.PlaySfx(detonateClip, transform.position, detonateVolume);
     }
 
     // ── Server Sequence ────────────────────────────────────────────────────
@@ -108,23 +251,33 @@ public class TelegraphZone : NetworkBehaviour
     }
 
     /// <summary>
-    /// Chase: server อัปเดตตำแหน่ง zone ตาม target player ตลอด warningDuration
+    /// Chase: server ติดตาม target player → หยุดก่อนระเบิด chaseLockInTime วินาที
+    /// (ให้ผู้เล่นมีเวลาวิ่งหนีออกจาก final position)
     /// sync ไป clients ทุก 80ms
     /// </summary>
     IEnumerator ChaseSequence()
     {
-        float timer     = 0f;
-        float syncTimer = 0f;
+        float timer        = 0f;
+        float syncTimer    = 0f;
         const float syncInterval = 0.08f;
 
-        while (timer < warningDuration)
+        // ระยะเวลา follow ก่อนเข้า lock-in
+        float followDuration = Mathf.Max(0f, warningDuration - chaseLockInTime);
+
+        // Phase 1: Follow player ด้วย smoothing
+        while (timer < followDuration)
         {
             if (NetworkManager.Singleton != null &&
                 NetworkManager.Singleton.ConnectedClients.TryGetValue(chaseTargetClientId, out var client) &&
                 client.PlayerObject != null)
             {
                 Vector3 tp = client.PlayerObject.transform.position;
-                transform.position = new Vector3(tp.x, transform.position.y, tp.z);
+                Vector3 targetPos = new Vector3(tp.x, transform.position.y, tp.z);
+
+                // Lazy follow — smooth lerp แทน snap
+                transform.position = chaseSmoothing > 0f
+                    ? Vector3.Lerp(transform.position, targetPos, 1f - Mathf.Pow(chaseSmoothing, Time.deltaTime * 60f))
+                    : targetPos;
 
                 syncTimer += Time.deltaTime;
                 if (syncTimer >= syncInterval)
@@ -136,6 +289,26 @@ public class TelegraphZone : NetworkBehaviour
 
             timer += Time.deltaTime;
             yield return null;
+        }
+
+        // Phase 2: Lock-in — หยุดติดตาม sync ตำแหน่งสุดท้ายให้ทุก client
+        SyncChasePositionClientRpc(transform.position);
+        NotifyChaseLockedClientRpc();
+
+        if (chaseLockInTime > 0f)
+            yield return new WaitForSeconds(chaseLockInTime);
+    }
+
+    [ClientRpc]
+    void NotifyChaseLockedClientRpc()
+    {
+        // Visual feedback: เปลี่ยนสี Chase visual เป็น "ใกล้ระเบิด" (จะถูก override โดย Update tick ถัดไป
+        // — ใช้ตอนนี้แค่ trigger announcement)
+        if (NetworkManager.Singleton != null
+            && NetworkManager.Singleton.LocalClientId == chaseTargetClientId)
+        {
+            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+                ?.ShowAnnouncement("⚠ LOCKED IN!", new Color(1f, 0.3f, 0.2f));
         }
     }
 
@@ -160,9 +333,7 @@ public class TelegraphZone : NetworkBehaviour
             {
                 AoEType.Circle => IsInCircle(playerPos),
                 AoEType.Cross  => IsInLine(playerPos) || IsInLineCross(playerPos),
-                AoEType.Spread => IsInSpread(playerPos),
                 AoEType.Donut  => IsInDonut(playerPos),
-                AoEType.Cone   => IsInCone(playerPos),
                 AoEType.Chase  => IsInCircle(playerPos),  // detonate ที่ตำแหน่งสุดท้ายที่ zone หยุด
                 _              => IsInLine(playerPos),    // Line
             };
@@ -204,34 +375,6 @@ public class TelegraphZone : NetworkBehaviour
         return dist >= innerRadius && dist <= radius;
     }
 
-    bool IsInCone(Vector3 pos)
-    {
-        Vector3 toTarget = pos - transform.position;
-        toTarget.y = 0f;
-        if (toTarget.sqrMagnitude < 0.001f) return true;
-        return toTarget.magnitude <= radius
-            && Vector3.Angle(transform.forward, toTarget) <= coneAngle * 0.5f;
-    }
-
-    // Spread: ตรวจว่า pos อยู่ใน fan-shaped ray ใดๆ
-    bool IsInSpread(Vector3 pos)
-    {
-        if (spreadCount <= 0) return false;
-        float halfSpread = spreadAngle * 0.5f;
-        float step       = spreadCount > 1 ? spreadAngle / (spreadCount - 1) : 0f;
-
-        for (int i = 0; i < spreadCount; i++)
-        {
-            float   angle    = -halfSpread + i * step;
-            Vector3 rayDir   = Quaternion.Euler(0f, angle, 0f) * transform.forward;
-            Quaternion rayRot = Quaternion.LookRotation(rayDir);
-            Vector3 local    = Quaternion.Inverse(rayRot) * (pos - transform.position);
-            if (Mathf.Abs(local.x) <= lineWidth * 0.5f && local.z >= 0f && local.z <= lineLength)
-                return true;
-        }
-        return false;
-    }
-
     // ── Client Visual ──────────────────────────────────────────────────────
     void CreateVisual()
     {
@@ -261,21 +404,6 @@ public class TelegraphZone : NetworkBehaviour
                 CreateLinePrimitive(visual.transform, Vector3.zero, Quaternion.Euler(0f, 90f, 0f), lineWidth, lineLength);
                 break;
 
-            case AoEType.Spread:
-                visual = new GameObject("Visual_Spread");
-                visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
-                float halfSpread = spreadAngle * 0.5f;
-                float step       = spreadCount > 1 ? spreadAngle / (spreadCount - 1) : 0f;
-                for (int i = 0; i < spreadCount; i++)
-                {
-                    float angle = -halfSpread + i * step;
-                    Quaternion rot = Quaternion.Euler(0f, angle, 0f);
-                    Vector3 barCenter = rot * (Vector3.forward * lineLength * 0.5f);
-                    CreateLinePrimitive(visual.transform, barCenter, rot, lineWidth, lineLength);
-                }
-                break;
-
             case AoEType.Donut:
                 visual = new GameObject("Visual_Donut");
                 visual.transform.SetParent(transform);
@@ -285,22 +413,6 @@ public class TelegraphZone : NetworkBehaviour
                 // inner safe zone — teal, slightly higher to avoid z-fighting
                 CreateSafeCylinderPrimitive(visual.transform, new Vector3(0f, 0.001f, 0f),
                                             Quaternion.identity, innerRadius * 2f);
-                break;
-
-            case AoEType.Cone:
-                visual = new GameObject("Visual_Cone");
-                visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
-                int   fanLines = Mathf.Max(4, Mathf.RoundToInt(coneAngle / 10f));
-                float fanStep  = fanLines > 1 ? coneAngle / (fanLines - 1) : 0f;
-                float halfCone = coneAngle * 0.5f;
-                for (int i = 0; i < fanLines; i++)
-                {
-                    float      fanAngle = -halfCone + i * fanStep;
-                    Quaternion fanRot   = Quaternion.Euler(0f, fanAngle, 0f);
-                    Vector3    fanCen   = fanRot * (Vector3.forward * radius * 0.5f);
-                    CreateLinePrimitive(visual.transform, fanCen, fanRot, lineWidth * 0.4f, radius);
-                }
                 break;
 
             case AoEType.Chase:
@@ -364,20 +476,50 @@ public class TelegraphZone : NetworkBehaviour
         elapsed += Time.deltaTime;
         float progress = Mathf.Clamp01(elapsed / totalWarning);
 
+        // Fallback color (สำหรับ primitive ที่ไม่มี _FillProgress shader graph property)
+        // warning (yellow) → danger (red): G channel ลดลงตาม progress
         float urgency  = Mathf.Lerp(1f, 8f, progress);
         float blink    = Mathf.Sin(Time.time * urgency * Mathf.PI) * 0.5f + 0.5f;
-        // Chase: magenta; อื่นๆ: yellow → orange
         Color baseColor = aoeType == AoEType.Chase
             ? new Color(1f, 0f, Mathf.Lerp(1f, 0.3f, progress), Mathf.Lerp(0.35f, 0.75f, progress))
-            : new Color(1f, 1f - progress * 0.8f, 0f, Mathf.Lerp(0.35f, 0.75f, progress));
-        Color finalCol = baseColor * (0.7f + blink * 0.3f);
+            : new Color(1f, Mathf.Lerp(0.85f, 0.0f, progress), 0f, Mathf.Lerp(0.45f, 0.85f, progress));
+        Color fallbackCol = baseColor * (0.7f + blink * 0.3f);
+        fallbackCol.a = baseColor.a * (0.7f + blink * 0.3f);
 
         foreach (var r in visualRenderers)
-            if (r) r.material.color = finalCol;
+            if (r) ApplyTelegraphState(r, progress, fallbackCol);
 
         // safe zone (Donut center) — fixed teal, no blink
+        Color safeCol = new Color(0.1f, 0.8f, 0.9f, 0.3f);
         foreach (var r in safeZoneRenderers)
-            if (r) r.material.color = new Color(0.1f, 0.8f, 0.9f, 0.3f);
+            if (r) ApplyTelegraphState(r, 0f, safeCol);   // safe zone fill=0 ตลอด
+    }
+
+    /// <summary>
+    /// อัปเดต state ของ telegraph material:
+    /// • Shader Graph (TelegraphUniversal) → drive _FillProgress, ปล่อยให้ shader lerp _WarningColor→_DangerColor เอง
+    /// • Standard/URP fallback              → set _BaseColor/_Color จากค่า fallbackColor ที่ C# คำนวณ
+    /// </summary>
+    static void ApplyTelegraphState(Renderer r, float progress, Color fallbackColor)
+    {
+        var mat = r.material;
+
+        // Path 1 — Shader Graph มี _FillProgress: ใช้ shader-side warning→danger lerp
+        if (mat.HasProperty("_FillProgress"))
+        {
+            mat.SetFloat("_FillProgress", progress);
+            return;
+        }
+
+        // Path 2 — Fallback: เซ็ตสีตรงๆ ให้ shader ทั่วไป
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", fallbackColor);
+        if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     fallbackColor);
+        if (mat.HasProperty("_TintColor")) mat.SetColor("_TintColor", fallbackColor);
+        if (mat.HasProperty("_EmissionColor"))
+        {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", new Color(fallbackColor.r, fallbackColor.g, fallbackColor.b) * 1.5f);
+        }
     }
 
     Material GetWarningMaterial()

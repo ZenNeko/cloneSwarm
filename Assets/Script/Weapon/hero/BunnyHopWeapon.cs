@@ -10,8 +10,8 @@ using UnityEngine;
 ///
 /// ขณะ AD_BladeOfExile active (เพิ่มเติมบน AoE ปกติ):
 ///   + ยิง Projectile ในทิศ dash
-///   + Wind Slash radial 360° (windSlashCount ทิศ)
 ///   + AoE radius ×exileAoeMult
+///   (Wind Slash ถูกถอดออก — รอ design ใหม่)
 ///
 /// Super BunnyHop (IsSuper):
 ///   cast 2 เท่านั้น: AoE ตี 2 ครั้ง (double hit)
@@ -48,18 +48,7 @@ public class BunnyHopWeapon : WeaponBase
     [Header("Blade of Exile Bonus")]
     [Tooltip("คูณ AoE radius เพิ่มเติมขณะ Exile active")]
     public float exileAoeMult = 1.5f;
-    [Tooltip("จำนวน Wind Slash radial ขณะ Exile (แจกรอบ 360°)")]
-    public int windSlashCount = 6;
-    [Tooltip("ความเสียหาย Wind Slash เป็น % ของ damage หลัก")]
-    [Range(0.1f, 1f)]
-    public float windSlashDmgRatio = 0.6f;
-    [Tooltip("ระยะ Wind Slash")]
-    public float windSlashRange = 8f;
     // Projectile speed + count อ่านจาก WeaponData → levels → projectileSpeed / projectileCount
-
-    [Header("VFX")]
-    [Tooltip("Dash trail VFX type — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
-    public VFXType dashTrailVfxType = VFXType.DashTrail;
 
     protected override bool UsesCooldownTimer => false;
 
@@ -133,8 +122,6 @@ public class BunnyHopWeapon : WeaponBase
             Vector3 endPos   = startPos + dir * dashDistance;
             float   elapsed  = 0f;
 
-            ShowVfx(dashTrailVfxType, startPos, isAttackHit: false);
-
             while (elapsed < dashDuration)
             {
                 elapsed += Time.deltaTime;
@@ -153,18 +140,18 @@ public class BunnyHopWeapon : WeaponBase
         int     aoeHitCount = (_isSuper && bigSlash) ? 2 : 1;
 
         // ── AoE radial 360° รอบตัว — ทุก cast ────────────────────────────
+        // Damage เรียกตาม aoeHitCount (Super double hit) แต่ VFX แสดง 1 ครั้งพอ
         for (int i = 0; i < aoeHitCount; i++)
-        {
             manager.FireMeleeServerRpc(center, radius, damage);
-            ShowVfx(VFXType.MeteorAoE, center, radius);
-        }
+        // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
+        ShowVfx(VFXType.MeteorAoE, center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────────────
         float shieldAmount = damage * shieldPercent
                            * Mathf.Max(1f, FindAllEnemiesInRange(radius).Length);
         manager.AddShieldServerRpc(shieldAmount);
 
-        // ── Exile Bonus: Projectile + Wind Slash (ทุก cast เมื่อ Exile active) ──
+        // ── Exile Bonus: Projectile radial 360° (ทุก cast เมื่อ Exile active) ──
         if (exileActive)
         {
             // Projectile กระจาย 360°/count — ผ่าน BuildEffectiveLevelData เพื่อรับ stat bonus
@@ -183,17 +170,6 @@ public class BunnyHopWeapon : WeaponBase
                 FireProjectile(center, projDir, damage, projSpeed,
                                piercing: projLd.piercing, maxRange: projMaxRange,
                                isCrit: isCrit);
-            }
-
-            // Wind Slash radial 360°
-            float slashDmg = damage * windSlashDmgRatio;
-            for (int i = 0; i < windSlashCount; i++)
-            {
-                float   angle    = i * (360f / windSlashCount);
-                Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                manager.FireRaycastServerRpc(center, slashDir, slashDmg, windSlashRange,
-                                             vfxTypeInt: (int)VFXType.SlashHit,
-                                             isCrit: isCrit);
             }
         }
     }
@@ -219,15 +195,6 @@ public class BunnyHopWeapon : WeaponBase
         UnityEditor.Handles.color = Color.green;
         UnityEditor.Handles.DrawWireDisc(pos, Vector3.up, aoeR);
 
-        // ── Exile: Wind Slash rays (ฟ้า) ──────────────────────────────────
-        Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.9f);
-        for (int i = 0; i < windSlashCount; i++)
-        {
-            float   angle = i * (360f / windSlashCount);
-            Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-            Gizmos.DrawRay(pos, dir * windSlashRange);
-        }
-
         // ── Exile: Projectile radial (ส้ม) — อันแรกจาก forward ────────────
         Gizmos.color = new Color(1f, 0.5f, 0f, 0.9f);
         int pCount = Mathf.Max(1, data != null ? data.GetLevelData(currentLevel).projectileCount : 4);
@@ -245,8 +212,6 @@ public class BunnyHopWeapon : WeaponBase
         UnityEditor.Handles.Label(pos + Vector3.right * aoeR,  $"aoe r={aoeR:F1}");
         UnityEditor.Handles.Label(pos + Vector3.forward * projR + Vector3.up * 0.3f,
                                                                    $"proj range={projR:F1}");
-        UnityEditor.Handles.Label(pos + Vector3.left * windSlashRange + Vector3.up * 0.3f,
-                                                                   $"slash={windSlashRange:F1}");
     }
 #endif
 

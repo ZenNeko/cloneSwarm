@@ -19,7 +19,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   baseHealth: 150
   baseMoveSpeed: 4.5
-  startingWeapon: {fileID: 11400000, guid: 205dbdfc59253c843b06bd64dd6a015c, type: 2}
+  startingWeapon: {fileID: 11400000, guid: 2627d41ba1d3f9b489d56c32b4e777ae, type: 2}
   passiveWeapons: []
   abilities: []
   passiveIcon: {fileID: 0}

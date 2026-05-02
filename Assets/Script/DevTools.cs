@@ -124,6 +124,41 @@ public class DevTools : MonoBehaviour
         Debug.Log($"[DevTools] TimeScale → {scale}");
     }
 
+    // ── Boss / Objective Spawn ───────────────────────────────────────────
+    void OnSpawnMiniBoss()
+    {
+        if (!RequireServer()) return;
+        var bm = BossManager.Instance;
+        if (bm == null) { Debug.LogWarning("[DevTools] BossManager ไม่พบ"); return; }
+        bm.DevSpawnMiniBoss();
+        Debug.Log("[DevTools] 🟡 Force spawn Mini Boss");
+    }
+
+    void OnSpawnMainBoss()
+    {
+        if (!RequireServer()) return;
+        var bm = BossManager.Instance;
+        if (bm == null) { Debug.LogWarning("[DevTools] BossManager ไม่พบ"); return; }
+        bm.DevSpawnMainBoss();
+        Debug.Log("[DevTools] 🔴 Force spawn Main Boss");
+    }
+
+    void OnSpawnObjective()
+    {
+        if (!RequireServer()) return;
+        var om = FindFirstObjectByType<ObjectiveManager>();
+        if (om == null) { Debug.LogWarning("[DevTools] ObjectiveManager ไม่พบ"); return; }
+        om.DevSpawnObjective();
+        Debug.Log("[DevTools] 🎯 Force spawn Objective");
+    }
+
+    bool RequireServer()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer) return true;
+        Debug.LogWarning("[DevTools] ต้องรันในฐานะ Host/Server");
+        return false;
+    }
+
     // ── Build UI at Runtime ───────────────────────────────────────────────
     void BuildUI()
     {
@@ -174,6 +209,12 @@ public class DevTools : MonoBehaviour
         AddButton(panelRoot, "Force Level Up",   new Color(1f,0.8f,0f), OnForceLevelUp);
         AddButton(panelRoot, "Kill All Enemies", new Color(1f,0.3f,0.3f), OnKillAllEnemies);
         AddButton(panelRoot, "Auto-fill Upgrades", new Color(0.4f,0.8f,1f), OnAutoFillUpgrades);
+
+        // ── Spawning ──
+        AddLabel(panelRoot, "── Spawn ──", 11, new Color(0.7f,0.7f,0.7f));
+        AddButton(panelRoot, "Spawn Mini Boss",  new Color(1f, 0.85f, 0.2f), OnSpawnMiniBoss);
+        AddButton(panelRoot, "Spawn Main Boss",  new Color(1f, 0.25f, 0.25f), OnSpawnMainBoss);
+        AddButton(panelRoot, "Spawn Objective",  new Color(0.3f, 1f, 0.6f), OnSpawnObjective);
 
         AddLabel(panelRoot, "── Time Scale ──", 11, new Color(0.7f,0.7f,0.7f));
 

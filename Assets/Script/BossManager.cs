@@ -13,10 +13,8 @@ public class BossManager : NetworkBehaviour
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + MainBoss.cs (attacks)")]
     public GameObject mainBossPrefab;
-    [Tooltip("Mini Boss Type A — Chase AoE mechanic (ต้องมี MiniBossAI.cs + MiniBossConfig ChaseAoE)")]
+    [Tooltip("Mini Boss prefab (ต้องมี MiniBossAI.cs + MiniBossConfig)")]
     public GameObject miniBossPrefab;
-    [Tooltip("Mini Boss Type B — Floor Hazard mechanic (ต้องมี MiniBossAI.cs + MiniBossConfig FloorHazard)")]
-    public GameObject miniBossPrefab_B;
 
     [Header("Mini Boss Scaling")]
     [Tooltip("ค่า x ใน:  bossHP = enemyBaseHP  ×  x  ×  waveHealthMult")]
@@ -32,7 +30,7 @@ public class BossManager : NetworkBehaviour
     public UnityEvent onMainBossKilled;
 
     // ── State ─────────────────────────────────────────────────────────────
-    private Enemy activeMainBossEnemy;
+    private Enemy        activeMainBossEnemy;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -55,17 +53,26 @@ public class BossManager : NetworkBehaviour
         GameTimeline.OnMainBossTime  -= SpawnMainBoss;
     }
 
+    // ── Dev API (เรียกจาก DevTools) ───────────────────────────────────────
+    /// <summary>Force spawn mini boss (dev tool only — server only)</summary>
+    public void DevSpawnMiniBoss() => SpawnMiniBoss();
+
+    /// <summary>Force spawn main boss (dev tool only — server only)</summary>
+    public void DevSpawnMainBoss() => SpawnMainBoss();
+
     // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnMiniBoss()
     {
         if (!IsServer) return;
 
-        // สลับสุ่มระหว่าง Type A (ChaseAoE) และ Type B (FloorHazard)
-        GameObject prefab = PickMiniBossPrefab();
-        if (prefab == null) return;
+        if (miniBossPrefab == null)
+        {
+            Debug.LogWarning("[BossManager] miniBossPrefab not assigned!");
+            return;
+        }
 
         Vector3 pos = GetSpawnPosition();
-        var go = Instantiate(prefab, pos, Quaternion.identity);
+        var go = Instantiate(miniBossPrefab, pos, Quaternion.identity);
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         // HP = baseHP × miniBossBaseHealthMult × waveHealthMult
@@ -73,20 +80,7 @@ public class BossManager : NetworkBehaviour
         float finalHealthMult = miniBossBaseHealthMult * waveHealthMult;
 
         go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
-        Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
-    }
-
-    GameObject PickMiniBossPrefab()
-    {
-        bool hasA = miniBossPrefab   != null;
-        bool hasB = miniBossPrefab_B != null;
-
-        if (hasA && hasB) return Random.value < 0.5f ? miniBossPrefab : miniBossPrefab_B;
-        if (hasA) return miniBossPrefab;
-        if (hasB) return miniBossPrefab_B;
-
-        Debug.LogWarning("[BossManager] No mini boss prefab assigned!");
-        return null;
+        Debug.Log($"[BossManager] 🟡 Mini Boss [{miniBossPrefab.name}] spawned — HP×{finalHealthMult:F2}");
     }
 
     void SpawnMainBoss()
@@ -112,6 +106,7 @@ public class BossManager : NetworkBehaviour
     void OnMainBossKilled()
     {
         Debug.Log("[BossManager] ✅ Main Boss killed!");
+
         onMainBossKilled.Invoke();
         GameTimeline.Instance?.TriggerWin();
         MainBossKilledClientRpc();

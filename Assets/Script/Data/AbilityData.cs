@@ -43,6 +43,32 @@ public class AbilityData : ScriptableObject
     [Tooltip("ส่วนมาก 1 level — เพิ่มได้ถ้า ability มีการ upgrade")]
     public AbilityLevelData[] levels = new AbilityLevelData[1];
 
+    [Header("Audio (Optional)")]
+    [Tooltip("เสียงตอนใช้ ability — ใส่ได้หลายเสียง สุ่มเล่น\n" +
+             "เรียกผ่าน PlayCastSfx() ใน OnActivate() ของ ability script")]
+    public AudioClip[] castSfx;
+    [Tooltip("เสียงตอน ability ทำดาเมจ / hit — ใส่ได้หลายเสียง สุ่มเล่น\n" +
+             "(เช่น exile activate, missile explode)")]
+    public AudioClip[] hitSfx;
+    [Range(0f, 1f)]
+    [Tooltip("ความดังของ castSfx")]
+    public float castVolume = 0.8f;
+    [Range(0f, 1f)]
+    [Tooltip("ความดังของ hitSfx")]
+    public float hitVolume  = 0.7f;
+    [Tooltip("Pitch variance สุ่มต่อครั้ง (0 = ไม่สุ่ม)\n" +
+             "0.1 = ±10% (0.9 → 1.1)")]
+    [Range(0f, 0.5f)]
+    public float pitchVariance = 0.05f;
+
+    /// <summary>คืน random clip จาก castSfx array</summary>
+    public AudioClip GetRandomCastSfx()
+        => (castSfx == null || castSfx.Length == 0) ? null : castSfx[Random.Range(0, castSfx.Length)];
+
+    /// <summary>คืน random clip จาก hitSfx array</summary>
+    public AudioClip GetRandomHitSfx()
+        => (hitSfx == null || hitSfx.Length == 0) ? null : hitSfx[Random.Range(0, hitSfx.Length)];
+
     // ── Helpers ───────────────────────────────────────────────────────────
     public int MaxLevel => (levels != null && levels.Length > 0) ? levels.Length : 1;
 

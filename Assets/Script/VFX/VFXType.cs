@@ -13,21 +13,23 @@ public enum VFXType
     CritHitEffect   =  1,   // critical hit
 
     // ── Beam / Area effects (ใช้โดย weapon scripts โดยตรง) ───────────────────
-    // slot 2 reserved (BeamHit removed — ใช้ LineRenderer + HitEffect แทน)
+    TelegraphCircle =  2,   // Boss Circle/Chase telegraph — flat ring + sparks
     GrenadeExplosion=  3,   // Grenade / Minefield
-    // slot 4 reserved (MineExplosion removed)
+    TelegraphLine   =  4,   // Boss Line telegraph — rectangular decal
     OrbiterHit      =  5,   // Orbiter / RadiantAura
     OrbPickup       =  6,   // Objective Orb เก็บ
     EnemyDeath      =  7,   // ศัตรูตาย
-    // slot 8 reserved (RailgunBeam removed — ใช้ BeamHit แทน)
-    // slot 9 reserved
-    WhipSlash       = 10,   // Whip tentacle — arc shader
+    TelegraphCross  =  8,   // Boss Cross telegraph — 2 ขีดไขว้
+    TelegraphSpread =  9,   // Boss Spread telegraph — fan ของ N เส้น
+    LanceThrust     = 10,   // Lance / Spear — forward pierce VFX
     SlashHit        = 11,   // DualSlash / BladeStorm / Chainsaw — arc shader (30°-240°)
-    SlashAoE360     = 18,   // CycloneBlade / RadiantAura — full circle shader (360°)
-    // slot 12 reserved (LightningHit removed — ใช้ BeamHit แทน)
-    // slot 13 reserved (BoomerangHit removed — ใช้ HitEffect แทน)
-    // slot 14 reserved (ChainsawSlash removed — ใช้ HitEffect แทน)
+    TelegraphDonut  = 12,   // Boss Donut telegraph — annulus shader
+    TelegraphCone   = 13,   // Boss Cone telegraph — cone segment shader
+    TelegraphChase  = 14,   // Boss Chase telegraph — magenta tracking circle
     VortexSpawn     = 15,   // Vortex / SpiralGalaxy
     DashTrail       = 16,   // BunnyHop / StormBunny dash trail
     MeteorAoE       = 17,   // BunnyHop / StormBunny landing AoE
+    SlashAoE360     = 18,   // CycloneBlade / RadiantAura — full circle shader (360°)
+    WhipSlash       = 19,   // Whip / WhipPlasma — tentacle arc VFX
+    PhaseShockwave  = 20,   // Boss phase transition — large radial burst
 }

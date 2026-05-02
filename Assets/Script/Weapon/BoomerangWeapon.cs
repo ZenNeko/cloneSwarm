@@ -28,7 +28,7 @@ public class BoomerangWeapon : WeaponBase
         }
 
         Vector3 spawnPos = transform.position + Vector3.up * 0.8f;
-        Vector3 dir      = GetAimDirection();
+        Vector3 dir      = GetAimDirection();   // ใช้ WeaponBase.GetAimDirection() — รองรับ MouseAim + AutoNearest
 
         // ยิง 1 boomerang (projectileCount=1 ที่ Lv1-5 จาก level data)
         // TriRang Super จะ override เป็น 3 ลูก
@@ -38,24 +38,9 @@ public class BoomerangWeapon : WeaponBase
 
         for (int i = 0; i < count; i++)
         {
-            float   angle  = startAngle + i * spreadStep;
+            float   angle   = startAngle + i * spreadStep;
             Vector3 fireDir = Quaternion.Euler(0f, angle, 0f) * dir;
             manager.SpawnBoomerangServerRpc(spawnPos, fireDir, dmg, speed, range, isCrit);
         }
-    }
-
-    Vector3 GetAimDirection()
-    {
-        int   mask    = LayerMask.GetMask("Enemy");
-        var   cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minDist = float.MaxValue;
-        Vector3 dir   = transform.forward;
-        foreach (var c in cols)
-        {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minDist) { minDist = d; dir = (c.transform.position - transform.position).normalized; }
-        }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
     }
 }
