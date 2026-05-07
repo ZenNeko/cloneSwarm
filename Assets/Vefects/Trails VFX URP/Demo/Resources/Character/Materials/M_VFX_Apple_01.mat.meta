@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: bcba7e013da18534cadcac4850da628c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 355856
+  packageName: Render Particles Always On Top
+  packageVersion: 1.0.0
+  assetPath: Assets/Vefects/Trails VFX URP/Demo/Resources/Character/Materials/M_VFX_Apple_01.mat
+  uploadId: 849416

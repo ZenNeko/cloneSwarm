@@ -29,7 +29,8 @@ public class MiniBossAI : NetworkBehaviour
 
     // ── Internal ──────────────────────────────────────────────────────────
     private Enemy enemy;
-    private int   attackIndex = 0;
+    private int   mechanicIndex    = 0;   // หมุนใน config.mechanics list
+    private int   circleLineToggle = 0;   // alternation ภายใน CircleLine (0=Circle, 1=Line)
     private bool  deathHandled;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
@@ -41,12 +42,17 @@ public class MiniBossAI : NetworkBehaviour
             Debug.LogWarning("[MiniBossAI] config not assigned — no attacks!");
             return;
         }
+        if (config.mechanics == null || config.mechanics.Count == 0)
+        {
+            Debug.LogWarning("[MiniBossAI] config.mechanics is empty — no attacks!");
+            return;
+        }
 
         enemy = GetComponent<Enemy>();
         if (enemy != null) enemy.onDeath.AddListener(OnDeath);
 
         StartCoroutine(AttackLoop());
-        Debug.Log($"[MiniBossAI] Spawned — Mechanic: {config.mechanic}");
+        Debug.Log($"[MiniBossAI] Spawned — Mechanics: [{string.Join(", ", config.mechanics)}]");
     }
 
     public override void OnNetworkDespawn()
@@ -63,11 +69,15 @@ public class MiniBossAI : NetworkBehaviour
         {
             if (!NetworkObject.IsSpawned) yield break;
 
-            switch (config.mechanic)
+            // เลือก mechanic ตามลำดับใน list (cycle)
+            var mech = config.mechanics[mechanicIndex % config.mechanics.Count];
+            switch (mech)
             {
                 case MiniBossConfig.Mechanic.CircleLine:
-                    if (attackIndex % 2 == 0) SpawnCircleAoE();
-                    else                      SpawnLineAoE();
+                    // alternate Circle ↔ Line ภายใน mechanic เอง (ไม่กระทบ outer rotation)
+                    if (circleLineToggle % 2 == 0) SpawnCircleAoE();
+                    else                           SpawnLineAoE();
+                    circleLineToggle++;
                     break;
                 case MiniBossConfig.Mechanic.Tether:
                     SpawnTether();
@@ -76,7 +86,7 @@ public class MiniBossAI : NetworkBehaviour
                     SpawnChaseAoE();
                     break;
             }
-            attackIndex++;
+            mechanicIndex++;
 
             yield return new WaitForSeconds(config.attackInterval);
         }
@@ -211,23 +221,52 @@ public class MiniBossAI : NetworkBehaviour
 
     void SpawnExtraDrops()
     {
-        if (config == null || config.extraExpOrbs <= 0) return;
-        if (enemy == null || enemy.expOrbPrefab == null)
+        if (config == null) return;
+
+        // ── ExpOrb extras ─────────────────────────────────────────────────
+        if (config.extraExpOrbs > 0)
         {
-            Debug.LogWarning("[MiniBossAI] expOrbPrefab not assigned on Enemy — no extra drops");
-            return;
+            if (enemy == null || enemy.expOrbPrefab == null)
+            {
+                Debug.LogWarning("[MiniBossAI] expOrbPrefab not assigned on Enemy — skip exp drops");
+            }
+            else
+            {
+                for (int i = 0; i < config.extraExpOrbs; i++)
+                {
+                    Vector2 rand = Random.insideUnitCircle * config.dropScatterRadius;
+                    Vector3 pos  = transform.position + new Vector3(rand.x, 0f, rand.y);
+
+                    var orb = Instantiate(enemy.expOrbPrefab, pos, Quaternion.identity);
+                    orb.GetComponent<NetworkObject>()?.Spawn(true);
+                    orb.GetComponent<ExpOrb>()?.SetExpAmount(config.extraExpPerOrb);
+                }
+                Debug.Log($"[MiniBossAI] 💎 Dropped {config.extraExpOrbs} exp orbs ({config.extraExpPerOrb} each)");
+            }
         }
 
-        for (int i = 0; i < config.extraExpOrbs; i++)
+        // ── Bonus GameObject drops (ObjectiveOrb, special items, etc.) ────
+        if (config.bonusDrops != null)
         {
-            Vector2 rand = Random.insideUnitCircle * config.dropScatterRadius;
-            Vector3 pos  = transform.position + new Vector3(rand.x, 0f, rand.y);
+            foreach (var drop in config.bonusDrops)
+            {
+                if (drop == null || drop.prefab == null || drop.count <= 0) continue;
 
-            var orb = Instantiate(enemy.expOrbPrefab, pos, Quaternion.identity);
-            orb.GetComponent<NetworkObject>()?.Spawn(true);
-            orb.GetComponent<ExpOrb>()?.SetExpAmount(config.extraExpPerOrb);
+                for (int i = 0; i < drop.count; i++)
+                {
+                    Vector2 rand = drop.scatterRadius > 0f
+                        ? Random.insideUnitCircle * drop.scatterRadius
+                        : Vector2.zero;
+                    Vector3 pos = transform.position + new Vector3(rand.x, 0f, rand.y);
+
+                    var go = Instantiate(drop.prefab, pos, Quaternion.identity);
+                    var no = go.GetComponent<NetworkObject>();
+                    if (no != null) no.Spawn(true);
+                    else Debug.LogWarning($"[MiniBossAI] BonusDrop '{drop.prefab.name}' has no NetworkObject — won't sync to clients");
+                }
+                Debug.Log($"[MiniBossAI] 🎁 Dropped {drop.count}× '{drop.prefab.name}'");
+            }
         }
-        Debug.Log($"[MiniBossAI] 💎 Dropped {config.extraExpOrbs} extra exp orbs ({config.extraExpPerOrb} each)");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -83,7 +83,10 @@ public class StormcallerWeapon : WeaponBase
             foreach (var pos in positions)
             {
                 manager.FireMeleeServerRpc(pos + Vector3.up * 0.5f, zoneRadius, effectiveZoneDmg);
-                ShowVfx(VFXType.HitEffect, pos + Vector3.up * 0.5f, isCrit: isCrit);
+                // VFX: ใช้ weaponVfxType (designer set ใน Inspector ของ weapon prefab) — ถ้า None ไม่ทำอะไร
+                // (Enemy.cs spawn HitEffect ที่ตัวมันเอง ไม่ต้องซ้ำที่ pos)
+                if (weaponVfxType != VFXType.None)
+                    ShowVfx(weaponVfxType, pos + Vector3.up * 0.5f, isCrit: isCrit);
             }
         }
     }

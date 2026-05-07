@@ -4,16 +4,17 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// แสดง UI indicator สำหรับ ZoneObjective ที่ active อยู่ทุกตัว
+/// แสดง UI indicator สำหรับ ZoneObjective + FetchItem ที่ active อยู่ทุกตัว
 ///
-/// ทุก ZoneObjective ที่ spawn → สร้าง indicator 1 อัน
-///   — ถ้า objective อยู่นอกจอ → แสดง arrow ที่ขอบจอชี้ไปหา objective
-///   — ถ้า objective อยู่ในจอ  → แสดง icon เล็กๆ เหนือ objective (worldspace)
+/// - ZoneObjective ที่ spawn → indicator 1 อัน (ระยะ + count "X/N" ตอน fetch quest)
+/// - FetchItem ที่ spawn → indicator แยก (ระยะ — สีต่างกันเพื่อแยกออกจาก zone)
+///
+/// อยู่นอกจอ → arrow ที่ขอบจอชี้ไปหา target
+/// อยู่ในจอ  → icon เล็กเหนือ target
 ///
 /// Setup:
-///   วาง ObjectiveIndicatorUI บน Canvas (Screen Space - Overlay)
-///   กำหนด indicatorPrefab → prefab ที่มี:
-///     Image (arrow icon) + TextMeshProUGUI (ระยะ/หมายเลข) + RectTransform
+///   วาง component บน Canvas (Screen Space - Overlay)
+///   indicatorPrefab → prefab ที่มี Image + TextMeshProUGUI + RectTransform
 /// </summary>
 public class ObjectiveIndicatorUI : MonoBehaviour
 {
@@ -22,30 +23,46 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     public GameObject indicatorPrefab;
 
     [Header("Render Order")]
-    [Tooltip("Canvas sortingOrder ของ indicator — ตั้งสูงกว่า LevelUpPanel เพื่อให้ลอยทับ\n" +
-             "LevelUpUI canvas ปกติ ≈ 0 / DevTools = 999 / แนะนำ 200-500")]
+    [Tooltip("Canvas sortingOrder ของ indicator")]
     public int canvasSortingOrder = 200;
 
     [Header("Edge Margin")]
-    [Tooltip("ระยะห่างจากขอบจอ (px)")]
     public float edgeMargin = 48f;
 
     [Header("On-Screen Icon")]
-    [Tooltip("offset ขึ้นด้านบนเมื่ออยู่ในจอ (px)")]
     public float onScreenOffsetY = 80f;
-    [Tooltip("scale เมื่ออยู่ในจอ")]
-    public float onScreenScale = 0.7f;
+    public float onScreenScale   = 0.7f;
 
     [Header("Distance Text")]
     public bool showDistance = true;
 
+    [Header("Colors")]
+    [Tooltip("สีของ ZoneObjective indicator")]
+    public Color zoneColor      = new(0.20f, 0.85f, 1.00f);
+    [Tooltip("สีของ FetchItem indicator")]
+    public Color fetchItemColor = new(1.00f, 0.85f, 0.20f);
+
+    [Header("Fetch Item Display")]
+    [Tooltip("scale พิเศษของ FetchItem indicator (เล็กกว่า zone นิดๆ)")]
+    public float fetchItemScale = 0.55f;
+    [Tooltip("Prefix แสดงข้างหน้าระยะ — '★' หรือ icon character")]
+    public string fetchItemPrefix = "★";
+
     // ── Internal ──────────────────────────────────────────────────────────
+    private enum Kind { Zone, FetchItem }
+
     private class Entry
     {
-        public ZoneObjective  zone;
-        public RectTransform  rect;
-        public Image          arrowImg;
+        public Kind            kind;
+        public Transform       target;        // zone or fetch item transform
+        public ZoneObjective   zone;          // null for FetchItem
+        public RectTransform   rect;
+        public Image           arrowImg;
         public TextMeshProUGUI distText;
+
+        // ZoneObjective (FetchAndDeliver) cache
+        public int             delivered;
+        public int             required;
     }
 
     private readonly List<Entry> _entries = new();
@@ -54,16 +71,24 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void OnEnable()
     {
-        ZoneObjective.OnObjectiveSpawned   += OnSpawned;
-        ZoneObjective.OnObjectiveCompleted += OnRemoved;
-        ZoneObjective.OnObjectiveExpired   += OnRemoved;
+        ZoneObjective.OnObjectiveSpawned   += OnZoneSpawned;
+        ZoneObjective.OnObjectiveCompleted += OnZoneRemoved;
+        ZoneObjective.OnObjectiveExpired   += OnZoneRemoved;
+        ZoneObjective.OnDeliveryProgress   += OnDeliveryProgress;
+
+        FetchItem.OnFetchItemSpawned   += OnFetchItemSpawned;
+        FetchItem.OnFetchItemDespawned += OnFetchItemRemoved;
     }
 
     void OnDisable()
     {
-        ZoneObjective.OnObjectiveSpawned   -= OnSpawned;
-        ZoneObjective.OnObjectiveCompleted -= OnRemoved;
-        ZoneObjective.OnObjectiveExpired   -= OnRemoved;
+        ZoneObjective.OnObjectiveSpawned   -= OnZoneSpawned;
+        ZoneObjective.OnObjectiveCompleted -= OnZoneRemoved;
+        ZoneObjective.OnObjectiveExpired   -= OnZoneRemoved;
+        ZoneObjective.OnDeliveryProgress   -= OnDeliveryProgress;
+
+        FetchItem.OnFetchItemSpawned   -= OnFetchItemSpawned;
+        FetchItem.OnFetchItemDespawned -= OnFetchItemRemoved;
     }
 
     void Start()
@@ -72,76 +97,87 @@ public class ObjectiveIndicatorUI : MonoBehaviour
         ApplySortingOrder();
     }
 
-    /// <summary>
-    /// เพิ่ม Canvas + override sortingOrder บน GameObject นี้
-    /// เพื่อให้ indicator render บน LevelUpPanel เสมอ
-    /// </summary>
     void ApplySortingOrder()
     {
         var canvas = GetComponent<Canvas>();
-        if (canvas == null)
-        {
-            canvas = gameObject.AddComponent<Canvas>();
-            // ต้องมี GraphicRaycaster ถ้าจะรับคลิก (indicator แค่แสดงผลก็ไม่จำเป็น)
-        }
+        if (canvas == null) canvas = gameObject.AddComponent<Canvas>();
         canvas.overrideSorting = true;
         canvas.sortingOrder    = canvasSortingOrder;
     }
 
-    // ── Events ─────────────────────────────────────────────────────────────
-    void OnSpawned(ZoneObjective zone)
+    // ── Zone events ───────────────────────────────────────────────────────
+    void OnZoneSpawned(ZoneObjective zone)
     {
-        if (indicatorPrefab == null) return;
+        if (indicatorPrefab == null || zone == null) return;
+        var entry = CreateEntry(Kind.Zone, zone.transform, zoneColor);
+        if (entry != null) entry.zone = zone;
+    }
 
+    void OnZoneRemoved(ZoneObjective zone) => RemoveByTarget(zone != null ? zone.transform : null);
+
+    void OnDeliveryProgress(ZoneObjective zone, int delivered, int required)
+    {
+        var entry = _entries.Find(e => e.kind == Kind.Zone && e.zone == zone);
+        if (entry == null) return;
+        entry.delivered = delivered;
+        entry.required  = required;
+    }
+
+    // ── FetchItem events ──────────────────────────────────────────────────
+    void OnFetchItemSpawned(FetchItem item)
+    {
+        if (indicatorPrefab == null || item == null) return;
+        CreateEntry(Kind.FetchItem, item.transform, fetchItemColor);
+    }
+
+    void OnFetchItemRemoved(FetchItem item) => RemoveByTarget(item != null ? item.transform : null);
+
+    // ── Entry helpers ─────────────────────────────────────────────────────
+    Entry CreateEntry(Kind kind, Transform target, Color tint)
+    {
         var go   = Instantiate(indicatorPrefab, transform);
         var rect = go.GetComponent<RectTransform>();
         var img  = go.GetComponentInChildren<Image>();
         var txt  = go.GetComponentInChildren<TextMeshProUGUI>();
 
-        // เลข index + สี ต่างกันตาม indicator
-        int idx = _entries.Count;
-        if (txt != null) txt.text = $"#{idx + 1}";
+        if (img != null) img.color = tint;
+        if (txt != null) txt.text  = "";
 
-        // สีต่างกันตาม index
-        if (img != null)
+        var entry = new Entry
         {
-            Color[] colors = {
-                new Color(0.20f, 0.85f, 1.00f),
-                new Color(1.00f, 0.80f, 0.20f),
-                new Color(0.30f, 1.00f, 0.50f),
-                new Color(1.00f, 0.40f, 0.20f),
-                new Color(0.80f, 0.40f, 1.00f),
-            };
-            img.color = colors[idx % colors.Length];
-        }
-
-        _entries.Add(new Entry { zone = zone, rect = rect, arrowImg = img, distText = txt });
+            kind     = kind,
+            target   = target,
+            rect     = rect,
+            arrowImg = img,
+            distText = txt,
+        };
+        _entries.Add(entry);
+        return entry;
     }
 
-    void OnRemoved(ZoneObjective zone)
+    void RemoveByTarget(Transform target)
     {
-        var entry = _entries.Find(e => e.zone == zone);
+        if (target == null) return;
+        var entry = _entries.Find(e => e.target == target);
         if (entry == null) return;
         if (entry.rect != null) Destroy(entry.rect.gameObject);
         _entries.Remove(entry);
-        RenumberIndicators();
     }
 
-    // ── Update ─────────────────────────────────────────────────────────────
+    // ── Update ────────────────────────────────────────────────────────────
     void Update()
     {
         if (_cam == null) _cam = Camera.main;
         if (_cam == null) return;
 
-        // หา local player transform
         Transform playerT = GetLocalPlayerTransform();
 
         for (int i = _entries.Count - 1; i >= 0; i--)
         {
             var e = _entries[i];
-            if (e.zone == null || e.rect == null) { _entries.RemoveAt(i); continue; }
+            if (e.target == null || e.rect == null) { _entries.RemoveAt(i); continue; }
 
-            Vector3 worldPos = e.zone.transform.position + Vector3.up * 2f;
+            Vector3 worldPos = e.target.position + Vector3.up * 2f;
             UpdateIndicator(e, worldPos, playerT);
         }
     }
@@ -158,61 +194,75 @@ public class ObjectiveIndicatorUI : MonoBehaviour
             && screenPos.x > edgeMargin && screenPos.x < sw - edgeMargin
             && screenPos.y > edgeMargin && screenPos.y < sh - edgeMargin;
 
+        // base scale ต่างกันตาม kind (FetchItem เล็กกว่า)
+        float baseScale = e.kind == Kind.FetchItem ? fetchItemScale : 1f;
+
         if (onScreen)
         {
-            // อยู่ในจอ → วางเหนือ objective
-            e.rect.position    = new Vector3(screenPos.x, screenPos.y + onScreenOffsetY, 0f);
-            e.rect.localScale  = Vector3.one * onScreenScale;
-
-            // ไม่ rotate
-            if (e.arrowImg != null)
-                e.arrowImg.rectTransform.localRotation = Quaternion.identity;
+            e.rect.position   = new Vector3(screenPos.x, screenPos.y + onScreenOffsetY, 0f);
+            e.rect.localScale = Vector3.one * onScreenScale * baseScale;
+            if (e.arrowImg != null) e.arrowImg.rectTransform.localRotation = Quaternion.identity;
         }
         else
         {
-            // นอกจอ → clamp ที่ขอบและชี้ทิศทาง
-            e.rect.localScale = Vector3.one;
+            e.rect.localScale = Vector3.one * baseScale;
 
-            // ถ้า z < 0 (อยู่หลังกล้อง) ต้อง flip
             if (!inFront)
                 screenPos = new Vector3(sw - screenPos.x, sh - screenPos.y, 0f);
 
-            // หา direction จากกลางจอ → ตำแหน่ง objective
-            Vector3 center    = new Vector3(sw * 0.5f, sh * 0.5f, 0f);
-            Vector3 dir       = (screenPos - center).normalized;
+            Vector3 center  = new Vector3(sw * 0.5f, sh * 0.5f, 0f);
+            Vector3 dir     = (screenPos - center).normalized;
 
-            // clamp ไว้ที่ขอบ
-            float   halfW = sw * 0.5f - edgeMargin;
-            float   halfH = sh * 0.5f - edgeMargin;
-            float   scaleX = Mathf.Abs(dir.x) > 0.001f ? halfW / Mathf.Abs(dir.x) : float.MaxValue;
-            float   scaleY = Mathf.Abs(dir.y) > 0.001f ? halfH / Mathf.Abs(dir.y) : float.MaxValue;
-            float   scale  = Mathf.Min(scaleX, scaleY);
-            Vector3 clampedPos = center + dir * scale;
+            float halfW   = sw * 0.5f - edgeMargin;
+            float halfH   = sh * 0.5f - edgeMargin;
+            float scaleX  = Mathf.Abs(dir.x) > 0.001f ? halfW / Mathf.Abs(dir.x) : float.MaxValue;
+            float scaleY  = Mathf.Abs(dir.y) > 0.001f ? halfH / Mathf.Abs(dir.y) : float.MaxValue;
+            float scale   = Mathf.Min(scaleX, scaleY);
+            e.rect.position = center + dir * scale;
 
-            e.rect.position = clampedPos;
-
-            // หมุน arrow ชี้ไปทาง objective
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
             if (e.arrowImg != null)
                 e.arrowImg.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
         }
 
-        // อัปเดตระยะ
-        if (showDistance && e.distText != null && playerT != null)
+        // ── Distance + count text ─────────────────────────────────────────
+        if (e.distText != null)
         {
-            float dist = Vector3.Distance(playerT.position, e.zone.transform.position);
-            e.distText.text = $"{Mathf.RoundToInt(dist)}m";
+            string distPart = "";
+            if (showDistance && playerT != null)
+            {
+                float dist = Vector3.Distance(playerT.position, e.target.position);
+                distPart = $"{Mathf.RoundToInt(dist)}m";
+            }
+
+            string text;
+            if (e.kind == Kind.Zone)
+            {
+                string countPart = "";
+                if (e.zone != null && e.zone.HasActiveQuest && e.required > 0)
+                {
+                    countPart = e.zone.ActiveQuestType switch
+                    {
+                        ZoneObjective.QuestType.FetchAndDeliver => $"★ {e.delivered}/{e.required}",
+                        ZoneObjective.QuestType.Survive          => $"⏱ {e.delivered}/{e.required}s",
+                        _                                         => "",
+                    };
+                }
+
+                if (string.IsNullOrEmpty(countPart))      text = distPart;
+                else if (string.IsNullOrEmpty(distPart))  text = countPart;
+                else                                      text = $"{distPart}  {countPart}";
+            }
+            else // FetchItem
+            {
+                text = string.IsNullOrEmpty(distPart) ? fetchItemPrefix : $"{fetchItemPrefix} {distPart}";
+            }
+
+            e.distText.text = text;
         }
     }
 
-    void RenumberIndicators()
-    {
-        for (int i = 0; i < _entries.Count; i++)
-        {
-            // ไม่ renumber text หลัง remove เพื่อไม่ให้สับสน
-        }
-    }
-
+    // ── Helpers ───────────────────────────────────────────────────────────
     Transform GetLocalPlayerTransform()
     {
         var pm = Object.FindAnyObjectByType<playermove>();

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 public enum AimMode { AutoNearest, MouseAim }
 
@@ -19,6 +20,40 @@ public abstract class WeaponBase : MonoBehaviour
 
     /// <summary>cooldown multiplier ชั่วคราว — 1 = ปกติ, 0.5 = เร็ว 2× (set โดย HunterUltimate)</summary>
     [HideInInspector] public float tempCooldownMult = 1f;
+
+    [Header("VFX (Per-Weapon Prefab)")]
+    [Tooltip("VFX หลักของ weapon (slash arc, explosion shape, beam ฯลฯ)\n" +
+             "None = ใช้ default ของ script (มี fallback hardcoded)\n" +
+             "Type prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings\n\n" +
+             "หมายเหตุ: HitEffect / CritHitEffect ของ enemy (impact spark) — Enemy.cs จัดการเอง\n" +
+             "ผ่าน NotifyHitClientRpc → ไม่ต้อง config ที่ weapon")]
+    [FormerlySerializedAs("hitVfxType")]
+    public VFXType weaponVfxType = VFXType.None;
+
+    [Tooltip("VFX รอง (optional) — สำหรับ weapon ที่มี VFX 2 ตัว\n" +
+             "เช่น CycloneBlade (AoE 360 + per-hit slash) / DeathField (main + chain explosion)\n" +
+             "None = ใช้ default ของ script")]
+    public VFXType secondaryVfxType = VFXType.None;
+
+    [Header("SFX (Per-Weapon Prefab)")]
+    [Tooltip("เสียงตอน weapon ยิง / โจมตี — ใส่ได้หลายเสียง สุ่มเล่นทีละอัน\n" +
+             "เรียกผ่าน PlayFireSfx() ใน OnFire() ของ weapon script\n" +
+             "Array ว่าง = ไม่มีเสียง")]
+    public AudioClip[] fireSfx;
+    [Tooltip("เสียงเมื่อ projectile/attack กระทบศัตรู — ใส่ได้หลายเสียง สุ่มเล่นทีละอัน\n" +
+             "เรียกผ่าน PlayHitSfx() จาก projectile หรือ weapon\n" +
+             "Array ว่าง = ไม่มีเสียง")]
+    public AudioClip[] hitSfx;
+    [Range(0f, 1f)]
+    [Tooltip("ความดังของ fireSfx (0 = เงียบ, 1 = เต็ม)")]
+    public float fireVolume = 0.7f;
+    [Range(0f, 1f)]
+    [Tooltip("ความดังของ hitSfx")]
+    public float hitVolume  = 0.6f;
+    [Range(0f, 0.5f)]
+    [Tooltip("Pitch range สุ่มต่อครั้ง (0 = ไม่สุ่ม) — สร้าง variety แม้ใช้ clip เดียว\n" +
+             "0.1 = สุ่ม pitch ±10% (0.9 → 1.1)")]
+    public float pitchVariance = 0.05f;
 
     protected float     attackTimer;
     protected LayerMask enemyLayer;
@@ -135,56 +170,54 @@ public abstract class WeaponBase : MonoBehaviour
         return actualRange / designed;
     }
 
-    /// <summary>
-    /// แสดง base hit VFX (HitEffect / CritHitEffect) ที่ตำแหน่ง pos
-    /// ทุก weapon ควรเรียกเมื่อโจมตีโดน enemy เพื่อให้มี feedback พื้นฐาน
-    /// </summary>
-    protected void ShowBaseHitVfx(Vector3 pos, bool isCrit = false)
-    {
-        VFXType baseHit = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
-        manager.BroadcastVfxTypeServerRpc(pos, (int)baseHit);
-    }
+    // NOTE: HitEffect / CritHitEffect ของ enemy ตอนโดน — Enemy.cs จัดการเอง
+    //       ผ่าน NotifyHitClientRpc ใน EnemyTakeDamage. weapon ไม่ต้อง spawn ซ้ำ
 
     // ── SFX Helpers (delegate to SoundManager) ───────────────────────────
-    /// <summary>เล่น random clip จาก data.fireSfx[] ที่ตำแหน่งผู้เล่น</summary>
+    /// <summary>เล่น random clip จาก fireSfx[] ที่ตำแหน่งผู้เล่น</summary>
     protected void PlayFireSfx()
     {
-        if (data == null) return;
-        SoundManager.Instance.PlayRandomSfx(data.fireSfx, transform.position, data.fireVolume, data.pitchVariance);
+        SoundManager.Instance.PlayRandomSfx(fireSfx, transform.position, fireVolume, pitchVariance);
     }
 
-    /// <summary>เล่น random clip จาก data.hitSfx[] ที่จุดกระทบ</summary>
+    /// <summary>เล่น random clip จาก hitSfx[] ที่จุดกระทบ</summary>
     protected void PlayHitSfx(Vector3 pos)
     {
-        if (data == null) return;
-        SoundManager.Instance.PlayRandomSfx(data.hitSfx, pos, data.hitVolume, data.pitchVariance);
+        SoundManager.Instance.PlayRandomSfx(hitSfx, pos, hitVolume, pitchVariance);
     }
 
+    // ── VFX Resolvers (อ่านจาก field ของ weapon prefab) ──────────────────
     /// <summary>
-    /// แสดง WeaponData.hitVfxType — ใช้สำหรับ projectile weapon ที่ hit VFX อยู่ใน data
-    /// ถ้า isCrit → แสดง CritHitEffect แทน | ปกติ → แสดง hitVfxType
+    /// คืน weaponVfxType (Inspector field) ถ้าตั้งไว้ ไม่งั้น fallback
+    /// ใช้ใน weapon script แทน hardcode เพื่อให้ designer override ผ่าน Inspector ของ weapon prefab ได้
+    /// </summary>
+    protected VFXType ResolveHitVfx(VFXType fallback)
+        => weaponVfxType != VFXType.None ? weaponVfxType : fallback;
+
+    /// <summary>
+    /// คืน secondaryVfxType (Inspector field) ถ้าตั้งไว้ ไม่งั้น fallback
+    /// ใช้กับ weapon ที่มี VFX 2 ตัว (เช่น CycloneBlade, DeathField)
+    /// </summary>
+    protected VFXType ResolveSecondaryVfx(VFXType fallback)
+        => secondaryVfxType != VFXType.None ? secondaryVfxType : fallback;
+
+    /// <summary>
+    /// แสดง weaponVfxType — ใช้สำหรับ projectile weapon ที่ VFX อยู่ใน weapon prefab
+    /// HitEffect/CritHitEffect ของ enemy spawn จาก Enemy.cs เอง — ไม่ทับซ้อน
     /// </summary>
     protected void ShowHitVfx(Vector3 pos, float actualRange = 0f, bool isCrit = false)
     {
-        // base hit effect เสมอ
-        ShowBaseHitVfx(pos, isCrit);
-
-        // weapon-specific hit VFX (ถ้ามี + ไม่ซ้ำกับ base)
-        if (data == null || data.hitVfxType == VFXType.None) return;
-        if (data.hitVfxType == VFXType.HitEffect || data.hitVfxType == VFXType.CritHitEffect) return;
-        float scale = actualRange > 0f ? ComputeVfxScale(data.hitVfxType, actualRange) : 1f;
-        manager.BroadcastVfxTypeServerRpc(pos, (int)data.hitVfxType, scale);
+        if (weaponVfxType == VFXType.None) return;
+        if (weaponVfxType == VFXType.HitEffect || weaponVfxType == VFXType.CritHitEffect) return;
+        float scale = actualRange > 0f ? ComputeVfxScale(weaponVfxType, actualRange) : 1f;
+        manager.BroadcastVfxTypeServerRpc(pos, (int)weaponVfxType, scale);
     }
 
     /// <summary>
-    /// แสดง VFX จาก VFXType บนทุก client + base HitEffect/CritHitEffect ซ้อนทับ
+    /// แสดง VFX จาก VFXType บนทุก client
     /// actualRange = 0 → scale=1f | actualRange > 0 → auto scale จาก designedRadius
-    /// isAttackHit = true → เพิ่ม base HitEffect/CritHitEffect (default)
-    /// isAttackHit = false → แสดงเฉพาะ type (สำหรับ non-hit เช่น DashTrail, VortexSpawn)
-    /// </summary>
-    /// <summary>
-    /// แสดง VFX จาก VFXType บนทุก client + base HitEffect/CritHitEffect ซ้อนทับ
     /// direction = ทิศที่ VFX หันหน้าไป — ใช้กับ Slash/Melee VFX Graph (default = ไม่หมุน)
+    /// isAttackHit เก็บไว้เพื่อ backward-compat (ไม่ใช้แล้ว — Enemy.cs spawn HitEffect/CritHitEffect เอง)
     /// </summary>
     protected void ShowVfx(VFXType type, Vector3 pos, float actualRange = 0f,
                            bool isCrit = false, bool isAttackHit = true,
@@ -193,10 +226,6 @@ public abstract class WeaponBase : MonoBehaviour
         if (type == VFXType.None) return;
         float scale = actualRange > 0f ? ComputeVfxScale(type, actualRange) : 1f;
         manager.BroadcastVfxTypeServerRpc(pos, (int)type, scale, direction, arcAngle, roll);
-
-        // base hit effect ซ้อนทับ — ทุก attack hit ต้องมี
-        if (isAttackHit && type != VFXType.HitEffect && type != VFXType.CritHitEffect)
-            ShowBaseHitVfx(pos, isCrit);
     }
 
     // ── Crit Roll ─────────────────────────────────────────────────────────

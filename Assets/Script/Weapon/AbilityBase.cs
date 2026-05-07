@@ -19,6 +19,23 @@ public abstract class AbilityBase : MonoBehaviour
     [HideInInspector] public int                  currentLevel;   // 0-indexed
     [HideInInspector] public PlayerWeaponManager  manager;
 
+    [Header("SFX (Per-Ability Prefab)")]
+    [Tooltip("เสียงตอนใช้ ability — ใส่ได้หลายเสียง สุ่มเล่น\n" +
+             "เรียกผ่าน PlayCastSfx() ใน OnActivate() ของ ability script")]
+    public AudioClip[] castSfx;
+    [Tooltip("เสียงตอน ability ทำดาเมจ / hit — ใส่ได้หลายเสียง สุ่มเล่น\n" +
+             "(เช่น exile activate, missile explode)")]
+    public AudioClip[] hitSfx;
+    [Range(0f, 1f)]
+    [Tooltip("ความดังของ castSfx")]
+    public float castVolume = 0.8f;
+    [Range(0f, 1f)]
+    [Tooltip("ความดังของ hitSfx")]
+    public float hitVolume  = 0.7f;
+    [Range(0f, 0.5f)]
+    [Tooltip("Pitch variance สุ่มต่อครั้ง (0 = ไม่สุ่ม) — 0.1 = ±10%")]
+    public float pitchVariance = 0.05f;
+
     protected LayerMask enemyLayer;
 
     // ── Init ──────────────────────────────────────────────────────────────
@@ -60,18 +77,16 @@ public abstract class AbilityBase : MonoBehaviour
     }
 
     // ── SFX Helpers (delegate to SoundManager) ───────────────────────────
-    /// <summary>เล่น random clip จาก data.castSfx[] ที่ตำแหน่งผู้เล่น</summary>
+    /// <summary>เล่น random clip จาก castSfx[] ที่ตำแหน่งผู้เล่น</summary>
     protected void PlayCastSfx()
     {
-        if (data == null) return;
-        SoundManager.Instance.PlayRandomSfx(data.castSfx, transform.position, data.castVolume, data.pitchVariance);
+        SoundManager.Instance.PlayRandomSfx(castSfx, transform.position, castVolume, pitchVariance);
     }
 
-    /// <summary>เล่น random clip จาก data.hitSfx[] ที่จุดกระทบ</summary>
+    /// <summary>เล่น random clip จาก hitSfx[] ที่จุดกระทบ</summary>
     protected void PlayHitSfx(Vector3 pos)
     {
-        if (data == null) return;
-        SoundManager.Instance.PlayRandomSfx(data.hitSfx, pos, data.hitVolume, data.pitchVariance);
+        SoundManager.Instance.PlayRandomSfx(hitSfx, pos, hitVolume, pitchVariance);
     }
 
     // ── Enemy Finders ─────────────────────────────────────────────────────

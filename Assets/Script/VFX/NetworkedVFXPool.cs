@@ -258,10 +258,31 @@ public class NetworkedVFXPool : MonoBehaviour
         PlayFromPoolCore(poolId, pos, Vector3.one * scale, direction, arcAngle, roll, useUniformScale: true, uniformScale: scale);
     }
 
+    // ── Recursion guard ──────────────────────────────────────────────────
+    // บางครั้ง prefab ที่ instantiate มา Awake() แล้วเรียก PlayFromPool/PlayByType
+    // กลับมา → infinite recursion → InsufficientExecutionStackException ตอน Internal_CloneSingle
+    // → fail fast แทน hang เครื่อง
+    [System.NonSerialized] int _playDepth;
+    const int MAX_PLAY_DEPTH = 8;
+
     void PlayFromPoolCore(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale)
     {
         if (poolId < 0) return;
         if (!_pools.TryGetValue(poolId, out var q)) return;
+
+        if (_playDepth >= MAX_PLAY_DEPTH)
+        {
+            Debug.LogError($"[VFXPool] ⚠️ Recursion guard tripped at depth {_playDepth} for poolId={poolId} — " +
+                           $"prefab '{GetPrefabForId(poolId)?.name}' อาจมี script ที่เรียก VFXFactory.Play / PlayByType ใน Awake/OnEnable");
+            return;
+        }
+        _playDepth++;
+        try { PlayFromPoolCoreImpl(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale, uniformScale, q); }
+        finally { _playDepth--; }
+    }
+
+    void PlayFromPoolCoreImpl(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale, Queue<GameObject> q)
+    {
 
         GameObject go;
         if (q.Count > 0)

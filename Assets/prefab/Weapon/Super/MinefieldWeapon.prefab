@@ -48,4 +48,13 @@ MonoBehaviour:
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
-  mineExplosionRadius: 2.5
+  tempCooldownMult: 1
+  hitVfxType: 3
+  secondaryVfxType: -1
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
+  explosionRadius: 3
+  fuseTime: 1.2

@@ -12,12 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 597f7a7473cb85a4caf994a00211ad0e, type: 3}
   m_Name: MiniBossConfig
   m_EditorClassIdentifier: Assembly-CSharp::MiniBossConfig
+  mechanics: 0000000002000000
   attackInterval: 8
   firstAttackDelay: 2
-  circleRadius: 6
+  circleRadius: 8
   circleDamage: 18
-  circleWarnTime: 4
+  circleWarnTime: 3
   lineLength: 100
-  lineWidth: 2
+  lineWidth: 6
   lineDamage: 22
-  lineWarnTime: 4
+  lineWarnTime: 3
+  tetherDistance: 6
+  tetherDuration: 5
+  tetherFailDamage: 30
+  tetherSoloOffset: 2
+  chaseRadius: 2.5
+  chaseDamage: 20
+  chaseWarnTime: 3
+  extraExpOrbs: 4
+  extraExpPerOrb: 5
+  dropScatterRadius: 2
+  bonusDrops:
+  - prefab: {fileID: 1276859104628764932, guid: 05b33c50f6e4ac44da9d9381c810e5e5, type: 3}
+    count: 1
+    scatterRadius: 0
+  - prefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
+    count: 10
+    scatterRadius: 2

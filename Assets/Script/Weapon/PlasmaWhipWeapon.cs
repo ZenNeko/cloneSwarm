@@ -22,9 +22,8 @@ public class PlasmaWhipWeapon : WeaponBase
         if (manager.statManager != null)
             range *= manager.statManager.GetAreaMultiplier();
 
-        // 1. Melee spin รอบตัว
+        // 1. Melee spin รอบตัว — Enemy.cs spawn HitEffect เองตอน TakeDamage
         manager.FireMeleeServerRpc(center, range, dmg * 0.6f);
-        ShowBaseHitVfx(center, isCrit);
 
         // 2. Raycast N ทิศ ตามจำนวน projectileCount
         int rays = Mathf.Max(1, ld.projectileCount);

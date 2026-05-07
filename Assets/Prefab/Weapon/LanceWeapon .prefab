@@ -49,6 +49,13 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
+  hitVfxType: 10
+  secondaryVfxType: -1
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   pierceWidth: 0.8
   thrustCount: 1
   thrustDelay: 0.12

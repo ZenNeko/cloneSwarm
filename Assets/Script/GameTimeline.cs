@@ -6,19 +6,29 @@ using UnityEngine;
 /// นาฬิกาเกม + จัดตาราง event ทั้งหมด
 ///
 /// Schedule:
-///   ทุก  2 นาที → Zone Objective
-///   ทุก  5 นาที → Mini Boss
-///   ตอน 15 นาที → Main Boss (wave หยุด)
-///   Kill Main Boss → WIN
-///   ผู้เล่นทุกคนตาย → LOSE
+///   ครั้งแรก: objectiveStartMin / miniBossStartMin (วินาทีที่จะ spawn ครั้งแรก)
+///   ต่อๆ ไป: objectiveIntervalMin / miniBossIntervalMin (ทุกๆ N นาที)
+///   ตอน mainBossTimeMin → Main Boss (wave หยุด)
+///   Kill Main Boss → WIN | ผู้เล่นทุกคนตาย → LOSE
 /// </summary>
 public class GameTimeline : NetworkBehaviour
 {
     public static GameTimeline Instance { get; private set; }
 
-    [Header("Schedule (minutes)")]
+    [Header("Zone Objective Schedule (minutes)")]
+    [Tooltip("เวลาที่ objective ตัวแรกจะ spawn (นาทีจากเริ่มเกม)")]
+    public float objectiveStartMin    = 2f;
+    [Tooltip("ระยะห่างระหว่าง objective แต่ละครั้ง (นาที)")]
     public float objectiveIntervalMin = 2f;
+
+    [Header("Mini Boss Schedule (minutes)")]
+    [Tooltip("เวลาที่ mini boss ตัวแรกจะ spawn (นาทีจากเริ่มเกม)")]
+    public float miniBossStartMin     = 5f;
+    [Tooltip("ระยะห่างระหว่าง mini boss แต่ละครั้ง (นาที)")]
     public float miniBossIntervalMin  = 5f;
+
+    [Header("Main Boss")]
+    [Tooltip("เวลาที่ Main Boss spawn (นาที) — wave จะหยุด")]
     public float mainBossTimeMin      = 15f;
 
     [Header("Rewards (Zone Objective)")]
@@ -60,9 +70,10 @@ public class GameTimeline : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        nextObjectiveAt = objectiveIntervalMin * 60f;
-        nextMiniBossAt  = miniBossIntervalMin  * 60f;
-        Debug.Log($"[GameTimeline] เริ่ม — Objective:{objectiveIntervalMin}m MiniBoss:{miniBossIntervalMin}m MainBoss:{mainBossTimeMin}m");
+        nextObjectiveAt = objectiveStartMin * 60f;
+        nextMiniBossAt  = miniBossStartMin  * 60f;
+        Debug.Log($"[GameTimeline] เริ่ม — Objective: first {objectiveStartMin}m every {objectiveIntervalMin}m | " +
+                  $"MiniBoss: first {miniBossStartMin}m every {miniBossIntervalMin}m | MainBoss: {mainBossTimeMin}m");
     }
 
     // ── Server Update ─────────────────────────────────────────────────────

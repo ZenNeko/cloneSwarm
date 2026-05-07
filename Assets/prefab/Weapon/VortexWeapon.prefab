@@ -49,5 +49,12 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
+  hitVfxType: 15
+  secondaryVfxType: -1
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   rotSpeed: 140
   spawnRadius: 1.2

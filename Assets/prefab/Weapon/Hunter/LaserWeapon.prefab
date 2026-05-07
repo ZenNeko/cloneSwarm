@@ -49,3 +49,14 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
+  hitVfxType: -1
+  secondaryVfxType: -1
+  fireSfx:
+  - {fileID: 8300000, guid: aa3170ea355bec94998b98f8e120d1e0, type: 3}
+  - {fileID: 8300000, guid: fd37ca23aa221b046b59b90865eceb93, type: 3}
+  - {fileID: 8300000, guid: 17ae0ab528219cb48b39fe1e25902259, type: 3}
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
+  width: 1.5

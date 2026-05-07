@@ -37,7 +37,7 @@ public class WhipWeapon : WeaponBase
         manager.FireLineAoEServerRpc(origin, dir, dmg, range, width, isCrit);
         // VFX ที่จุดกลางของ line
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        ShowVfx(VFXType.WhipSlash, vfxPos, range, isCrit, isAttackHit: false, direction: dir);
+        ShowVfx(ResolveHitVfx(VFXType.WhipSlash), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
     }
 
     /// <summary>หา nearest enemy แล้วหันหน้าไป — ใช้ใน subclass ได้</summary>

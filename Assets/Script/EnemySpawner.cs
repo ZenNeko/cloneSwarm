@@ -61,11 +61,38 @@ public class EnemySpawner : NetworkBehaviour
         Debug.Log("[EnemySpawner] Spawning stopped");
     }
 
+    // ── Spawn boost API (ใช้โดย ZoneObjective Survive quest ฯลฯ) ─────────
+    /// <summary>จำนวน enemy เพิ่มต่อ tick (1 = double, 2 = triple) — server only</summary>
+    [HideInInspector] public int extraSpawnsPerTick = 0;
+
+    /// <summary>เพิ่ม spawn count per tick ชั่วคราว (เรียก ClearSpawnBoost เพื่อยกเลิก)</summary>
+    public void BoostSpawn(int extraPerTick)
+    {
+        if (!IsServer) return;
+        extraSpawnsPerTick = Mathf.Max(0, extraPerTick);
+        Debug.Log($"[EnemySpawner] 🚀 Spawn boost: +{extraSpawnsPerTick} per tick");
+    }
+
+    public void ClearSpawnBoost()
+    {
+        if (!IsServer) return;
+        extraSpawnsPerTick = 0;
+        Debug.Log("[EnemySpawner] Spawn boost cleared");
+    }
+
     // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnEnemy()
     {
         if (!IsServer) return;
 
+        // base spawn 1 ครั้ง + extra (boost)
+        int total = 1 + extraSpawnsPerTick;
+        for (int i = 0; i < total; i++)
+            DoSpawnOnce();
+    }
+
+    void DoSpawnOnce()
+    {
         Transform spawnNear = GetRandomPlayerTransform();
         if (spawnNear == null) return;
 

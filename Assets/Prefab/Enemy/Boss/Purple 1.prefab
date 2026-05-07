@@ -596,7 +596,7 @@ GameObject:
   - component: {fileID: -2001529670205570463}
   m_Layer: 0
   m_Name: Purple 1
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -688,7 +688,7 @@ MonoBehaviour:
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
-  maxHealth: 1500
+  maxHealth: 3000
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -715,6 +715,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   config: {fileID: 11400000, guid: 27c9a83db8d85bb40856283db9b471ba, type: 2}
   telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
+  tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
 --- !u!65 &-2001529670205570463
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -730,7 +731,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3

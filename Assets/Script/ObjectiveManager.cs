@@ -7,8 +7,9 @@ using UnityEngine;
 ///
 /// Placement:
 ///   ใช้ ZoneObjectiveLocation[] เป็นจุดที่กำหนดไว้ใน scene
-///   สุ่มเลือก objectiveCount จุด โดยกรองออกจุดที่ใกล้ผู้เล่นเกินไป
-///   ถ้าจุดที่เหลือน้อยกว่า objectiveCount → ใช้ทั้งหมดที่มี
+///   - Pick 1 จุดเป็น delivery zone (กรองห่างผู้เล่น ≥ minSpawnDistance)
+///   - ถ้า zone.availableQuests มี FetchAndDeliver → pick N จุดที่เหลือเป็น item spawn
+///     (ห่าง delivery zone ≥ minItemDistanceFromZone) → ใส่ใน zone.itemSpawnPositions ก่อน Spawn()
 /// </summary>
 public class ObjectiveManager : NetworkBehaviour
 {
@@ -17,12 +18,15 @@ public class ObjectiveManager : NetworkBehaviour
     public GameObject zoneObjectivePrefab;
 
     [Header("Spawn Locations")]
-    [Tooltip("จุดที่กำหนดไว้ใน scene — เลือกสุ่มจากนี้")]
+    [Tooltip("จุดที่กำหนดไว้ใน scene — เลือกสุ่มจากนี้ (ใช้ทั้ง delivery zone และ item spawn)")]
     public GameObject[] ZoneObjectiveLocation = new GameObject[3];
 
     [Header("Player Distance Filter")]
-    [Tooltip("ไม่ spawn จุดที่ใกล้ผู้เล่นคนใดคนหนึ่งน้อยกว่านี้")]
+    [Tooltip("ไม่ spawn delivery zone ที่ใกล้ผู้เล่นน้อยกว่านี้")]
     public float minSpawnDistance = 10f;
+
+    [Tooltip("FetchAndDeliver: item ต้องห่างจาก delivery zone อย่างน้อยเท่านี้")]
+    public float minItemDistanceFromZone = 8f;
 
     public override void OnNetworkSpawn()
     {
@@ -42,22 +46,45 @@ public class ObjectiveManager : NetworkBehaviour
     {
         if (!IsServer || zoneObjectivePrefab == null) return;
 
-        var candidates = GetValidLocations();
-
-        if (candidates.Count == 0)
+        // ── Step 1: pick delivery zone location ──────────────────────────
+        var validForDelivery = GetValidLocations();
+        if (validForDelivery.Count == 0)
         {
             Debug.LogWarning("[ObjectiveManager] ไม่มีจุดที่ห่างผู้เล่นพอ — ไม่มี objective spawn รอบนี้");
             return;
         }
+        Vector3 deliveryPos = validForDelivery[Random.Range(0, validForDelivery.Count)];
 
-        // สุ่มเลือก 1 จุด
-        Vector3 chosen = candidates[Random.Range(0, candidates.Count)];
-        var go = Instantiate(zoneObjectivePrefab, chosen, Quaternion.identity);
+        // ── Step 2: instantiate zone (ยังไม่ Spawn) ──────────────────────
+        var go   = Instantiate(zoneObjectivePrefab, deliveryPos, Quaternion.identity);
+        var zone = go.GetComponent<ZoneObjective>();
+        if (zone == null)
+        {
+            Debug.LogError("[ObjectiveManager] zoneObjectivePrefab ไม่มี ZoneObjective component");
+            Destroy(go);
+            return;
+        }
+
+        // ── Step 3: ถ้ามี FetchAndDeliver ใน availableQuests → pick item locations ──
+        // (Zone จะใช้แค่ตอน quest นั้นถูกสุ่มเลือกใน Phase 2; pick ไว้ก่อนกัน race)
+        bool mayNeedItems = zone.availableQuests != null
+                         && zone.availableQuests.Contains(ZoneObjective.QuestType.FetchAndDeliver);
+        if (mayNeedItems)
+        {
+            var itemPositions = PickItemLocations(deliveryPos, zone.requiredDeliveryCount);
+            zone.itemSpawnPositions = itemPositions;
+
+            if (itemPositions.Count < zone.requiredDeliveryCount)
+                Debug.LogWarning($"[ObjectiveManager] เลือก item locations ได้แค่ {itemPositions.Count}/{zone.requiredDeliveryCount}");
+        }
+
+        // ── Step 4: Spawn (NetworkObject) → OnNetworkSpawn ของ zone ทำงาน ──
         go.GetComponent<NetworkObject>()?.Spawn(true);
-        Debug.Log($"[ObjectiveManager] 🎯 Zone Objective spawned at {chosen}");
+
+        Debug.Log($"[ObjectiveManager] 🎯 ZoneObjective spawned at {deliveryPos}");
     }
 
-    // ── กรองจุดที่ใกล้ผู้เล่นเกินไปออก ───────────────────────────────────
+    // ── กรองจุดที่ใกล้ผู้เล่นเกินไปออก (สำหรับ delivery zone) ─────────────
     List<Vector3> GetValidLocations()
     {
         var result  = new List<Vector3>();
@@ -79,6 +106,29 @@ public class ObjectiveManager : NetworkBehaviour
         }
 
         return result;
+    }
+
+    // ── เลือก N item locations — ห่างจาก delivery zone อย่างน้อย minItemDistanceFromZone ──
+    List<Vector3> PickItemLocations(Vector3 deliveryPos, int count)
+    {
+        var candidates = new List<Vector3>();
+        foreach (var loc in ZoneObjectiveLocation)
+        {
+            if (loc == null) continue;
+            Vector3 pos = loc.transform.position;
+
+            // ข้าม delivery position เอง + ที่ใกล้ delivery เกินไป
+            if (Vector3.Distance(pos, deliveryPos) < minItemDistanceFromZone) continue;
+
+            candidates.Add(pos);
+        }
+
+        // Fisher-Yates shuffle เพื่อสุ่มลำดับ
+        Shuffle(candidates);
+
+        // คืน N ตัวแรก (ถ้าไม่พอจะคืนทั้งหมด)
+        int take = Mathf.Min(count, candidates.Count);
+        return candidates.GetRange(0, take);
     }
 
     List<Vector3> GetAllPlayerPositions()

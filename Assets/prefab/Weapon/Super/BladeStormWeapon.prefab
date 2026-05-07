@@ -49,5 +49,13 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
+  hitVfxType: 11
+  secondaryVfxType: -1
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   burstCount: 3
   burstInterval: 0.12
+  arcAngle: 120
