@@ -1,14 +1,14 @@
 /// <summary>
 /// ประเภท VFX — ใช้เป็น key เพื่อ lookup prefab จาก NetworkedVFXPool
 ///
-/// None = -1  ใช้เป็นค่า default ใน WeaponData.hitVfxType (= ไม่มี VFX)
+/// None = -1  ใช้เป็นค่า default ใน WeaponBase.weaponVfxType / Projectile.hitVFX (= ไม่มี VFX)
 /// ค่าอื่น >= 0 — ตรงกับ vfxTypeMappings[] ใน NetworkedVFXPool Inspector
 /// </summary>
 public enum VFXType
 {
     None            = -1,   // ไม่มี VFX
 
-    // ── Generic hit effects (ใช้ใน WeaponData.hitVfxType + Projectile.hitVFX) ──
+    // ── Generic impact effects (Enemy.cs spawn เองตอน NotifyHitClientRpc) ────
     HitEffect       =  0,   // generic hit impact (ทุก weapon ใช้ร่วมกัน)
     CritHitEffect   =  1,   // critical hit
 

@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 8a612b4a8e9058e4faa2895ba5e5bb57
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _MainTexture: {fileID: 2800000, guid: c05d5b71e4317684a8c988bfdfe90105, type: 3}
+  - _Normal: {fileID: 2800000, guid: 1b41d1ce9e0b61b41a5c00f49bcbd5d5, type: 3}
+  - _texcoord: {instanceID: 0}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 355856
+  packageName: Render Particles Always On Top
+  packageVersion: 1.0.0
+  assetPath: Assets/Vefects/Trails VFX URP/Demo/Resources/Character/Shaders/SH_Vefects_URP_VFX_Opaque_01_BIRP.shader
+  uploadId: 849416

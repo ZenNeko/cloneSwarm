@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Shotgun
   description: Shotgun
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 5164bcccada554e459e5771ccf6bb84d, type: 3}
   tier: 0
   prefab: {fileID: 5546056588423154064, guid: 18e0b400db2998d47b755f5e76ed5975, type: 3}
   aimMode: 0

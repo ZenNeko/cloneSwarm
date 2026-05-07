@@ -64,7 +64,7 @@ TrailRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: da52b45e9b2975e40854990f91f0c645, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -87,7 +87,7 @@ TrailRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Time: 0.05
+  m_Time: 0.2
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
@@ -247,8 +247,8 @@ MonoBehaviour:
   damage: 20
   maxRange: 20
   piercing: 0
-  hitVfxPrefab: {fileID: 0}
   hitVFX: 1
+  isCrit: 0
 --- !u!114 &-317891749536331572
 MonoBehaviour:
   m_ObjectHideFlags: 0

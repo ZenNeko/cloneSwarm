@@ -79,38 +79,14 @@ public class WeaponData : ScriptableObject
              "ปล่อยว่าง = ใช้ projectilePrefab default บน PlayerWeaponManager")]
     public GameObject projectilePrefab;
 
-    [Tooltip("VFX ที่ใช้เมื่อ weapon ชน / โจมตี\n" +
-             "เรียกผ่าน ShowHitVfx(pos) ใน OnFire() ของ weapon script\n" +
-             "None = ไม่มี VFX — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
-    public VFXType hitVfxType = VFXType.None;
-
-    [Header("Audio (Optional)")]
-    [Tooltip("เสียงตอน weapon ยิง / โจมตี — ใส่ได้หลายเสียง สุ่มเล่นทีละอัน\n" +
-             "เรียกผ่าน PlayFireSfx() ใน OnFire() ของ weapon script\n" +
-             "Array ว่าง = ไม่มีเสียง")]
-    public AudioClip[] fireSfx;
-    [Tooltip("เสียงเมื่อ projectile/attack กระทบศัตรู — ใส่ได้หลายเสียง สุ่มเล่นทีละอัน\n" +
-             "เรียกผ่าน PlayHitSfx() จาก projectile หรือ weapon\n" +
-             "Array ว่าง = ไม่มีเสียง")]
-    public AudioClip[] hitSfx;
-    [Range(0f, 1f)]
-    [Tooltip("ความดังของ fireSfx (0 = เงียบ, 1 = เต็ม)")]
-    public float fireVolume = 0.7f;
-    [Range(0f, 1f)]
-    [Tooltip("ความดังของ hitSfx")]
-    public float hitVolume  = 0.6f;
-    [Tooltip("Pitch range สุ่มต่อครั้ง (0 = ไม่สุ่ม) — สร้าง variety แม้ใช้ clip เดียว\n" +
-             "0.1 = สุ่ม pitch ±10% (0.9 → 1.1)")]
-    [Range(0f, 0.5f)]
-    public float pitchVariance = 0.05f;
-
-    /// <summary>คืน random clip จาก fireSfx array (หรือ null ถ้าว่าง)</summary>
-    public AudioClip GetRandomFireSfx()
-        => (fireSfx == null || fireSfx.Length == 0) ? null : fireSfx[Random.Range(0, fireSfx.Length)];
-
-    /// <summary>คืน random clip จาก hitSfx array (หรือ null ถ้าว่าง)</summary>
-    public AudioClip GetRandomHitSfx()
-        => (hitSfx == null || hitSfx.Length == 0) ? null : hitSfx[Random.Range(0, hitSfx.Length)];
+    // NOTE: VFX + SFX fields ย้ายไปอยู่บน weapon prefab (WeaponBase) แล้ว
+    //   VFX → weaponVfxType, secondaryVfxType
+    //   SFX → fireSfx[], hitSfx[], fireVolume, hitVolume, pitchVariance
+    // เหตุผล: presentation (visual + audio) ควรอยู่กับ prefab ของแต่ละ weapon
+    //         ส่วน WeaponData เก็บแต่ shared stat / pool config เท่านั้น
+    //
+    // หมายเหตุ: HitEffect / CritHitEffect (impact spark ตอนโดน) — Enemy.cs spawn เอง
+    //          ผ่าน NotifyHitClientRpc ใน EnemyTakeDamage (ไม่ต้อง config ที่ weapon)
 
     [Header("Levels")]
     [Tooltip("Normal weapon: 5 levels | Super/Fusion: 1 level")]

@@ -63,7 +63,7 @@ public class GrenadeWeapon : WeaponBase
         manager.FireMeleeServerRpc(to, radius, dmg, isCrit);
 
         // ── VFX ──────────────────────────────────────────────────────────
-        ShowVfx(VFXType.GrenadeExplosion, to, radius, isAttackHit: false);
+        ShowVfx(ResolveHitVfx(VFXType.GrenadeExplosion), to, radius, isAttackHit: false);
     }
 
     static GameObject CreateFallbackVisual(Vector3 pos)

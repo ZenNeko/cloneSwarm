@@ -376,16 +376,14 @@ public class PlayerWeaponManager : NetworkBehaviour
         {
             int id = c.gameObject.GetInstanceID();
             if (!seen.Add(id)) continue;
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+            // Enemy.NotifyHitClientRpc spawn HitEffect/CritHitEffect ที่ตัว enemy เอง
+            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
             // Knockback (server-authoritative push along line direction)
             if (knockbackForce > 0f)
             {
                 Vector3 push = direction * knockbackForce;
                 c.transform.position += push;
             }
-            // base hit VFX ที่ตำแหน่ง enemy
-            int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
-            BroadcastVfxTypeClientRpc(c.transform.position + Vector3.up * 0.5f, hitType);
         }
 
         ShowLineAoEVfxClientRpc(origin, origin + direction * range);
@@ -411,13 +409,9 @@ public class PlayerWeaponManager : NetworkBehaviour
         var hits = Physics.RaycastAll(origin, direction, maxDist, mask);
         foreach (var h in hits)
         {
-            h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
-            // ใช้ playHitVfx=false ถ้าจะเลี่ยง HitEffect ซ้อนกับ Enemy.EnemyTakeDamage auto-VFX
-            if (playHitVfx)
-            {
-                int hitType = isCrit ? (int)VFXType.CritHitEffect : (int)VFXType.HitEffect;
-                BroadcastVfxTypeClientRpc(h.point, hitType);
-            }
+            // Enemy.NotifyHitClientRpc spawn HitEffect/CritHitEffect ที่ตัว enemy เอง
+            // (playHitVfx flag เก็บไว้เพื่อ backward-compat แต่ไม่ใช้แล้ว)
+            h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
         }
 
         ShowRaycastVfxClientRpc(origin, origin + direction * maxDist, vfxTypeInt);

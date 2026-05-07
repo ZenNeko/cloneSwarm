@@ -923,10 +923,10 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7311686904495137203, guid: e2c8c882eaccac44cb1e8baf6fa82141, type: 3}
   shotDamage: 20
   shotSpeed: 7
-  shotRange: 100
-  shotCount: 2
-  spreadAngle: 30
-  burstDelay: 0.8
+  shotRange: 20
+  shotCount: 1
+  spreadAngle: 1
+  burstDelay: 1
   fireCooldown: 6
 --- !u!135 &2298530033238364720
 SphereCollider:

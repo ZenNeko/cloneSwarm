@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -36,6 +37,12 @@ public class ClusterBombWeapon : WeaponBase
     public float childGrenadeRadius   = 2f;
     [Tooltip("fuse time ของ child grenade")]
     public float childGrenadeFuse     = 0.6f;
+    [Tooltip("จำกัดจำนวน on-kill explosion ต่อ frame กัน lag spike (0 = ไม่จำกัด)")]
+    [Min(0)] public int maxKillExplosionsPerFrame = 32;
+
+    // Anti-recursion: defer on-kill explosion ไป LateUpdate กัน stack overflow
+    // เมื่อ chain kill หลายตัวพร้อมกัน (FireMelee → kill → event → FireMelee → ...)
+    private readonly List<Vector3> _pendingKillExplosions = new();
 
     protected override void OnInit()
     {
@@ -84,13 +91,34 @@ public class ClusterBombWeapon : WeaponBase
     {
         if (manager == null || !manager.IsOwner) return;
 
+        // Defer — กัน recursive call ทำ stack overflow ตอน chain kill หลายตัว
+        _pendingKillExplosions.Add(deathPos);
+    }
+
+    void LateUpdate()
+    {
+        if (_pendingKillExplosions.Count == 0) return;
+        if (manager == null || !manager.IsOwner) { _pendingKillExplosions.Clear(); return; }
+
+        int processCount = maxKillExplosionsPerFrame > 0
+            ? Mathf.Min(_pendingKillExplosions.Count, maxKillExplosionsPerFrame)
+            : _pendingKillExplosions.Count;
+
+        for (int i = 0; i < processCount; i++)
+            ProcessKillExplosion(_pendingKillExplosions[i]);
+
+        _pendingKillExplosions.RemoveRange(0, processCount);
+    }
+
+    void ProcessKillExplosion(Vector3 deathPos)
+    {
         // ── AoE ทันทีที่จุดตาย ────────────────────────────────────────────
         float radius = killExplosionRadius;
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
 
         manager.FireMeleeServerRpc(deathPos + Vector3.up * 0.5f, radius, killExplosionDamage);
-        ShowVfx(VFXType.GrenadeExplosion, deathPos, radius);
+        ShowVfx(ResolveHitVfx(VFXType.GrenadeExplosion), deathPos, radius);
 
         // ── Cluster Bombs รอบจุดตาย ───────────────────────────────────────
         Vector3 spawnPos = deathPos + Vector3.up * 0.5f;

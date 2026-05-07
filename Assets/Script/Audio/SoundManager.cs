@@ -58,20 +58,24 @@ public class SoundManager : MonoBehaviour
     [Tooltip("จำนวน AudioSource ใน pool — เพิ่มถ้ามี SFX overlap เยอะ")]
     public int sfxPoolSize = 16;
 
-    [Header("Default Volumes (ใช้ตอนยังไม่มีค่าเก็บใน PlayerPrefs)")]
+    [Header("Default Master Volume (ใช้ตอนยังไม่มีค่าเก็บใน PlayerPrefs)")]
+    [Tooltip("ค่าเริ่มต้นของ Master volume — Music และ SFX default ใช้ 1 (เต็ม) เสมอ")]
     [Range(0f, 1f)] public float defaultMaster = 1f;
-    [Range(0f, 1f)] public float defaultMusic  = 0.7f;
-    [Range(0f, 1f)] public float defaultSfx    = 1f;
+    [Range(0f, 1f)] public float defaultMusic = 1f;
+    [Range(0f, 1f)] public float defaultSfx = 1f;
+    
 
-    // ── PlayerPrefs keys ──────────────────────────────────────────────────
-    const string KEY_MASTER = "vol_master";
-    const string KEY_MUSIC  = "vol_music";
-    const string KEY_SFX    = "vol_sfx";
+    // Music/SFX default = 1 (full) — ผู้เล่นปรับได้ผ่าน slider 
 
-    // ── Mixer parameter names (must match exposed names ใน AudioMixer) ───
-    const string PARAM_MASTER = "MasterVol";
-    const string PARAM_MUSIC  = "MusicVol";
-    const string PARAM_SFX    = "SfxVol";
+    // ── PlayerPrefs keys (ต้องตรงกับ MenuManager) ────────────────────────
+    const string KEY_MASTER = "Vol_Master";
+    const string KEY_MUSIC  = "Vol_Music";
+    const string KEY_SFX    = "Vol_SFX";
+
+    // ── Mixer parameter names (ต้องตรงกับ exposed params ใน AudioMixer) ──
+    const string PARAM_MASTER = "MasterVolume";
+    const string PARAM_MUSIC  = "MusicVolume";
+    const string PARAM_SFX    = "SFXVolume";
 
     // ── Runtime state ─────────────────────────────────────────────────────
     AudioSource[] sfxPool;
@@ -88,7 +92,7 @@ public class SoundManager : MonoBehaviour
         if (_instance != null && _instance != this) { Destroy(gameObject); return; }
         _instance = this;
         DontDestroyOnLoad(gameObject);
-
+        ResetToDefaults();   // apply default values ก่อน load (ถ้าไม่มีค่าใน PlayerPrefs)
         BuildSfxPool();
         BuildMusicSource();
         LoadVolumes();
@@ -135,6 +139,7 @@ public class SoundManager : MonoBehaviour
         src.volume             = volume * GetSfxScale();
         src.Play();
     }
+    
 
     /// <summary>เล่น SFX 2D (UI clicks, hits, ฯลฯ) — ไม่มี positional</summary>
     public void PlaySfx2D(AudioClip clip, float volume = 1f)
@@ -175,27 +180,57 @@ public class SoundManager : MonoBehaviour
     // ── Public API: Volume ────────────────────────────────────────────────
     public void SetMasterVolume(float v) { MasterVolume = Mathf.Clamp01(v); ApplyMixerVolume(PARAM_MASTER, MasterVolume); RescalePlaying(); SaveVolumes(); }
     public void SetMusicVolume (float v) { MusicVolume  = Mathf.Clamp01(v); ApplyMixerVolume(PARAM_MUSIC,  MusicVolume);  RescalePlaying(); SaveVolumes(); }
-    public void SetSfxVolume   (float v) { SfxVolume    = Mathf.Clamp01(v); ApplyMixerVolume(PARAM_SFX,    SfxVolume);    SaveVolumes(); }
+    public void SetSfxVolume   (float v) { SfxVolume    = Mathf.Clamp01(v); ApplyMixerVolume(PARAM_SFX,    SfxVolume);    RescalePlaying(); SaveVolumes(); }
+
+    /// <summary>
+    /// คืนค่าเสียงเป็น default ที่ตั้งไว้ใน Inspector ของ SoundManager
+    /// — เรียกจาก Reset Defaults button ใน Settings/Pause menu
+    /// — overwrite PlayerPrefs ด้วย defaults
+    /// </summary>
+    public void ResetToDefaults()
+    {
+        SetMasterVolume(defaultMaster);
+        SetMusicVolume(defaultMusic);
+        SetSfxVolume(defaultSfx);
+    }
 
     // ── Internals ─────────────────────────────────────────────────────────
+    // Direct scaling ทำงานเสมอ — ไม่ depend on mixer setup
+    // ถ้า mixer + group ครบ AudioMixer ก็ apply เพิ่มขึ้นไป (compound)
+    // ถ้า exposed param ชื่อไม่ตรง mixer.SetFloat fail → direct scaling save ไว้
+
     /// <summary>Linear 0..1 → dB (-80..0). Mixer ใช้ dB ไม่ใช่ linear</summary>
     void ApplyMixerVolume(string param, float v01)
     {
         if (mixer == null) return;
         float db = v01 > 0.0001f ? Mathf.Log10(v01) * 20f : -80f;
+        // SetFloat คืน false ถ้า exposed parameter ไม่ตรงชื่อ — silently no-op
         mixer.SetFloat(param, db);
     }
 
-    /// <summary>เมื่อไม่มี mixer ต้องคูณ volume ตอน Play — return scale factor</summary>
-    float GetSfxScale()   => mixer == null ? SfxVolume   * MasterVolume : 1f;
-    float GetMusicScale() => mixer == null ? MusicVolume * MasterVolume : 1f;
+    /// <summary>คืน scale factor ที่จะคูณกับ AudioSource.volume — ทำงานเสมอ</summary>
+    float GetSfxScale()   => SfxVolume   * MasterVolume;
+    float GetMusicScale() => MusicVolume * MasterVolume;
 
-    /// <summary>เมื่อไม่มี mixer และเพลงเล่นอยู่ ต้อง update volume ทันที</summary>
+    /// <summary>
+    /// อัปเดต volume ของ source ที่กำลังเล่นอยู่ — ทำงานเสมอ (direct scaling)
+    /// </summary>
     void RescalePlaying()
     {
-        if (mixer != null) return;
+        // Music: update ทุกครั้ง
         if (musicSource != null && musicSource.isPlaying)
             musicSource.volume = GetMusicScale();
+
+        // SFX pool: update sources ที่ playing (สำหรับ long beam SFX)
+        if (sfxPool != null)
+        {
+            float sfxScale = GetSfxScale();
+            foreach (var src in sfxPool)
+            {
+                if (src == null || !src.isPlaying) continue;
+                src.volume = sfxScale;
+            }
+        }
     }
 
     void SaveVolumes()
@@ -211,5 +246,22 @@ public class SoundManager : MonoBehaviour
         SetMasterVolume(PlayerPrefs.GetFloat(KEY_MASTER, defaultMaster));
         SetMusicVolume (PlayerPrefs.GetFloat(KEY_MUSIC,  defaultMusic));
         SetSfxVolume   (PlayerPrefs.GetFloat(KEY_SFX,    defaultSfx));
+    }
+
+    /// <summary>
+    /// ล้าง PlayerPrefs ที่เก็บ volume — ครั้งหน้าจะใช้ default จาก Inspector
+    /// คลิกขวาที่ SoundManager component → "Clear Saved Volumes" ใน Editor
+    /// </summary>
+    [ContextMenu("Clear Saved Volumes (Force Defaults Next Run)")]
+    public void ClearSavedVolumes()
+    {
+        PlayerPrefs.DeleteKey(KEY_MASTER);
+        PlayerPrefs.DeleteKey(KEY_MUSIC);
+        PlayerPrefs.DeleteKey(KEY_SFX);
+        PlayerPrefs.Save();
+        Debug.Log("[SoundManager] PlayerPrefs cleared — restart to apply defaults");
+
+        // ถ้ารันอยู่ ก็ apply defaults ทันที
+        if (Application.isPlaying) ResetToDefaults();
     }
 }

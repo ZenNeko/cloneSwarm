@@ -13,8 +13,9 @@ public class BossManager : NetworkBehaviour
     [Header("Prefabs")]
     [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + MainBoss.cs (attacks)")]
     public GameObject mainBossPrefab;
-    [Tooltip("Mini Boss prefab (ต้องมี MiniBossAI.cs + MiniBossConfig)")]
-    public GameObject miniBossPrefab;
+    [Tooltip("Mini Boss prefabs — สุ่มเลือก 1 ตัวต่อครั้งที่ spawn\n" +
+             "ใส่ได้หลายตัว (แต่ละตัวต้องมี MiniBossAI.cs + MiniBossConfig)")]
+    public GameObject[] miniBossPrefabs = new GameObject[0];
 
     [Header("Mini Boss Scaling")]
     [Tooltip("ค่า x ใน:  bossHP = enemyBaseHP  ×  x  ×  waveHealthMult")]
@@ -65,14 +66,15 @@ public class BossManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        if (miniBossPrefab == null)
+        var prefab = PickRandomMiniBoss();
+        if (prefab == null)
         {
-            Debug.LogWarning("[BossManager] miniBossPrefab not assigned!");
+            Debug.LogWarning("[BossManager] miniBossPrefabs is empty — assign at least one prefab!");
             return;
         }
 
         Vector3 pos = GetSpawnPosition();
-        var go = Instantiate(miniBossPrefab, pos, Quaternion.identity);
+        var go = Instantiate(prefab, pos, Quaternion.identity);
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         // HP = baseHP × miniBossBaseHealthMult × waveHealthMult
@@ -80,7 +82,30 @@ public class BossManager : NetworkBehaviour
         float finalHealthMult = miniBossBaseHealthMult * waveHealthMult;
 
         go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
-        Debug.Log($"[BossManager] 🟡 Mini Boss [{miniBossPrefab.name}] spawned — HP×{finalHealthMult:F2}");
+        Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
+    }
+
+    /// <summary>สุ่ม prefab จาก miniBossPrefabs (กรอง null) — null ถ้าไม่มีตัวให้สุ่ม</summary>
+    GameObject PickRandomMiniBoss()
+    {
+        if (miniBossPrefabs == null || miniBossPrefabs.Length == 0) return null;
+
+        // กรอง null ออก
+        int validCount = 0;
+        for (int i = 0; i < miniBossPrefabs.Length; i++)
+            if (miniBossPrefabs[i] != null) validCount++;
+        if (validCount == 0) return null;
+
+        // สุ่มแบบ skip null
+        int target = Random.Range(0, validCount);
+        int seen   = 0;
+        for (int i = 0; i < miniBossPrefabs.Length; i++)
+        {
+            if (miniBossPrefabs[i] == null) continue;
+            if (seen == target) return miniBossPrefabs[i];
+            seen++;
+        }
+        return null;
     }
 
     void SpawnMainBoss()

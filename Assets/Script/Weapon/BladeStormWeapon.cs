@@ -48,7 +48,7 @@ public class BladeStormWeapon : WeaponBase
             // สลับหน้า-หลัง: 0=หน้า, 1=หลัง, 2=หน้า
             Vector3 slashDir = (i % 2 == 0) ? dir : -dir;
             HitEnemiesInArc(center, slashDir, radius, arcAngle, dmg, isCrit);
-            ShowVfx(VFXType.SlashHit, center + slashDir * (radius * 0.4f), radius, isCrit, isAttackHit: false, direction: slashDir);
+            ShowVfx(ResolveHitVfx(VFXType.SlashHit), center + slashDir * (radius * 0.4f), radius, isCrit, isAttackHit: false, direction: slashDir);
 
             if (i < burstCount - 1)
                 yield return new WaitForSeconds(burstInterval);

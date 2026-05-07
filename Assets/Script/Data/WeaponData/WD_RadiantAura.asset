@@ -14,13 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: RadiantAura
   description: RadiantAura
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6402e62a7d64d494ca6f3fd91f490099, type: 3}
   tier: 0
   prefab: {fileID: 3833827243480728698, guid: a455d33192da17d4cb89e94e366fdb70, type: 3}
   aimMode: 0
   arcAngle: 360
   projectilePrefab: {fileID: 0}
   hitVfxType: 18
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   levels:
   - damage: 20
     cooldown: 1
@@ -29,31 +34,31 @@ MonoBehaviour:
     projectileSpeed: 12
     piercing: 0
     levelUpText: 
-  - damage: 20
+  - damage: 24
     cooldown: 1
     projectileCount: 1
-    range: 8
+    range: 8.2
     projectileSpeed: 12
     piercing: 0
     levelUpText: 
-  - damage: 20
+  - damage: 28
     cooldown: 1
     projectileCount: 1
-    range: 8
+    range: 8.4
     projectileSpeed: 12
     piercing: 0
     levelUpText: 
-  - damage: 20
+  - damage: 32
     cooldown: 1
     projectileCount: 1
-    range: 8
+    range: 8.6
     projectileSpeed: 12
     piercing: 0
     levelUpText: 
-  - damage: 20
+  - damage: 36
     cooldown: 1
     projectileCount: 1
-    range: 8
+    range: 8.8
     projectileSpeed: 12
     piercing: 0
     levelUpText: 

@@ -34,6 +34,10 @@ public class playermove : NetworkBehaviour
     /// <summary>วินาทีที่เหลือก่อน respawn — 0 = ไม่ได้ตาย</summary>
     public NetworkVariable<float> respawnCountdown = new(0f,   NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    /// <summary>จำนวน FetchItem ที่ player ถืออยู่ — สำหรับ ZoneObjective Type B (FetchAndDeliver)
+    /// อ่านโดย QuestCarryHUD บน owner client / เขียนโดย server เท่านั้น</summary>
+    public NetworkVariable<int> carriedQuestItems = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     // ── Events ────────────────────────────────────────────────────────────
     /// <summary>ยิง event เมื่อ local player spawn → FollowCamera subscribe ที่นี่</summary>
     public static event System.Action<Transform> OnLocalPlayerSpawned;
@@ -231,6 +235,23 @@ public class playermove : NetworkBehaviour
     {
         if (!IsServer) return;
         netHealth.Value = Mathf.Min(netHealth.Value + amount, maxHealth);
+    }
+
+    // ── Quest Carry Items (FetchAndDeliver) ───────────────────────────────
+    /// <summary>เพิ่ม carry counter +1 — server only (เรียกจาก FetchItem.CollectServerRpc)</summary>
+    public void AddCarriedQuestItem()
+    {
+        if (!IsServer) return;
+        carriedQuestItems.Value++;
+    }
+
+    /// <summary>คืนจำนวนที่ถือ + reset เป็น 0 — server only (เรียกจาก ZoneObjective drain)</summary>
+    public int DrainCarriedQuestItems()
+    {
+        if (!IsServer) return 0;
+        int n = carriedQuestItems.Value;
+        carriedQuestItems.Value = 0;
+        return n;
     }
 
     /// <summary>ฟื้น HP เป็น % ของ maxHealth — Full Build Bonus</summary>

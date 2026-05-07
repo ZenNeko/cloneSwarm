@@ -14,23 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Blunderbuss
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 861b564bdcac1974ab21bfdbc412056e, type: 3}
   tier: 1
   prefab: {fileID: 5546056588423154064, guid: 18e0b400db2998d47b755f5e76ed5975, type: 3}
   aimMode: 0
   arcAngle: 360
   projectilePrefab: {fileID: 0}
-  hitVfxType: 0
-  fireSfx:
-  - {fileID: 8300000, guid: 09f634dfafc05604580f9f42bc32ce14, type: 3}
-  - {fileID: 8300000, guid: e519c4fde7ab1f84ea9f746ca19d019d, type: 3}
-  - {fileID: 8300000, guid: 7debb51e057f0e344b32d86d7d52ac4e, type: 3}
-  - {fileID: 8300000, guid: 4a821215bc5c10c4badf539751d438a7, type: 3}
-  - {fileID: 8300000, guid: d978c6f69d73a8d4f9b882424edd111a, type: 3}
-  hitSfx: []
-  fireVolume: 0.7
-  hitVolume: 0.6
-  pitchVariance: 0.05
   levels:
   - damage: 45
     cooldown: 0.7

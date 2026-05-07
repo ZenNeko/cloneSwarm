@@ -60,7 +60,7 @@ public class LanceWeapon : WeaponBase
         manager.FireLineAoEServerRpc(origin, dir, dmg, range, pierceWidth, isCrit, kb);
 
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        ShowVfx(VFXType.LanceThrust, vfxPos, range, isCrit, isAttackHit: false, direction: dir);
+        ShowVfx(ResolveHitVfx(VFXType.LanceThrust), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
     }
 
     System.Collections.IEnumerator MultiThrust(Vector3 origin, Vector3 dir, float dmg, float range, bool isCrit)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -8,6 +9,11 @@ using UnityEngine;
 ///   dmg=30/tick, cd=0.5s, range=6.0
 ///
 /// Fusion: Death Field + Minefield = ExplosiveAuraWeapon
+///
+/// **Anti-recursion:** Enemy.OnAnyEnemyDiedAt event fires synchronously ขณะ
+/// FireMeleeServerRpc กำลัง process damage → ถ้า explode ใน callback ตรงๆ
+/// จะ recursive call กันจน stack overflow ตอน chain kill หลายตัว
+/// → defer ใส่ queue → process ใน LateUpdate (frame ถัดไป)
 /// </summary>
 public class DeathFieldWeapon : WeaponBase
 {
@@ -15,6 +21,10 @@ public class DeathFieldWeapon : WeaponBase
     public float deathExplosionRadius = 3f;
     [Tooltip("ดาเมจของ mini explosion")]
     public float deathExplosionDamage = 40f;
+    [Tooltip("จำกัดจำนวน explosion ต่อ frame กัน lag spike (0 = ไม่จำกัด)")]
+    [Min(0)] public int maxExplosionsPerFrame = 32;
+
+    private readonly List<Vector3> _pendingExplosions = new();
 
     protected override void OnInit()
     {
@@ -39,7 +49,8 @@ public class DeathFieldWeapon : WeaponBase
         }
 
         manager.FireMeleeServerRpc(center, radius, dmg);
-        ShowVfx(VFXType.OrbiterHit, center, radius, isCrit);
+        // Main field hit VFX
+        ShowVfx(ResolveHitVfx(VFXType.OrbiterHit), center, radius, isCrit);
     }
 
     void OnEnemyDiedAt(Vector3 deathPos)
@@ -55,8 +66,31 @@ public class DeathFieldWeapon : WeaponBase
         float dist = Vector3.Distance(transform.position, deathPos);
         if (dist > fieldRadius) return;
 
+        // Defer — กัน recursive call ทำ stack overflow ตอน chain kill
+        _pendingExplosions.Add(deathPos);
+    }
+
+    void LateUpdate()
+    {
+        if (_pendingExplosions.Count == 0) return;
+        if (manager == null || !manager.IsOwner) { _pendingExplosions.Clear(); return; }
+
+        // Process ทีละ batch — กัน lag spike จาก chain explosion จำนวนมาก
+        int processCount = maxExplosionsPerFrame > 0
+            ? Mathf.Min(_pendingExplosions.Count, maxExplosionsPerFrame)
+            : _pendingExplosions.Count;
+
+        for (int i = 0; i < processCount; i++)
+            ExplodeAt(_pendingExplosions[i]);
+
+        _pendingExplosions.RemoveRange(0, processCount);
+    }
+
+    void ExplodeAt(Vector3 deathPos)
+    {
         Vector3 explosionCenter = deathPos + Vector3.up * 0.5f;
         manager.FireMeleeServerRpc(explosionCenter, deathExplosionRadius, deathExplosionDamage);
-        ShowVfx(VFXType.GrenadeExplosion, explosionCenter, deathExplosionRadius);
+        // Chain explosion VFX (เมื่อ enemy ตายในฟิลด์)
+        ShowVfx(ResolveSecondaryVfx(VFXType.GrenadeExplosion), explosionCenter, deathExplosionRadius);
     }
 }

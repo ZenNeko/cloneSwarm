@@ -3,7 +3,6 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.Audio;
 using TMPro;
 
 /// <summary>
@@ -56,17 +55,9 @@ public class MenuManager : MonoBehaviour
     // SETTINGS
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Settings ───────────────────────────")]
-    public Button          settingsBackButton;
-    [Tooltip("AudioMixer ที่มี exposed params: MasterVolume, MusicVolume, SFXVolume")]
-    public AudioMixer      audioMixer;
-    public Slider          masterSlider;
-    public Slider          musicSlider;
-    public Slider          sfxSlider;
-    public TextMeshProUGUI masterValueText;
-    public TextMeshProUGUI musicValueText;
-    public TextMeshProUGUI sfxValueText;
-    [Tooltip("Dropdown Quality Settings (optional)")]
-    public TMP_Dropdown    qualityDropdown;
+    [Tooltip("Component บน settingsPanel — จัดการ volume / quality เอง\n" +
+             "MenuManager subscribe SettingsMenuUI.OnBack เพื่อกลับ Main")]
+    public SettingsMenuUI settingsMenuUI;
 
     // ═══════════════════════════════════════════════════════════════════════
     // LOADING / SCENE
@@ -104,9 +95,8 @@ public class MenuManager : MonoBehaviour
         if (onlinePanelBackButton)
             onlinePanelBackButton.onClick.AddListener(() => ShowPanel(charSelectPanel));
 
-        // Settings back
-        if (settingsBackButton) settingsBackButton.onClick.AddListener(ShowMain);
-        InitSettings();
+        // Settings — SettingsMenuUI fires OnBack เมื่อกดปุ่ม Back
+        SettingsMenuUI.OnBack += ShowMain;
 
         ShowMain();
     }
@@ -114,6 +104,7 @@ public class MenuManager : MonoBehaviour
     void OnDestroy()
     {
         CharacterSelectUI.OnCharacterConfirmed -= OnCharacterConfirmed;
+        SettingsMenuUI.OnBack                  -= ShowMain;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -197,47 +188,4 @@ public class MenuManager : MonoBehaviour
         NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SETTINGS
-    // ═══════════════════════════════════════════════════════════════════════
-    void InitSettings()
-    {
-        float master = PlayerPrefs.GetFloat("Vol_Master", 0.8f);
-        float music  = PlayerPrefs.GetFloat("Vol_Music",  0.7f);
-        float sfx    = PlayerPrefs.GetFloat("Vol_SFX",    1.0f);
-
-        if (masterSlider) { masterSlider.value = master; masterSlider.onValueChanged.AddListener(OnMasterChanged); }
-        if (musicSlider)  { musicSlider.value  = music;  musicSlider.onValueChanged.AddListener(OnMusicChanged);  }
-        if (sfxSlider)    { sfxSlider.value    = sfx;    sfxSlider.onValueChanged.AddListener(OnSFXChanged);      }
-
-        ApplyVolume("MasterVolume", master, masterValueText);
-        ApplyVolume("MusicVolume",  music,  musicValueText);
-        ApplyVolume("SFXVolume",    sfx,    sfxValueText);
-
-        if (qualityDropdown != null)
-        {
-            qualityDropdown.ClearOptions();
-            qualityDropdown.AddOptions(new System.Collections.Generic.List<string>(QualitySettings.names));
-            qualityDropdown.value = QualitySettings.GetQualityLevel();
-            qualityDropdown.onValueChanged.AddListener(lvl =>
-            {
-                QualitySettings.SetQualityLevel(lvl);
-                PlayerPrefs.SetInt("QualityLevel", lvl);
-            });
-        }
-    }
-
-    void OnMasterChanged(float v) { PlayerPrefs.SetFloat("Vol_Master", v); ApplyVolume("MasterVolume", v, masterValueText); }
-    void OnMusicChanged(float v)  { PlayerPrefs.SetFloat("Vol_Music",  v); ApplyVolume("MusicVolume",  v, musicValueText);  }
-    void OnSFXChanged(float v)    { PlayerPrefs.SetFloat("Vol_SFX",    v); ApplyVolume("SFXVolume",    v, sfxValueText);    }
-
-    void ApplyVolume(string param, float val, TextMeshProUGUI label)
-    {
-        if (audioMixer != null)
-        {
-            float db = val > 0.0001f ? Mathf.Log10(val) * 20f : -80f;
-            audioMixer.SetFloat(param, db);
-        }
-        if (label) label.text = $"{Mathf.RoundToInt(val * 100)}%";
-    }
 }

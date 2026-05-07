@@ -55,6 +55,6 @@ public class VortexWeapon : WeaponBase
         Vector3 tangent = new Vector3(-Mathf.Sin(rad), 0f, Mathf.Cos(rad));
 
         FireProjectile(spawnPos, tangent, dmg, speed, count: 1, spreadDeg: 0f, maxRange: range, isCrit: isCrit);
-        ShowVfx(VFXType.VortexSpawn, spawnPos, isAttackHit: false);
+        ShowVfx(ResolveHitVfx(VFXType.VortexSpawn), spawnPos, isAttackHit: false);
     }
 }

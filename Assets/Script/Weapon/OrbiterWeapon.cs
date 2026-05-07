@@ -176,17 +176,15 @@ public class OrbiterWeapon : WeaponBase
 
                 if (aoeOnHit)
                 {
-                    // StarRing: ทำ AoE รอบ orb (ตี enemy หลายตัวพร้อมกัน)
+                    // StarRing: ทำ AoE รอบ orb — Enemy.cs spawn HitEffect เองตอน TakeDamage
                     manager.FireMeleeServerRpc(orb.position, aoeRadius, dmg, isCrit);
-                    ShowBaseHitVfx(orb.position, isCrit);
                     Debug.Log($"[Orbiter] 💥 AoE hit at orb pos — dmg {dmg:F0}");
                     break; // 1 hit ต่อ orb ต่อ tick (AoE ครอบไปทั้งกลุ่มแล้ว)
                 }
                 else
                 {
-                    // ตีเฉพาะตัวที่ชน — server-side damage ผ่าน RPC + VFX ที่ enemy
+                    // ตีเฉพาะตัวที่ชน — Enemy.cs spawn HitEffect เองตอน TakeDamage
                     manager.FireMeleeServerRpc(e.transform.position, 0.5f, dmg, isCrit);
-                    ShowBaseHitVfx(e.transform.position + Vector3.up * 0.5f, isCrit);
                     Debug.Log($"[Orbiter] 💥 Hit enemy {e.name} — dmg {dmg:F0}");
                 }
             }

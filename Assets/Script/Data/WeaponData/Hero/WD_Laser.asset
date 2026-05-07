@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Laser
   description: Laser
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9cf3ac0b624168545975e8923bfe94e3, type: 3}
   tier: 0
   prefab: {fileID: 5642432581615302053, guid: 5335a55d0549be6428b5c1a04d51b261, type: 3}
   aimMode: 1

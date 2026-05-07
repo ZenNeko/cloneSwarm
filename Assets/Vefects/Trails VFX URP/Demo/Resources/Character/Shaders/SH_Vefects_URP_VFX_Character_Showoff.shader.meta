@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 80055b809bdbb6b459297f4a1c11a8e0
+guid: 8a18f68fd7cbc1a439a968696e569606
 ShaderImporter:
   externalObjects: {}
   defaultTextures: []
@@ -9,8 +9,8 @@ ShaderImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 306142
-  packageName: Easy Shockwaves VFX
-  packageVersion: 1.0.0
+  productId: 375130
+  packageName: Free Blood VFX - URP
+  packageVersion: 1.0.1
   assetPath: Assets/Vefects/Trails VFX URP/Demo/Resources/Character/Shaders/SH_Vefects_URP_VFX_Character_Showoff.shader
-  uploadId: 720132
+  uploadId: 906040
