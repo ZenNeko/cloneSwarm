@@ -12,11 +12,25 @@ using UnityEngine;
 ///
 /// Death Drops: spawn extra ExpOrb กระจายรอบบอส
 ///
+/// Static Events (fire on ALL clients):
+///   OnAnyMiniBossSpawned(MiniBossAI)  — subscribe ใน MiniBossHUDUI
+///   OnAnyMiniBossDefeated(MiniBossAI) — subscribe ใน MiniBossHUDUI
+///
 /// Prefab ต้องการ: NetworkObject + Enemy.cs + MiniBossAI.cs
 /// </summary>
 [RequireComponent(typeof(Enemy))]
 public class MiniBossAI : NetworkBehaviour
 {
+    // ── Static Events (ALL clients) ───────────────────────────────────────
+    /// <summary>ยิงบน ALL clients ทุกครั้งที่ MiniBoss spawn — MiniBossHUDUI ใช้สร้าง bar</summary>
+    public static event System.Action<MiniBossAI> OnAnyMiniBossSpawned;
+    /// <summary>ยิงบน ALL clients ทุกครั้งที่ MiniBoss ถูก despawn — MiniBossHUDUI ใช้ลบ bar</summary>
+    public static event System.Action<MiniBossAI> OnAnyMiniBossDefeated;
+
+    [Header("Display")]
+    [Tooltip("ชื่อที่แสดงใน Canvas HP bar และ World HP bar — ถ้าว่างจะใช้ gameObject.name")]
+    public string bossName = "";
+
     [Header("Config")]
     [Tooltip("ScriptableObject กำหนด attack parameters (สร้างจาก Game/MiniBossConfig)")]
     public MiniBossConfig config;
@@ -36,6 +50,9 @@ public class MiniBossAI : NetworkBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
+        // Fire on ALL clients — MiniBossHUDUI + WorldHPBar ใช้ track HP
+        OnAnyMiniBossSpawned?.Invoke(this);
+
         if (!IsServer) return;
         if (config == null)
         {
@@ -57,6 +74,9 @@ public class MiniBossAI : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        // Fire on ALL clients — MiniBossHUDUI จะลบ bar ออก
+        OnAnyMiniBossDefeated?.Invoke(this);
+
         if (enemy != null) enemy.onDeath.RemoveListener(OnDeath);
     }
 
