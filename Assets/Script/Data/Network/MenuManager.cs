@@ -180,12 +180,25 @@ public class MenuManager : MonoBehaviour
         if (loadingText) loadingText.text = "Starting game...";
         yield return null;
 
-        NetworkManager.Singleton.StartHost();
+        // WebGL ไม่รองรับ UnityTransport เป็น server — swap เป็น OfflineTransport แทน
+        // OfflineTransport ไม่สร้าง socket จริง ทำงานได้ทุก platform
+        var nm = NetworkManager.Singleton;
+        if (nm.NetworkConfig.NetworkTransport is not OfflineTransport)
+        {
+            // ลบ transport เดิม (UnityTransport) แล้ว add OfflineTransport
+            var oldTransport = nm.NetworkConfig.NetworkTransport as UnityEngine.Component;
+            if (oldTransport != null) Destroy(oldTransport);
+
+            var offline = nm.gameObject.AddComponent<OfflineTransport>();
+            nm.NetworkConfig.NetworkTransport = offline;
+        }
+
+        nm.StartHost();
 
         if (loadingText) loadingText.text = "Loading scene...";
         yield return null;
 
-        NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
+        nm.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
     }
 
 }
