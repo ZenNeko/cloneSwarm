@@ -28,6 +28,11 @@ public class MainBoss : NetworkBehaviour
     // ── Static Events (subscribe on all clients) ──────────────────────────
     public static event System.Action<MainBoss> OnAnyBossSpawned;
     public static event System.Action           OnAnyBossDespawned;
+
+    [Header("Display")]
+    [Tooltip("ชื่อที่แสดงใน Canvas HP bar และ World HP bar — ถ้าว่างจะใช้ 'BOSS'")]
+    public string bossDisplayName = "BOSS";
+
     [Header("Phase Thresholds (% HP)")]
     public float phase2Threshold = 0.60f;
     public float phase3Threshold = 0.30f;

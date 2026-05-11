@@ -11,6 +11,10 @@ using UnityEngine.UI;
 /// ใช้ SessionSettings.ToSessionOptions() เพื่อตั้งค่า Relay อัตโนมัติ
 /// GameSessionManager (SessionObserver) จะรับ event ต่อจากนี้
 /// </summary>
+
+// ใน OnlineMenuUI.cs หรือที่ตั้ง Host/Server button
+
+
 public class OnlineMenuUI : MonoBehaviour
 {
     [Header("SessionSettings (ลาก ScriptableObject มาใส่)")]
@@ -34,6 +38,15 @@ public class OnlineMenuUI : MonoBehaviour
     public TextMeshProUGUI playerCountLabel;   // "Players: 1 / 4"
     public TMP_Dropdown    sceneDropdown;      // Host เลือก scene ที่จะโหลด
 
+    void Start()
+    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // WebGL host ไม่ได้ (Unity Transport ไม่รองรับ server บน browser)
+        // ซ่อนปุ่ม Create Session — เหลือแค่ Join
+        if (createSessionButton != null) createSessionButton.gameObject.SetActive(false);
+        SetStatus("WebGL: Join as Client only (ใส่ Room Code แล้วกด Join)");
+#endif
+    }
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void OnEnable()
     {
