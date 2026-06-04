@@ -73,3 +73,15 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# AI agent tool installations (Antigravity awesome-skills, downloaded marketplaces)
+# Skills here are external — not project source. Keep .claude/skills/ checked in instead.
+/.agents/
+/.agent/
+
+# Unity Profiler captures (.data files can be GB-sized — exceed GitHub limits)
+/ProfilerCaptures/
+
+# Claude Code local-only state
+/.claude/worktrees/
+/.claude/settings.local.json

@@ -1,19 +1,20 @@
 fileFormatVersion: 2
-guid: 628e9c068de3eb2488430512c04abc6d
+guid: 9a9559b93ddf3224ba4d6a21c6adb8df
 ShaderImporter:
   externalObjects: {}
   defaultTextures:
-  - _Normal: {fileID: 2800000, guid: a6c07b142c14fe64097eb43b7eb9ea05, type: 3}
   - _Masks: {fileID: 2800000, guid: da13cff96126c2142a4282f9b0b912f2, type: 3}
   - _Texture: {fileID: 2800000, guid: 7a3526d3c2b6d7f4bb01239c99c63abd, type: 3}
+  - _Normal: {fileID: 2800000, guid: a6c07b142c14fe64097eb43b7eb9ea05, type: 3}
+  - _texcoord: {instanceID: 0}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 355856
-  packageName: Render Particles Always On Top
-  packageVersion: 1.0.0
+  productId: 340466
+  packageName: Stylized VFX Bundle
+  packageVersion: 1.0.1
   assetPath: Assets/Vefects/Trails VFX URP/Demo/Resources/Environment/Shaders/SH_Vefects_Grid_01_BIRP.shader
-  uploadId: 849416
+  uploadId: 860344

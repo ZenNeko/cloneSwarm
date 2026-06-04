@@ -84,6 +84,9 @@ public abstract class WeaponBase : MonoBehaviour
     {
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
+        // Block weapon firing while still in MenuScene (Online Session lobby) —
+        // player prefab อาจ spawn ใน lobby ก่อนเริ่มเกมจริง
+        if (!PlayerWeaponManager.WeaponsEnabledInScene) return;
         if (!UsesCooldownTimer) return;
 
         attackTimer += Time.deltaTime;

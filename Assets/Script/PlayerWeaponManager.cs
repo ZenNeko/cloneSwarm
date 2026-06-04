@@ -17,6 +17,16 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     public const int MaxWeaponSlots = 6;
 
+    /// <summary>ชื่อ scene ของ Menu/Lobby — ใช้ block weapon firing นอก gameplay</summary>
+    public const string MenuSceneName = "MenuScene";
+
+    /// <summary>
+    /// true เมื่ออยู่ใน gameplay scene (ไม่ใช่ MenuScene) — WeaponBase/AbilityBase ใช้
+    /// guard auto-fire ตอนผู้เล่นยังอยู่ใน Online Session (lobby) ก่อนเริ่มเกมจริง
+    /// </summary>
+    public static bool WeaponsEnabledInScene =>
+        UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != MenuSceneName;
+
     [Header("Starting Character")]
     [Tooltip("ตั้งค่าโดย CharacterSelectUI ก่อนเริ่มเกม — ถ้าว่างจะใช้ startingWeapon fallback")]
     public CharacterData characterData;

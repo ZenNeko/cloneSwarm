@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 6452482905059233599}
   - component: {fileID: 3826907490228766898}
   - component: {fileID: 2362934677563906112}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: EnemyFast
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -163,6 +163,13 @@ MonoBehaviour:
     m_Bits: 128
   wallCheckRadius: 0.4
   wallCheckDistance: 0.6
+  useFlowField: 1
+  usePathfinding: 0
+  repathInterval: 1
+  repathTargetMoveThresh: 2.5
+  waypointReachDistance: 0.5
+  nearDistanceForRepath: 12
+  farRepathMultiplier: 3
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.4
@@ -178,6 +185,7 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 20
   serverInvincible: 0
+  drawGizmoAlways: 0
 --- !u!54 &6452482905059233599
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -266,7 +274,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
