@@ -82,6 +82,10 @@ public class SoundManager : MonoBehaviour
     int           poolIdx;
     AudioSource   musicSource;
 
+    // Mixer params ที่ exposed จริง ใน assigned mixer — set ใน Awake (ValidateMixerParams)
+    // ถ้า user ไม่ได้ expose ตามชื่อมาตรฐาน → param หายไปจาก set → ApplyMixerVolume skip
+    readonly System.Collections.Generic.HashSet<string> _validMixerParams = new();
+
     public float MasterVolume { get; private set; }
     public float MusicVolume  { get; private set; }
     public float SfxVolume    { get; private set; }
@@ -92,10 +96,36 @@ public class SoundManager : MonoBehaviour
         if (_instance != null && _instance != this) { Destroy(gameObject); return; }
         _instance = this;
         DontDestroyOnLoad(gameObject);
+        ValidateMixerParams();   // ตรวจว่า mixer มี exposed params ไหม → กัน warning spam
         ResetToDefaults();   // apply default values ก่อน load (ถ้าไม่มีค่าใน PlayerPrefs)
         BuildSfxPool();
         BuildMusicSource();
         LoadVolumes();
+    }
+
+    /// <summary>
+    /// ตรวจว่า mixer ที่ assign มี exposed params (MasterVolume, MusicVolume, SFXVolume) ครบไหม
+    /// — `GetFloat` คืน true ถ้า exposed name มี (ไม่ log warning เหมือน SetFloat)
+    /// → จำเฉพาะที่ใช้ได้ใน `_validMixerParams` → `ApplyMixerVolume` skip params ที่ไม่มี
+    /// </summary>
+    void ValidateMixerParams()
+    {
+        _validMixerParams.Clear();
+        if (mixer == null) return;
+
+        foreach (string p in new[] { PARAM_MASTER, PARAM_MUSIC, PARAM_SFX })
+        {
+            if (mixer.GetFloat(p, out _))
+                _validMixerParams.Add(p);
+        }
+
+        if (_validMixerParams.Count == 0)
+        {
+            Debug.LogWarning($"[SoundManager] Mixer assigned แต่ไม่มี exposed params " +
+                             $"({PARAM_MASTER}/{PARAM_MUSIC}/{PARAM_SFX}) — " +
+                             "ใช้ direct volume scaling อย่างเดียว " +
+                             "(ถ้าอยากใช้ mixer: เปิด AudioMixer → คลิกขวา param slider → Expose Parameter to script)");
+        }
     }
 
     void BuildSfxPool()
@@ -203,8 +233,10 @@ public class SoundManager : MonoBehaviour
     void ApplyMixerVolume(string param, float v01)
     {
         if (mixer == null) return;
+        // Skip params ที่ไม่ได้ expose ใน mixer — กัน "Exposed name does not exist" warning spam
+        if (!_validMixerParams.Contains(param)) return;
+
         float db = v01 > 0.0001f ? Mathf.Log10(v01) * 20f : -80f;
-        // SetFloat คืน false ถ้า exposed parameter ไม่ตรงชื่อ — silently no-op
         mixer.SetFloat(param, db);
     }
 

@@ -91,9 +91,10 @@ public class MenuManager : MonoBehaviour
         if (charSelectBackButton) charSelectBackButton.onClick.AddListener(ShowMain);
         CharacterSelectUI.OnCharacterConfirmed += OnCharacterConfirmed;
 
-        // Online back
+        // Online back — leave session (ถ้ามี) ก่อน navigate กลับ เพื่อกัน orphan session
+        // และกัน bug "กลับเข้ามาแล้ว auto-create ซ้อนของเดิม"
         if (onlinePanelBackButton)
-            onlinePanelBackButton.onClick.AddListener(() => ShowPanel(charSelectPanel));
+            onlinePanelBackButton.onClick.AddListener(OnOnlineBackClicked);
 
         // Settings — SettingsMenuUI fires OnBack เมื่อกดปุ่ม Back
         SettingsMenuUI.OnBack += ShowMain;
@@ -143,6 +144,21 @@ public class MenuManager : MonoBehaviour
 
     void OnSettingsClicked() => ShowPanel(settingsPanel);
 
+    /// <summary>
+    /// Back ออกจาก Online panel — leave session ก่อน (ถ้ามี) แล้ว navigate กลับ
+    /// — ใช้ async void เพราะ Button.onClick ไม่รองรับ Task
+    /// — UI navigate ทันที (ไม่รอ leave สำเร็จ) เพื่อกัน user ค้าง
+    /// — OnlineMenuUI.LeaveSessionIfActiveAsync() จัดการ leave ใน background
+    /// </summary>
+    async void OnOnlineBackClicked()
+    {
+        // นำทางออกก่อน → UX ดีขึ้น user ไม่ต้องรอ network
+        ShowPanel(charSelectPanel);
+
+        if (onlineMenuUI != null)
+            await onlineMenuUI.LeaveSessionIfActiveAsync();
+    }
+
     void OnQuitClicked()
     {
 #if UNITY_EDITOR
@@ -164,11 +180,24 @@ public class MenuManager : MonoBehaviour
                 break;
             case MenuMode.Online:
                 ShowPanel(onlinePanel);
+                // Trigger auto-create หลัง char confirm + รอ AuthenticationService.IsSignedIn
+                // (กัน error "Player is not authorized" ที่เกิดจาก auto-create ใน OnEnable
+                //  ตอน auth ยัง sign-in ไม่เสร็จ)
+                _ = TriggerOnlineCreateAsync();
                 break;
             default:
                 ShowMain();
                 break;
         }
+    }
+
+    /// <summary>Helper: รอให้ Online panel enable เสร็จก่อนค่อยเรียก auto-create</summary>
+    async System.Threading.Tasks.Task TriggerOnlineCreateAsync()
+    {
+        // รอ 1 frame ให้ OnEnable ของ OnlineMenuUI วิ่งก่อน (subscribe listeners + reset UI)
+        await System.Threading.Tasks.Task.Yield();
+        if (onlineMenuUI != null)
+            await onlineMenuUI.BeginAutoCreateAfterCharSelectAsync();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

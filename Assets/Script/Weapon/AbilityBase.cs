@@ -38,6 +38,35 @@ public abstract class AbilityBase : MonoBehaviour
 
     protected LayerMask enemyLayer;
 
+    // ── Scene-based gating (auto disable in MenuScene/lobby) ──────────────
+    // Ability subclass override Update เอง → ไม่มีจุดเดียว patch ได้
+    // วิธีนี้: ใช้ `enabled` property → Unity ไม่เรียก Update ของ component นี้
+    // เมื่อ active scene เปลี่ยน → recompute ทันที (ลด overhead, ไม่ต้อง check ทุก frame)
+    //
+    // ⚠ ใช้ Awake/OnDestroy (NOT OnEnable/OnDisable):
+    //    ถ้า subscribe ใน OnEnable แล้ว ApplySceneGate set enabled=false ทันที,
+    //    OnDisable จะวิ่ง unsubscribe → ไม่มีใคร re-enable ตอน scene เปลี่ยนกลับ
+    void Awake()
+    {
+        UnityEngine.SceneManagement.SceneManager.activeSceneChanged += OnActiveSceneChanged;
+        ApplySceneGate();
+    }
+
+    void OnDestroy()
+    {
+        UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+    }
+
+    void OnActiveSceneChanged(UnityEngine.SceneManagement.Scene _, UnityEngine.SceneManagement.Scene __)
+        => ApplySceneGate();
+
+    void ApplySceneGate()
+    {
+        // อยู่ใน Menu/Lobby → component disabled → Update/input ไม่วิ่งเลย
+        // กลับเข้า gameplay scene → re-enabled อัตโนมัติ
+        enabled = PlayerWeaponManager.WeaponsEnabledInScene;
+    }
+
     // ── Init ──────────────────────────────────────────────────────────────
     public void Init(AbilityData abilityData, int level, PlayerWeaponManager mgr)
     {

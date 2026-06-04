@@ -129,6 +129,10 @@ public class UpgradeManager : NetworkBehaviour
 
             if (!weaponManager.HasWeapon(w))
             {
+                // กันออก card "WeaponNew" ของ Normal ที่ผู้เล่น upgrade ผ่านไปแล้ว
+                // (มี Super หรือ Fusion ของ Normal นั้นอยู่ในมือ)
+                if (HasProgressedPast(w)) continue;
+
                 if (weaponManager.HasFreeSlot())
                     pool.Add(new UpgradeCardInfo
                     {
@@ -345,6 +349,38 @@ public class UpgradeManager : NetworkBehaviour
         if (w == null) return false;
         if (w.exclusiveCharacter == null) return true;          // ไม่ exclusive → ทุกคนได้
         return w.exclusiveCharacter == myCharacter;             // ตรงกับตัวละครของตัวเอง
+    }
+
+    // ── Upgrade-chain Check ───────────────────────────────────────────────
+    /// <summary>
+    /// true = ผู้เล่น upgrade ผ่าน Normal `w` ไปแล้ว
+    /// (มี Super ของ w อยู่ในมือ หรือ มี Fusion ที่ใช้ Super ของ w เป็น input)
+    ///
+    /// ใช้กัน "WeaponNew" card ของ Normal ที่ถูก replace ไปแล้ว
+    /// เช่น LightningChain → Stormcaller (Super) → ThunderRail (Fusion)
+    /// ทุกขั้น Normal LightningChain ไม่ควรขึ้น card ใหม่อีก
+    /// </summary>
+    bool HasProgressedPast(WeaponData normalWeapon)
+    {
+        if (normalWeapon == null) return false;
+        var super = normalWeapon.superVersion;
+        if (super == null) return false;
+
+        // มี Super ของ Normal นั้นอยู่
+        if (weaponManager.HasWeapon(super)) return true;
+
+        // มี Fusion ที่ใช้ Super นี้เป็น input อยู่ (Super หายไป → Fusion แทน)
+        if (allRecipes != null)
+        {
+            foreach (var recipe in allRecipes)
+            {
+                if (recipe == null || recipe.fusionResult == null) continue;
+                if (recipe.superWeaponA != super && recipe.superWeaponB != super) continue;
+                if (weaponManager.HasWeapon(recipe.fusionResult)) return true;
+            }
+        }
+
+        return false;
     }
 
     // ── Super Condition Check ─────────────────────────────────────────────

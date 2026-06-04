@@ -24,6 +24,11 @@ public class Enemy : NetworkBehaviour
     [Tooltip("ระยะ probe ข้างหน้า")]
     public float wallCheckDistance = 0.6f;
 
+    [Header("Pathfinding")]
+    [Tooltip("ใช้ Flow Field (LoL Swarm style) — sample direction จาก FlowFieldPathfinder.Instance\n" +
+             "ปิด = เดินตรงเข้าหา player + wall slide เป็น fallback")]
+    public bool useFlowField = true;
+
     [Header("Contact Damage")]
     public float contactDamage  = 10f;
     public float damageCooldown = 1f;
@@ -43,6 +48,7 @@ public class Enemy : NetworkBehaviour
         30f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     private Transform  currentTarget;
+    private playermove targetPlayerMove;  // cached — avoid GetComponent allocation per damage tick
     private float      damageTimer;
     private Rigidbody  rb;
 
@@ -52,10 +58,13 @@ public class Enemy : NetworkBehaviour
         rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic  = false;
-            rb.useGravity   = false;
-            rb.constraints   = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            // non-kinematic + Discrete — ถูกกว่า ContinuousDynamic ~4× สำหรับ enemy เดินช้า
+            // (ถ้า tunnel ทะลุ wall บางที → ลอง ContinuousSpeculative)
+            rb.isKinematic            = false;
+            rb.useGravity             = false;
+            rb.constraints            = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
+            rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+            rb.interpolation          = RigidbodyInterpolation.Interpolate;   // smooth visual บน client
         }
 
         if (!IsServer) return;
@@ -68,9 +77,12 @@ public class Enemy : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        // Re-target ทุก 60 frame (~1 วินาที)
+        // Re-target ทุก 60 frame (~1 วินาที) — และ cache playermove ref ตอน retarget
         if (Time.frameCount % 60 == 0 || currentTarget == null)
-            currentTarget = FindNearestPlayer();
+        {
+            currentTarget    = FindNearestPlayer();
+            targetPlayerMove = currentTarget != null ? currentTarget.GetComponent<playermove>() : null;
+        }
 
         if (currentTarget != null)
         {
@@ -78,10 +90,12 @@ public class Enemy : NetworkBehaviour
             damageTimer += Time.deltaTime;
             if (damageTimer >= damageCooldown)
             {
-                float dist = Vector3.Distance(transform.position, currentTarget.position);
-                if (dist <= damageRadius)
+                // sqrMagnitude เร็วกว่า Vector3.Distance (~3×) — เลี่ยง sqrt
+                float distSq = (transform.position - currentTarget.position).sqrMagnitude;
+                if (distSq <= damageRadius * damageRadius)
                 {
-                    currentTarget.GetComponent<playermove>()?.TakeDamage(contactDamage);
+                    // cached ref — กัน GetComponent alloc per tick
+                    if (targetPlayerMove != null) targetPlayerMove.TakeDamage(contactDamage);
                     damageTimer = 0f;
                 }
             }
@@ -93,13 +107,26 @@ public class Enemy : NetworkBehaviour
     {
         if (!IsServer || suppressDefaultMovement || currentTarget == null) return;
 
-        Vector3 dir = (currentTarget.position - transform.position);
+        // Try Flow Field sample (cheap — 1 array lookup)
+        Vector3 dir          = Vector3.zero;
+        bool    flowProvided = false;
+
+        if (useFlowField && FlowFieldPathfinder.Instance != null)
+        {
+            dir = FlowFieldPathfinder.Instance.GetFlow(transform.position);
+            flowProvided = dir.sqrMagnitude > 0.01f;
+        }
+
+        // Fallback: direct toward target ถ้า flow field ไม่ครอบคลุม (นอก grid / blocked cell)
+        if (!flowProvided)
+            dir = currentTarget.position - transform.position;
+
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.01f) return;
-
         dir.Normalize();
 
-        // Wall sliding: ถ้าเจอกำแพงข้างหน้า → projection ลงบน wall plane
+        // Wall slide: ใช้เป็น safety net (flow field กว้างกว่า collider ของ obstacle อาจมีช่องว่าง)
+        // ถ้า flow field พา enemy ไปทางที่ปลอดภัยอยู่แล้ว wall slide ก็ no-op
         Vector3 finalDir = ResolveWallSlide(dir);
 
         Vector3 move = finalDir * speed * Time.fixedDeltaTime;
@@ -195,9 +222,6 @@ public class Enemy : NetworkBehaviour
         return nearest;
     }
 
-    /// <summary>
-    /// เรียกจาก EnemySpawner หลัง Spawn — คูณ stats ตาม wave
-    /// </summary>
     /// <summary>
     /// เรียกจาก EnemySpawner หลัง Spawn — คูณ stats ตาม wave
     /// </summary>
