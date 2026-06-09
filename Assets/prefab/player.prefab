@@ -344,6 +344,11 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+  carriedQuestItems:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   isDashing: 0
   tempMoveSpeedBonus: 0
 --- !u!114 &4642509835648411498
@@ -362,8 +367,8 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   playerMove: {fileID: 0}
   statManager: {fileID: 0}
-  characterData: {fileID: 0}
-  startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
+  characterData: {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
+  startingWeapon: {fileID: 0}
   boomerangPrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
   grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
   minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}

@@ -108,7 +108,7 @@ public class MissileProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos)
     {
-        VFXFactory.Play(VFXType.HitEffect, pos);
-        VFXFactory.Play(VFXType.GrenadeExplosion, pos);
+        VFXFactory.Play("HitEffect", pos);
+        VFXFactory.Play("GrenadeExplosion", pos);
     }
 }

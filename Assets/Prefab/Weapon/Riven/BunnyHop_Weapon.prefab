@@ -49,6 +49,13 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
+  weaponVfxType: MeteorAoE
+  secondaryVfxType: -1
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   dashDistance: 4
   dashDuration: 0.15
   exileProjectileRangeMult: 7
@@ -56,8 +63,3 @@ MonoBehaviour:
   shieldPercent: 0.25
   _isSuper: 0
   exileAoeMult: 1.5
-  windSlashCount: 2
-  windSlashDmgRatio: 0.6
-  windSlashRange: 8
-  dashTrailPrefab: {fileID: 8475491197590333196, guid: daf3b95fa19e52e4d88fdea63b67718a, type: 3}
-  vfxDesignedRadius: 3

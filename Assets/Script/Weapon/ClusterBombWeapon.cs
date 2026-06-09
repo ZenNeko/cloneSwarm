@@ -118,7 +118,7 @@ public class ClusterBombWeapon : WeaponBase
             radius *= manager.statManager.GetAreaMultiplier();
 
         manager.FireMeleeServerRpc(deathPos + Vector3.up * 0.5f, radius, killExplosionDamage);
-        ShowVfx(ResolveHitVfx(VFXType.GrenadeExplosion), deathPos, radius);
+        ShowVfx(ResolveHitVfx("GrenadeExplosion"), deathPos, radius);
 
         // ── Cluster Bombs รอบจุดตาย ───────────────────────────────────────
         Vector3 spawnPos = deathPos + Vector3.up * 0.5f;

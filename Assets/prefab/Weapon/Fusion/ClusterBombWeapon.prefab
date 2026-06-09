@@ -48,5 +48,23 @@ MonoBehaviour:
   currentLevel: 0
   manager: {fileID: 0}
   aimMode: 0
-  explosionRadius: 4
+  tempCooldownMult: 1
+  weaponVfxType: -1
+  weaponVfxKey: None
+  secondaryVfxType: -1
+  secondaryVfxKey: None
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
+  spreadAngle: 40
+  grenadeRadius: 3.5
   fuseTime: 1.2
+  killExplosionRadius: 3
+  killExplosionDamage: 60
+  childGrenadeCount: 3
+  childGrenadeSpread: 4
+  childGrenadeRadius: 2
+  childGrenadeFuse: 0.6
+  maxKillExplosionsPerFrame: 32

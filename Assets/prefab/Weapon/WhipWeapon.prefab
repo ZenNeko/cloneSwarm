@@ -49,8 +49,10 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  hitVfxType: 19
+  weaponVfxType: 19
+  weaponVfxKey: WhipSlash
   secondaryVfxType: -1
+  secondaryVfxKey: None
   fireSfx: []
   hitSfx: []
   fireVolume: 0.7

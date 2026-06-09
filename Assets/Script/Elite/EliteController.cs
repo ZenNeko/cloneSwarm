@@ -193,13 +193,13 @@ public class EliteController : NetworkBehaviour
                 po.GetComponent<playermove>()?.TakeDamage(def.exploderDamage);
         }
 
-        PlayExplosionVfxClientRpc(center, (int)def.exploderVfxType, def.exploderRadius);
+        PlayExplosionVfxClientRpc(center, def.exploderVfxType, def.exploderRadius);
     }
 
     [ClientRpc]
-    void PlayExplosionVfxClientRpc(Vector3 pos, int vfxType, float radius)
+    void PlayExplosionVfxClientRpc(Vector3 pos, string vfxKey, float radius)
     {
-        NetworkedVFXPool.Instance?.PlayByType((VFXType)vfxType, pos, scale: radius);
+        NetworkedVFXPool.Instance?.PlayByName(vfxKey, pos, scale: radius);
     }
 
     // ── Client: visuals (outline + crown) ─────────────────────────────────

@@ -6,9 +6,9 @@ using UnityEngine.VFX;
 /// <summary>
 /// Centralized VFX Object Pool + Projectile Prefab Registry
 ///
-/// VFX Type Pool (VFXType enum):
-///   — Weapon scripts ใช้ VFXType enum → PlayByType(VFXType, pos)
-///   — กำหนด prefab + pool size ใน vfxTypeMappings[]
+/// VFX Type Pool (VFXDatabase string keys):
+///   — Weapon scripts ใช้ string key → PlayByName(string, pos)
+///   — กำหนด prefab + pool size ใน VFXDatabase asset
 ///   — VFXFactory.Play() / VFXFactory.PlayBeam() delegate มาที่นี่
 ///
 /// Beam Pool:
@@ -20,36 +20,19 @@ using UnityEngine.VFX;
 ///
 /// Setup:
 ///   1. วาง NetworkedVFXPool GameObject ในทุก gameplay scene
-///   2. ลาก VFX prefabs ใส่ vfxTypeMappings — กำหนด VFXType + prefab + poolSize
+///   2. ลาก VFXDatabase asset ใส่ vfxDatabase field
 ///   3. ลาก beamPrefab (LineRenderer) — ใช้โดย PlayBeam()
 ///   4. ลาก Projectile NetworkObject prefabs ทั้งหมดใส่ projectilePrefabs
 /// </summary>
 public class NetworkedVFXPool : MonoBehaviour
 {
     // ── Entry types ───────────────────────────────────────────────────────
-    [System.Serializable]
-    public class VFXTypeMapping
-    {
-        public VFXType    type;
-        [Tooltip("Prefab ที่มี ParticleSystem หรือ VFX Effect")]
-        public GameObject prefab;
-        [Min(1), Tooltip("จำนวน pre-allocate ต่อ client")]
-        public int        poolSize = 5;
-        [Tooltip("radius ที่ prefab ถูกออกแบบมา (Particle System → Shape → Radius)\n" +
-                 "0 = fixed size ไม่ scale (เช่น HitEffect)\n" +
-                 "ใช้โดย WeaponBase.ComputeVfxScale() เพื่อ scale VFX ตาม stat จริง")]
-        public float      designedRadius = 0f;
-        [Tooltip("ระยะเวลา VFX (วินาที) — ใช้กับ VFX Graph ที่ไม่มี ParticleSystem\n" +
-                 "0 = auto detect จาก ParticleSystem duration")]
-        public float      fixedDuration  = 0f;
-    }
-
     public static NetworkedVFXPool Instance { get; private set; }
 
-    // ─── VFX Type Pool (VFXType enum) ───────────────────────────────────
-    [Header("VFX Type Mappings (VFXType enum — weapon scripts)")]
-    [Tooltip("กำหนด VFXType → prefab สำหรับ weapon scripts ทั้งหมด")]
-    public VFXTypeMapping[] vfxTypeMappings = new VFXTypeMapping[0];
+    // ─── VFX Database ───────────────────────────────────────────────────
+    [Header("VFX Database")]
+    [Tooltip("VFX Database ScriptableObject")]
+    public VFXDatabase vfxDatabase;
 
     // ─── Beam Pool ───────────────────────────────────────────────────────
     [Header("Beam Prefab (LineRenderer)")]
@@ -66,7 +49,7 @@ public class NetworkedVFXPool : MonoBehaviour
     public List<GameObject> projectilePrefabs = new();
 
     // ─── Runtime ─────────────────────────────────────────────────────────
-    private readonly Dictionary<VFXType, int>           _typeToPoolId = new();
+    private readonly Dictionary<string, int>            _keyToPoolId  = new();
     private readonly Dictionary<int, Queue<GameObject>> _pools        = new();
     private readonly Dictionary<GameObject, int>        _projToId     = new();
     private Queue<GameObject>                           _beamPool;
@@ -86,22 +69,29 @@ public class NetworkedVFXPool : MonoBehaviour
 
     void BuildPools()
     {
-        _typeToPoolId.Clear();
+        _keyToPoolId.Clear();
         _pools.Clear();
         _projToId.Clear();
 
-        // ── VFXType enum pools ────────────────────────────────────────
-        for (int i = 0; i < vfxTypeMappings.Length; i++)
+        // ── VFXDatabase entries pools ────────────────────────────────────────
+        if (vfxDatabase != null && vfxDatabase.entries != null)
         {
-            var m = vfxTypeMappings[i];
-            if (m?.prefab == null) continue;
+            for (int i = 0; i < vfxDatabase.entries.Count; i++)
+            {
+                var m = vfxDatabase.entries[i];
+                if (m == null || string.IsNullOrEmpty(m.key) || m.prefab == null) continue;
 
-            _typeToPoolId[m.type] = i;
+                _keyToPoolId[m.key] = i;
 
-            var q = new Queue<GameObject>(m.poolSize);
-            for (int j = 0; j < m.poolSize; j++)
-                q.Enqueue(CreateInstance(m.prefab));
-            _pools[i] = q;
+                var q = new Queue<GameObject>(m.poolSize);
+                for (int j = 0; j < m.poolSize; j++)
+                    q.Enqueue(CreateInstance(m.prefab));
+                _pools[i] = q;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[VFXPool] VFXDatabase is null or empty!");
         }
 
         // ── Beam pool ─────────────────────────────────────────────────
@@ -117,8 +107,9 @@ public class NetworkedVFXPool : MonoBehaviour
             if (projectilePrefabs[i] != null)
                 _projToId[projectilePrefabs[i]] = i;
 
+        int databaseCount = (vfxDatabase != null && vfxDatabase.entries != null) ? vfxDatabase.entries.Count : 0;
         Debug.Log($"[VFXPool] Built {_pools.Count} VFX pools " +
-                  $"({vfxTypeMappings.Length} type-mapped), " +
+                  $"({databaseCount} type-mapped), " +
                   $"beam pool={_beamPool.Count}, " +
                   $"{_projToId.Count} projectile entries");
     }
@@ -133,25 +124,27 @@ public class NetworkedVFXPool : MonoBehaviour
     // ─── VFX API ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// คืน designedRadius ของ VFXType
-    /// -1 = ไม่พบ type | 0 = fixed size (ไม่ควร scale)
+    /// คืน designedRadius ของ VFX key
+    /// -1 = ไม่พบ key | 0 = fixed size (ไม่ควร scale)
     /// </summary>
-    public float GetDesignedRadius(VFXType type)
+    public float GetDesignedRadius(string key)
     {
-        if (!_typeToPoolId.TryGetValue(type, out int id)) return -1f;
-        if (id < 0 || id >= vfxTypeMappings.Length) return -1f;
-        return vfxTypeMappings[id].designedRadius;
+        if (string.IsNullOrEmpty(key)) return -1f;
+        if (!_keyToPoolId.TryGetValue(key, out int id)) return -1f;
+        if (vfxDatabase == null || id < 0 || id >= vfxDatabase.entries.Count) return -1f;
+        return vfxDatabase.entries[id].designedRadius;
     }
 
     /// <summary>
-    /// เล่น VFX จาก VFXType enum — ใช้โดย VFXFactory.Play() และ weapon scripts โดยตรง
+    /// เล่น VFX จาก key string — ใช้โดย VFXFactory.Play() และ weapon scripts โดยตรง
     /// direction = ทิศที่ VFX หันหน้าไป (สำหรับ VFX Graph / mesh-based VFX)
     /// </summary>
-    public void PlayByType(VFXType type, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    public void PlayByName(string key, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
     {
-        if (!_typeToPoolId.TryGetValue(type, out int id))
+        if (string.IsNullOrEmpty(key) || key == "None") return;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
         {
-            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFXType.{type} — กำหนดใน vfxTypeMappings");
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}' — กำหนดใน VFXDatabase");
             return;
         }
         PlayFromPool(id, pos, scale, direction, arcAngle, roll);
@@ -160,18 +153,19 @@ public class NetworkedVFXPool : MonoBehaviour
     /// <summary>
     /// Overload: pass non-uniform Vector3 scale — ใช้สำหรับ Telegraph Line/Cross/Cone ที่ scale แต่ละแกนต่างกัน
     /// </summary>
-    public void PlayByType3D(VFXType type, Vector3 pos, Vector3 scale3D, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    public void PlayByName3D(string key, Vector3 pos, Vector3 scale3D, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
     {
-        if (!_typeToPoolId.TryGetValue(type, out int id))
+        if (string.IsNullOrEmpty(key) || key == "None") return;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
         {
-            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFXType.{type}");
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}'");
             return;
         }
         PlayFromPool3D(id, pos, scale3D, direction, arcAngle, roll);
     }
 
-    /// <summary>คืน true ถ้ามี prefab assign สำหรับ type นี้ใน pool</summary>
-    public bool HasMapping(VFXType type) => _typeToPoolId.ContainsKey(type);
+    /// <summary>คืน true ถ้ามี prefab assign สำหรับ key นี้ใน pool</summary>
+    public bool HasMapping(string key) => !string.IsNullOrEmpty(key) && _keyToPoolId.ContainsKey(key);
 
     /// <summary>
     /// Spawn beam (LineRenderer) จาก from → to แล้วคืน pool หลัง duration
@@ -243,7 +237,7 @@ public class NetworkedVFXPool : MonoBehaviour
         _beamPool.Enqueue(go);
     }
 
-    /// <summary>Internal: 3D scale variant — ใช้โดย PlayByType3D</summary>
+    /// <summary>Internal: 3D scale variant — ใช้โดย PlayByName3D</summary>
     void PlayFromPool3D(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll)
     {
         PlayFromPoolCore(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale: false, uniformScale: 1f);
@@ -259,7 +253,7 @@ public class NetworkedVFXPool : MonoBehaviour
     }
 
     // ── Recursion guard ──────────────────────────────────────────────────
-    // บางครั้ง prefab ที่ instantiate มา Awake() แล้วเรียก PlayFromPool/PlayByType
+    // บางครั้ง prefab ที่ instantiate มา Awake() แล้วเรียก PlayFromPool/PlayByName
     // กลับมา → infinite recursion → InsufficientExecutionStackException ตอน Internal_CloneSingle
     // → fail fast แทน hang เครื่อง
     [System.NonSerialized] int _playDepth;
@@ -273,7 +267,7 @@ public class NetworkedVFXPool : MonoBehaviour
         if (_playDepth >= MAX_PLAY_DEPTH)
         {
             Debug.LogError($"[VFXPool] ⚠️ Recursion guard tripped at depth {_playDepth} for poolId={poolId} — " +
-                           $"prefab '{GetPrefabForId(poolId)?.name}' อาจมี script ที่เรียก VFXFactory.Play / PlayByType ใน Awake/OnEnable");
+                           $"prefab '{GetPrefabForId(poolId)?.name}' อาจมี script ที่เรียก VFXFactory.Play / PlayByName ใน Awake/OnEnable");
             return;
         }
         _playDepth++;
@@ -346,17 +340,17 @@ public class NetworkedVFXPool : MonoBehaviour
 
     GameObject GetPrefabForId(int poolId)
     {
-        if (poolId >= 0 && poolId < vfxTypeMappings.Length)
-            return vfxTypeMappings[poolId]?.prefab;
+        if (vfxDatabase != null && poolId >= 0 && poolId < vfxDatabase.entries.Count)
+            return vfxDatabase.entries[poolId]?.prefab;
         return null;
     }
 
     float CalcTTL(GameObject go, int poolId = -1)
     {
         // fixedDuration จาก Inspector — ใช้เมื่อกำหนดไว้ (VFX Graph)
-        if (poolId >= 0 && poolId < vfxTypeMappings.Length)
+        if (vfxDatabase != null && poolId >= 0 && poolId < vfxDatabase.entries.Count)
         {
-            float fd = vfxTypeMappings[poolId].fixedDuration;
+            float fd = vfxDatabase.entries[poolId].fixedDuration;
             if (fd > 0f) return fd;
         }
 

@@ -241,8 +241,8 @@ public class Enemy : NetworkBehaviour
     void NotifyHitClientRpc(Vector3 pos, bool isCrit)
     {
         OnAnyEnemyHit?.Invoke();
-        VFXType hitType = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
-        NetworkedVFXPool.Instance?.PlayByType(hitType, pos);
+        string hitType = isCrit ? "CritHitEffect" : "HitEffect";
+        NetworkedVFXPool.Instance?.PlayByName(hitType, pos);
     }
 
     [ClientRpc]
@@ -250,7 +250,7 @@ public class Enemy : NetworkBehaviour
     {
         OnAnyEnemyDied?.Invoke();
         OnAnyEnemyDiedAt?.Invoke(deathPos);
-        NetworkedVFXPool.Instance?.PlayByType(VFXType.EnemyDeath, deathPos);
+        NetworkedVFXPool.Instance?.PlayByName("EnemyDeath", deathPos);
     }
 
     public float GetHealthPercent() => netHealth.Value / maxHealth;

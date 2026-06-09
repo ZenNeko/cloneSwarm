@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Projectile : NetworkBehaviour
 {
@@ -9,8 +10,10 @@ public class Projectile : NetworkBehaviour
     public bool    piercing = false;   // ถ้า true = ไม่ destroy เมื่อชน enemy
 
     [Header("VFX")]
-    [Tooltip("VFX ที่แสดงเมื่อ projectile ชน\nกำหนด prefab ใน NetworkedVFXPool.vfxTypeMappings")]
-    public VFXType hitVFX = VFXType.HitEffect;
+    [Tooltip("VFX ที่แสดงเมื่อ projectile ชน\nกำหนด prefab ใน VFXDatabase")]
+    [FormerlySerializedAs("hitVFX")]
+    [VFXKey]
+    public string hitVFX = "HitEffect";
 
     [HideInInspector]
     public bool isCrit;   // set by weapon → ถ้า true จะแสดง CritHitEffect แทน
@@ -76,5 +79,5 @@ public class Projectile : NetworkBehaviour
 
     [ClientRpc]
     void ShowHitVfxClientRpc(Vector3 pos, bool crit)
-        => VFXFactory.Play(crit ? VFXType.CritHitEffect : hitVFX, pos);
+        => VFXFactory.Play(crit ? "CritHitEffect" : hitVFX, pos);
 }

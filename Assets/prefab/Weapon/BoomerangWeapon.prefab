@@ -49,8 +49,10 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  hitVfxType: -1
+  weaponVfxType: -1
+  weaponVfxKey: None
   secondaryVfxType: -1
+  secondaryVfxKey: None
   fireSfx:
   - {fileID: 8300000, guid: e9c2ea7944b0b8149bac62705f646777, type: 3}
   hitSfx: []

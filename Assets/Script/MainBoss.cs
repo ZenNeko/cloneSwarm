@@ -180,7 +180,7 @@ public class MainBoss : NetworkBehaviour
         UnityEngine.Object.FindAnyObjectByType<GameHUD>()?.ShowAnnouncement(msg, col);
 
         // Shockwave VFX + camera shake บนทุก client
-        NetworkedVFXPool.Instance?.PlayByType(VFXType.PhaseShockwave, transform.position);
+        NetworkedVFXPool.Instance?.PlayByName("PhaseShockwave", transform.position);
         CameraShake.Instance?.Shake(0.5f, phaseShakeMagnitude);
     }
 

@@ -73,7 +73,7 @@ public class WhipPlasmaWeapon : WhipWeapon
 
         // VFX: WhipSlash arc ที่จุดกลาง
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        ShowVfx(ResolveHitVfx(VFXType.WhipSlash), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
+        ShowVfx(ResolveHitVfx("WhipSlash"), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
 
         // ── Chain Tentacle Bounce ────────────────────────────────────────
         // เริ่ม chain จาก enemy ที่อยู่ไกลสุดใน main hit (ปลาย tentacle)
@@ -103,7 +103,7 @@ public class WhipPlasmaWeapon : WhipWeapon
             ApplyKnockback(next, chainKnockbackForce);
 
             // Beam VFX ระหว่าง bounce (tentacle line)
-            manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.HitEffect);
+            manager.BroadcastBeamServerRpc(prevPos, nextPos, "HitEffect");
 
             prevPos  = nextPos;
             curDmg  *= chainDamageMult;

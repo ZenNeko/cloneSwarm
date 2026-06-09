@@ -247,7 +247,7 @@ MonoBehaviour:
   damage: 20
   maxRange: 20
   piercing: 0
-  hitVFX: 1
+  hitVFX: CritHitEffect
   isCrit: 0
 --- !u!114 &-317891749536331572
 MonoBehaviour:

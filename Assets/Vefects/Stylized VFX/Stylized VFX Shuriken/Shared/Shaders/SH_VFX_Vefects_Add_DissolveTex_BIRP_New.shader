@@ -1,8 +1,7 @@
-// Made with Amplify Shader Editor v1.9.9.7
-// Available at the Unity Asset Store - http://u3d.as/y3X 
+// Translated to URP by Antigravity Converter
 Shader "Vefects/SH_VFX_Vefects_Add_DissolveTex_BIRP_New"
 {
-	Properties
+    Properties
 	{
 		_Texture( "Texture", 2D ) = "white" {}
 		[Space(33)][Header(AR)][Space(13)] _Cull( "Cull", Float ) = 2
@@ -15,40 +14,134 @@ Shader "Vefects/SH_VFX_Vefects_Add_DissolveTex_BIRP_New"
 		[HideInInspector] __dirty( "", Int ) = 1
 	}
 
-	SubShader
-	{
-		Tags{ "RenderType" = "Transparent"  "Queue" = "Transparent+0" "IsEmissive" = "true"  }
-		Cull [_Cull]
-		ZWrite [_ZWrite]
-		ZTest [_ZTest]
-		Blend [_Src] [_Dst]
-		CGPROGRAM
-		#pragma target 3.5
-		#define ASE_VERSION 19907
-		#pragma surface surf Unlit keepalpha addshadow fullforwardshadows 
-		#undef TRANSFORM_TEX
-		#define TRANSFORM_TEX(tex,name) float4(tex.xy * name##_ST.xy + name##_ST.zw, tex.z, tex.w)
-		struct Input
+    SubShader
+    {
+        Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Transparent" "Queue"="Transparent" }
+        Cull [_Cull]
+        ZWrite [_ZWrite]
+        ZTest [_ZTest]
+        Blend [_Src] [_Dst]
+
+        Pass
+        {
+            Name "Forward"
+            Tags { "LightMode"="UniversalForward" }
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma target 3.5
+
+            
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+            
+            
+
+            // Compatibility macros for old Unity shaders
+            #define unity_ObjectToWorld GetObjectToWorldMatrix()
+            #define unity_WorldToObject GetWorldToObjectMatrix()
+            #define UNITY_PI 3.14159265358979323846
+            #define INTERNAL_DATA
+            #define _LightColor0 _MainLightColor
+            #define WorldNormalVector(data, normal) data.worldNormal
+
+            // Compatibility functions
+            inline float3 UnityWorldSpaceViewDir(float3 worldPos)
+            {
+                return _WorldSpaceCameraPos.xyz - worldPos;
+            }
+
+            inline float3 UnityWorldSpaceLightDir(float3 worldPos)
+            {
+                return _MainLightPosition.xyz;
+            }
+
+            inline float4 ASE_ComputeGrabScreenPos(float4 pos)
+            {
+                #if UNITY_UV_STARTS_AT_TOP
+                float scale = -1.0;
+                #else
+                float scale = 1.0;
+                #endif
+                float4 o = pos;
+                o.y = pos.w * 0.5f;
+                o.y = (pos.y - o.y) * _ProjectionParams.x * scale + o.y;
+                return o;
+            }
+
+            inline float3 HSVToRGB(float3 c)
+            {
+                float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+                return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
+            }
+
+            inline float3 RGBToHSV(float3 c)
+            {
+                float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+                float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
+                float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
+                float d = q.x - min(q.w, q.y);
+                float e = 1.0e-10;
+                return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+            }
+
+            // Compatibility structs for old Unity surface shaders
+            struct SurfaceOutput
+            {
+                half3 Albedo;
+                half3 Normal;
+                half3 Emission;
+                half Alpha;
+            };
+
+            struct SurfaceOutputStandard
+            {
+                half3 Albedo;
+                half3 Normal;
+                half3 Emission;
+                half Metallic;
+                half Smoothness;
+                half Occlusion;
+                half Alpha;
+            };
+
+            struct SurfaceOutputStandardSpecular
+            {
+                half3 Albedo;
+                half3 Specular;
+                half3 Normal;
+                half3 Emission;
+                half Smoothness;
+                half Occlusion;
+                half Alpha;
+            };
+
+            // Custom Input struct
+            struct Input
 		{
 			float4 vertexColor : COLOR;
 			float4 uv2_texcoord2;
 			float2 uv_texcoord;
 		};
 
-		uniform float _Dst;
-		uniform float _Src;
-		uniform float _ZTest;
-		uniform float _ZWrite;
-		uniform float _Cull;
-		uniform sampler2D _Texture;
-		uniform float4 _Texture_ST;
+            // Uniforms inside Constant Buffer (SRP Batcher compatibility)
+            CBUFFER_START(UnityPerMaterial)
+                float _Dst;
+                float _Src;
+                float _ZTest;
+                float _ZWrite;
+                float _Cull;
+                float4 _Texture_ST;
+            CBUFFER_END
 
-		inline half4 LightingUnlit( SurfaceOutput s, half3 lightDir, half atten )
-		{
-			return half4 ( 0, 0, 0, s.Alpha );
-		}
+            // Samplers (outside CBUFFER)
+            uniform sampler2D _Texture;
 
-		void surf( Input i , inout SurfaceOutput o )
+            // The original surf function
+            void surf( Input i , inout SurfaceOutput o )
 		{
 			float2 uv_Texture = i.uv_texcoord * _Texture_ST.xy + _Texture_ST.zw;
 			float4 tex2DNode118 = tex2D( _Texture, uv_Texture );
@@ -56,46 +149,68 @@ Shader "Vefects/SH_VFX_Vefects_Add_DissolveTex_BIRP_New"
 			o.Alpha = 1;
 		}
 
-		ENDCG
-	}
-	Fallback Off
-	CustomEditor "AmplifyShaderEditor.MaterialInspector"
+            // Vertex Shader inputs
+            struct Attributes
+            {
+                float4 positionOS   : POSITION;
+                float3 normalOS     : NORMAL;
+                float4 color        : COLOR;
+                float4 texcoord     : TEXCOORD0;
+                float4 texcoord1    : TEXCOORD1;
+                float4 texcoord2    : TEXCOORD2;
+                float4 texcoord3    : TEXCOORD3;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS   : SV_POSITION;
+                float4 color        : COLOR;
+                float4 texcoord     : TEXCOORD0;
+                float4 texcoord1    : TEXCOORD1;
+                float4 texcoord2    : TEXCOORD2;
+                float4 texcoord3    : TEXCOORD3;
+                float3 worldPos     : TEXCOORD4;
+                
+                
+            };
+
+            Varyings vert(Attributes input)
+            {
+                Varyings output;
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.color = input.color;
+                output.texcoord = input.texcoord;
+                output.texcoord1 = input.texcoord1;
+                output.texcoord2 = input.texcoord2;
+                output.texcoord3 = input.texcoord3;
+                output.worldPos = vertexInput.positionWS;
+                
+                
+                return output;
+            }
+
+            half4 frag(Varyings input) : SV_Target
+            {
+                Input surfInput;
+                surfInput.vertexColor = input.color;
+                surfInput.uv2_texcoord2 = input.texcoord1;
+                surfInput.uv_texcoord = input.texcoord;
+                
+                SurfaceOutput o;
+                o.Albedo = 0.0;
+                o.Normal = float3(0,0,1);
+                o.Emission = 0.0;
+                o.Alpha = 0.0;
+                
+                surf(surfInput, o);
+                
+                half3 finalEmission = o.Emission + o.Albedo;
+                return half4(finalEmission, o.Alpha);
+            }
+            ENDHLSL
+        }
+    }
+    Fallback "Diffuse"
+    CustomEditor "AmplifyShaderEditor.MaterialInspector"
 }
-/*ASEBEGIN
-Version=19907
-Node;AmplifyShaderEditor.TexCoordVertexDataNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;117;-1664,896;Inherit;False;1;4;0;5;FLOAT4;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
-Node;AmplifyShaderEditor.SamplerNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;118;-1408,640;Inherit;True;Property;_Texture;Texture;1;0;Create;True;0;0;0;False;0;False;-1;None;None;True;0;False;white;Auto;False;Object;-1;Auto;Texture2D;False;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
-Node;AmplifyShaderEditor.OneMinusNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;119;-1408,256;Inherit;False;1;0;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.SimpleAddOpNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;121;-1024,640;Inherit;False;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.TFHCRemapNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;120;-1152,256;Inherit;False;5;0;FLOAT;0;False;1;FLOAT;0;False;2;FLOAT;1;False;3;FLOAT;0;False;4;FLOAT;3;False;1;FLOAT;0
-Node;AmplifyShaderEditor.SimpleAddOpNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;122;-896,256;Inherit;False;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.VertexColorNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;123;-1024,0;Inherit;False;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
-Node;AmplifyShaderEditor.SaturateNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;124;-768,256;Inherit;False;1;0;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.CommentaryNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;104;974,-50;Inherit;False;1238;166;AR;5;99;100;101;102;103;;0,0,0,1;0;0
-Node;AmplifyShaderEditor.WireNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;127;-576,672;Inherit;False;1;0;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.ComponentMaskNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;125;-768,0;Inherit;False;True;True;True;False;1;0;COLOR;0,0,0,0;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.SimpleMultiplyOpNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;126;-640,128;Inherit;False;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.RangedFloatNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;101;1536,0;Inherit;False;Property;_Dst;Dst;4;0;Create;True;0;0;0;True;0;False;1;1;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.RangedFloatNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;100;1280,0;Inherit;False;Property;_Src;Src;3;0;Create;True;0;0;0;True;0;False;1;1;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.RangedFloatNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;103;2048,0;Inherit;False;Property;_ZTest;ZTest;6;0;Create;True;0;0;0;True;0;False;2;2;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.SimpleMultiplyOpNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;129;-384,0;Inherit;False;3;3;0;FLOAT3;0,0,0;False;1;FLOAT;0;False;2;FLOAT;0;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.RangedFloatNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;102;1792,0;Inherit;False;Property;_ZWrite;ZWrite;5;0;Create;True;0;0;0;True;0;False;0;0;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.RangedFloatNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;99;1024,0;Inherit;False;Property;_Cull;Cull;2;0;Create;True;0;0;0;True;3;Space(33);Header(AR);Space(13);False;2;2;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.StandardSurfaceOutputNode, AmplifyShaderEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null;130;0,0;Float;False;True;-1;3;AmplifyShaderEditor.MaterialInspector;0;0;Unlit;Vefects/SH_VFX_Vefects_Add_DissolveTex_BIRP_New;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;Back;0;True;_ZWrite;0;True;_ZTest;False;0;False;;0;False;;False;0;0;False;;0;Custom;0.5;True;True;0;False;Transparent;;Transparent;All;12;all;True;True;True;True;0;False;;False;0;False;;255;False;;255;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;2;15;10;25;False;0.5;True;1;5;True;_Src;10;True;_Dst;0;0;False;;0;False;;0;False;;0;False;;0;False;0;0,0,0,0;VertexOffset;True;False;Cylindrical;False;True;Relative;0;;0;-1;-1;-1;0;False;0;0;True;_Cull;-1;0;False;;0;0;0;False;0.1;False;;0;False;;False;16;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;3;FLOAT;0;False;4;FLOAT;0;False;6;FLOAT3;0,0,0;False;7;FLOAT3;0,0,0;False;8;FLOAT;0;False;9;FLOAT;0;False;10;FLOAT;0;False;13;FLOAT3;0,0,0;False;11;FLOAT3;0,0,0;False;12;FLOAT3;0,0,0;False;16;FLOAT4;0,0,0,0;False;14;FLOAT4;0,0,0,0;False;15;FLOAT3;0,0,0;False;0
-WireConnection;119;0;117;3
-WireConnection;121;0;118;1
-WireConnection;121;1;118;2
-WireConnection;120;0;119;0
-WireConnection;122;0;120;0
-WireConnection;122;1;121;0
-WireConnection;124;0;122;0
-WireConnection;127;0;117;4
-WireConnection;125;0;123;0
-WireConnection;126;0;123;4
-WireConnection;126;1;124;0
-WireConnection;129;0;125;0
-WireConnection;129;1;126;0
-WireConnection;129;2;127;0
-WireConnection;130;2;129;0
-ASEEND*/
-//CHKSM=125FAC38F5F891850CA9371D284FA990AA063317

@@ -38,7 +38,7 @@ public class ThunderRailWeapon : WeaponBase
         Vector3 endPoint = origin + dir * ld.range;
 
         // Railgun beam VFX
-        manager.BroadcastBeamServerRpc(origin, endPoint, (int)VFXType.None);
+        manager.BroadcastBeamServerRpc(origin, endPoint, "None");
 
         foreach (var hit in hits)
         {
@@ -70,7 +70,7 @@ public class ThunderRailWeapon : WeaponBase
         if (best == null) return;
 
         Vector3 targetPos = best.transform.position + Vector3.up * 0.8f;
-        manager.BroadcastBeamServerRpc(pos, targetPos, (int)VFXType.None);
+        manager.BroadcastBeamServerRpc(pos, targetPos, "None");
         best.EnemyTakeDamage(chainDmg);   // chain hits ไม่ crit
 
         FireChainFrom(targetPos, best.GetInstanceID(), chainDmg * 0.7f, remaining - 1, mask);

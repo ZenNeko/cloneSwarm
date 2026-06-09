@@ -28,7 +28,7 @@ public class RadiantAuraWeapon : WeaponBase
         }
 
         manager.FireMeleeServerRpc(center, radius, dmg);
-        if (weaponVfxType != VFXType.None)
+        if (!string.IsNullOrEmpty(weaponVfxType) && weaponVfxType != "None")
             ShowVfx(weaponVfxType, center, radius, isCrit, isAttackHit: false);
     }
 }

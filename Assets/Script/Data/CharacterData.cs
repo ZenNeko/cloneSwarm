@@ -17,6 +17,12 @@ public class CharacterData : ScriptableObject
     public float baseHealth    = 100f;
     public float baseMoveSpeed = 5f;
 
+    [Header("Visual Model")]
+    [Tooltip("Prefab โมเดลตัวละคร (mesh + animator + materials)\n" +
+             "Spawn เป็น child ของ PlayerVisual.modelHolder บนทุก client\n" +
+             "Animator ควรมี params: IsMoving (bool), IsDead (bool), Attack (trigger)")]
+    public GameObject characterModelPrefab;
+
     [Header("Starting Weapon")]
     public WeaponData startingWeapon;
 

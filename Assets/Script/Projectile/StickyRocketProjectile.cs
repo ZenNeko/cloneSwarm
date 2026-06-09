@@ -17,9 +17,9 @@ public class StickyRocketProjectile : NetworkBehaviour
     [HideInInspector] public float moveSpeed;
     [HideInInspector] public float explosionRadius;
 
-    [Header("VFX")]
     [Tooltip("VFX ที่แสดงเมื่อระเบิด — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
-    public VFXType explosionVfxType = VFXType.GrenadeExplosion;
+    [VFXKey]
+    public string explosionVfxType = "GrenadeExplosion";
 
     private Vector3 direction;
     private bool    hasExploded;
@@ -62,7 +62,7 @@ public class StickyRocketProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos, float radius)
     {
-        VFXFactory.Play(VFXType.HitEffect, pos);          // base hit
+        VFXFactory.Play("HitEffect", pos);          // base hit
         VFXFactory.Play(explosionVfxType, pos);            // explosion
     }
 

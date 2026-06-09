@@ -84,7 +84,7 @@ public class BoomerangProjectile : NetworkBehaviour
 
         hitIds.Add(id);
         enemy.EnemyTakeDamage(damage);
-        VFXFactory.Play(isCrit ? VFXType.CritHitEffect : VFXType.HitEffect, transform.position);
+        VFXFactory.Play(isCrit ? "CritHitEffect" : "HitEffect", transform.position);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

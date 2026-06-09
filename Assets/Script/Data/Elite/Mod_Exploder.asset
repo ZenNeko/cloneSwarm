@@ -27,4 +27,4 @@ MonoBehaviour:
   splitCount: 2
   exploderRadius: 4
   exploderDamage: 35
-  exploderVfxType: 3
+  exploderVfxType: GrenadeExplosion

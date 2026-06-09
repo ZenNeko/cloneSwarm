@@ -332,6 +332,6 @@ public class FunnelObject : NetworkBehaviour
     [ClientRpc]
     void ShowLaserVfxClientRpc(Vector3 from, Vector3 to)
     {
-        VFXFactory.PlayBeam(VFXType.None, from, to, duration: 0.08f);
+        VFXFactory.PlayBeam("None", from, to, duration: 0.08f);
     }
 }

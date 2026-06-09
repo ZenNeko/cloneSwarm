@@ -27,13 +27,16 @@ public abstract class WeaponBase : MonoBehaviour
              "Type prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings\n\n" +
              "หมายเหตุ: HitEffect / CritHitEffect ของ enemy (impact spark) — Enemy.cs จัดการเอง\n" +
              "ผ่าน NotifyHitClientRpc → ไม่ต้อง config ที่ weapon")]
-    [FormerlySerializedAs("hitVfxType")]
-    public VFXType weaponVfxType = VFXType.None;
+    [FormerlySerializedAs("weaponVfxKey")]
+    [VFXKey]
+    public string weaponVfxType = "None";
 
     [Tooltip("VFX รอง (optional) — สำหรับ weapon ที่มี VFX 2 ตัว\n" +
              "เช่น CycloneBlade (AoE 360 + per-hit slash) / DeathField (main + chain explosion)\n" +
              "None = ใช้ default ของ script")]
-    public VFXType secondaryVfxType = VFXType.None;
+    [FormerlySerializedAs("secondaryVfxKey")]
+    [VFXKey]
+    public string secondaryVfxType = "None";
 
     [Header("SFX (Per-Weapon Prefab)")]
     [Tooltip("เสียงตอน weapon ยิง / โจมตี — ใส่ได้หลายเสียง สุ่มเล่นทีละอัน\n" +
@@ -164,11 +167,11 @@ public abstract class WeaponBase : MonoBehaviour
     /// actualRange = radius/range จริงที่ weapon ใช้ (หลัง stat multiplier)
     /// คืน 1f ถ้า designedRadius = 0 (fixed size) หรือไม่พบ type
     /// </summary>
-    protected float ComputeVfxScale(VFXType type, float actualRange)
+    protected float ComputeVfxScale(string key, float actualRange)
     {
         var pool = NetworkedVFXPool.Instance;
         if (pool == null) return 1f;
-        float designed = pool.GetDesignedRadius(type);
+        float designed = pool.GetDesignedRadius(key);
         if (designed <= 0f) return 1f;
         return actualRange / designed;
     }
@@ -194,15 +197,15 @@ public abstract class WeaponBase : MonoBehaviour
     /// คืน weaponVfxType (Inspector field) ถ้าตั้งไว้ ไม่งั้น fallback
     /// ใช้ใน weapon script แทน hardcode เพื่อให้ designer override ผ่าน Inspector ของ weapon prefab ได้
     /// </summary>
-    protected VFXType ResolveHitVfx(VFXType fallback)
-        => weaponVfxType != VFXType.None ? weaponVfxType : fallback;
+    protected string ResolveHitVfx(string fallback)
+        => (!string.IsNullOrEmpty(weaponVfxType) && weaponVfxType != "None") ? weaponVfxType : fallback;
 
     /// <summary>
     /// คืน secondaryVfxType (Inspector field) ถ้าตั้งไว้ ไม่งั้น fallback
     /// ใช้กับ weapon ที่มี VFX 2 ตัว (เช่น CycloneBlade, DeathField)
     /// </summary>
-    protected VFXType ResolveSecondaryVfx(VFXType fallback)
-        => secondaryVfxType != VFXType.None ? secondaryVfxType : fallback;
+    protected string ResolveSecondaryVfx(string fallback)
+        => (!string.IsNullOrEmpty(secondaryVfxType) && secondaryVfxType != "None") ? secondaryVfxType : fallback;
 
     /// <summary>
     /// แสดง weaponVfxType — ใช้สำหรับ projectile weapon ที่ VFX อยู่ใน weapon prefab
@@ -210,25 +213,25 @@ public abstract class WeaponBase : MonoBehaviour
     /// </summary>
     protected void ShowHitVfx(Vector3 pos, float actualRange = 0f, bool isCrit = false)
     {
-        if (weaponVfxType == VFXType.None) return;
-        if (weaponVfxType == VFXType.HitEffect || weaponVfxType == VFXType.CritHitEffect) return;
+        if (string.IsNullOrEmpty(weaponVfxType) || weaponVfxType == "None") return;
+        if (weaponVfxType == "HitEffect" || weaponVfxType == "CritHitEffect") return;
         float scale = actualRange > 0f ? ComputeVfxScale(weaponVfxType, actualRange) : 1f;
-        manager.BroadcastVfxTypeServerRpc(pos, (int)weaponVfxType, scale);
+        manager.BroadcastVfxTypeServerRpc(pos, weaponVfxType, scale);
     }
 
     /// <summary>
-    /// แสดง VFX จาก VFXType บนทุก client
+    /// แสดง VFX จาก string key บนทุก client
     /// actualRange = 0 → scale=1f | actualRange > 0 → auto scale จาก designedRadius
     /// direction = ทิศที่ VFX หันหน้าไป — ใช้กับ Slash/Melee VFX Graph (default = ไม่หมุน)
     /// isAttackHit เก็บไว้เพื่อ backward-compat (ไม่ใช้แล้ว — Enemy.cs spawn HitEffect/CritHitEffect เอง)
     /// </summary>
-    protected void ShowVfx(VFXType type, Vector3 pos, float actualRange = 0f,
+    protected void ShowVfx(string key, Vector3 pos, float actualRange = 0f,
                            bool isCrit = false, bool isAttackHit = true,
                            Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
     {
-        if (type == VFXType.None) return;
-        float scale = actualRange > 0f ? ComputeVfxScale(type, actualRange) : 1f;
-        manager.BroadcastVfxTypeServerRpc(pos, (int)type, scale, direction, arcAngle, roll);
+        if (string.IsNullOrEmpty(key) || key == "None") return;
+        float scale = actualRange > 0f ? ComputeVfxScale(key, actualRange) : 1f;
+        manager.BroadcastVfxTypeServerRpc(pos, key, scale, direction, arcAngle, roll);
     }
 
     // ── Crit Roll ─────────────────────────────────────────────────────────
