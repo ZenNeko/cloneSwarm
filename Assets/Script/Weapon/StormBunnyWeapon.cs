@@ -126,7 +126,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
             next.EnemyTakeDamage(curDmg);
             hitSet.Add(next.GetInstanceID());
 
-            manager.BroadcastBeamServerRpc(prevPos, nextPos, "None");
+            manager.BroadcastBeamServerRpc(prevPos, nextPos, ResolveHitVfx("Default"), "None");
 
             prevPos  = nextPos;
             curDmg  *= chainDamageMult;
@@ -164,7 +164,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
                 next.EnemyTakeDamage(curDmg);
                 hitSet.Add(next.GetInstanceID());
 
-                manager.BroadcastBeamServerRpc(prevPos, nextPos, "None");
+                manager.BroadcastBeamServerRpc(prevPos, nextPos, ResolveHitVfx("Default"), "None");
 
                 prevPos  = nextPos;
                 curDmg  *= chainDamageMult;

@@ -17,15 +17,14 @@ MonoBehaviour:
   icon: {fileID: 0}
   tier: 1
   prefab: {fileID: 8378742293110232923, guid: 45cd5e43f55ffe94f9497155fa4a9d27, type: 3}
-  aimMode: 1
+  aimMode: 0
   arcAngle: 360
   projectilePrefab: {fileID: 0}
-  hitVfxType: 0
   levels:
   - damage: 90
     cooldown: 0.4
     projectileCount: 0
-    range: 8
+    range: 12
     projectileSpeed: 0
     piercing: 0
     levelUpText: 

@@ -22,7 +22,7 @@ public class RailgunWeapon : WeaponBase
         for (int i = 0; i < beamCount; i++)
         {
             Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * dir;
-            manager.FireRaycastServerRpc(origin, beamDir, dmg, maxDist: ld.range, isCrit: isCrit);
+            manager.FireRaycastServerRpc(origin, beamDir, dmg, maxDist: ld.range, vfxKey: ResolveHitVfx("Beam_Railgun"), isCrit: isCrit);
         }
     }
 }

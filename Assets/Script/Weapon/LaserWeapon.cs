@@ -26,12 +26,13 @@ public class LaserWeapon : WeaponBase
         float   dmg = RollDamage(ld.damage, out bool isCrit);
 
         // ยิงเส้นเดียวเสมอ — ไม่สนใจ projectileCount
-        manager.FireLineAoEServerRpc(pos, dir, dmg, ld.range, width, isCrit);
+        manager.FireLineAoEServerRpc(pos, dir, dmg, ld.range, width, isCrit, vfxKey: ResolveHitVfx("Beam_Laser"));
     }
 
 #if UNITY_EDITOR
-    void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
+        base.OnDrawGizmosSelected();
         if (data == null) return;
         float range = data.GetLevelData(currentLevel).range;
 

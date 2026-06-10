@@ -57,7 +57,7 @@ public class StormcallerWeapon : WeaponBase
 
             // HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
             current.EnemyTakeDamage(curDmg, isCrit);
-            manager.BroadcastBeamServerRpc(prevPos, targetPos, "None");
+            manager.BroadcastBeamServerRpc(prevPos, targetPos, ResolveHitVfx("Default"), "None");
 
             hitPositions.Add(current.transform.position);
             hitSet.Add(current.GetInstanceID());
@@ -83,10 +83,10 @@ public class StormcallerWeapon : WeaponBase
             foreach (var pos in positions)
             {
                 manager.FireMeleeServerRpc(pos + Vector3.up * 0.5f, zoneRadius, effectiveZoneDmg);
-                // VFX: ใช้ weaponVfxType (designer set ใน Inspector ของ weapon prefab) — ถ้า None ไม่ทำอะไร
-                // (Enemy.cs spawn HitEffect ที่ตัวมันเอง ไม่ต้องซ้ำที่ pos)
-                if (!string.IsNullOrEmpty(weaponVfxType) && weaponVfxType != "None")
-                    ShowVfx(weaponVfxType, pos + Vector3.up * 0.5f, isCrit: isCrit);
+                // VFX: ใช้ ResolveSecondaryVfx(fallback: "None") ซึ่งกำหนดใน Inspector (Secondary VFX Type)
+                string secondaryVfx = ResolveSecondaryVfx("None");
+                if (!string.IsNullOrEmpty(secondaryVfx) && secondaryVfx != "None")
+                    ShowVfx(secondaryVfx, pos + Vector3.up * 0.5f, isCrit: isCrit);
             }
         }
     }
@@ -118,9 +118,14 @@ public class StormcallerWeapon : WeaponBase
             if (d < minD) { minD = d; best = e; }
         }
         return best;
- 
- 
- 
- 
+    }
+
+    protected override void OnDrawGizmosSelected()
+    {
+        base.OnDrawGizmosSelected();
+
+        // วาดขอบเขตของ mini lightning zone AoE (สีเหลือง)
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, zoneRadius);
     }
 }

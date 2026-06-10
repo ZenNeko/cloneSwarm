@@ -1,10 +1,11 @@
-﻿//THIS IS A DEMO SCRIPT - WITH THE SOLE PORPUSE OF WORKING WITH THIS SUMMON CREATURES EFFECT
+//THIS IS A DEMO SCRIPT - WITH THE SOLE PORPUSE OF WORKING WITH THIS SUMMON CREATURES EFFECT
 //THIS IS NOT A GOOD SCRIPT - BUT YOU CAN TAKE IDEAS FROM HERE AND IMPROVE THEM
 
 
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Input = InputWrapper;
 
 public class TigerAttackShooter : MonoBehaviour
 {

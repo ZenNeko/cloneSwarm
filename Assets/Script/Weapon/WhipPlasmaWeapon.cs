@@ -103,7 +103,7 @@ public class WhipPlasmaWeapon : WhipWeapon
             ApplyKnockback(next, chainKnockbackForce);
 
             // Beam VFX ระหว่าง bounce (tentacle line)
-            manager.BroadcastBeamServerRpc(prevPos, nextPos, "HitEffect");
+            manager.BroadcastBeamServerRpc(prevPos, nextPos, ResolveSecondaryVfx("Default"), "HitEffect");
 
             prevPos  = nextPos;
             curDmg  *= chainDamageMult;

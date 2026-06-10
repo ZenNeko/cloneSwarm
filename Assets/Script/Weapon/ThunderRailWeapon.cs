@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,6 +17,16 @@ public class ThunderRailWeapon : WeaponBase
     public float chainDamage        = 60f;
     [Tooltip("รัศมีหา chain target")]
     public float chainSearchRadius  = 8f;
+
+    [Header("Lightning Zone (ทุก target ที่โดน)")]
+    [Tooltip("รัศมี mini AoE zone")]
+    public float zoneRadius = 2.5f;
+    [Tooltip("ดาเมจ zone ต่อ tick")]
+    public float zoneDamage = 25f;
+    [Tooltip("จำนวน tick ของ zone")]
+    public int   zoneTicks  = 3;
+    [Tooltip("หน่วงระหว่าง tick (วินาที)")]
+    public float zoneTickInterval = 0.3f;
 
     protected override void OnFire(WeaponLevelData ld)
     {
@@ -38,7 +49,9 @@ public class ThunderRailWeapon : WeaponBase
         Vector3 endPoint = origin + dir * ld.range;
 
         // Railgun beam VFX
-        manager.BroadcastBeamServerRpc(origin, endPoint, "None");
+        manager.BroadcastBeamServerRpc(origin, endPoint, ResolveHitVfx("Beam_Railgun"), "None");
+
+        var hitPositions = new List<Vector3>();
 
         foreach (var hit in hits)
         {
@@ -47,13 +60,19 @@ public class ThunderRailWeapon : WeaponBase
 
             // HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
             enemy.EnemyTakeDamage(dmg, isCrit);
+            hitPositions.Add(enemy.transform.position);
 
             // Chain lightning จาก enemy ที่โดน
-            FireChainFrom(hit.point + Vector3.up * 0.8f, enemy.GetInstanceID(), chainDamage, chainTargets, mask);
+            FireChainFrom(hit.point + Vector3.up * 0.8f, enemy.GetInstanceID(), chainDamage, chainTargets, mask, hitPositions);
+        }
+
+        if (hitPositions.Count > 0)
+        {
+            StartCoroutine(SpawnLightningZones(hitPositions, isCrit));
         }
     }
 
-    void FireChainFrom(Vector3 pos, int excludeId, float chainDmg, int remaining, int mask)
+    void FireChainFrom(Vector3 pos, int excludeId, float chainDmg, int remaining, int mask, List<Vector3> hitPositions)
     {
         if (remaining <= 0) return;
 
@@ -70,10 +89,30 @@ public class ThunderRailWeapon : WeaponBase
         if (best == null) return;
 
         Vector3 targetPos = best.transform.position + Vector3.up * 0.8f;
-        manager.BroadcastBeamServerRpc(pos, targetPos, "None");
+        manager.BroadcastBeamServerRpc(pos, targetPos, ResolveHitVfx("Beam_Railgun"), "None");
         best.EnemyTakeDamage(chainDmg);   // chain hits ไม่ crit
+        hitPositions.Add(best.transform.position);
 
-        FireChainFrom(targetPos, best.GetInstanceID(), chainDmg * 0.7f, remaining - 1, mask);
+        FireChainFrom(targetPos, best.GetInstanceID(), chainDmg * 0.7f, remaining - 1, mask, hitPositions);
+    }
+
+    IEnumerator SpawnLightningZones(List<Vector3> positions, bool isCrit)
+    {
+        float effectiveZoneDmg = zoneDamage;
+        if (manager.statManager != null)
+            effectiveZoneDmg *= manager.statManager.GetPowerMultiplier();
+
+        for (int tick = 0; tick < zoneTicks; tick++)
+        {
+            yield return new WaitForSeconds(zoneTickInterval);
+            foreach (var pos in positions)
+            {
+                manager.FireMeleeServerRpc(pos + Vector3.up * 0.5f, zoneRadius, effectiveZoneDmg);
+                string secondaryVfx = ResolveSecondaryVfx("None");
+                if (!string.IsNullOrEmpty(secondaryVfx) && secondaryVfx != "None")
+                    ShowVfx(secondaryVfx, pos + Vector3.up * 0.5f, isCrit: isCrit);
+            }
+        }
     }
 
     Vector3 GetAimDirection()
@@ -89,5 +128,12 @@ public class ThunderRailWeapon : WeaponBase
         }
         dir.y = 0f;
         return dir;
+    }
+
+    protected override void OnDrawGizmosSelected()
+    {
+        base.OnDrawGizmosSelected();
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, zoneRadius);
     }
 }

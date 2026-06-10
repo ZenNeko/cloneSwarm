@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 8933010672821335947}
   - component: {fileID: 1577715176017997684}
   m_Layer: 0
-  m_Name: BeamVFX
+  m_Name: VFX_Beam_laser
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

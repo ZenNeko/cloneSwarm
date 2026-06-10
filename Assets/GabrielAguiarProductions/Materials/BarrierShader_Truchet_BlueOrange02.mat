@@ -51,6 +51,7 @@ Material:
     - _CastShadows: 1
     - _Cull: 2
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _HexEdgeWidth: 0.9
     - _HexNoiseScale: 30
     - _IntersectionDepth: 0.25
@@ -60,6 +61,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
     - _Surface: 1
     - _TruchetNoiseScale: 30
     - _TruchetRepetition: 1

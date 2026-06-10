@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 4941737850633899768}
   - component: {fileID: 8713204962959621646}
   - component: {fileID: 7893533639906240797}
+  - component: {fileID: 6880900941574084203}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -367,7 +368,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   playerMove: {fileID: 0}
   statManager: {fileID: 0}
-  characterData: {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
+  characterData: {fileID: 0}
   startingWeapon: {fileID: 0}
   boomerangPrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
   grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
@@ -554,3 +555,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b0457e71e70a754dbbb8421f49479bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilityManager
+--- !u!114 &6880900941574084203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e71a73f81c55fcc4faf9560ec3718b69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerVisual
+  ShowTopMostFoldoutHeaderGroup: 1
+  modelHolder: {fileID: 0}
+  characters: []
+  moveParam: IsMoving
+  speedParam: 
+  deadParam: IsDead
+  attackParam: Attack
+  motionSpeedParam: 
+  motionSpeedValue: 1
+  movingThreshold: 0.05
+  maxSpeed: 5
+  speedSmoothTime: 0.1
+  faceMoveDirection: 1
+  rotateSpeed: 720

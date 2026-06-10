@@ -83,3 +83,28 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 3
     fixedDuration: 0
+  - key: Beam_Laser
+    prefab: {fileID: 7289551456621117356, guid: a8dc7b0921e71d7499f8c41236f9249f, type: 3}
+    poolSize: 10
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Beam_Railgun
+    prefab: {fileID: 7289551456621117356, guid: 7e2766f9de07837489ac0b4f59866b2e, type: 3}
+    poolSize: 40
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Beam_Lightning
+    prefab: {fileID: 7289551456621117356, guid: 3b0791d568f303447bea1af1f50bf1dd, type: 3}
+    poolSize: 40
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Stormcaller_AOE
+    prefab: {fileID: 4748681987041982144, guid: be86a8ab229119d44bcf02c7ea449804, type: 3}
+    poolSize: 40
+    designedRadius: 0.9
+    fixedDuration: 0
+  - key: VFX_Lance
+    prefab: {fileID: 7606818437225425609, guid: b83adfd580e0da94c89241146c13bdc2, type: 3}
+    poolSize: 5
+    designedRadius: 0
+    fixedDuration: 0

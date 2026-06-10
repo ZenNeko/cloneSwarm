@@ -97,6 +97,6 @@ public class LightningChainWeapon : WeaponBase
     void BroadcastLightningBeam(Vector3 from, Vector3 to)
     {
         // ใช้ HitEffect เป็น burst ที่ปลาย → มี spark ที่ chain target แม้ beamPrefab ไม่ assign
-        manager.BroadcastBeamServerRpc(from, to, "HitEffect");
+        manager.BroadcastBeamServerRpc(from, to, ResolveHitVfx("Default"), "HitEffect");
     }
 }

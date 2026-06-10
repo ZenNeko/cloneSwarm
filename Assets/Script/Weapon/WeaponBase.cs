@@ -309,7 +309,7 @@ public abstract class WeaponBase : MonoBehaviour
         => PlayerWeaponManager.OverlapEnemy(transform.position, range);
 
     // ── Gizmos ────────────────────────────────────────────────────────────
-    void OnDrawGizmosSelected()
+    protected virtual void OnDrawGizmosSelected()
     {
         if (data == null) return;
         Gizmos.color = Color.cyan;

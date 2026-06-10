@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Input = InputWrapper;
 using UnityEngine.VFX;
 
 public class PowerUpTest : MonoBehaviour

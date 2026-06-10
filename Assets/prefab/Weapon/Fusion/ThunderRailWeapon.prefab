@@ -49,10 +49,8 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: -1
-  weaponVfxKey: None
-  secondaryVfxType: -1
-  secondaryVfxKey: None
+  weaponVfxType: Beam_Railgun
+  secondaryVfxType: Stormcaller_AOE
   fireSfx: []
   hitSfx: []
   fireVolume: 0.7

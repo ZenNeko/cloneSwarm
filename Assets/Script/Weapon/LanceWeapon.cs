@@ -60,7 +60,7 @@ public class LanceWeapon : WeaponBase
         manager.FireLineAoEServerRpc(origin, dir, dmg, range, pierceWidth, isCrit, kb);
 
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        ShowVfx(ResolveHitVfx("LanceThrust"), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
+        ShowVfx(ResolveHitVfx("LanceThrust"), vfxPos, isCrit: isCrit, isAttackHit: false, direction: dir);
     }
 
     System.Collections.IEnumerator MultiThrust(Vector3 origin, Vector3 dir, float dmg, float range, bool isCrit)
@@ -75,8 +75,9 @@ public class LanceWeapon : WeaponBase
     }
 
 #if UNITY_EDITOR
-    void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
+        base.OnDrawGizmosSelected();
         if (data == null) return;
         float   range  = data.GetLevelData(currentLevel).range;
         Vector3 dir    = transform.forward;

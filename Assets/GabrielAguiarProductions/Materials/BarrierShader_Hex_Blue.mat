@@ -52,6 +52,7 @@ Material:
     - _Cull: 2
     - _DotsNoiseScale: 30
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _HexEdgeWidth: 0.4
     - _HexNoiseScale: 30
     - _HexScale: 1
@@ -62,6 +63,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
     - _Surface: 1
     - _ZTest: 4
     - _ZWrite: 0

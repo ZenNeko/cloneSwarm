@@ -1,4 +1,4 @@
-﻿//
+//
 //NOTES:
 //This script is used for DEMONSTRATION porpuses of the Projectiles. I recommend everyone to create their own code for their own projects.
 //This is just a basic example.
@@ -8,6 +8,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Input = InputWrapper;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class SpawnProjectilesScript : MonoBehaviour {
 
@@ -208,4 +212,134 @@ public class SpawnProjectilesScript : MonoBehaviour {
 			}
 		}
 	}
+}
+
+public static class InputWrapper
+{
+    public static Vector3 mousePosition
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null)
+                return Mouse.current.position.ReadValue();
+            return Vector3.zero;
+#else
+            return UnityEngine.Input.mousePosition;
+#endif
+        }
+    }
+
+    public static bool GetMouseButton(int button)
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Mouse.current != null)
+        {
+            if (button == 0) return Mouse.current.leftButton.isPressed;
+            if (button == 1) return Mouse.current.rightButton.isPressed;
+            if (button == 2) return Mouse.current.middleButton.isPressed;
+        }
+        return false;
+#else
+        return UnityEngine.Input.GetMouseButton(button);
+#endif
+    }
+
+    public static bool GetKey(KeyCode key)
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null)
+        {
+            if (key == KeyCode.Space) return Keyboard.current.spaceKey.isPressed;
+        }
+        return false;
+#else
+        return UnityEngine.Input.GetKey(key);
+#endif
+    }
+
+    public static bool GetKeyDown(KeyCode key)
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null)
+        {
+            switch (key)
+            {
+                case KeyCode.D: return Keyboard.current.dKey.wasPressedThisFrame;
+                case KeyCode.A: return Keyboard.current.aKey.wasPressedThisFrame;
+                case KeyCode.C: return Keyboard.current.cKey.wasPressedThisFrame;
+                case KeyCode.Alpha1: return Keyboard.current.digit1Key.wasPressedThisFrame;
+                case KeyCode.X: return Keyboard.current.xKey.wasPressedThisFrame;
+                case KeyCode.Z: return Keyboard.current.zKey.wasPressedThisFrame;
+                case KeyCode.Space: return Keyboard.current.spaceKey.wasPressedThisFrame;
+                case KeyCode.RightArrow: return Keyboard.current.rightArrowKey.wasPressedThisFrame;
+                case KeyCode.LeftArrow: return Keyboard.current.leftArrowKey.wasPressedThisFrame;
+            }
+        }
+        return false;
+#else
+        return UnityEngine.Input.GetKeyDown(key);
+#endif
+    }
+
+    public static float GetAxis(string axisName)
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null && Mouse.current != null)
+        {
+            if (axisName == "Horizontal")
+            {
+                float val = 0;
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) val += 1f;
+                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) val -= 1f;
+                return val;
+            }
+            if (axisName == "Vertical")
+            {
+                float val = 0;
+                if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) val += 1f;
+                if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) val -= 1f;
+                return val;
+            }
+            if (axisName == "Mouse X")
+            {
+                return Mouse.current.delta.x.ReadValue() * 0.05f;
+            }
+            if (axisName == "Mouse Y")
+            {
+                return Mouse.current.delta.y.ReadValue() * 0.05f;
+            }
+        }
+        return 0f;
+#else
+        return UnityEngine.Input.GetAxis(axisName);
+#endif
+    }
+
+    public static bool GetButton(string buttonName)
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (buttonName == "Fire1") return GetMouseButton(0);
+        if (buttonName == "Jump")
+        {
+            if (Keyboard.current != null) return Keyboard.current.spaceKey.isPressed;
+        }
+        return false;
+#else
+        return UnityEngine.Input.GetButton(buttonName);
+#endif
+    }
+
+    public static bool GetButtonDown(string buttonName)
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (buttonName == "Fire1")
+        {
+            if (Mouse.current != null) return Mouse.current.leftButton.wasPressedThisFrame;
+        }
+        return false;
+#else
+        return UnityEngine.Input.GetButtonDown(buttonName);
+#endif
+    }
 }
