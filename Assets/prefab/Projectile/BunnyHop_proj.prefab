@@ -419,7 +419,7 @@ MonoBehaviour:
   damage: 20
   maxRange: 20
   piercing: 1
-  hitVFX: -1
+  hitVFX: None
 --- !u!114 &236222806596963256
 MonoBehaviour:
   m_ObjectHideFlags: 0

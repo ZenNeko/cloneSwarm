@@ -61,5 +61,6 @@ public class EliteModifierDef : ScriptableObject
     [Tooltip("ดาเมจ AoE ต่อ player")]
     public float exploderDamage = 30f;
     [Tooltip("VFX ตอนระเบิด — default GrenadeExplosion")]
-    public VFXType exploderVfxType = VFXType.GrenadeExplosion;
+    [VFXKey]
+    public string exploderVfxType = "GrenadeExplosion";
 }

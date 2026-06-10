@@ -1,0 +1,753 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1947995988382003626
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 752076125850188207}
+  - component: {fileID: 3165128488841795361}
+  - component: {fileID: 4049459767465300956}
+  m_Layer: 0
+  m_Name: vfxgraph_Earthbender_v15
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &752076125850188207
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947995988382003626}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3728943950929995456}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!73398921 &3165128488841795361
+VFXRenderer:
+  serializedVersion: 1
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947995988382003626}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!2083052967 &4049459767465300956
+VisualEffect:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947995988382003626}
+  m_Enabled: 1
+  m_Asset: {fileID: 8926484042661614526, guid: d0626613bd424bd498eb2ae261e63ce8, type: 3}
+  m_InitialEventName: OnPlay
+  m_InitialEventNameOverriden: 0
+  m_StartSeed: 0
+  m_ResetSeedOnPlay: 1
+  m_ResourceVersion: 1
+  m_PropertySheet:
+    m_Float:
+      m_Array:
+      - m_Value: 3
+        m_Name: CentralRockLifetime
+        m_Overridden: 1
+      - m_Value: 20
+        m_Name: SmallerRocksRate
+        m_Overridden: 1
+      - m_Value: 10
+        m_Name: SmokeRate
+        m_Overridden: 1
+      - m_Value: 0.7
+        m_Name: SmokeLifetime
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: SmokeSize
+        m_Overridden: 1
+      - m_Value: 4.4
+        m_Name: GroundMarksLifetime
+        m_Overridden: 1
+      - m_Value: 3.5
+        m_Name: SmallerRocksLifetime
+        m_Overridden: 1
+      - m_Value: 2
+        m_Name: SmallerRocksSize
+        m_Overridden: 1
+      - m_Value: 1.8
+        m_Name: FlyingRocksLifetime
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: ConeSmokeRate
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: GroundMarksRate
+        m_Overridden: 1
+      - m_Value: 7
+        m_Name: FlyingRocksRate
+        m_Overridden: 1
+    m_Vector2f:
+      m_Array:
+      - m_Value: {x: 2, y: 14}
+        m_Name: FlyingRocksSpeed
+        m_Overridden: 1
+    m_Vector3f:
+      m_Array:
+      - m_Value: {x: 0, y: 40, z: 0}
+        m_Name: CentralRockSpeed
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 3.33, z: 4}
+        m_Name: CentralRockScale
+        m_Overridden: 1
+      - m_Value: {x: 0, y: 1.59, z: 0}
+        m_Name: CentralRockPivot
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 1, z: 1}
+        m_Name: FlyingRocksSphereScale
+        m_Overridden: 1
+      - m_Value: {x: 0.3, y: 4, z: 0.3}
+        m_Name: ConeSmokeVelocity
+        m_Overridden: 1
+      - m_Value: {x: 2, y: 1, z: 1.2}
+        m_Name: ConeSmokeScale
+        m_Overridden: 1
+      - m_Value: {x: 4, y: 1.5, z: 1}
+        m_Name: SmallerRocksCircleScale
+        m_Overridden: 1
+      - m_Value: {x: 2.25, y: 1, z: 1}
+        m_Name: SmokeCircleScale
+        m_Overridden: 1
+      - m_Value: {x: 0, y: 85.56, z: 0}
+        m_Name: CentralRockAngle
+        m_Overridden: 1
+      - m_Value: {x: 2.25, y: 1, z: 1}
+        m_Name: GroundFlareScale
+        m_Overridden: 1
+    m_Vector4f:
+      m_Array: []
+    m_Uint:
+      m_Array: []
+    m_Int:
+      m_Array: []
+    m_Matrix4x4f:
+      m_Array: []
+    m_AnimationCurve:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1
+            inSlope: -8.319489
+            outSlope: -8.319489
+            tangentMode: 34
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.33333334
+          - serializedVersion: 3
+            time: 0.1201997
+            value: 0
+            inSlope: -4.1597443
+            outSlope: -0.014255971
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0.33333334
+            outWeight: 1
+          - serializedVersion: 3
+            time: 0.6033057
+            value: 0
+            inSlope: -0.014743777
+            outSlope: -0.014743777
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.99400705
+            outWeight: 1
+          - serializedVersion: 3
+            time: 0.6875635
+            value: 0.095285036
+            inSlope: -0.02830898
+            outSlope: -3.5530074
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0.33333334
+            outWeight: 0.986664
+          - serializedVersion: 3
+            time: 1
+            value: -1
+            inSlope: -3.6598604
+            outSlope: -3.6598604
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.9735311
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: CentralRockMotion
+        m_Overridden: 1
+    m_Gradient:
+      m_Array: []
+    m_NamedObject:
+      m_Array:
+      - m_Value: {fileID: 4300000, guid: 3da87bdf02677e84cb6b23c25571bb7c, type: 3}
+        m_Name: CentralRockMesh
+        m_Overridden: 1
+    m_Bool:
+      m_Array: []
+--- !u!1 &3279977644404320358
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9096725889668978152}
+  - component: {fileID: 237565129844767277}
+  - component: {fileID: 1862826481116298966}
+  m_Layer: 0
+  m_Name: vfxgraph_Earthbender_v15
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9096725889668978152
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3279977644404320358}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -5.41, y: 0, z: 0.38}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3728943950929995456}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!73398921 &237565129844767277
+VFXRenderer:
+  serializedVersion: 1
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3279977644404320358}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!2083052967 &1862826481116298966
+VisualEffect:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3279977644404320358}
+  m_Enabled: 1
+  m_Asset: {fileID: 8926484042661614526, guid: d0626613bd424bd498eb2ae261e63ce8, type: 3}
+  m_InitialEventName: OnPlay
+  m_InitialEventNameOverriden: 0
+  m_StartSeed: 0
+  m_ResetSeedOnPlay: 1
+  m_ResourceVersion: 1
+  m_PropertySheet:
+    m_Float:
+      m_Array:
+      - m_Value: 3
+        m_Name: CentralRockLifetime
+        m_Overridden: 1
+      - m_Value: 20
+        m_Name: SmallerRocksRate
+        m_Overridden: 1
+      - m_Value: 10
+        m_Name: SmokeRate
+        m_Overridden: 1
+      - m_Value: 0.7
+        m_Name: SmokeLifetime
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: SmokeSize
+        m_Overridden: 1
+      - m_Value: 4.4
+        m_Name: GroundMarksLifetime
+        m_Overridden: 1
+      - m_Value: 3.5
+        m_Name: SmallerRocksLifetime
+        m_Overridden: 1
+      - m_Value: 2
+        m_Name: SmallerRocksSize
+        m_Overridden: 1
+      - m_Value: 1.8
+        m_Name: FlyingRocksLifetime
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: ConeSmokeRate
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: GroundMarksRate
+        m_Overridden: 1
+      - m_Value: 7
+        m_Name: FlyingRocksRate
+        m_Overridden: 1
+      - m_Value: 0.1
+        m_Name: CentralRockDelay
+        m_Overridden: 1
+      - m_Value: 0.2
+        m_Name: SmallerRocksDelay
+        m_Overridden: 1
+    m_Vector2f:
+      m_Array:
+      - m_Value: {x: 2, y: 14}
+        m_Name: FlyingRocksSpeed
+        m_Overridden: 1
+    m_Vector3f:
+      m_Array:
+      - m_Value: {x: 0, y: 40, z: 0}
+        m_Name: CentralRockSpeed
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 3.33, z: 4}
+        m_Name: CentralRockScale
+        m_Overridden: 1
+      - m_Value: {x: 0, y: -1.71, z: 0}
+        m_Name: CentralRockPivot
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 1, z: 1}
+        m_Name: FlyingRocksSphereScale
+        m_Overridden: 1
+      - m_Value: {x: 0.3, y: 4, z: 0.3}
+        m_Name: ConeSmokeVelocity
+        m_Overridden: 1
+      - m_Value: {x: 2, y: 1, z: 1.2}
+        m_Name: ConeSmokeScale
+        m_Overridden: 1
+      - m_Value: {x: 4, y: 1.5, z: 1}
+        m_Name: SmallerRocksCircleScale
+        m_Overridden: 1
+      - m_Value: {x: 2.25, y: 1, z: 1}
+        m_Name: SmokeCircleScale
+        m_Overridden: 1
+      - m_Value: {x: 0, y: 90, z: 185}
+        m_Name: CentralRockAngle
+        m_Overridden: 1
+      - m_Value: {x: 2.25, y: 1, z: 1}
+        m_Name: GroundFlareScale
+        m_Overridden: 1
+    m_Vector4f:
+      m_Array: []
+    m_Uint:
+      m_Array: []
+    m_Int:
+      m_Array: []
+    m_Matrix4x4f:
+      m_Array: []
+    m_AnimationCurve:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1
+            inSlope: -8.319489
+            outSlope: -8.319489
+            tangentMode: 34
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.33333334
+          - serializedVersion: 3
+            time: 0.1201997
+            value: 0
+            inSlope: -4.1597443
+            outSlope: -0.014255971
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0.33333334
+            outWeight: 1
+          - serializedVersion: 3
+            time: 0.6033057
+            value: 0
+            inSlope: -0.014743777
+            outSlope: -0.014743777
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.99400705
+            outWeight: 1
+          - serializedVersion: 3
+            time: 0.6875635
+            value: 0.095285036
+            inSlope: -0.02830898
+            outSlope: -3.5530074
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0.33333334
+            outWeight: 0.986664
+          - serializedVersion: 3
+            time: 1
+            value: -1
+            inSlope: -3.6598604
+            outSlope: -3.6598604
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.9735311
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: CentralRockMotion
+        m_Overridden: 1
+    m_Gradient:
+      m_Array: []
+    m_NamedObject:
+      m_Array:
+      - m_Value: {fileID: 4300000, guid: 3da87bdf02677e84cb6b23c25571bb7c, type: 3}
+        m_Name: CentralRockMesh
+        m_Overridden: 1
+    m_Bool:
+      m_Array: []
+--- !u!1 &8020523582386237686
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3728943950929995456}
+  m_Layer: 0
+  m_Name: vfxgraph_Earthbender_v15
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3728943950929995456
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8020523582386237686}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 752076125850188207}
+  - {fileID: 9096725889668978152}
+  - {fileID: 1226584532878553980}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8246064750000993147
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1226584532878553980}
+  - component: {fileID: 4906007798268473803}
+  - component: {fileID: 5588614674093246641}
+  m_Layer: 0
+  m_Name: vfxgraph_Earthbender_v15
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1226584532878553980
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8246064750000993147}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -10.87, y: 0, z: 0.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3728943950929995456}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!73398921 &4906007798268473803
+VFXRenderer:
+  serializedVersion: 1
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8246064750000993147}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!2083052967 &5588614674093246641
+VisualEffect:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8246064750000993147}
+  m_Enabled: 1
+  m_Asset: {fileID: 8926484042661614526, guid: d0626613bd424bd498eb2ae261e63ce8, type: 3}
+  m_InitialEventName: OnPlay
+  m_InitialEventNameOverriden: 0
+  m_StartSeed: 0
+  m_ResetSeedOnPlay: 1
+  m_ResourceVersion: 1
+  m_PropertySheet:
+    m_Float:
+      m_Array:
+      - m_Value: 3
+        m_Name: CentralRockLifetime
+        m_Overridden: 1
+      - m_Value: 20
+        m_Name: SmallerRocksRate
+        m_Overridden: 1
+      - m_Value: 10
+        m_Name: SmokeRate
+        m_Overridden: 1
+      - m_Value: 0.7
+        m_Name: SmokeLifetime
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: SmokeSize
+        m_Overridden: 1
+      - m_Value: 4.4
+        m_Name: GroundMarksLifetime
+        m_Overridden: 1
+      - m_Value: 3.5
+        m_Name: SmallerRocksLifetime
+        m_Overridden: 1
+      - m_Value: 2
+        m_Name: SmallerRocksSize
+        m_Overridden: 1
+      - m_Value: 1.8
+        m_Name: FlyingRocksLifetime
+        m_Overridden: 1
+      - m_Value: 0
+        m_Name: ConeSmokeRate
+        m_Overridden: 1
+      - m_Value: 1
+        m_Name: GroundMarksRate
+        m_Overridden: 1
+      - m_Value: 7
+        m_Name: FlyingRocksRate
+        m_Overridden: 1
+      - m_Value: 0.2
+        m_Name: CentralRockDelay
+        m_Overridden: 1
+      - m_Value: 0.3
+        m_Name: SmallerRocksDelay
+        m_Overridden: 1
+    m_Vector2f:
+      m_Array:
+      - m_Value: {x: 2, y: 14}
+        m_Name: FlyingRocksSpeed
+        m_Overridden: 1
+    m_Vector3f:
+      m_Array:
+      - m_Value: {x: 0, y: 40, z: 0}
+        m_Name: CentralRockSpeed
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 3.33, z: 4}
+        m_Name: CentralRockScale
+        m_Overridden: 1
+      - m_Value: {x: 0, y: 1.57, z: 0}
+        m_Name: CentralRockPivot
+        m_Overridden: 1
+      - m_Value: {x: 1, y: 1, z: 1}
+        m_Name: FlyingRocksSphereScale
+        m_Overridden: 1
+      - m_Value: {x: 0.3, y: 4, z: 0.3}
+        m_Name: ConeSmokeVelocity
+        m_Overridden: 1
+      - m_Value: {x: 2, y: 1, z: 1.2}
+        m_Name: ConeSmokeScale
+        m_Overridden: 1
+      - m_Value: {x: 4, y: 1.5, z: 1}
+        m_Name: SmallerRocksCircleScale
+        m_Overridden: 1
+      - m_Value: {x: 2.25, y: 1, z: 1}
+        m_Name: SmokeCircleScale
+        m_Overridden: 1
+      - m_Value: {x: 0, y: 95, z: 5}
+        m_Name: CentralRockAngle
+        m_Overridden: 1
+      - m_Value: {x: 2.25, y: 1, z: 1}
+        m_Name: GroundFlareScale
+        m_Overridden: 1
+    m_Vector4f:
+      m_Array: []
+    m_Uint:
+      m_Array: []
+    m_Int:
+      m_Array: []
+    m_Matrix4x4f:
+      m_Array: []
+    m_AnimationCurve:
+      m_Array:
+      - m_Value:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1
+            inSlope: -8.319489
+            outSlope: -8.319489
+            tangentMode: 34
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.33333334
+          - serializedVersion: 3
+            time: 0.1201997
+            value: 0
+            inSlope: -4.1597443
+            outSlope: -0.014255971
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0.33333334
+            outWeight: 1
+          - serializedVersion: 3
+            time: 0.6033057
+            value: 0
+            inSlope: -0.014743777
+            outSlope: -0.014743777
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.99400705
+            outWeight: 1
+          - serializedVersion: 3
+            time: 0.6875635
+            value: 0.095285036
+            inSlope: -0.02830898
+            outSlope: -3.5530074
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0.33333334
+            outWeight: 0.986664
+          - serializedVersion: 3
+            time: 1
+            value: -1
+            inSlope: -3.6598604
+            outSlope: -3.6598604
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.9735311
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        m_Name: CentralRockMotion
+        m_Overridden: 1
+    m_Gradient:
+      m_Array: []
+    m_NamedObject:
+      m_Array:
+      - m_Value: {fileID: 4300000, guid: 3da87bdf02677e84cb6b23c25571bb7c, type: 3}
+        m_Name: CentralRockMesh
+        m_Overridden: 1
+    m_Bool:
+      m_Array: []

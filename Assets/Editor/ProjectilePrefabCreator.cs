@@ -27,7 +27,7 @@ public static class ProjectilePrefabCreator
         public Color    color;
         public Vector3  scale;
         public PrimitiveType shape;    // Sphere หรือ Capsule
-        public VFXType  vfx;
+        public string   vfx;
         public float    trailTime;
         public float    trailWidth;
         public bool     isHoming;      // default false = direction mode
@@ -45,7 +45,7 @@ public static class ProjectilePrefabCreator
                 color      = new Color(1.00f, 0.85f, 0.10f),   // เหลือง
                 scale      = new Vector3(0.20f, 0.20f, 0.20f),
                 shape      = PrimitiveType.Sphere,
-                vfx        = VFXType.HitEffect,
+                vfx        = "HitEffect",
                 trailTime  = 0.08f,
                 trailWidth = 0.06f,
             },
@@ -54,7 +54,7 @@ public static class ProjectilePrefabCreator
                 color      = new Color(1.00f, 0.55f, 0.05f),   // ส้ม
                 scale      = new Vector3(0.15f, 0.15f, 0.15f),
                 shape      = PrimitiveType.Sphere,
-                vfx        = VFXType.HitEffect,
+                vfx        = "HitEffect",
                 trailTime  = 0.05f,
                 trailWidth = 0.05f,
             },
@@ -63,7 +63,7 @@ public static class ProjectilePrefabCreator
                 color      = new Color(0.10f, 0.95f, 1.00f),   // ฟ้า cyan
                 scale      = new Vector3(0.07f, 0.07f, 0.40f),
                 shape      = PrimitiveType.Capsule,
-                vfx        = VFXType.HitEffect,
+                vfx        = "HitEffect",
                 trailTime  = 0.10f,
                 trailWidth = 0.04f,
             },
@@ -72,7 +72,7 @@ public static class ProjectilePrefabCreator
                 color      = new Color(0.10f, 0.90f, 0.80f),   // teal
                 scale      = new Vector3(0.28f, 0.28f, 0.28f),
                 shape      = PrimitiveType.Sphere,
-                vfx        = VFXType.OrbiterHit,
+                vfx        = "OrbiterHit",
                 trailTime  = 0.12f,
                 trailWidth = 0.08f,
             },
@@ -81,7 +81,7 @@ public static class ProjectilePrefabCreator
                 color      = new Color(0.90f, 0.20f, 0.10f),   // แดง (pellet)
                 scale      = new Vector3(0.12f, 0.12f, 0.12f),
                 shape      = PrimitiveType.Sphere,
-                vfx        = VFXType.HitEffect,
+                vfx        = "HitEffect",
                 trailTime  = 0.05f,
                 trailWidth = 0.04f,
             },

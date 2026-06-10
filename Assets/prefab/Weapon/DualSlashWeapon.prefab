@@ -49,7 +49,7 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  hitVfxType: 11
+  weaponVfxType: SlashAoE360
   secondaryVfxType: -1
   fireSfx:
   - {fileID: 8300000, guid: 48b7a3c2182504f4cb57859d9113a115, type: 3}

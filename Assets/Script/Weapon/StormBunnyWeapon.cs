@@ -72,7 +72,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
         for (int i = 0; i < aoeHitCount; i++)
             manager.FireMeleeServerRpc(center, radius, damage);
         // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
-        ShowVfx(ResolveHitVfx(VFXType.MeteorAoE), center, radius, isAttackHit: false);
+        ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────────────
         float shieldAmount = damage * shieldPercent
@@ -126,7 +126,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
             next.EnemyTakeDamage(curDmg);
             hitSet.Add(next.GetInstanceID());
 
-            manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.None);
+            manager.BroadcastBeamServerRpc(prevPos, nextPos, "None");
 
             prevPos  = nextPos;
             curDmg  *= chainDamageMult;
@@ -164,7 +164,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
                 next.EnemyTakeDamage(curDmg);
                 hitSet.Add(next.GetInstanceID());
 
-                manager.BroadcastBeamServerRpc(prevPos, nextPos, (int)VFXType.None);
+                manager.BroadcastBeamServerRpc(prevPos, nextPos, "None");
 
                 prevPos  = nextPos;
                 curDmg  *= chainDamageMult;

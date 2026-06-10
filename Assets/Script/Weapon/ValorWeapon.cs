@@ -133,8 +133,8 @@ public class ValorWeapon : AbilityBase, IHUDAbility
 
         // AoE blast at landing
         manager.FireMeleeServerRpc(transform.position, radius, damage);
-        VFXType baseHit = isCrit ? VFXType.CritHitEffect : VFXType.HitEffect;
-        manager.BroadcastVfxTypeServerRpc(transform.position, (int)baseHit);
+        string baseHit = isCrit ? "CritHitEffect" : "HitEffect";
+        manager.BroadcastVfxTypeServerRpc(transform.position, baseHit);
 
         // Wind Slash — เฉพาะตอน Blade of Exile active
         if (chargeManager != null && chargeManager.IsExileActive)

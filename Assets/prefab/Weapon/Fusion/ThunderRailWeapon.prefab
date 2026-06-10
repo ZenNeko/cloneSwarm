@@ -49,6 +49,15 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
+  weaponVfxType: -1
+  weaponVfxKey: None
+  secondaryVfxType: -1
+  secondaryVfxKey: None
+  fireSfx: []
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
   chainTargets: 3
   chainDamage: 60
   chainSearchRadius: 8

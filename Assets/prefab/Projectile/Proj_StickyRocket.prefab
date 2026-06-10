@@ -150,7 +150,7 @@ MonoBehaviour:
   damage: 0
   moveSpeed: 0
   explosionRadius: 0
-  explosionVfxType: 3
+  explosionVfxType: GrenadeExplosion
 --- !u!54 &1681948382329186692
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -402,13 +402,13 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ClientRpc]
     void ShowLineAoEVfxClientRpc(Vector3 from, Vector3 to)
     {
-        VFXFactory.PlayBeam(VFXType.None, from, to, duration: 0.18f);
+        VFXFactory.PlayBeam("None", from, to, duration: 0.18f);
     }
 
     // ── ServerRpc: Raycast Pierce (Railgun / PlasmaWhip / WindSlash) ────────
     [ServerRpc(RequireOwnership = false)]
     public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage,
-                                     float maxDist = 50f, int vfxTypeInt = (int)VFXType.None,
+                                     float maxDist = 50f, string vfxKey = "None",
                                      bool isCrit = false, bool playHitVfx = true)
     {
         direction.y = 0f;
@@ -424,13 +424,13 @@ public class PlayerWeaponManager : NetworkBehaviour
             h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
         }
 
-        ShowRaycastVfxClientRpc(origin, origin + direction * maxDist, vfxTypeInt);
+        ShowRaycastVfxClientRpc(origin, origin + direction * maxDist, vfxKey);
     }
 
     [ClientRpc]
-    void ShowRaycastVfxClientRpc(Vector3 from, Vector3 to, int vfxTypeInt)
+    void ShowRaycastVfxClientRpc(Vector3 from, Vector3 to, string vfxKey)
     {
-        VFXFactory.PlayBeam((VFXType)vfxTypeInt, from, to, duration: 0.12f);
+        VFXFactory.PlayBeam(vfxKey, from, to, duration: 0.12f);
     }
 
     // ── ServerRpc: Drop Mine ──────────────────────────────────────────────
@@ -539,25 +539,25 @@ public class PlayerWeaponManager : NetworkBehaviour
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
 
-    // ── VFX Broadcast by VFXType → NetworkedVFXPool ──────────────────────
+    // ── VFX Broadcast by string key → NetworkedVFXPool ──────────────────────
     /// <summary>Weapon scripts ทุกตัวใช้ช่องทางนี้ผ่าน ShowHitVfx() หรือ BroadcastVfxTypeServerRpc โดยตรง</summary>
     [ServerRpc(RequireOwnership = false)]
-    public void BroadcastVfxTypeServerRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
-        => BroadcastVfxTypeClientRpc(pos, vfxTypeInt, scale, direction, arcAngle, roll);
+    public void BroadcastVfxTypeServerRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+        => BroadcastVfxTypeClientRpc(pos, vfxKey, scale, direction, arcAngle, roll);
 
     [ClientRpc]
-    void BroadcastVfxTypeClientRpc(Vector3 pos, int vfxTypeInt, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
-        => NetworkedVFXPool.Instance?.PlayByType((VFXType)vfxTypeInt, pos, scale, direction, arcAngle, roll);
+    void BroadcastVfxTypeClientRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+        => NetworkedVFXPool.Instance?.PlayByName(vfxKey, pos, scale, direction, arcAngle, roll);
 
     // ── Beam VFX Broadcast (Lightning Chain, Thunder Rail ฯลฯ) ───────────
     /// <summary>วาด LineRenderer beam จาก from→to บนทุก client</summary>
     [ServerRpc(RequireOwnership = false)]
-    public void BroadcastBeamServerRpc(Vector3 from, Vector3 to, int vfxTypeInt)
-        => BroadcastBeamClientRpc(from, to, vfxTypeInt);
+    public void BroadcastBeamServerRpc(Vector3 from, Vector3 to, string vfxKey)
+        => BroadcastBeamClientRpc(from, to, vfxKey);
 
     [ClientRpc]
-    void BroadcastBeamClientRpc(Vector3 from, Vector3 to, int vfxTypeInt)
-        => VFXFactory.PlayBeam((VFXType)vfxTypeInt, from, to, duration: 0.15f);
+    void BroadcastBeamClientRpc(Vector3 from, Vector3 to, string vfxKey)
+        => VFXFactory.PlayBeam(vfxKey, from, to, duration: 0.15f);
 
     // ── Orbiter Orb Sync — ตำแหน่ง orb สำหรับ client ที่ไม่ใช่ owner ────────
     private readonly List<GameObject> _remoteOrbVisuals = new();

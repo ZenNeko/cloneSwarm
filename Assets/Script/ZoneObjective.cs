@@ -401,7 +401,7 @@ public class ZoneObjective : NetworkBehaviour
     {
         SetDiscColor(COL_COMPLETE);
         if (discMat != null) discMat.SetFloat(ID_Progress, 1f);
-        VFXFactory.Play(VFXType.OrbPickup, transform.position);
+        VFXFactory.Play("OrbPickup", transform.position);
         AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  ★ORB", Color.green);
     }
 
@@ -409,7 +409,7 @@ public class ZoneObjective : NetworkBehaviour
     void ObjectiveExpiredClientRpc()
     {
         SetDiscColor(COL_EXPIRED);
-        VFXFactory.Play(VFXType.EnemyDeath, transform.position);
+        VFXFactory.Play("EnemyDeath", transform.position);
         AnnounceHUD("OBJECTIVE EXPIRED", new Color(1f, 0.40f, 0.05f));
     }
 

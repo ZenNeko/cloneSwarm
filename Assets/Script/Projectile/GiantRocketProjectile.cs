@@ -17,9 +17,9 @@ public class GiantRocketProjectile : NetworkBehaviour
 
     public float maxBonusMultiplier = 2f;
 
-    [Header("VFX")]
     [Tooltip("VFX ที่แสดงเมื่อระเบิด — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
-    public VFXType explosionVfxType = VFXType.GrenadeExplosion;
+    [VFXKey]
+    public string explosionVfxType = "GrenadeExplosion";
 
     private Vector3 direction;
     private Vector3 spawnPos;
@@ -77,7 +77,7 @@ public class GiantRocketProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos, float radius)
     {
-        VFXFactory.Play(VFXType.HitEffect, pos);
+        VFXFactory.Play("HitEffect", pos);
         VFXFactory.Play(explosionVfxType, pos);
     }
 

@@ -144,7 +144,7 @@ public class BunnyHopWeapon : WeaponBase
         for (int i = 0; i < aoeHitCount; i++)
             manager.FireMeleeServerRpc(center, radius, damage);
         // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
-        ShowVfx(ResolveHitVfx(VFXType.MeteorAoE), center, radius, isAttackHit: false);
+        ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────────────
         float shieldAmount = damage * shieldPercent

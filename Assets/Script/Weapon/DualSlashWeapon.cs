@@ -120,7 +120,7 @@ public class DualSlashWeapon : WeaponBase
 
         // ── Damage + VFX ──────────────────────────────────────────
         manager.FireArcMeleeServerRpc(pos, forward, radius, arc, dmg, isCrit);
-        ShowVfx(ResolveHitVfx(VFXType.SlashHit), pos, radius, isCrit,
+        ShowVfx(ResolveHitVfx("SlashHit"), pos, radius, isCrit,
                 isAttackHit: false, direction: dir, arcAngle: arc, roll: cfg.rotationZ);
     }
 

@@ -20,7 +20,7 @@ public class MineObject : NetworkBehaviour
     public float checkRate  = 0.2f;  // ตรวจทุก X วินาที
 
     [Header("Visual")]
-    [Tooltip("ถ้าว่าง — ใช้ VFXType.GrenadeExplosion จาก NetworkedVFXPool แทน")]
+    [Tooltip("ถ้าว่าง — ใช้ GrenadeExplosion จาก NetworkedVFXPool แทน")]
     public GameObject explodeVfxPrefab;
 
     private float lifeTimer;
@@ -66,6 +66,6 @@ public class MineObject : NetworkBehaviour
         if (explodeVfxPrefab != null)
             Destroy(Instantiate(explodeVfxPrefab, pos, Quaternion.identity), 3f);
         else
-            VFXFactory.Play(VFXType.GrenadeExplosion, pos);
+            VFXFactory.Play("GrenadeExplosion", pos);
     }
 }

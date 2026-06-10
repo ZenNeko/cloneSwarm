@@ -50,7 +50,7 @@ public class DeathFieldWeapon : WeaponBase
 
         manager.FireMeleeServerRpc(center, radius, dmg);
         // Main field hit VFX
-        ShowVfx(ResolveHitVfx(VFXType.OrbiterHit), center, radius, isCrit);
+        ShowVfx(ResolveHitVfx("OrbiterHit"), center, radius, isCrit);
     }
 
     void OnEnemyDiedAt(Vector3 deathPos)
@@ -91,6 +91,6 @@ public class DeathFieldWeapon : WeaponBase
         Vector3 explosionCenter = deathPos + Vector3.up * 0.5f;
         manager.FireMeleeServerRpc(explosionCenter, deathExplosionRadius, deathExplosionDamage);
         // Chain explosion VFX (เมื่อ enemy ตายในฟิลด์)
-        ShowVfx(ResolveSecondaryVfx(VFXType.GrenadeExplosion), explosionCenter, deathExplosionRadius);
+        ShowVfx(ResolveSecondaryVfx("GrenadeExplosion"), explosionCenter, deathExplosionRadius);
     }
 }

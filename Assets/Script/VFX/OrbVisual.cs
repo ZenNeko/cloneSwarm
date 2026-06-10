@@ -87,6 +87,6 @@ public class OrbVisual : MonoBehaviour
     /// </summary>
     public void PlayCollectEffect()
     {
-        VFXFactory.Play(VFXType.OrbPickup, transform.position);
+        VFXFactory.Play("OrbPickup", transform.position);
     }
 }
