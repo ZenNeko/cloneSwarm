@@ -45,19 +45,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkedVFXPool
   vfxDatabase: {fileID: 11400000, guid: fd903c4b739f5b2498d19ec9cac5a7b2, type: 2}
-  beamPrefab: {fileID: 7289551456621117356, guid: a8dc7b0921e71d7499f8c41236f9249f, type: 3}
-  beamPoolSize: 8
   projectilePrefabs:
   - {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   - {fileID: 3992335139775719314, guid: 20419f2d0e1b52740a613cfa170a4c4c, type: 3}
-  - {fileID: 131468, guid: 345e53b3b1d238c4b9cb80b7b76301e2, type: 3}
+  - {fileID: 0}
   - {fileID: 7429786886557274775, guid: 1ad26bf81717cee4586a61ca0f036a48, type: 3}
   - {fileID: 4913074562992064063, guid: 3c556c1709c300249b70eb88824d9394, type: 3}
   - {fileID: 1942644075807370077, guid: 63dad2987e922444099544f206147b50, type: 3}
   - {fileID: 9165026677116411631, guid: 015a9d8893b22174f82d11e1b08179e1, type: 3}
   - {fileID: 8074367145943022193, guid: d5effb961510faa458b89651ea468b1c, type: 3}
   - {fileID: 7957833072274404953, guid: 37eb70a72cb0a094cb3a88aa02fd2234, type: 3}
-  - {fileID: 4932088507883938021, guid: 53a576e3fe3a9ef4d825edf0dc38c8da, type: 3}
+  - {fileID: 0}
   - {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
   - {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
   - {fileID: 6266392510070060659, guid: 6d4a5b6b1a623044e9a4057d037cc4ed, type: 3}

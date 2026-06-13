@@ -1,10 +1,10 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Pistol — Gunner's main weapon (MouseAim, Burst fire)
-/// ปกติ: ยิง burst (count นัด ห่างกัน burstInterval)
-/// ขณะ Rocket Mode active (Q): ยิง StickyRocket แทนทุกนัด
+/// Pistol â€” Gunner's main weapon (MouseAim, Burst fire)
+/// à¸›à¸à¸•à¸´: à¸¢à¸´à¸‡ burst (count à¸™à¸±à¸” à¸«à¹ˆà¸²à¸‡à¸à¸±à¸™ burstInterval)
+/// à¸‚à¸“à¸° Rocket Mode active (Q): à¸¢à¸´à¸‡ StickyRocket à¹à¸—à¸™à¸—à¸¸à¸à¸™à¸±à¸”
 ///
 /// LevelData example:
 ///   Lv1: dmg=20, cd=1.0s, count=1, speed=16
@@ -16,13 +16,13 @@ using UnityEngine;
 public class PistolWeapon : WeaponBase
 {
     [Header("Burst")]
-    [Tooltip("หน่วงเวลาระหว่าง burst แต่ละนัด (วินาที)")]
+    [Tooltip("à¸«à¸™à¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ burst à¹à¸•à¹ˆà¸¥à¸°à¸™à¸±à¸” (à¸§à¸´à¸™à¸²à¸—à¸µ)")]
     public float burstInterval = 0.33f;
 
     [Header("Sticky Rocket (Rocket Mode)")]
-    [Tooltip("รัศมีระเบิดของ Sticky Rocket")]
+    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸£à¸°à¹€à¸šà¸´à¸”à¸‚à¸­à¸‡ Sticky Rocket")]
     public float stickyExplosionRadius = 2.5f;
-    [Tooltip("ความเร็ว Sticky Rocket")]
+    [Tooltip("à¸„à¸§à¸²à¸¡à¹€à¸£à¹‡à¸§ Sticky Rocket")]
     public float stickySpeed = 14f;
 
     private GunnerRocketMode rocketMode;
@@ -47,7 +47,7 @@ public class PistolWeapon : WeaponBase
         for (int i = 0; i < count; i++)
         {
             if (rocketMode)
-                manager.SpawnStickyRocketServerRpc(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius);
+                SpawnStickyRocket(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius);
             else
                 FireProjectile(spawnPos, dir, dmg, speed, isCrit: isCrit);
 

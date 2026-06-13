@@ -30,5 +30,5 @@ MonoBehaviour:
     levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
-  weight: 0
+  weight: 150
   exclusiveCharacter: {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}

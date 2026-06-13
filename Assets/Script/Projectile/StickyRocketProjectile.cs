@@ -16,6 +16,8 @@ public class StickyRocketProjectile : NetworkBehaviour
     [HideInInspector] public float damage;
     [HideInInspector] public float moveSpeed;
     [HideInInspector] public float explosionRadius;
+    [HideInInspector] public string weaponName = "Unknown";
+    [HideInInspector] public PlayerWeaponManager weaponManager;
 
     [Tooltip("VFX ที่แสดงเมื่อระเบิด — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
     [VFXKey]
@@ -51,7 +53,17 @@ public class StickyRocketProjectile : NetworkBehaviour
 
         var cols = PlayerWeaponManager.OverlapEnemy(center, explosionRadius);
         foreach (var c in cols)
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        {
+            var enemy = c.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.EnemyTakeDamage(damage);
+                if (weaponManager != null)
+                {
+                    weaponManager.RegisterWeaponDamage(weaponName, damage);
+                }
+            }
+        }
 
         ShowExplosionClientRpc(center, explosionRadius);
 

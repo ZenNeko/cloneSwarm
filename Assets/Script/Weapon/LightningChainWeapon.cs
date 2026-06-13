@@ -1,36 +1,36 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Lightning Chain — ยิงสายฟ้าไปหา enemy HP สูงสุด แล้ว chain ต่อ N ตัว
+/// Lightning Chain â€” à¸¢à¸´à¸‡à¸ªà¸²à¸¢à¸Ÿà¹‰à¸²à¹„à¸›à¸«à¸² enemy HP à¸ªà¸¹à¸‡à¸ªà¸¸à¸” à¹à¸¥à¹‰à¸§ chain à¸•à¹ˆà¸­ N à¸•à¸±à¸§
 ///
-/// Level data แนะนำ:
+/// Level data à¹à¸™à¸°à¸™à¸³:
 ///   Lv1: dmg=25, cd=1.8s, count=2 (chain targets), range=12
 ///   Lv2: dmg=32, cd=1.6s, count=2, range=13
 ///   Lv3: dmg=40, cd=1.4s, count=3, range=14
 ///   Lv4: dmg=50, cd=1.2s, count=3, range=15
 ///   Lv5: dmg=60, cd=1.0s, count=4, range=16
 ///
-/// Super: StormcallerWeapon (chain 6 ตัว + mini lightning zone)
+/// Super: StormcallerWeapon (chain 6 à¸•à¸±à¸§ + mini lightning zone)
 /// Fusion: Stormcaller + Railgun = ThunderRailWeapon
 /// </summary>
 public class LightningChainWeapon : WeaponBase
 {
-    [Tooltip("รัศมีหา chain target ถัดไปจากจุดที่ชนล่าสุด")]
+    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸«à¸² chain target à¸–à¸±à¸”à¹„à¸›à¸ˆà¸²à¸à¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸Šà¸™à¸¥à¹ˆà¸²à¸ªà¸¸à¸”")]
     public float chainSearchRadius = 8f;
-    [Tooltip("ดาเมจลดลงต่อ chain (0.8 = -20% ต่อตัว)")]
+    [Tooltip("à¸”à¸²à¹€à¸¡à¸ˆà¸¥à¸”à¸¥à¸‡à¸•à¹ˆà¸­ chain (0.8 = -20% à¸•à¹ˆà¸­à¸•à¸±à¸§)")]
     [Range(0.3f, 1f)]
     public float chainDamageMult   = 0.8f;
 
     protected override void OnFire(WeaponLevelData ld)
     {
         float dmg        = RollDamage(ld.damage, out bool isCrit);
-        int   chainCount = Mathf.Max(1, ld.projectileCount);   // count = จำนวน chain targets
+        int   chainCount = Mathf.Max(1, ld.projectileCount);   // count = à¸ˆà¸³à¸™à¸§à¸™ chain targets
 
         if (manager.statManager != null)
             dmg *= manager.statManager.GetPowerMultiplier();
 
-        // หา enemy HP สูงสุดในรัศมี range เป็นเป้าแรก
+        // à¸«à¸² enemy HP à¸ªà¸¹à¸‡à¸ªà¸¸à¸”à¹ƒà¸™à¸£à¸±à¸¨à¸¡à¸µ range à¹€à¸›à¹‡à¸™à¹€à¸›à¹‰à¸²à¹à¸£à¸
         var   origin  = transform.position;
         var   hitSet  = new HashSet<int>();
 
@@ -47,15 +47,15 @@ public class LightningChainWeapon : WeaponBase
 
             Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
 
-            // server-authoritative damage (radius 0.5 = ตีเฉพาะตัวนั้น)
-            manager.FireMeleeServerRpc(current.transform.position, 0.5f, curDmg, isCrit);
+            // server-authoritative damage (radius 0.5 = à¸•à¸µà¹€à¸‰à¸žà¸²à¸°à¸•à¸±à¸§à¸™à¸±à¹‰à¸™)
+            FireMelee(current.transform.position, 0.5f, curDmg, isCrit);
             BroadcastLightningBeam(prevPos, targetPos);
 
             hitSet.Add(current.GetInstanceID());
             prevPos = targetPos;
             curDmg  *= chainDamageMult;
 
-            // หา chain target ถัดไป (ยังไม่โดน, ใกล้ที่สุด)
+            // à¸«à¸² chain target à¸–à¸±à¸”à¹„à¸› (à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹‚à¸”à¸™, à¹ƒà¸à¸¥à¹‰à¸—à¸µà¹ˆà¸ªà¸¸à¸”)
             current = FindNearestUnhitEnemy(targetPos, chainSearchRadius, hitSet);
         }
     }
@@ -96,7 +96,7 @@ public class LightningChainWeapon : WeaponBase
 
     void BroadcastLightningBeam(Vector3 from, Vector3 to)
     {
-        // ใช้ HitEffect เป็น burst ที่ปลาย → มี spark ที่ chain target แม้ beamPrefab ไม่ assign
+        // à¹ƒà¸Šà¹‰ HitEffect à¹€à¸›à¹‡à¸™ burst à¸—à¸µà¹ˆà¸›à¸¥à¸²à¸¢ â†’ à¸¡à¸µ spark à¸—à¸µà¹ˆ chain target à¹à¸¡à¹‰ beamPrefab à¹„à¸¡à¹ˆ assign
         manager.BroadcastBeamServerRpc(from, to, ResolveHitVfx("Default"), "HitEffect");
     }
 }

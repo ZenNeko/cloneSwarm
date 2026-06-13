@@ -68,7 +68,7 @@ public class UpgradeManager : NetworkBehaviour
     void OnOrbPhaseStart()
     {
         hasPicked      = false;
-        currentOptions = PickCards(1, isOrbReward: false, ownedOnly: true);
+        currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
         if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
         LevelUpUI.Instance?.Show(currentOptions, ApplyOrbCard, 0);
     }
@@ -85,8 +85,8 @@ public class UpgradeManager : NetworkBehaviour
     // ── Card Pool ─────────────────────────────────────────────────────────
     List<UpgradeCardInfo> PickCards(int count, bool isOrbReward, bool ownedOnly = false)
     {
-        var pool = ownedOnly   ? BuildOwnedPool() :
-                   isOrbReward ? BuildOrbPool()   : BuildLevelUpPool();
+        var pool = isOrbReward ? BuildOrbPool(ownedOnly) :
+                   ownedOnly   ? BuildOwnedPool()        : BuildLevelUpPool();
         if (pool.Count == 0) return new List<UpgradeCardInfo>();
 
         var result = new List<UpgradeCardInfo>();
@@ -173,7 +173,7 @@ public class UpgradeManager : NetworkBehaviour
     }
 
     // ── Orb Pool — Super / Fusion / fallback Weapon/Stat ─────────────────
-    List<UpgradeCardInfo> BuildOrbPool()
+    List<UpgradeCardInfo> BuildOrbPool(bool ownedOnly = false)
     {
         var pool = new List<UpgradeCardInfo>();
 
@@ -181,7 +181,6 @@ public class UpgradeManager : NetworkBehaviour
         foreach (var w in weaponManager.GetEquippedWeapons())
         {
             if (w == null || w.tier != WeaponTier.Normal) continue;
-            if (!IsWeaponAvailable(w)) continue;
             if (w.superVersion == null) continue;
             int lv = weaponManager.GetWeaponLevel(w);
             if (lv < w.MaxLevel - 1) continue;                       // ยังไม่ถึง Lv5
@@ -214,9 +213,9 @@ public class UpgradeManager : NetworkBehaviour
             });
         }
 
-        // 3. Fallback — ถ้าไม่มี Super/Fusion → ใช้ pool เดียวกับ Level Up
+        // 3. Fallback — ถ้าไม่มี Super/Fusion → ใช้ของที่มีอยู่ (BuildOwnedPool) หรือ Level Up pool
         if (pool.Count == 0)
-            return BuildLevelUpPool();
+            return ownedOnly ? BuildOwnedPool() : BuildLevelUpPool();
 
         return pool;
     }
@@ -231,7 +230,6 @@ public class UpgradeManager : NetworkBehaviour
         foreach (var w in equipped)
         {
             if (w == null) continue;
-            if (!IsWeaponAvailable(w)) continue;
             int lv = weaponManager.GetWeaponLevel(w);
             if (lv + 1 >= w.MaxLevel) continue;
             pool.Add(new UpgradeCardInfo

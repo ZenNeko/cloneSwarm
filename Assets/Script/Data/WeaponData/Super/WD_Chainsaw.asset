@@ -18,8 +18,8 @@ MonoBehaviour:
   tier: 1
   prefab: {fileID: 3857138112386556378, guid: 63bc7e8323a28af45a84cfdb0684a607, type: 3}
   aimMode: 0
+  arcAngle: 360
   projectilePrefab: {fileID: 0}
-  hitVfxType: 10
   levels:
   - damage: 40
     cooldown: 0.25
@@ -30,5 +30,5 @@ MonoBehaviour:
     levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
-  weight: 0
+  weight: 150
   exclusiveCharacter: {fileID: 0}

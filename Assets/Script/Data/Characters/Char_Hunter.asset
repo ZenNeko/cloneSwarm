@@ -19,6 +19,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   baseHealth: 120
   baseMoveSpeed: 5.5
+  characterModelPrefab: {fileID: 8934512763525924868, guid: c38ab87a1eb9dda4a87574cece454d41, type: 3}
   startingWeapon: {fileID: 11400000, guid: 68528a4366383514098f4ae7854c3b3f, type: 2}
   passiveWeapons:
   - {fileID: 11400000, guid: 3f3fc2f8633042c4aa9aa3ae28c7effd, type: 2}

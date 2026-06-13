@@ -91,11 +91,12 @@ public class DevTools : MonoBehaviour
 
     void OnKillAllEnemies()
     {
-        var enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
+        // คัดลอกลิสต์เพื่อป้องกันปัญหาแก้คอลเลกชันขณะกำลังวนซ้ำ
+        var enemies = new List<Enemy>(Enemy.ActiveEnemies);
         int count = 0;
         foreach (var e in enemies)
         {
-            if (e.gameObject.activeSelf)
+            if (e != null && e.gameObject.activeSelf)
             {
                 e.EnemyTakeDamage(999999f);
                 count++;

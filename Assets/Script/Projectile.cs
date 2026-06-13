@@ -18,6 +18,11 @@ public class Projectile : NetworkBehaviour
     [HideInInspector]
     public bool isCrit;   // set by weapon → ถ้า true จะแสดง CritHitEffect แทน
 
+    [HideInInspector]
+    public string weaponName = "Unknown";
+    [HideInInspector]
+    public PlayerWeaponManager ownerManager;
+
     private Transform target;
     private Vector3   moveDirection;
     private Vector3   startPosition;
@@ -66,7 +71,15 @@ public class Projectile : NetworkBehaviour
         if (!IsServer || !NetworkObject.IsSpawned) return;
         if (!other.CompareTag("Enemy")) return;
 
-        other.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        var enemy = other.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.EnemyTakeDamage(damage);
+            if (ownerManager != null)
+            {
+                ownerManager.RegisterWeaponDamage(weaponName, damage);
+            }
+        }
         ShowHitVfxClientRpc(transform.position, isCrit);
         if (!piercing) SafeDespawn();
     }

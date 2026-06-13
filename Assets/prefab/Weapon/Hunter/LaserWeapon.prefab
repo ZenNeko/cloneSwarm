@@ -49,10 +49,8 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: -1
-  weaponVfxKey: None
-  secondaryVfxType: -1
-  secondaryVfxKey: None
+  weaponVfxType: Beam_Laser
+  secondaryVfxType: None
   fireSfx:
   - {fileID: 8300000, guid: aa3170ea355bec94998b98f8e120d1e0, type: 3}
   - {fileID: 8300000, guid: fd37ca23aa221b046b59b90865eceb93, type: 3}

@@ -20,6 +20,7 @@ public class GrenadeProjectile : NetworkBehaviour
     [HideInInspector] public bool    cluster;
     [HideInInspector] public Vector3 targetPos;
     [HideInInspector] public PlayerWeaponManager weaponManager;
+    [HideInInspector] public string weaponName = "Unknown";
 
     [Header("Visual")]
     public GameObject explosionVfxPrefab;
@@ -64,7 +65,17 @@ public class GrenadeProjectile : NetworkBehaviour
         // AoE damage
         var mask = LayerMask.GetMask("Enemy");
         foreach (var c in Physics.OverlapSphere(targetPos, radius, mask))
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        {
+            var enemy = c.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.EnemyTakeDamage(damage);
+                if (weaponManager != null)
+                {
+                    weaponManager.RegisterWeaponDamage(weaponName, damage);
+                }
+            }
+        }
 
         // Cluster pellets
         if (cluster && weaponManager != null)
@@ -76,7 +87,7 @@ public class GrenadeProjectile : NetworkBehaviour
                 Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
                 weaponManager.FireProjectileServerRpc(
                     targetPos + Vector3.up * 0.3f, dir,
-                    pelletDmg, clusterProjSpeed, 1, 0f);
+                    pelletDmg, clusterProjSpeed, 1, 0f, weaponName: weaponName);
             }
         }
 

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f36d9335a40aaf4ba28ba192acd9f31, type: 3}
+  m_Name: NewLootDropTable
+  m_EditorClassIdentifier: Assembly-CSharp::LootDropTable
+  dropChance: 1
+  lootTable:
+  - prefab: {fileID: 8050537342152234946, guid: 7654e22fa5caf97488d91e8a6c1851ab, type: 3}
+    weight: 1
+  - prefab: {fileID: 8784535603738034532, guid: ebfe6b0cfce10354da64d475dde4e18f, type: 3}
+    weight: 1

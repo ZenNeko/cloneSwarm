@@ -395,7 +395,165 @@ public class NetworkedVFXPool : MonoBehaviour
         yield return new WaitForSeconds(delay);
         if (go == null) yield break;
         go.SetActive(false);
+        go.transform.SetParent(null);
         if (_pools.TryGetValue(poolId, out var q)) q.Enqueue(go);
+    }
+
+    /// <summary>
+    /// เล่น VFX และกำหนด parent (เช่น ติดกับตัวผู้เล่น)
+    /// </summary>
+    public void PlayParented(string key, Transform parent, float scale = 1f)
+    {
+        if (string.IsNullOrEmpty(key) || key == "None") return;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
+        {
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}'");
+            return;
+        }
+        PlayFromPoolParented(id, parent, scale);
+    }
+
+    void PlayFromPoolParented(int poolId, Transform parent, float scale)
+    {
+        if (poolId < 0) return;
+        if (!_pools.TryGetValue(poolId, out var q)) return;
+
+        GameObject srcPrefab = GetPrefabForId(poolId);
+        GameObject go;
+        if (q.Count > 0)
+        {
+            go = q.Dequeue();
+        }
+        else
+        {
+            if (srcPrefab == null) return;
+            go = CreateInstance(srcPrefab);
+        }
+
+        if (go == null)
+        {
+            if (srcPrefab == null) return;
+            go = CreateInstance(srcPrefab);
+        }
+
+        // กำหนด parent และ local transform
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = Vector3.up * 0.5f; // ชดเชยความสูงให้อยู่ช่วงตัวผู้เล่น
+        go.transform.localRotation = Quaternion.identity;
+
+        Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
+        go.transform.localScale = prefabScale * scale;
+        go.SetActive(true);
+
+        var vfxGraph = go.GetComponent<VisualEffect>();
+        if (vfxGraph != null)
+        {
+            vfxGraph.Stop();
+            vfxGraph.Play();
+        }
+        else
+        {
+            foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
+            {
+                ps.Clear();
+                ps.Play();
+            }
+        }
+
+        StartCoroutine(ReturnToPool(go, poolId, CalcTTL(go, poolId)));
+    }
+
+    /// <summary>
+    /// คืน prefab ที่ใช้สำหรับ key นี้
+    /// </summary>
+    public GameObject GetPrefabForKey(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return null;
+        if (_keyToPoolId.TryGetValue(key, out int id))
+        {
+            return GetPrefabForId(id);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// เล่น VFX แบบ looping และกำหนด parent (จะไม่มีการคืน pool อัตโนมัติ)
+    /// </summary>
+    public GameObject PlayParentedLoop(string key, Transform parent, float scale = 1f)
+    {
+        if (string.IsNullOrEmpty(key) || key == "None") return null;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
+        {
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}'");
+            return null;
+        }
+        return PlayFromPoolParentedLoop(id, parent, scale);
+    }
+
+    GameObject PlayFromPoolParentedLoop(int poolId, Transform parent, float scale)
+    {
+        if (poolId < 0) return null;
+        if (!_pools.TryGetValue(poolId, out var q)) return null;
+
+        GameObject srcPrefab = GetPrefabForId(poolId);
+        GameObject go;
+        if (q.Count > 0)
+        {
+            go = q.Dequeue();
+        }
+        else
+        {
+            if (srcPrefab == null) return null;
+            go = CreateInstance(srcPrefab);
+        }
+
+        if (go == null)
+        {
+            if (srcPrefab == null) return null;
+            go = CreateInstance(srcPrefab);
+        }
+
+        // กำหนด parent และ local transform
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = Vector3.up * 0.5f; // ชดเชยความสูงให้อยู่ช่วงตัวผู้เล่น
+        go.transform.localRotation = Quaternion.identity;
+
+        Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
+        go.transform.localScale = prefabScale * scale;
+        go.SetActive(true);
+
+        var vfxGraph = go.GetComponent<VisualEffect>();
+        if (vfxGraph != null)
+        {
+            vfxGraph.Stop();
+            vfxGraph.Play();
+        }
+        else
+        {
+            foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
+            {
+                ps.Clear();
+                ps.Play();
+            }
+        }
+
+        return go;
+    }
+
+    /// <summary>
+    /// หยุดเล่นและดึง VFX แบบ loop กลับคืนสู่ pool
+    /// </summary>
+    public void StopParented(string key, GameObject go)
+    {
+        if (go == null || string.IsNullOrEmpty(key)) return;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
+        {
+            Destroy(go);
+            return;
+        }
+        go.SetActive(false);
+        go.transform.SetParent(null);
+        if (_pools.TryGetValue(id, out var q)) q.Enqueue(go);
     }
 
     // ─── Projectile Registry API ─────────────────────────────────────────

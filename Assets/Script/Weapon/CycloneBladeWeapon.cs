@@ -1,18 +1,18 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Cyclone Blade — Fusion: Blade Storm + Chainsaw
-/// 360° spin AoE + double forward slash สลับกัน ทุก cooldown
+/// Cyclone Blade â€” Fusion: Blade Storm + Chainsaw
+/// 360Â° spin AoE + double forward slash à¸ªà¸¥à¸±à¸šà¸à¸±à¸™ à¸—à¸¸à¸ cooldown
 ///
-/// Fusion tier — 1 level
+/// Fusion tier â€” 1 level
 ///   dmg=100 (spin), forwardDmg=80 (slash), cd=0.8s, range=4.5
 /// </summary>
 public class CycloneBladeWeapon : WeaponBase
 {
-    [Tooltip("จำนวน slash ไปข้างหน้าต่อ cycle")]
+    [Tooltip("à¸ˆà¸³à¸™à¸§à¸™ slash à¹„à¸›à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸²à¸•à¹ˆà¸­ cycle")]
     public int   forwardSlashCount  = 2;
-    [Tooltip("ดาเมจ slash ข้างหน้า relative กับ ld.damage")]
+    [Tooltip("à¸”à¸²à¹€à¸¡à¸ˆ slash à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸² relative à¸à¸±à¸š ld.damage")]
     public float forwardDamageMult  = 0.8f;
     public float slashOffset        = 0.7f;
 
@@ -33,8 +33,8 @@ public class CycloneBladeWeapon : WeaponBase
 
         if (cycleIndex % 2 == 0)
         {
-            // 360° spin — main VFX
-            manager.FireMeleeServerRpc(center, radius, dmg);
+            // 360Â° spin â€” main VFX
+            FireMelee(center, radius, dmg);
             ShowVfx(ResolveHitVfx("SlashAoE360"), center, radius, isCrit, isAttackHit: false);
         }
         else
@@ -48,7 +48,7 @@ public class CycloneBladeWeapon : WeaponBase
             {
                 float   side   = (i % 2 == 0) ? -1f : 1f;
                 Vector3 pos    = center + forward * (radius * 0.6f) + right * slashOffset * side;
-                manager.FireMeleeServerRpc(pos, radius * 0.8f, fDmg);
+                FireMelee(pos, radius * 0.8f, fDmg);
                 ShowVfx(ResolveSecondaryVfx("SlashHit"), pos, radius * 0.8f, isCrit, isAttackHit: false, direction: forward);
             }
         }

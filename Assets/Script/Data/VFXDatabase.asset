@@ -43,15 +43,10 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 0
     fixedDuration: 0
-  - key: LanceThrust
-    prefab: {fileID: 5545173171955001552, guid: 7ac879c2caac1ca41b6c438e77d8b25d, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
   - key: SlashHit
     prefab: {fileID: 772680919565806998, guid: f29781b8be277cb4b8e6123ab4e43161, type: 3}
     poolSize: 30
-    designedRadius: 4
+    designedRadius: 13
     fixedDuration: 0.4
   - key: VortexSpawn
     prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
@@ -73,10 +68,10 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 0
     fixedDuration: 0
-  - key: SlashAoE360
-    prefab: {fileID: 1921079115439858272, guid: 53d781390f3d0c248b7abf3f3700d878, type: 3}
+  - key: O_AoE_RadiantAura
+    prefab: {fileID: 4748681987041982144, guid: 363ff038782d0c3478c244d3a48f75fe, type: 3}
     poolSize: 6
-    designedRadius: 2
+    designedRadius: 3
     fixedDuration: 0
   - key: PhaseShockwave
     prefab: {fileID: 1921079115439858272, guid: 691fb4749c47d834781e02b971b8e66c, type: 3}
@@ -107,4 +102,14 @@ MonoBehaviour:
     prefab: {fileID: 7606818437225425609, guid: b83adfd580e0da94c89241146c13bdc2, type: 3}
     poolSize: 5
     designedRadius: 0
+    fixedDuration: 0
+  - key: Beam_ThunderRail
+    prefab: {fileID: 7289551456621117356, guid: 9c719e2034dafbc4b94b77bd18f8700d, type: 3}
+    poolSize: 40
+    designedRadius: 0
+    fixedDuration: 0
+  - key: AOE_ThunderRail
+    prefab: {fileID: 4748681987041982144, guid: 64629f77884aed642a4e905a6b5ba0a0, type: 3}
+    poolSize: 40
+    designedRadius: 0.9
     fixedDuration: 0

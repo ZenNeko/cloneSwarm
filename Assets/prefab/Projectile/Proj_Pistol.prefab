@@ -339,6 +339,8 @@ MonoBehaviour:
   piercing: 0
   hitVFX: HitEffect
   isCrit: 0
+  weaponName: Unknown
+  ownerManager: {fileID: 0}
 --- !u!114 &9138611186901199529
 MonoBehaviour:
   m_ObjectHideFlags: 0

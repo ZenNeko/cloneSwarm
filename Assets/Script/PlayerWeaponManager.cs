@@ -43,6 +43,17 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     private List<WeaponSlot> slots = new();
+    private readonly Dictionary<string, GameObject> _activeLoopVfxs = new();
+    private readonly Dictionary<string, float> _serverWeaponDamages = new();
+
+    public void RegisterWeaponDamage(string weaponName, float damage)
+    {
+        if (!IsServer) return;
+        if (string.IsNullOrEmpty(weaponName)) weaponName = "Unknown";
+        if (!_serverWeaponDamages.ContainsKey(weaponName))
+            _serverWeaponDamages[weaponName] = 0f;
+        _serverWeaponDamages[weaponName] += damage;
+    }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -107,6 +118,12 @@ public class PlayerWeaponManager : NetworkBehaviour
         RemoveWeapon(oldData);
         SpawnWeapon(newData, 0);
         Debug.Log($"[WeaponManager] ✨ {oldData.weaponName} → {newData.weaponName}");
+
+        var oldW = oldData.prefab != null ? oldData.prefab.GetComponent<WeaponBase>() : null;
+        if (oldW != null && !string.IsNullOrEmpty(oldW.weaponVfxType) && oldW.weaponVfxType != "None")
+        {
+            StopLoopVfxServerRpc(oldW.weaponVfxType);
+        }
     }
 
     /// <summary>Fusion: ลบ 2 Super แล้วเพิ่ม Fusion weapon</summary>
@@ -116,6 +133,18 @@ public class PlayerWeaponManager : NetworkBehaviour
         RemoveWeapon(superB);
         SpawnWeapon(result, 0);
         Debug.Log($"[WeaponManager] 🔥 {superA.weaponName} + {superB.weaponName} → {result.weaponName}");
+
+        var oldA = superA.prefab != null ? superA.prefab.GetComponent<WeaponBase>() : null;
+        if (oldA != null && !string.IsNullOrEmpty(oldA.weaponVfxType) && oldA.weaponVfxType != "None")
+        {
+            StopLoopVfxServerRpc(oldA.weaponVfxType);
+        }
+
+        var oldB = superB.prefab != null ? superB.prefab.GetComponent<WeaponBase>() : null;
+        if (oldB != null && !string.IsNullOrEmpty(oldB.weaponVfxType) && oldB.weaponVfxType != "None")
+        {
+            StopLoopVfxServerRpc(oldB.weaponVfxType);
+        }
     }
 
     // ── Queries ───────────────────────────────────────────────────────────
@@ -213,7 +242,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SpawnBoomerangServerRpc(
         Vector3 spawnPos, Vector3 direction,
-        float damage, float speed, float maxRange, bool isCrit = false)
+        float damage, float speed, float maxRange, bool isCrit = false, string weaponName = "Unknown")
     {
         if (boomerangPrefab == null)
         {
@@ -232,6 +261,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         proj.maxRange      = maxRange;
         proj.ownerClientId = OwnerClientId;
         proj.isCrit        = isCrit;
+        proj.weaponName    = weaponName;
         no.Spawn(true);
         proj.Init(direction);
     }
@@ -242,7 +272,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         Vector3 spawnPos, Vector3 baseDir,
         float damage, float projSpeed, int count, float spreadDeg,
         bool piercing = false, int projPrefabId = -1, float maxRange = -1f,
-        bool isCrit = false)
+        bool isCrit = false, string weaponName = "Unknown")
     {
         // หา prefab จาก NetworkedVFXPool registry (ทุก client มีข้อมูลเดียวกัน)
         // fallback → projectilePrefab default บน manager
@@ -267,6 +297,8 @@ public class PlayerWeaponManager : NetworkBehaviour
             p.speed    = projSpeed;
             p.piercing = piercing;
             p.isCrit   = isCrit;
+            p.weaponName = weaponName;
+            p.ownerManager = this;
             if (maxRange > 0f) p.maxRange = maxRange;   // -1 = ใช้ค่าบน prefab
             p.InitDirection(dir);
 
@@ -280,15 +312,22 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── ServerRpc: Melee AoE ──────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
-    public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false)
+    public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false, string weaponName = "Unknown")
     {
         foreach (var c in OverlapEnemy(center, radius))
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
+        {
+            var enemy = c.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.EnemyTakeDamage(damage, isCrit);
+                RegisterWeaponDamage(weaponName, damage);
+            }
+        }
     }
 
     /// <summary>Melee AoE แบบ arc — เฉพาะ enemy ที่อยู่ใน cone ทิศ forward</summary>
     [ServerRpc(RequireOwnership = false)]
-    public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false)
+    public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false, string weaponName = "Unknown")
     {
         float halfArc = arcAngle * 0.5f;
         foreach (var c in OverlapEnemy(center, radius))
@@ -296,7 +335,14 @@ public class PlayerWeaponManager : NetworkBehaviour
             Vector3 toEnemy = c.transform.position - center;
             toEnemy.y = 0f;
             if (toEnemy.sqrMagnitude < 0.001f || Vector3.Angle(forward, toEnemy) <= halfArc)
-                c.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
+            {
+                var enemy = c.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    enemy.EnemyTakeDamage(damage, isCrit);
+                    RegisterWeaponDamage(weaponName, damage);
+                }
+            }
         }
     }
 
@@ -321,7 +367,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void ThrowGrenadeServerRpc(
         Vector3 spawnPos, Vector3 targetPos,
         float damage, float radius,
-        float fuseTime = 1.5f, bool cluster = false)
+        float fuseTime = 1.5f, bool cluster = false, string weaponName = "Unknown")
     {
         if (grenadePrefab == null)
         {
@@ -337,6 +383,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             gp.fuseTime  = fuseTime;
             gp.cluster   = cluster;
             gp.targetPos = targetPos;
+            gp.weaponName = weaponName;
             // อ้างอิง manager เพื่อให้ Cluster bomb เรียก FireProjectileServerRpc ได้
             gp.weaponManager = this;
         }
@@ -352,7 +399,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void FireLineAoEServerRpc(
         Vector3 origin, Vector3 direction,
         float damage, float range, float width = 1.5f, bool isCrit = false,
-        float knockbackForce = 0f, string vfxKey = "None")
+        float knockbackForce = 0f, string vfxKey = "None", string weaponName = "Unknown")
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -387,7 +434,12 @@ public class PlayerWeaponManager : NetworkBehaviour
             int id = c.gameObject.GetInstanceID();
             if (!seen.Add(id)) continue;
             // Enemy.NotifyHitClientRpc spawn HitEffect/CritHitEffect ที่ตัว enemy เอง
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
+            var enemy = c.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.EnemyTakeDamage(damage, isCrit);
+                RegisterWeaponDamage(weaponName, damage);
+            }
             // Knockback (server-authoritative push along line direction)
             if (knockbackForce > 0f)
             {
@@ -418,7 +470,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage,
                                      float maxDist = 50f, string vfxKey = "None",
-                                     bool isCrit = false, bool playHitVfx = true)
+                                     bool isCrit = false, bool playHitVfx = true, string weaponName = "Unknown")
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -428,9 +480,12 @@ public class PlayerWeaponManager : NetworkBehaviour
         var hits = Physics.RaycastAll(origin, direction, maxDist, mask);
         foreach (var h in hits)
         {
-            // Enemy.NotifyHitClientRpc spawn HitEffect/CritHitEffect ที่ตัว enemy เอง
-            // (playHitVfx flag เก็บไว้เพื่อ backward-compat แต่ไม่ใช้แล้ว)
-            h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(damage, isCrit);
+            var enemy = h.collider.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.EnemyTakeDamage(damage, isCrit);
+                RegisterWeaponDamage(weaponName, damage);
+            }
         }
 
         ShowRaycastVfxClientRpc(origin, origin + direction * maxDist, vfxKey);
@@ -451,12 +506,18 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── ServerRpc: Drop Mine ──────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
-    public void DropMineServerRpc(Vector3 position, float damage, float triggerRadius)
+    public void DropMineServerRpc(Vector3 position, float damage, float triggerRadius, string weaponName = "Unknown")
     {
         if (minePrefab == null) return;
         var go = Instantiate(minePrefab, position, Quaternion.identity);
         var m  = go.GetComponent<MineObject>();
-        if (m != null) { m.damage = damage; m.triggerRadius = triggerRadius; }
+        if (m != null) 
+        { 
+            m.damage = damage; 
+            m.triggerRadius = triggerRadius; 
+            m.weaponName = weaponName;
+            m.weaponManager = this;
+        }
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
 
@@ -464,7 +525,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SpawnMissilesServerRpc(
         Vector3[] spawnPositions, ulong[] targetNetIds,
-        float damage, float explosionRadius)
+        float damage, float explosionRadius, string weaponName = "Unknown")
     {
         if (missilePrefab == null) return;
         int count = Mathf.Min(spawnPositions.Length, targetNetIds.Length);
@@ -472,7 +533,13 @@ public class PlayerWeaponManager : NetworkBehaviour
         {
             var go = Instantiate(missilePrefab, spawnPositions[i], missilePrefab.transform.localRotation);
             go.transform.localScale = missilePrefab.transform.localScale;
-            go.GetComponent<MissileProjectile>()?.Init(targetNetIds[i], damage, explosionRadius);
+            var mp = go.GetComponent<MissileProjectile>();
+            if (mp != null)
+            {
+                mp.Init(targetNetIds[i], damage, explosionRadius);
+                mp.weaponName = weaponName;
+                mp.weaponManager = this;
+            }
             go.GetComponent<NetworkObject>()?.Spawn(true);
         }
     }
@@ -483,7 +550,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         Vector3 center, int count, float orbitRadius,
         float laserDamage, float laserCooldown,
         float attackRange, float lifetime, ulong ownerClientId,
-        int beamCount = 1)
+        int beamCount = 1, string weaponName = "Unknown")
     {
         if (funnelPrefab == null) return;
         for (int i = 0; i < count; i++)
@@ -492,7 +559,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             Vector3 offset   = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * orbitRadius * 0.4f;
             var     go       = Instantiate(funnelPrefab, center + offset + Vector3.up * 1.5f, Quaternion.identity);
             go.GetComponent<FunnelObject>()?.Init(
-                center, orbitRadius, laserDamage, laserCooldown, attackRange, lifetime, ownerClientId, beamCount);
+                center, orbitRadius, laserDamage, laserCooldown, attackRange, lifetime, ownerClientId, this, weaponName, beamCount);
             go.GetComponent<NetworkObject>()?.Spawn(true);
         }
     }
@@ -508,7 +575,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SpawnStickyRocketServerRpc(
         Vector3 spawnPos, Vector3 direction,
-        float damage, float speed, float explosionRadius)
+        float damage, float speed, float explosionRadius, string weaponName = "Unknown")
     {
         if (stickyRocketPrefab == null) return;
         Quaternion stickyRot = Quaternion.LookRotation(direction) * stickyRocketPrefab.transform.localRotation;
@@ -520,6 +587,8 @@ public class PlayerWeaponManager : NetworkBehaviour
             sr.damage          = damage;
             sr.moveSpeed       = speed;
             sr.explosionRadius = explosionRadius;
+            sr.weaponName      = weaponName;
+            sr.weaponManager   = this;
             sr.InitDirection(direction);
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
@@ -530,7 +599,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void SpawnGiantRocketServerRpc(
         Vector3 spawnPos, Vector3 direction,
         float baseDamage, float speed,
-        float maxRange, float explosionRadius)
+        float maxRange, float explosionRadius, string weaponName = "Unknown")
     {
         if (giantRocketPrefab == null) return;
 
@@ -550,6 +619,8 @@ public class PlayerWeaponManager : NetworkBehaviour
             gr.moveSpeed       = speed;
             gr.maxRange        = maxRange;
             gr.explosionRadius = explosionRadius;
+            gr.weaponName      = weaponName;
+            gr.weaponManager   = this;
             gr.InitDirection(spawnPos, dir);
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
@@ -564,6 +635,57 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ClientRpc]
     void BroadcastVfxTypeClientRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
         => NetworkedVFXPool.Instance?.PlayByName(vfxKey, pos, scale, direction, arcAngle, roll);
+
+    // ── VFX Broadcast parented to player ────────────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void BroadcastVfxParentedServerRpc(string vfxKey, float scale = 1f, bool isLoop = false)
+        => BroadcastVfxParentedClientRpc(vfxKey, scale, isLoop);
+
+    [ClientRpc]
+    void BroadcastVfxParentedClientRpc(string vfxKey, float scale = 1f, bool isLoop = false)
+    {
+        if (NetworkedVFXPool.Instance != null)
+        {
+            if (isLoop)
+            {
+                if (_activeLoopVfxs.TryGetValue(vfxKey, out var activeGo) && activeGo != null)
+                {
+                    // Update scale of existing looping VFX
+                    GameObject srcPrefab = NetworkedVFXPool.Instance.GetPrefabForKey(vfxKey);
+                    Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
+                    activeGo.transform.localScale = prefabScale * scale;
+                    return;
+                }
+
+                GameObject go = NetworkedVFXPool.Instance.PlayParentedLoop(vfxKey, this.transform, scale);
+                if (go != null)
+                {
+                    _activeLoopVfxs[vfxKey] = go;
+                }
+            }
+            else
+            {
+                NetworkedVFXPool.Instance.PlayParented(vfxKey, this.transform, scale);
+            }
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void StopLoopVfxServerRpc(string vfxKey)
+        => StopLoopVfxClientRpc(vfxKey);
+
+    [ClientRpc]
+    void StopLoopVfxClientRpc(string vfxKey)
+    {
+        if (_activeLoopVfxs.TryGetValue(vfxKey, out var go))
+        {
+            if (go != null && NetworkedVFXPool.Instance != null)
+            {
+                NetworkedVFXPool.Instance.StopParented(vfxKey, go);
+            }
+            _activeLoopVfxs.Remove(vfxKey);
+        }
+    }
 
     // ── Beam VFX Broadcast (Lightning Chain, Thunder Rail ฯลฯ) ───────────
     /// <summary>วาด LineRenderer beam จาก from→to บนทุก client</summary>
@@ -615,6 +737,306 @@ public class PlayerWeaponManager : NetworkBehaviour
     void HideRemoteOrbsClientRpc()
     {
         if (IsOwner) return;
+        foreach (var o in _remoteOrbVisuals) if (o) Destroy(o);
+        _remoteOrbVisuals.Clear();
+    }
+
+    /// <summary>
+    /// Compile and sync final weapon stats to client. Called on Server.
+    /// </summary>
+    public void SendFinalStats(float finalTime, int finalLevel, bool isWin)
+    {
+        if (!IsServer) return;
+
+        // Compile a single formatted string: "Name1:Damage1,Name2:Damage2"
+        var statsList = new List<string>();
+        foreach (var kv in _serverWeaponDamages)
+        {
+            statsList.Add($"{kv.Key}:{kv.Value}");
+        }
+        string serializedStats = string.Join(",", statsList);
+
+        SendFinalWeaponStatsClientRpc(serializedStats, finalTime, finalLevel, isWin);
+    }
+
+    [ClientRpc]
+    private void SendFinalWeaponStatsClientRpc(string serializedStats, float finalTime, int finalLevel, bool isWin)
+    {
+        if (!IsOwner) return;
+
+        // Deserialize on the client
+        var weaponNames = new List<string>();
+        var damages = new List<float>();
+
+        if (!string.IsNullOrEmpty(serializedStats))
+        {
+            string[] pairs = serializedStats.Split(',');
+            foreach (string pair in pairs)
+            {
+                string[] parts = pair.Split(':');
+                if (parts.Length == 2)
+                {
+                    weaponNames.Add(parts[0]);
+                    if (float.TryParse(parts[1], out float dmg))
+                    {
+                        damages.Add(dmg);
+                    }
+                    else
+                    {
+                        damages.Add(0f);
+                    }
+                }
+            }
+        }
+
+        // Trigger analytics submission
+        if (AnalyticsManager.Instance != null)
+        {
+            AnalyticsManager.Instance.SendSessionEndAnalytics(weaponNames.ToArray(), damages.ToArray(), finalTime, finalLevel, isWin);
+        }
+    }
+
+    // ── ServerRpc: ThunderRail, Stormcaller, and Lightning Chains ─────────
+
+    [ServerRpc(RequireOwnership = false)]
+    public void FireThunderRailServerRpc(
+        Vector3 origin, Vector3 direction,
+        float damage, float range, int beamCount,
+        int chainTargets, float chainDamage, float chainRadius,
+        float zoneRadius, float zoneDamage, int zoneTicks, float zoneTickInterval,
+        bool isCrit, string weaponName, string weaponVfx, string zoneVfx)
+    {
+        if (!IsServer) return;
+
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
+        direction = direction.normalized;
+
+        float angleStep = 360f / Mathf.Max(1, beamCount);
+        int mask = LayerMask.GetMask("Enemy");
+        var hitPositions = new List<Vector3>();
+
+        for (int i = 0; i < beamCount; i++)
+        {
+            Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * direction;
+            beamDir = beamDir.normalized;
+
+            var hits = Physics.RaycastAll(origin, beamDir, range, mask);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            Vector3 endPoint = origin + beamDir * range;
+
+            BroadcastBeamClientRpc(origin, endPoint, weaponVfx, "None");
+
+            Enemy firstHitEnemy = null;
+
+            foreach (var hit in hits)
+            {
+                var enemy = hit.collider.GetComponent<Enemy>();
+                if (enemy == null) continue;
+
+                enemy.EnemyTakeDamage(damage, isCrit);
+                RegisterWeaponDamage(weaponName, damage);
+                hitPositions.Add(enemy.transform.position);
+
+                // เลือกศัตรูตัวแรกที่อยู่ใกล้ผู้เล่นที่สุดในแนวเลเซอร์หลัก เพื่อใช้ปล่อยสายฟ้าชิ่ง
+                if (firstHitEnemy == null)
+                {
+                    firstHitEnemy = enemy;
+                }
+            }
+
+            // จำกัดการปล่อยสายฟ้าชิ่งให้เริ่มเฉพาะจากศัตรูตัวแรกสุดที่โดนเลเซอร์หลักเท่านั้น (แบบที่ 2 ประหยัดทรัพยากร)
+            if (firstHitEnemy != null)
+            {
+                Vector3 startChainPos = firstHitEnemy.transform.position + Vector3.up * 0.8f;
+                FireLightningChainServerSide(startChainPos, firstHitEnemy, mask, hitPositions, chainTargets, chainDamage, chainRadius, weaponName, weaponVfx);
+            }
+        }
+
+        if (hitPositions.Count > 0)
+        {
+            StartCoroutine(SpawnLightningZonesServerSide(hitPositions, zoneTicks, zoneTickInterval, zoneRadius, zoneDamage, isCrit, weaponName, zoneVfx));
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void FireStormcallerServerRpc(
+        float damage, float range, int chainCount, float chainSearchRadius, float chainDamageMult,
+        float zoneRadius, float zoneDamage, int zoneTicks, float zoneTickInterval,
+        bool isCrit, string weaponName, string zoneVfx)
+    {
+        if (!IsServer) return;
+
+        int mask = LayerMask.GetMask("Enemy");
+        var hitSet = new HashSet<int>();
+
+        Enemy first = FindHighestHPEnemyServerSide(transform.position, range, mask, hitSet);
+        if (first == null) return;
+
+        Vector3 prevPos = transform.position + Vector3.up * 0.8f;
+        Enemy current = first;
+        float curDmg = damage;
+
+        var hitPositions = new List<Vector3>();
+
+        for (int i = 0; i <= chainCount; i++)
+        {
+            if (current == null) break;
+
+            Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
+
+            current.EnemyTakeDamage(curDmg, isCrit);
+            RegisterWeaponDamage(weaponName, curDmg);
+            BroadcastBeamClientRpc(prevPos, targetPos, "Default", "None");
+
+            hitPositions.Add(current.transform.position);
+            hitSet.Add(current.GetInstanceID());
+            prevPos = targetPos;
+            curDmg *= chainDamageMult;
+
+            current = FindNearestUnhitEnemyServerSide(targetPos, chainSearchRadius, mask, hitSet);
+        }
+
+        if (hitPositions.Count > 0)
+        {
+            StartCoroutine(SpawnLightningZonesServerSide(hitPositions, zoneTicks, zoneTickInterval, zoneRadius, zoneDamage, isCrit, weaponName, zoneVfx));
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void FireSimpleLightningChainServerRpc(
+        Vector3 startPos, float damage, float searchRadius, int chainTargets, float chainDamageMult, string weaponName)
+    {
+        if (!IsServer) return;
+
+        int mask = LayerMask.GetMask("Enemy");
+        var hitSet = new HashSet<int>();
+
+        Enemy first = FindNearestUnhitEnemyServerSide(startPos, searchRadius, mask, hitSet);
+        if (first == null) return;
+
+        Vector3 prevPos = startPos;
+        Enemy current = first;
+        float curDmg = damage;
+
+        for (int i = 0; i < chainTargets; i++)
+        {
+            if (current == null) break;
+
+            Vector3 targetPos = current.transform.position + Vector3.up * 0.5f;
+
+            current.EnemyTakeDamage(curDmg);
+            RegisterWeaponDamage(weaponName, curDmg);
+            BroadcastBeamClientRpc(prevPos, targetPos, "Default", "None");
+
+            hitSet.Add(current.GetInstanceID());
+            prevPos = targetPos;
+            curDmg *= chainDamageMult;
+
+            current = FindNearestUnhitEnemyServerSide(targetPos, searchRadius, mask, hitSet);
+        }
+    }
+
+    private void FireLightningChainServerSide(
+        Vector3 startPos, Enemy firstEnemy, int mask, List<Vector3> hitPositions,
+        int chainTargets, float chainDamage, float chainRadius, string weaponName, string weaponVfx)
+    {
+        var hitSet = new HashSet<int>();
+        hitSet.Add(firstEnemy.GetInstanceID());
+
+        Vector3 prevPos = startPos;
+        Enemy current = firstEnemy;
+        float curDmg = chainDamage;
+
+        for (int i = 0; i < chainTargets; i++)
+        {
+            Enemy next = FindNearestUnhitEnemyServerSide(current.transform.position + Vector3.up * 0.8f, chainRadius, mask, hitSet);
+            if (next == null) break;
+
+            Vector3 targetPos = next.transform.position + Vector3.up * 0.8f;
+
+            BroadcastBeamClientRpc(prevPos, targetPos, weaponVfx, "None");
+
+            next.EnemyTakeDamage(curDmg);
+            RegisterWeaponDamage(weaponName, curDmg);
+            hitPositions.Add(next.transform.position);
+            hitSet.Add(next.GetInstanceID());
+
+            current = next;
+            prevPos = targetPos;
+            curDmg *= 0.7f;
+        }
+    }
+
+    private Enemy FindNearestUnhitEnemyServerSide(Vector3 center, float radius, int mask, HashSet<int> exclude)
+    {
+        var cols = Physics.OverlapSphere(center, radius, mask);
+        Enemy best = null;
+        float minD = float.MaxValue;
+        foreach (var c in cols)
+        {
+            var e = c.GetComponent<Enemy>();
+            if (e == null || exclude.Contains(e.GetInstanceID())) continue;
+            float d = Vector3.Distance(center, c.transform.position);
+            if (d < minD) { minD = d; best = e; }
+        }
+        return best;
+    }
+
+    private Enemy FindHighestHPEnemyServerSide(Vector3 center, float radius, int mask, HashSet<int> exclude)
+    {
+        var cols = Physics.OverlapSphere(center, radius, mask);
+        Enemy best = null;
+        float bestHP = -1f;
+        foreach (var c in cols)
+        {
+            var e = c.GetComponent<Enemy>();
+            if (e == null || exclude.Contains(e.GetInstanceID())) continue;
+            if (e.netHealth.Value > bestHP) { bestHP = e.netHealth.Value; best = e; }
+        }
+        return best;
+    }
+
+    private System.Collections.IEnumerator SpawnLightningZonesServerSide(
+        List<Vector3> positions, int zoneTicks, float zoneTickInterval,
+        float zoneRadius, float zoneDamage, bool isCrit, string weaponName, string zoneVfx)
+    {
+        float effectiveZoneDmg = zoneDamage;
+
+        for (int tick = 0; tick < zoneTicks; tick++)
+        {
+            yield return new WaitForSeconds(zoneTickInterval);
+            foreach (var pos in positions)
+            {
+                foreach (var c in OverlapEnemy(pos + Vector3.up * 0.5f, zoneRadius))
+                {
+                    var enemy = c.GetComponent<Enemy>();
+                    if (enemy != null)
+                    {
+                        enemy.EnemyTakeDamage(effectiveZoneDmg, isCrit);
+                        RegisterWeaponDamage(weaponName, effectiveZoneDmg);
+                    }
+                }
+                BroadcastVfxTypeClientRpc(pos + Vector3.up * 0.5f, zoneVfx, 1f);
+            }
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (NetworkedVFXPool.Instance != null)
+        {
+            foreach (var kv in _activeLoopVfxs)
+            {
+                if (kv.Value != null)
+                {
+                    NetworkedVFXPool.Instance.StopParented(kv.Key, kv.Value);
+                }
+            }
+        }
+        _activeLoopVfxs.Clear();
+
         foreach (var o in _remoteOrbVisuals) if (o) Destroy(o);
         _remoteOrbVisuals.Clear();
     }

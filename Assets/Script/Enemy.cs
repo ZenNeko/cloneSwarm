@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic;
 
 public class Enemy : NetworkBehaviour
 {
@@ -11,6 +12,11 @@ public class Enemy : NetworkBehaviour
     public static event System.Action<Vector3> OnAnyEnemyDiedAt;
     /// <summary>ยิงบน ALL clients ทุกครั้งที่ enemy โดนดาเมจ — subscribe ด้วย HunterPassiveWeapon</summary>
     public static event System.Action OnAnyEnemyHit;
+    /// <summary>ยิงบน SERVER เท่านั้น ทุกครั้งที่ enemy ตาย พร้อมอินสแตนซ์และตำแหน่ง</summary>
+    public static event System.Action<Enemy, Vector3> OnEnemyDiedServer;
+
+    /// <summary>ลิสต์เก็บรายชื่อศัตรูทั้งหมดที่ยังแอ็คทีฟอยู่ในแผนที่ เพื่อใช้แทน FindObjectsOfType</summary>
+    public static readonly List<Enemy> ActiveEnemies = new List<Enemy>();
 
     [Header("Movement")]
     public float speed = 3f;
@@ -55,6 +61,11 @@ public class Enemy : NetworkBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
+        if (!ActiveEnemies.Contains(this))
+        {
+            ActiveEnemies.Add(this);
+        }
+
         rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -70,6 +81,16 @@ public class Enemy : NetworkBehaviour
         if (!IsServer) return;
         netHealth.Value = maxHealth;
         currentTarget   = FindNearestPlayer();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ActiveEnemies.Remove(this);
+    }
+
+    private void OnDestroy()
+    {
+        ActiveEnemies.Remove(this);
     }
 
     // ── Update: Server only (targeting + damage) ──────────────────────────
@@ -179,6 +200,7 @@ public class Enemy : NetworkBehaviour
         if (netHealth.Value > 0f) return;
 
         onDeath.Invoke();
+        OnEnemyDiedServer?.Invoke(this, transform.position);
         SpawnExpOrb();
         NotifyDeathClientRpc(transform.position);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);

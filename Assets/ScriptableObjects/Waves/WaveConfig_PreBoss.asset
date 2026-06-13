@@ -15,6 +15,6 @@ MonoBehaviour:
   enemies:
   - prefab: {fileID: 9014505396291406032, guid: a762b11ba96f2504b842435f11ce258b, type: 3}
     weight: 2
-  - prefab: {fileID: 8162365537267611636, guid: 4a6fe538d44fab04ba30ec087da4f5ad, type: 3}
+  - prefab: {fileID: 0}
     weight: 8
   spawnIntervalOverride: 0

@@ -4,12 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Blade Storm — Super version ของ Dual Slash
-/// slash 120° arc × 3 ครั้ง สลับหน้า-หลัง-หน้า (rapid burst)
-///
-/// Super tier — 1 level
-///   dmg=120, cd=2.5s, range=3.5
-///
-/// Fusion: Blade Storm + Chainsaw = CycloneBladeWeapon
+/// slash 120° arc × 3 ครั้ง สลับหน้า-หลัง-หน้า (rapid burst) ทำงานผ่าน Server Authority
 /// </summary>
 public class BladeStormWeapon : WeaponBase
 {
@@ -47,7 +42,8 @@ public class BladeStormWeapon : WeaponBase
         {
             // สลับหน้า-หลัง: 0=หน้า, 1=หลัง, 2=หน้า
             Vector3 slashDir = (i % 2 == 0) ? dir : -dir;
-            HitEnemiesInArc(center, slashDir, radius, arcAngle, dmg, isCrit);
+            // ใช้ FireArcMelee เพื่อส่งคำสั่งทำดาเมจและลงทะเบียนสถิติไปทำบน Server (ServerRpc)
+            FireArcMelee(center, slashDir, radius, arcAngle, dmg, isCrit);
             ShowVfx(ResolveHitVfx("SlashHit"), center + slashDir * (radius * 0.4f), radius, isCrit, isAttackHit: false, direction: slashDir);
 
             if (i < burstCount - 1)
@@ -55,32 +51,6 @@ public class BladeStormWeapon : WeaponBase
         }
 
         isBursting = false;
-    }
-
-    /// <summary>OverlapSphere + angle filter — damage enemy ที่อยู่ใน arc</summary>
-    void HitEnemiesInArc(Vector3 center, Vector3 forward, float radius, float arc, float damage, bool isCrit = false)
-    {
-        float halfArc = arc * 0.5f;
-        int   mask    = LayerMask.GetMask("Enemy");
-        var   cols    = Physics.OverlapSphere(center, radius, mask);
-        var   hitSet  = new HashSet<int>();
-
-        foreach (var c in cols)
-        {
-            var e = c.GetComponent<Enemy>();
-            if (e == null || hitSet.Contains(e.GetInstanceID())) continue;
-
-            Vector3 toEnemy = (e.transform.position - center);
-            toEnemy.y = 0f;
-            if (toEnemy.sqrMagnitude < 0.001f) { e.EnemyTakeDamage(damage, isCrit); hitSet.Add(e.GetInstanceID()); continue; }
-
-            float angle = Vector3.Angle(forward, toEnemy);
-            if (angle <= halfArc)
-            {
-                e.EnemyTakeDamage(damage, isCrit);
-                hitSet.Add(e.GetInstanceID());
-            }
-        }
     }
 
     Vector3 GetForwardDir()

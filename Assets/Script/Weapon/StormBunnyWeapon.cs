@@ -4,12 +4,8 @@ using UnityEngine;
 
 /// <summary>
 /// Storm Bunny — Fusion: BunnyHop Super + Stormcaller
-/// Dash + 360° AoE + chain lightning ที่จุดลงจอด
+/// Dash + 360° AoE + chain lightning ที่จุดลงจอด ทำงานผ่าน Server Authority
 /// เมื่อ Exile active → projectile ยิงออกไป มีผล lightning chain ด้วย
-/// (Wind Slash ถูกถอดออก — รอ design ใหม่)
-///
-/// Fusion tier — 1 level
-/// WeaponData: superWeaponA = BunnyHop Super, superWeaponB = Stormcaller
 /// </summary>
 public class StormBunnyWeapon : BunnyHopWeapon
 {
@@ -40,7 +36,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
         var pm = manager.playerMove;
         var rb = pm?.GetComponent<Rigidbody>();
 
-        // ── Dash ──────────────────────────────────────────────────────────
+        // ── Dash ──────────────────────────────────────────────────
         if (rb != null && pm != null)
         {
             pm.isDashing = true;
@@ -67,22 +63,20 @@ public class StormBunnyWeapon : BunnyHopWeapon
         Vector3 center      = transform.position;
         int     aoeHitCount = (IsSuper && bigSlash) ? 2 : 1;
 
-        // ── AoE 360° ─────────────────────────────────────────────────────
-        // Damage เรียกตาม aoeHitCount (Super double hit) แต่ VFX แสดง 1 ครั้งพอ
+        // ── AoE 360° ──────────────────────────────────────────────
         for (int i = 0; i < aoeHitCount; i++)
-            manager.FireMeleeServerRpc(center, radius, damage);
-        // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
+            FireMelee(center, radius, damage);
         ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
-        // ── Shield ────────────────────────────────────────────────────────
+        // ── Shield ────────────────────────────────────────────────
         float shieldAmount = damage * shieldPercent
                            * Mathf.Max(1f, FindAllEnemiesInRange(radius).Length);
         manager.AddShieldServerRpc(shieldAmount);
 
-        // ── Chain Lightning ที่จุดลงจอด ───────────────────────────────────
+        // ── Chain Lightning ที่จุดลงจอด ───────────────────────────
         StartCoroutine(ChainLightningFromLanding(center, damage));
 
-        // ── Exile Bonus: Projectile + Lightning ──────────────────────────
+        // ── Exile Bonus: Projectile + Lightning ────────────────────
         if (exileActive)
         {
             var rawLd          = data != null ? data.GetLevelData(currentLevel) : new WeaponLevelData();
@@ -110,27 +104,13 @@ public class StormBunnyWeapon : BunnyHopWeapon
     IEnumerator ChainLightningFromLanding(Vector3 landingPos, float damage)
     {
         yield return null; // 1 frame delay เพื่อให้ AoE ทำงานก่อน
-
-        int   mask   = LayerMask.GetMask("Enemy");
-        var   hitSet = new HashSet<int>();
         float curDmg = damage * 0.6f; // chain damage = 60% of main
 
-        Vector3 prevPos = landingPos + Vector3.up * 0.5f;
-
-        for (int i = 0; i < chainCount; i++)
-        {
-            Enemy next = FindNearestUnhit(prevPos, chainRadius, mask, hitSet);
-            if (next == null) break;
-
-            Vector3 nextPos = next.transform.position + Vector3.up * 0.5f;
-            next.EnemyTakeDamage(curDmg);
-            hitSet.Add(next.GetInstanceID());
-
-            manager.BroadcastBeamServerRpc(prevPos, nextPos, ResolveHitVfx("Default"), "None");
-
-            prevPos  = nextPos;
-            curDmg  *= chainDamageMult;
-        }
+        // เรียก ServerRpc เพื่อทำดาเมจสายฟ้าชิ่งบนฝั่ง Server
+        manager.FireSimpleLightningChainServerRpc(
+            landingPos + Vector3.up * 0.5f, curDmg, chainRadius, chainCount, chainDamageMult,
+            data != null ? data.weaponName : "Unknown"
+        );
     }
 
     // ── Exile Bonus: mini chain lightning จาก AoE radius (delayed) ────────
@@ -151,40 +131,13 @@ public class StormBunnyWeapon : BunnyHopWeapon
             if (e == null || hitSet.Contains(e.GetInstanceID())) continue;
             hitSet.Add(e.GetInstanceID());
 
-            // mini chain จาก enemy ตัวนี้
             Vector3 prevPos = e.transform.position + Vector3.up * 0.5f;
-            float   curDmg  = miniDmg;
 
-            for (int j = 0; j < exileMiniChain; j++)
-            {
-                Enemy next = FindNearestUnhit(prevPos, exileMiniRadius, mask, hitSet);
-                if (next == null) break;
-
-                Vector3 nextPos = next.transform.position + Vector3.up * 0.5f;
-                next.EnemyTakeDamage(curDmg);
-                hitSet.Add(next.GetInstanceID());
-
-                manager.BroadcastBeamServerRpc(prevPos, nextPos, ResolveHitVfx("Default"), "None");
-
-                prevPos  = nextPos;
-                curDmg  *= chainDamageMult;
-            }
+            // เรียก ServerRpc เพื่อเริ่มชิ่งสายฟ้าออกจากศัตรูตัวนี้
+            manager.FireSimpleLightningChainServerRpc(
+                prevPos, miniDmg, exileMiniRadius, exileMiniChain, chainDamageMult,
+                data != null ? data.weaponName : "Unknown"
+            );
         }
-    }
-
-    // ── Helper ────────────────────────────────────────────────────────────
-    Enemy FindNearestUnhit(Vector3 center, float radius, int mask, HashSet<int> exclude)
-    {
-        var   cols = Physics.OverlapSphere(center, radius, mask);
-        Enemy best = null;
-        float minD = float.MaxValue;
-        foreach (var c in cols)
-        {
-            var e = c.GetComponent<Enemy>();
-            if (e == null || exclude.Contains(e.GetInstanceID())) continue;
-            float d = Vector3.Distance(center, c.transform.position);
-            if (d < minD) { minD = d; best = e; }
-        }
-        return best;
     }
 }

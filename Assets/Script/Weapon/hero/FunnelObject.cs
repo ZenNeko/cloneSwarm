@@ -17,6 +17,8 @@ public class FunnelObject : NetworkBehaviour
     private float   attackRange;
     private float   lifetime;
     private ulong   ownerClientId;
+    private PlayerWeaponManager weaponManager;
+    private string weaponName = "Unknown";
 
     // ── Inspector Config ──────────────────────────────────────────────────
     [Header("Movement")]
@@ -67,6 +69,8 @@ public class FunnelObject : NetworkBehaviour
         float   damage, float cooldown,
         float   range,  float life,
         ulong   clientId,
+        PlayerWeaponManager manager,
+        string  wepName,
         int     beams = 1)
     {
         orbitCenter   = center;
@@ -76,6 +80,8 @@ public class FunnelObject : NetworkBehaviour
         attackRange   = range;
         lifetime      = life;
         ownerClientId = clientId;
+        weaponManager = manager;
+        weaponName    = wepName;
         beamCount     = Mathf.Max(1, beams);
     }
 
@@ -210,7 +216,14 @@ public class FunnelObject : NetworkBehaviour
 
             // beam กลาง (angle≈0) รับประกัน hit target โดยตรง
             if (i == (beamCount - 1) / 2)
-                target.GetComponent<Enemy>()?.EnemyTakeDamage(laserDamage);
+            {
+                var enemy = target.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    enemy.EnemyTakeDamage(laserDamage);
+                    weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
+                }
+            }
 
             // RaycastAll ทะลุ enemy ในแนว beam นี้
             if (mask != 0)
@@ -219,7 +232,12 @@ public class FunnelObject : NetworkBehaviour
                 foreach (var h in hits)
                 {
                     if (h.transform == target && i == (beamCount - 1) / 2) continue;
-                    h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(laserDamage);
+                    var enemy = h.collider.GetComponent<Enemy>();
+                    if (enemy != null)
+                    {
+                        enemy.EnemyTakeDamage(laserDamage);
+                        weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
+                    }
                 }
             }
             else
@@ -229,7 +247,14 @@ public class FunnelObject : NetworkBehaviour
                 {
                     if (h.transform == target && i == (beamCount - 1) / 2) continue;
                     if (h.collider.CompareTag("Enemy"))
-                        h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(laserDamage);
+                    {
+                        var enemy = h.collider.GetComponent<Enemy>();
+                        if (enemy != null)
+                        {
+                            enemy.EnemyTakeDamage(laserDamage);
+                            weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
+                        }
+                    }
                 }
             }
 

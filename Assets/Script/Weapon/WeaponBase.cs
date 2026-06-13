@@ -157,7 +157,47 @@ public abstract class WeaponBase : MonoBehaviour
             : -1;
         manager.FireProjectileServerRpc(
             pos, dir, damage, speed, count, spreadDeg,
-            piercing, projId, maxRange, isCrit);
+            piercing, projId, maxRange, isCrit, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void FireMelee(Vector3 center, float radius, float damage, bool isCrit = false)
+    {
+        manager.FireMeleeServerRpc(center, radius, damage, isCrit, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void FireArcMelee(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false)
+    {
+        manager.FireArcMeleeServerRpc(center, forward, radius, arcAngle, damage, isCrit, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void FireLineAoE(Vector3 origin, Vector3 direction, float damage, float range, float width = 1.5f, bool isCrit = false, float knockbackForce = 0f, string vfxKey = "None")
+    {
+        manager.FireLineAoEServerRpc(origin, direction, damage, range, width, isCrit, knockbackForce, vfxKey, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void FireRaycast(Vector3 origin, Vector3 direction, float damage, float maxDist = 50f, string vfxKey = "None", bool isCrit = false, bool playHitVfx = true)
+    {
+        manager.FireRaycastServerRpc(origin, direction, damage, maxDist, vfxKey, isCrit, playHitVfx, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void SpawnBoomerang(Vector3 spawnPos, Vector3 direction, float damage, float speed, float maxRange, bool isCrit = false)
+    {
+        manager.SpawnBoomerangServerRpc(spawnPos, direction, damage, speed, maxRange, isCrit, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false)
+    {
+        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void DropMine(Vector3 position, float damage, float triggerRadius)
+    {
+        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void SpawnStickyRocket(Vector3 spawnPos, Vector3 direction, float damage, float speed, float explosionRadius)
+    {
+        manager.SpawnStickyRocketServerRpc(spawnPos, direction, damage, speed, explosionRadius, data != null ? data.weaponName : "Unknown");
     }
 
     // ── VFX Helpers — broadcast ผ่าน Pool ไปทุก client ──────────────────

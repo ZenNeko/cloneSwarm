@@ -1,12 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Hunter R (Ultimate) — Funnel Storm
-/// กด R → Starting weapon (LaserWeapon) ยิงเร็วขึ้น (tempCooldownMult)
-///         + spawn 5 Funnel ที่โคจรรอบผู้เล่น ยิง laser หา enemy ที่ใกล้ที่สุด
+/// Hunter R (Ultimate) â€” Funnel Storm
+/// à¸à¸” R â†’ Starting weapon (LaserWeapon) à¸¢à¸´à¸‡à¹€à¸£à¹‡à¸§à¸‚à¸¶à¹‰à¸™ (tempCooldownMult)
+///         + spawn 5 Funnel à¸—à¸µà¹ˆà¹‚à¸„à¸ˆà¸£à¸£à¸­à¸šà¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ à¸¢à¸´à¸‡ laser à¸«à¸² enemy à¸—à¸µà¹ˆà¹ƒà¸à¸¥à¹‰à¸—à¸µà¹ˆà¸ªà¸¸à¸”
 ///
-/// AbilityData แนะนำ:
+/// AbilityData à¹à¸™à¸°à¸™à¸³:
 ///   Lv1: cooldown=60s, duration=12s, damage=80 (laser per funnel), range=20
 /// </summary>
 public class HunterUltimate : AbilityBase, IHUDAbility
@@ -21,13 +21,13 @@ public class HunterUltimate : AbilityBase, IHUDAbility
     public float funnelAttackRange   = 20f;
     public float laserCooldownMult   = 0.35f;
 
-    // ── IHUDAbility ───────────────────────────────────────────────────────
-    public string HUDSlotKey      => "E";   // Ultimate ของ Hunter อยู่ E เสมอ
+    // â”€â”€ IHUDAbility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    public string HUDSlotKey      => "E";   // Ultimate à¸‚à¸­à¸‡ Hunter à¸­à¸¢à¸¹à¹ˆ E à¹€à¸ªà¸¡à¸­
     public string HUDKeyLabel     => activateKey.ToString();
     public bool   IsActiveMode    => IsActive;
-    // ActiveRemaining / ActiveMax ใช้ร่วมกับ property ด้านล่าง ✓
+    // ActiveRemaining / ActiveMax à¹ƒà¸Šà¹‰à¸£à¹ˆà¸§à¸¡à¸à¸±à¸š property à¸”à¹‰à¸²à¸™à¸¥à¹ˆà¸²à¸‡ âœ“
 
-    // ── State ─────────────────────────────────────────────────────────────
+    // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public bool  IsActive          { get; private set; }
     public float ActiveRemaining   { get; private set; }
     public float ActiveMax         { get; private set; }
@@ -36,13 +36,13 @@ public class HunterUltimate : AbilityBase, IHUDAbility
     public float CooldownRemaining { get; private set; }
     public float CooldownMax       { get; private set; }
 
-    // ── Events (UI ฟัง) ───────────────────────────────────────────────────
+    // â”€â”€ Events (UI à¸Ÿà¸±à¸‡) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public static event System.Action<HunterUltimate, bool>  OnUltStateChanged;
     public static event System.Action<HunterUltimate, float> OnCooldownChanged;
 
     private LaserWeapon cachedLaser;
 
-    // ── Update ────────────────────────────────────────────────────────────
+    // â”€â”€ Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     void Update()
     {
         if (IsActive)
@@ -66,7 +66,7 @@ public class HunterUltimate : AbilityBase, IHUDAbility
             Activate();
     }
 
-    // ── Activate ──────────────────────────────────────────────────────────
+    // â”€â”€ Activate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     void Activate()
     {
         var ld = data.GetLevelData(currentLevel);
@@ -84,19 +84,19 @@ public class HunterUltimate : AbilityBase, IHUDAbility
 
         float funnelDmg   = ld.damage * (manager.statManager != null ? manager.statManager.GetPowerMultiplier() : 1f);
         float attackRange = funnelAttackRange * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
-        // beamCount: base 1 + bonus จาก ProjectileCount stat (เหมือน LaserWeapon)
+        // beamCount: base 1 + bonus à¸ˆà¸²à¸ ProjectileCount stat (à¹€à¸«à¸¡à¸·à¸­à¸™ LaserWeapon)
         int   beamCount   = 1 + (manager.statManager != null ? manager.statManager.GetBonusProjectileCount() : 0);
 
-        manager.SpawnFunnelsServerRpc(
+        SpawnFunnels(
             transform.position, funnelCount, funnelOrbitRadius,
             funnelDmg, funnelLaserCooldown, attackRange, duration, manager.OwnerClientId,
             beamCount);
 
         OnUltStateChanged?.Invoke(this, true);
-        Debug.Log($"[HunterUlt] ✨ ULTIMATE ACTIVE — {duration:F1}s, {funnelCount} funnels");
+        Debug.Log($"[HunterUlt] âœ¨ ULTIMATE ACTIVE â€” {duration:F1}s, {funnelCount} funnels");
     }
 
-    // ── End ───────────────────────────────────────────────────────────────
+    // â”€â”€ End â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     void EndUltimate()
     {
         IsActive = false;
@@ -111,7 +111,7 @@ public class HunterUltimate : AbilityBase, IHUDAbility
         IsOnCooldown      = true;
         OnCooldownChanged?.Invoke(this, 1f);
         OnUltStateChanged?.Invoke(this, false);
-        Debug.Log("[HunterUlt] Ultimate ended — cooldown started");
+        Debug.Log("[HunterUlt] Ultimate ended â€” cooldown started");
     }
 
     LaserWeapon GetLaser()

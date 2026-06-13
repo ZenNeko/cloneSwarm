@@ -1,10 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// Whip — Tentacle style: ตี AoE เป็นเส้นตรงข้างหน้า (forward line)
-/// หา nearest enemy → ยิง line AoE (OverlapBox) ในทิศนั้น
+/// Whip â€” Tentacle style: à¸•à¸µ AoE à¹€à¸›à¹‡à¸™à¹€à¸ªà¹‰à¸™à¸•à¸£à¸‡à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸² (forward line)
+/// à¸«à¸² nearest enemy â†’ à¸¢à¸´à¸‡ line AoE (OverlapBox) à¹ƒà¸™à¸—à¸´à¸¨à¸™à¸±à¹‰à¸™
 ///
-/// Level data แนะนำ:
+/// Level data à¹à¸™à¸°à¸™à¸³:
 ///   Lv1: dmg=35, cd=1.8s, range=2.5
 ///   Lv2: dmg=44, cd=1.6s, range=2.8
 ///   Lv3: dmg=55, cd=1.4s, range=3.2
@@ -17,7 +17,7 @@ using UnityEngine;
 public class WhipWeapon : WeaponBase
 {
     [Header("Tentacle Config")]
-    [Tooltip("ความกว้างของ line AoE")]
+    [Tooltip("à¸„à¸§à¸²à¸¡à¸à¸§à¹‰à¸²à¸‡à¸‚à¸­à¸‡ line AoE")]
     public float width = 1.5f;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -33,14 +33,14 @@ public class WhipWeapon : WeaponBase
             range *= manager.statManager.GetAreaMultiplier();
         }
 
-        // Line AoE ข้างหน้า (Physics.OverlapBox ผ่าน server)
-        manager.FireLineAoEServerRpc(origin, dir, dmg, range, width, isCrit);
-        // VFX ที่จุดกลางของ line
+        // Line AoE à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸² (Physics.OverlapBox à¸œà¹ˆà¸²à¸™ server)
+        FireLineAoE(origin, dir, dmg, range, width, isCrit);
+        // VFX à¸—à¸µà¹ˆà¸ˆà¸¸à¸”à¸à¸¥à¸²à¸‡à¸‚à¸­à¸‡ line
         Vector3 vfxPos = origin + dir * (range * 0.5f);
         ShowVfx(ResolveHitVfx("WhipSlash"), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
     }
 
-    /// <summary>หา nearest enemy แล้วหันหน้าไป — ใช้ใน subclass ได้</summary>
+    /// <summary>à¸«à¸² nearest enemy à¹à¸¥à¹‰à¸§à¸«à¸±à¸™à¸«à¸™à¹‰à¸²à¹„à¸› â€” à¹ƒà¸Šà¹‰à¹ƒà¸™ subclass à¹„à¸”à¹‰</summary>
     protected Vector3 GetForwardDirection()
     {
         int   mask    = LayerMask.GetMask("Enemy");

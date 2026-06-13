@@ -1,23 +1,23 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Signature Weapon ของ Riven — ไม่ใช้ cooldown timer แต่ใช้ CHARGE จาก ChargeManager
+/// Signature Weapon à¸‚à¸­à¸‡ Riven â€” à¹„à¸¡à¹ˆà¹ƒà¸Šà¹‰ cooldown timer à¹à¸•à¹ˆà¹ƒà¸Šà¹‰ CHARGE à¸ˆà¸²à¸ ChargeManager
 ///
-/// ทุก cast  : Dash + AoE radial 360° รอบตัว
-///   cast 1  : radius ปกติ
-///   cast 1 = cast 2 : radius เท่ากัน
+/// à¸—à¸¸à¸ cast  : Dash + AoE radial 360Â° à¸£à¸­à¸šà¸•à¸±à¸§
+///   cast 1  : radius à¸›à¸à¸•à¸´
+///   cast 1 = cast 2 : radius à¹€à¸—à¹ˆà¸²à¸à¸±à¸™
 ///
-/// ขณะ AD_BladeOfExile active (เพิ่มเติมบน AoE ปกติ):
-///   + ยิง Projectile ในทิศ dash
-///   + AoE radius ×exileAoeMult
-///   (Wind Slash ถูกถอดออก — รอ design ใหม่)
+/// à¸‚à¸“à¸° AD_BladeOfExile active (à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡à¸šà¸™ AoE à¸›à¸à¸•à¸´):
+///   + à¸¢à¸´à¸‡ Projectile à¹ƒà¸™à¸—à¸´à¸¨ dash
+///   + AoE radius Ã—exileAoeMult
+///   (Wind Slash à¸–à¸¹à¸à¸–à¸­à¸”à¸­à¸­à¸ â€” à¸£à¸­ design à¹ƒà¸«à¸¡à¹ˆ)
 ///
 /// Super BunnyHop (IsSuper):
-///   cast 2 เท่านั้น: AoE ตี 2 ครั้ง (double hit)
+///   cast 2 à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™: AoE à¸•à¸µ 2 à¸„à¸£à¸±à¹‰à¸‡ (double hit)
 ///
-/// Runic Blade: ยิ่งอยู่ไกลศัตรูก่อน dash → damage +0–15%
-/// Shield: 25% ของ damage × จำนวนศัตรูโดน
+/// Runic Blade: à¸¢à¸´à¹ˆà¸‡à¸­à¸¢à¸¹à¹ˆà¹„à¸à¸¥à¸¨à¸±à¸•à¸£à¸¹à¸à¹ˆà¸­à¸™ dash â†’ damage +0â€“15%
+/// Shield: 25% à¸‚à¸­à¸‡ damage Ã— à¸ˆà¸³à¸™à¸§à¸™à¸¨à¸±à¸•à¸£à¸¹à¹‚à¸”à¸™
 /// </summary>
 public class BunnyHopWeapon : WeaponBase
 {
@@ -26,29 +26,29 @@ public class BunnyHopWeapon : WeaponBase
     public float dashDuration = 0.15f;
 
     [Header("AoE")]
-    [Tooltip("Projectile maxRange ขณะ Exile = base range × ค่านี้")]
+    [Tooltip("Projectile maxRange à¸‚à¸“à¸° Exile = base range Ã— à¸„à¹ˆà¸²à¸™à¸µà¹‰")]
     public float exileProjectileRangeMult = 2f;
 
     [Header("Runic Blade Passive")]
-    [Tooltip("ระยะสูงสุดที่ให้ bonus damage เต็ม (15%)")]
+    [Tooltip("à¸£à¸°à¸¢à¸°à¸ªà¸¹à¸‡à¸ªà¸¸à¸”à¸—à¸µà¹ˆà¹ƒà¸«à¹‰ bonus damage à¹€à¸•à¹‡à¸¡ (15%)")]
     public float runicMaxRange = 12f;
 
     [Header("Shield")]
-    [Tooltip("Shield = X% ของ damage ที่ทำ")]
+    [Tooltip("Shield = X% à¸‚à¸­à¸‡ damage à¸—à¸µà¹ˆà¸—à¸³")]
     public float shieldPercent = 0.25f;
 
     [Header("Super BunnyHop")]
-    [Tooltip("เปิดด้วย ActivateSuper() — cast 2 ระเบิด AoE 2 ครั้ง")]
+    [Tooltip("à¹€à¸›à¸´à¸”à¸”à¹‰à¸§à¸¢ ActivateSuper() â€” cast 2 à¸£à¸°à¹€à¸šà¸´à¸” AoE 2 à¸„à¸£à¸±à¹‰à¸‡")]
     [SerializeField, HideInInspector]
     private bool _isSuper;
     public bool IsSuper => _isSuper;
-    public void ActivateSuper()   { _isSuper = true;  Debug.Log("[BunnyHop] ⭐ Super ACTIVATED"); }
+    public void ActivateSuper()   { _isSuper = true;  Debug.Log("[BunnyHop] â­ Super ACTIVATED"); }
     public void DeactivateSuper() { _isSuper = false; Debug.Log("[BunnyHop] Super deactivated"); }
 
     [Header("Blade of Exile Bonus")]
-    [Tooltip("คูณ AoE radius เพิ่มเติมขณะ Exile active")]
+    [Tooltip("à¸„à¸¹à¸“ AoE radius à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡à¸‚à¸“à¸° Exile active")]
     public float exileAoeMult = 1.5f;
-    // Projectile speed + count อ่านจาก WeaponData → levels → projectileSpeed / projectileCount
+    // Projectile speed + count à¸­à¹ˆà¸²à¸™à¸ˆà¸²à¸ WeaponData â†’ levels â†’ projectileSpeed / projectileCount
 
     protected override bool UsesCooldownTimer => false;
 
@@ -59,9 +59,9 @@ public class BunnyHopWeapon : WeaponBase
         chargeManager = manager.GetComponent<ChargeManager>();
     }
 
-    protected override void OnFire(WeaponLevelData ld) { /* ไม่ใช้ */ }
+    protected override void OnFire(WeaponLevelData ld) { /* à¹„à¸¡à¹ˆà¹ƒà¸Šà¹‰ */ }
 
-    // ── เรียกจาก ChargeManager เมื่อ CHARGE เต็ม ─────────────────────────
+    // â”€â”€ à¹€à¸£à¸µà¸¢à¸à¸ˆà¸²à¸ ChargeManager à¹€à¸¡à¸·à¹ˆà¸­ CHARGE à¹€à¸•à¹‡à¸¡ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public virtual void FireOnCharge(int fireCount)
     {
         if (manager == null || !manager.IsOwner) return;
@@ -72,15 +72,15 @@ public class BunnyHopWeapon : WeaponBase
         float damage = ld.damage * (sm != null ? sm.GetPowerMultiplier() : 1f);
         float range  = ld.range  * (sm != null ? sm.GetAreaMultiplier()  : 1f);
 
-        // cast 1 = cast 2: radius เท่ากัน (bigSlash ใช้เฉพาะ Super double hit)
+        // cast 1 = cast 2: radius à¹€à¸—à¹ˆà¸²à¸à¸±à¸™ (bigSlash à¹ƒà¸Šà¹‰à¹€à¸‰à¸žà¸²à¸° Super double hit)
         bool  bigSlash  = (fireCount % 2 == 0);
         float aoeRadius = range;
 
-        // Exile → radius ใหญ่ขึ้นอีก
+        // Exile â†’ radius à¹ƒà¸«à¸à¹ˆà¸‚à¸¶à¹‰à¸™à¸­à¸µà¸
         bool exileActive = GetExileActive();
         if (exileActive) aoeRadius *= exileAoeMult;
 
-        // Runic Blade: ยิ่งไกลศัตรู → damage +0–15%
+        // Runic Blade: à¸¢à¸´à¹ˆà¸‡à¹„à¸à¸¥à¸¨à¸±à¸•à¸£à¸¹ â†’ damage +0â€“15%
         Transform nearest = FindNearestEnemy(aoeRadius * 2f);
         if (nearest != null)
         {
@@ -91,7 +91,7 @@ public class BunnyHopWeapon : WeaponBase
 
         damage = RollDamage(damage, out bool isCrit);
 
-        // ทิศ dash = ทิศที่ผู้เล่นกด input อยู่
+        // à¸—à¸´à¸¨ dash = à¸—à¸´à¸¨à¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¸à¸” input à¸­à¸¢à¸¹à¹ˆ
         Vector3 dashDir = manager.playerMove?.MoveDirection ?? Vector3.zero;
         if (dashDir.sqrMagnitude < 0.001f)
         {
@@ -112,7 +112,7 @@ public class BunnyHopWeapon : WeaponBase
         var pm = manager.playerMove;
         var rb = pm?.GetComponent<Rigidbody>();
 
-        // ── Dash ──────────────────────────────────────────────────────────
+        // â”€â”€ Dash â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (rb != null && pm != null)
         {
             pm.isDashing = true;
@@ -139,23 +139,23 @@ public class BunnyHopWeapon : WeaponBase
         Vector3 center     = transform.position;
         int     aoeHitCount = (_isSuper && bigSlash) ? 2 : 1;
 
-        // ── AoE radial 360° รอบตัว — ทุก cast ────────────────────────────
-        // Damage เรียกตาม aoeHitCount (Super double hit) แต่ VFX แสดง 1 ครั้งพอ
+        // â”€â”€ AoE radial 360Â° à¸£à¸­à¸šà¸•à¸±à¸§ â€” à¸—à¸¸à¸ cast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Damage à¹€à¸£à¸µà¸¢à¸à¸•à¸²à¸¡ aoeHitCount (Super double hit) à¹à¸•à¹ˆ VFX à¹à¸ªà¸”à¸‡ 1 à¸„à¸£à¸±à¹‰à¸‡à¸žà¸­
         for (int i = 0; i < aoeHitCount; i++)
-            manager.FireMeleeServerRpc(center, radius, damage);
-        // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
+            FireMelee(center, radius, damage);
+        // isAttackHit:false â†’ à¹„à¸¡à¹ˆ spawn HitEffect overlay (Enemy.EnemyTakeDamage à¸ˆà¸±à¸”à¹ƒà¸«à¹‰à¹à¸¥à¹‰à¸§)
         ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
-        // ── Shield ────────────────────────────────────────────────────────
+        // â”€â”€ Shield â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         float shieldAmount = damage * shieldPercent
                            * Mathf.Max(1f, FindAllEnemiesInRange(radius).Length);
         manager.AddShieldServerRpc(shieldAmount);
 
-        // ── Exile Bonus: Projectile radial 360° (ทุก cast เมื่อ Exile active) ──
+        // â”€â”€ Exile Bonus: Projectile radial 360Â° (à¸—à¸¸à¸ cast à¹€à¸¡à¸·à¹ˆà¸­ Exile active) â”€â”€
         if (exileActive)
         {
-            // Projectile กระจาย 360°/count — ผ่าน BuildEffectiveLevelData เพื่อรับ stat bonus
-            // (projectileCount + GetBonusProjectileCount, range × GetAreaMultiplier)
+            // Projectile à¸à¸£à¸°à¸ˆà¸²à¸¢ 360Â°/count â€” à¸œà¹ˆà¸²à¸™ BuildEffectiveLevelData à¹€à¸žà¸·à¹ˆà¸­à¸£à¸±à¸š stat bonus
+            // (projectileCount + GetBonusProjectileCount, range Ã— GetAreaMultiplier)
             var rawLd          = data != null ? data.GetLevelData(currentLevel) : new WeaponLevelData();
             var   projLd       = BuildEffectiveLevelData(rawLd);
             float baseRange    = projLd.range;
@@ -166,7 +166,7 @@ public class BunnyHopWeapon : WeaponBase
             for (int i = 0; i < pCount; i++)
             {
                 float   angle   = i * angleStep;
-                Vector3 projDir = Quaternion.Euler(0f, angle, 0f) * dir; // dir = ทิศที่กำลังไป
+                Vector3 projDir = Quaternion.Euler(0f, angle, 0f) * dir; // dir = à¸—à¸´à¸¨à¸—à¸µà¹ˆà¸à¸³à¸¥à¸±à¸‡à¹„à¸›
                 FireProjectile(center, projDir, damage, projSpeed,
                                piercing: projLd.piercing, maxRange: projMaxRange,
                                isCrit: isCrit);
@@ -189,25 +189,25 @@ public class BunnyHopWeapon : WeaponBase
 
         Vector3 pos = transform.position;
 
-        // ── AoE cast 1 & 2 (เขียว — ขนาดเท่ากัน) ─────────────────────────
+        // â”€â”€ AoE cast 1 & 2 (à¹€à¸‚à¸µà¸¢à¸§ â€” à¸‚à¸™à¸²à¸”à¹€à¸—à¹ˆà¸²à¸à¸±à¸™) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         UnityEditor.Handles.color = new Color(0f, 1f, 0f, 0.25f);
         UnityEditor.Handles.DrawSolidDisc(pos, Vector3.up, aoeR);
         UnityEditor.Handles.color = Color.green;
         UnityEditor.Handles.DrawWireDisc(pos, Vector3.up, aoeR);
 
-        // ── Exile: Projectile radial (ส้ม) — อันแรกจาก forward ────────────
+        // â”€â”€ Exile: Projectile radial (à¸ªà¹‰à¸¡) â€” à¸­à¸±à¸™à¹à¸£à¸à¸ˆà¸²à¸ forward â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Gizmos.color = new Color(1f, 0.5f, 0f, 0.9f);
         int pCount = Mathf.Max(1, data != null ? data.GetLevelData(currentLevel).projectileCount : 4);
         for (int i = 0; i < pCount; i++)
         {
             float   angle   = i * (360f / pCount);
-            Vector3 projDir = Quaternion.Euler(0f, angle, 0f) * transform.forward; // forward แทน dir จริงใน editor
+            Vector3 projDir = Quaternion.Euler(0f, angle, 0f) * transform.forward; // forward à¹à¸—à¸™ dir à¸ˆà¸£à¸´à¸‡à¹ƒà¸™ editor
             Gizmos.DrawRay(pos, projDir * projR);
-            // จุดปลาย
+            // à¸ˆà¸¸à¸”à¸›à¸¥à¸²à¸¢
             Gizmos.DrawWireSphere(pos + projDir * projR, i == 0 ? 0.2f : 0.12f);
         }
 
-        // ── Label ─────────────────────────────────────────────────────────
+        // â”€â”€ Label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         UnityEditor.Handles.color = Color.white;
         UnityEditor.Handles.Label(pos + Vector3.right * aoeR,  $"aoe r={aoeR:F1}");
         UnityEditor.Handles.Label(pos + Vector3.forward * projR + Vector3.up * 0.3f,

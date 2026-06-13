@@ -121,6 +121,7 @@ public class GameTimeline : NetworkBehaviour
         if (!IsServer || gameEnded) return;
         gameEnded             = true;
         isMainBossPhase.Value = false;
+        SendAllFinalStats(true);
         GameWonClientRpc(gameTime.Value, GetLevel());
         Debug.Log($"[GameTimeline] ✅ WIN — t={FormatTime(gameTime.Value)}");
     }
@@ -136,8 +137,24 @@ public class GameTimeline : NetworkBehaviour
         }
 
         gameEnded = true;
+        SendAllFinalStats(false);
         GameLostClientRpc(gameTime.Value, GetLevel());
         Debug.Log($"[GameTimeline] ❌ LOSE — t={FormatTime(gameTime.Value)}");
+    }
+
+    void SendAllFinalStats(bool isWin)
+    {
+        if (NetworkManager.Singleton == null) return;
+        float finalTime = gameTime.Value;
+        int finalLevel = GetLevel();
+        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var pwm = c.PlayerObject?.GetComponent<PlayerWeaponManager>();
+            if (pwm != null)
+            {
+                pwm.SendFinalStats(finalTime, finalLevel, isWin);
+            }
+        }
     }
 
     int GetLevel() => SharedExperienceManager.Instance?.GetCurrentLevel() ?? 0;

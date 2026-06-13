@@ -1,7 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// Tentacle (Lance) — เสือกหนวด tendril เดียวพุ่งตรงไปข้างหน้า
+/// Tentacle (Lance) â€” à¹€à¸ªà¸·à¸­à¸à¸«à¸™à¸§à¸” tendril à¹€à¸”à¸µà¸¢à¸§à¸žà¸¸à¹ˆà¸‡à¸•à¸£à¸‡à¹„à¸›à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸²
 /// Holocure-style Summon Tentacle: narrow forward line AoE
 ///
 /// Level progression (5 levels):
@@ -16,17 +16,17 @@ using UnityEngine;
 public class LanceWeapon : WeaponBase
 {
     [Header("Lance Config")]
-    [Tooltip("ความกว้างของ pierce (แคบ = single tendril)")]
+    [Tooltip("à¸„à¸§à¸²à¸¡à¸à¸§à¹‰à¸²à¸‡à¸‚à¸­à¸‡ pierce (à¹à¸„à¸š = single tendril)")]
     public float pierceWidth = 0.8f;
-    [Tooltip("จำนวนครั้งที่แทง — 1=single tendril, 2+=rapid (มัก์ใช้เป็น 1)")]
+    [Tooltip("à¸ˆà¸³à¸™à¸§à¸™à¸„à¸£à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¹à¸—à¸‡ â€” 1=single tendril, 2+=rapid (à¸¡à¸±à¸à¹Œà¹ƒà¸Šà¹‰à¹€à¸›à¹‡à¸™ 1)")]
     public int   thrustCount = 1;
-    [Tooltip("หน่วงระหว่าง thrust หลายครั้ง (วินาที)")]
+    [Tooltip("à¸«à¸™à¹ˆà¸§à¸‡à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ thrust à¸«à¸¥à¸²à¸¢à¸„à¸£à¸±à¹‰à¸‡ (à¸§à¸´à¸™à¸²à¸—à¸µ)")]
     public float thrustDelay = 0.12f;
 
     [Header("Knockback (unlocks at level)")]
-    [Tooltip("Level ที่ปลดล็อก knockback")]
+    [Tooltip("Level à¸—à¸µà¹ˆà¸›à¸¥à¸”à¸¥à¹‡à¸­à¸ knockback")]
     public int   knockbackUnlockLevel = 5;
-    [Tooltip("แรงผลัก enemy (เมตร) ตามแนวพุ่ง")]
+    [Tooltip("à¹à¸£à¸‡à¸œà¸¥à¸±à¸ enemy (à¹€à¸¡à¸•à¸£) à¸•à¸²à¸¡à¹à¸™à¸§à¸žà¸¸à¹ˆà¸‡")]
     public float knockbackForce       = 1.5f;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -52,12 +52,12 @@ public class LanceWeapon : WeaponBase
         }
     }
 
-    /// <summary>ยิง tentacle 1 ครั้ง (forward line AoE + VFX) — ใช้ใน subclass ได้</summary>
+    /// <summary>à¸¢à¸´à¸‡ tentacle 1 à¸„à¸£à¸±à¹‰à¸‡ (forward line AoE + VFX) â€” à¹ƒà¸Šà¹‰à¹ƒà¸™ subclass à¹„à¸”à¹‰</summary>
     protected void DoThrust(Vector3 origin, Vector3 dir, float dmg, float range, bool isCrit)
     {
         float kb = (currentLevel >= knockbackUnlockLevel) ? knockbackForce : 0f;
 
-        manager.FireLineAoEServerRpc(origin, dir, dmg, range, pierceWidth, isCrit, kb);
+        FireLineAoE(origin, dir, dmg, range, pierceWidth, isCrit, kb);
 
         Vector3 vfxPos = origin + dir * (range * 0.5f);
         ShowVfx(ResolveHitVfx("LanceThrust"), vfxPos, isCrit: isCrit, isAttackHit: false, direction: dir);

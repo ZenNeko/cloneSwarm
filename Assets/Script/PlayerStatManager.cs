@@ -80,8 +80,19 @@ public class PlayerStatManager : NetworkBehaviour
         return result;
     }
 
-    // ── Apply ─────────────────────────────────────────────────────────────
     public void ApplyStat(StatData stat, playermove pm)
+    {
+        if (stat == null) return;
+
+        ApplyStatLocal(stat, pm);
+
+        if (IsOwner && !IsServer)
+        {
+            ApplyStatServerRpc(stat.statType);
+        }
+    }
+
+    private void ApplyStatLocal(StatData stat, playermove pm)
     {
         if (stat == null) return;
 
@@ -133,7 +144,34 @@ public class PlayerStatManager : NetworkBehaviour
         if (stat.statType == StatType.GainGold && lv + 1 >= stat.MaxLevel)
             Debug.Log("[StatManager] 💰 Full Build Bonus: +25 Gold (TODO: gold system)");
 
-        Debug.Log($"[StatManager] ✅ {stat.statName} Lv{lv + 1}  (+{val})");
+        Debug.Log($"[StatManager] {(IsServer ? "[Server]" : "[Client]")} ✅ {stat.statName} Lv{lv + 1}  (value={val})");
+    }
+
+    [ServerRpc]
+    private void ApplyStatServerRpc(StatType type)
+    {
+        var um = GetComponent<UpgradeManager>();
+        if (um == null) return;
+
+        StatData foundStat = null;
+        foreach (var s in um.allStats)
+        {
+            if (s != null && s.statType == type)
+            {
+                foundStat = s;
+                break;
+            }
+        }
+
+        if (foundStat != null)
+        {
+            var pm = GetComponent<playermove>();
+            ApplyStatLocal(foundStat, pm);
+        }
+        else
+        {
+            Debug.LogWarning($"[StatManager] Server could not find StatData for {type} in UpgradeManager.allStats");
+        }
     }
 
     // ── Internal ──────────────────────────────────────────────────────────

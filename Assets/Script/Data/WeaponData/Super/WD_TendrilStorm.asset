@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: TendrilStorm
   description: TendrilStorm
-  icon: {fileID: 0}
+  icon: {fileID: -779411195, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 1
   prefab: {fileID: 8378742293110232923, guid: 45cd5e43f55ffe94f9497155fa4a9d27, type: 3}
   aimMode: 0
@@ -30,5 +30,5 @@ MonoBehaviour:
     levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
-  weight: 100
+  weight: 150
   exclusiveCharacter: {fileID: 0}

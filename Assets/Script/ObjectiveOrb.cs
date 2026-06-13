@@ -16,38 +16,134 @@ public class ObjectiveOrb : NetworkBehaviour
     [Tooltip("Effect ที่เล่นก่อน destroy (optional)")]
     public GameObject collectEffect;
 
-    private bool collected = false;
+    [Header("Pickup")]
+    [Tooltip("ระยะ base ที่ orb เริ่มวิ่งเข้าหา player")]
+    public float attractRadius = 4f;
+    public float moveSpeed    = 8f;
+    public float pickupRadius = 0.4f;
 
-    // ── Trigger ───────────────────────────────────────────────────────────
-    void OnTriggerEnter(Collider other)
+    private Transform currentTarget;
+    private bool      collected = false;
+    private bool      forceAttract = false;
+
+    public void ForceAttractTo(Transform target)
     {
-        if (collected) return;
-        if (!other.CompareTag("Player")) return;
-
-        // Only Owner ของ player นั้น → ส่ง ServerRpc
-        var pm = other.GetComponent<playermove>();
-        if (pm == null || !pm.IsOwner) return;
-
-        collected = true;
-        CollectServerRpc();
+        if (target == null) return;
+        currentTarget = target;
+        forceAttract = true;
+        moveSpeed = 15f; // Speed up when magnetized
     }
 
-    // ── Server ────────────────────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
-    void CollectServerRpc(ServerRpcParams rpcParams = default)
+    // ── OnNetworkSpawn ────────────────────────────────────────────────────
+    public override void OnNetworkSpawn()
+    {
+        if (!IsServer) return;
+        currentTarget = FindNearestPlayer();
+    }
+
+    // ── Update: Server only ───────────────────────────────────────────────
+    void Update()
     {
         if (!IsServer) return;
 
+        if (!forceAttract && (Time.frameCount % 90 == 0 || currentTarget == null))
+            currentTarget = FindNearestPlayer();
+
+        if (currentTarget == null) return;
+
+        float dist = Vector3.Distance(transform.position, currentTarget.position);
+
+        if (dist <= pickupRadius)
+        {
+            Collect(currentTarget);
+            return;
+        }
+
+        if (forceAttract || dist <= GetAttractRadius())
+        {
+            transform.position = Vector3.MoveTowards(
+                transform.position, currentTarget.position, moveSpeed * Time.deltaTime);
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    float GetAttractRadius()
+    {
+        if (currentTarget == null) return attractRadius;
+
+        var sm = currentTarget.GetComponent<PlayerStatManager>();
+        float mult = sm != null ? sm.GetPickupRadiusMultiplier() : 1f;
+        return attractRadius * mult;
+    }
+
+    Transform FindNearestPlayer()
+    {
+        if (NetworkManager.Singleton == null) return null;
+
+        Transform nearest = null;
+        float     minDist = float.MaxValue;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var obj = client.PlayerObject;
+            if (obj == null) continue;
+
+            float dist = Vector3.Distance(transform.position, obj.transform.position);
+            if (dist < minDist) { minDist = dist; nearest = obj.transform; }
+        }
+        return nearest;
+    }
+
+    void Collect(Transform player)
+    {
+        if (collected) return;
+        
+        var pm = player != null ? player.GetComponent<playermove>() : null;
+        if (pm == null) return;
+
+        collected = true;
+
         // ส่ง clientId ของคนที่เก็บ → แสดง card เฉพาะคนนั้น
-        ulong collectorId = rpcParams.Receive.SenderClientId;
+        ulong collectorId = pm.OwnerClientId;
         SharedExperienceManager.Instance?.StartOrbPhaseForPlayer(collectorId);
 
-        // Spawn collect effect
-        if (collectEffect != null)
-            Instantiate(collectEffect, transform.position, Quaternion.identity);
+        // แจ้งเตือนทุก Client ให้เล่น VFX
+        PlayCollectEffectClientRpc();
 
         // Despawn orb
         if (NetworkObject != null && NetworkObject.IsSpawned)
             NetworkObject.Despawn(true);
+    }
+
+    // ── Trigger Fallback ──────────────────────────────────────────────────
+    void OnTriggerEnter(Collider other)
+    {
+        if (!IsServer) return;
+        if (other.CompareTag("Player"))
+        {
+            var pm = other.GetComponentInParent<playermove>();
+            if (pm != null) Collect(pm.transform);
+        }
+    }
+
+    // ── ClientRpc ─────────────────────────────────────────────────────────
+    [ClientRpc]
+    void PlayCollectEffectClientRpc()
+    {
+        // เล่น VFX ผ่าน OrbVisual บน Client (ถ้ามี)
+        var visual = GetComponent<OrbVisual>();
+        if (visual != null)
+        {
+            visual.PlayCollectEffect();
+        }
+        else
+        {
+            // fallback
+            VFXFactory.Play("OrbPickup", transform.position);
+        }
+
+        // Spawn local collect effect
+        if (collectEffect != null)
+            Instantiate(collectEffect, transform.position, Quaternion.identity);
     }
 }

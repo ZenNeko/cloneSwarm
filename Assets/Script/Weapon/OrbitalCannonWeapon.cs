@@ -1,16 +1,16 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Orbital Cannon — FUSION: Magnum (Super Pistol) + Star Ring (Super Orbiter)
+/// Orbital Cannon â€” FUSION: Magnum (Super Pistol) + Star Ring (Super Orbiter)
 ///
-/// กลไก:
-///   • Orb วนรอบตัวผู้เล่น (เหมือน Orbiter)
-///   • แต่ละ Orb ยิง Projectile หาศัตรูใกล้สุดทุก cooldown
-///   • Orb ยังคง deal melee damage เมื่อชนศัตรูด้วย
+/// à¸à¸¥à¹„à¸:
+///   â€¢ Orb à¸§à¸™à¸£à¸­à¸šà¸•à¸±à¸§à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ (à¹€à¸«à¸¡à¸·à¸­à¸™ Orbiter)
+///   â€¢ à¹à¸•à¹ˆà¸¥à¸° Orb à¸¢à¸´à¸‡ Projectile à¸«à¸²à¸¨à¸±à¸•à¸£à¸¹à¹ƒà¸à¸¥à¹‰à¸ªà¸¸à¸”à¸—à¸¸à¸ cooldown
+///   â€¢ Orb à¸¢à¸±à¸‡à¸„à¸‡ deal melee damage à¹€à¸¡à¸·à¹ˆà¸­à¸Šà¸™à¸¨à¸±à¸•à¸£à¸¹à¸”à¹‰à¸§à¸¢
 ///
 /// Level data (Fusion tier, 1 level):
-///   dmg=80 (projectile), cd=0.8s, count=4 (orb จำนวน), range=5
+///   dmg=80 (projectile), cd=0.8s, count=4 (orb à¸ˆà¸³à¸™à¸§à¸™), range=5
 ///   projSpeed=18
 /// </summary>
 public class OrbitalCannonWeapon : WeaponBase
@@ -53,10 +53,10 @@ public class OrbitalCannonWeapon : WeaponBase
             if (orb == null) continue;
             Vector3 orbPos = orb.position;
 
-            // Melee AoE ที่ตำแหน่ง orb
-            manager.FireMeleeServerRpc(orbPos, 0.8f, meleeDmg);
+            // Melee AoE à¸—à¸µà¹ˆà¸•à¸³à¹à¸«à¸™à¹ˆà¸‡ orb
+            FireMelee(orbPos, 0.8f, meleeDmg);
 
-            // ยิง projectile หาศัตรูใกล้สุดจาก orb
+            // à¸¢à¸´à¸‡ projectile à¸«à¸²à¸¨à¸±à¸•à¸£à¸¹à¹ƒà¸à¸¥à¹‰à¸ªà¸¸à¸”à¸ˆà¸²à¸ orb
             var enemy = FindNearestEnemy(ld.range * 2f);
             if (enemy != null)
             {

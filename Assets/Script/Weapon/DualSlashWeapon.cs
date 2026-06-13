@@ -1,42 +1,42 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// Dual Slash — slash 2 ครั้ง ตั้งค่า offset / rotation / timing แยกแต่ละ slash
+/// Dual Slash â€” slash 2 à¸„à¸£à¸±à¹‰à¸‡ à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸² offset / rotation / timing à¹à¸¢à¸à¹à¸•à¹ˆà¸¥à¸° slash
 ///
-/// Level data แนะนำ:
+/// Level data à¹à¸™à¸°à¸™à¸³:
 ///   Lv1: dmg=30, cd=1.5s, range=2.0
 ///   Lv2: dmg=38, cd=1.3s, range=2.2
 ///   Lv3: dmg=47, cd=1.1s, range=2.5
 ///   Lv4: dmg=56, cd=1.0s, range=2.8
 ///   Lv5: dmg=65, cd=0.9s, range=3.0
 ///
-/// Super: BladeStormWeapon (slash 360° 3 ครั้ง rapid)
+/// Super: BladeStormWeapon (slash 360Â° 3 à¸„à¸£à¸±à¹‰à¸‡ rapid)
 /// Fusion: Blade Storm + Chainsaw = CycloneBladeWeapon
 /// </summary>
 public class DualSlashWeapon : WeaponBase
 {
-    // ── Slash Config ────────────────────────────────────────────────────
+    // â”€â”€ Slash Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     [System.Serializable]
     public class SlashConfig
     {
-        [Tooltip("Offset ไปข้างหน้า (คูณ radius)")]
+        [Tooltip("Offset à¹„à¸›à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸² (à¸„à¸¹à¸“ radius)")]
         [Range(-1f, 1f)]
         public float forwardOffset = 0.6f;
 
-        [Tooltip("Offset ไปทางขวา (คูณ radius) — ค่าลบ = ซ้าย")]
+        [Tooltip("Offset à¹„à¸›à¸—à¸²à¸‡à¸‚à¸§à¸² (à¸„à¸¹à¸“ radius) â€” à¸„à¹ˆà¸²à¸¥à¸š = à¸‹à¹‰à¸²à¸¢")]
         [Range(-1f, 1f)]
         public float rightOffset = -0.3f;
 
-        [Tooltip("หมุนรอบแกน X (ก้ม/เงย)")]
+        [Tooltip("à¸«à¸¡à¸¸à¸™à¸£à¸­à¸šà¹à¸à¸™ X (à¸à¹‰à¸¡/à¹€à¸‡à¸¢)")]
         [Range(0f, 360f)]
         public float rotationX = 0f;
 
-        [Tooltip("หมุนรอบแกน Y (ซ้าย/ขวา) — 90 = ขวา, 180 = หลัง, 270 = ซ้าย")]
+        [Tooltip("à¸«à¸¡à¸¸à¸™à¸£à¸­à¸šà¹à¸à¸™ Y (à¸‹à¹‰à¸²à¸¢/à¸‚à¸§à¸²) â€” 90 = à¸‚à¸§à¸², 180 = à¸«à¸¥à¸±à¸‡, 270 = à¸‹à¹‰à¸²à¸¢")]
         [Range(0f, 360f)]
         public float rotationY = 0f;
 
-        [Tooltip("หมุนรอบแกน Z (เอียง/หมุนตัว)")]
+        [Tooltip("à¸«à¸¡à¸¸à¸™à¸£à¸­à¸šà¹à¸à¸™ Z (à¹€à¸­à¸µà¸¢à¸‡/à¸«à¸¡à¸¸à¸™à¸•à¸±à¸§)")]
         [Range(0f, 360f)]
         public float rotationZ = 0f;
     }
@@ -56,15 +56,15 @@ public class DualSlashWeapon : WeaponBase
     };
 
     [Header("Timing")]
-    [Tooltip("ดีเลย์ระหว่าง slash 1 กับ 2 (วินาที) — 0 = พร้อมกัน")]
+    [Tooltip("à¸”à¸µà¹€à¸¥à¸¢à¹Œà¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ slash 1 à¸à¸±à¸š 2 (à¸§à¸´à¸™à¸²à¸—à¸µ) â€” 0 = à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™")]
     [Range(0f, 0.5f)]
     public float slashDelay = 0.15f;
 
     [Header("Alternate")]
-    [Tooltip("สลับลำดับ slash ทุกครั้งที่ยิง (1→2, 2→1, 1→2, ...)")]
+    [Tooltip("à¸ªà¸¥à¸±à¸šà¸¥à¸³à¸”à¸±à¸š slash à¸—à¸¸à¸à¸„à¸£à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸¢à¸´à¸‡ (1â†’2, 2â†’1, 1â†’2, ...)")]
     public bool alternatePerFire = true;
 
-    // ── Internal ────────────────────────────────────────────────────────
+    // â”€â”€ Internal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     Vector3 _lastMoveDir = Vector3.forward;
     bool    _swapState;
 
@@ -79,7 +79,7 @@ public class DualSlashWeapon : WeaponBase
         Vector3 forward = GetAimDirection();
         float   arc     = data != null ? data.arcAngle : 360f;
 
-        // สลับลำดับ slash ทุก fire
+        // à¸ªà¸¥à¸±à¸šà¸¥à¸³à¸”à¸±à¸š slash à¸—à¸¸à¸ fire
         SlashConfig first  = _swapState ? slash2 : slash1;
         SlashConfig second = _swapState ? slash1 : slash2;
         if (alternatePerFire) _swapState = !_swapState;
@@ -91,13 +91,13 @@ public class DualSlashWeapon : WeaponBase
                               float dmg, bool isCrit,
                               SlashConfig first, SlashConfig second)
     {
-        // ── Slash 1 ─────────────────────────────────────────────────
+        // â”€â”€ Slash 1 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         FireSlash(forward, radius, arc, dmg, isCrit, first);
 
         if (slashDelay > 0f)
             yield return new WaitForSeconds(slashDelay);
 
-        // ── Slash 2 ─────────────────────────────────────────────────
+        // â”€â”€ Slash 2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         FireSlash(forward, radius, arc, dmg, isCrit, second);
     }
 
@@ -107,19 +107,19 @@ public class DualSlashWeapon : WeaponBase
         Vector3 right  = Vector3.Cross(Vector3.up, forward).normalized;
         Vector3 origin = transform.position + Vector3.up * 0.5f;
 
-        // ── ตำแหน่ง slash ─────────────────────────────────────────
+        // â”€â”€ à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡ slash â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Vector3 pos = origin
                     + forward * (radius * cfg.forwardOffset)
                     + right   * (radius * cfg.rightOffset);
 
-        // ── ทิศ VFX (rotation XYZ) ────────────────────────────────
-        // X,Y → เปลี่ยนทิศ direction | Z → roll (เอียง VFX)
+        // â”€â”€ à¸—à¸´à¸¨ VFX (rotation XYZ) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // X,Y â†’ à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸—à¸´à¸¨ direction | Z â†’ roll (à¹€à¸­à¸µà¸¢à¸‡ VFX)
         Quaternion rot = Quaternion.LookRotation(forward, Vector3.up)
                        * Quaternion.Euler(cfg.rotationX, cfg.rotationY, 0f);
         Vector3 dir = rot * Vector3.forward;
 
-        // ── Damage + VFX ──────────────────────────────────────────
-        manager.FireArcMeleeServerRpc(pos, forward, radius, arc, dmg, isCrit);
+        // â”€â”€ Damage + VFX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        FireArcMelee(pos, forward, radius, arc, dmg, isCrit);
         ShowVfx(ResolveHitVfx("SlashHit"), pos, radius, isCrit,
                 isAttackHit: false, direction: dir, arcAngle: arc, roll: cfg.rotationZ);
     }

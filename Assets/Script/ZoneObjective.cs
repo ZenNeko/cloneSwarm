@@ -401,7 +401,7 @@ public class ZoneObjective : NetworkBehaviour
     {
         SetDiscColor(COL_COMPLETE);
         if (discMat != null) discMat.SetFloat(ID_Progress, 1f);
-        VFXFactory.Play("OrbPickup", transform.position);
+        VFXFactory.Play("VortexSpawn", transform.position);
         AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  ★ORB", Color.green);
     }
 

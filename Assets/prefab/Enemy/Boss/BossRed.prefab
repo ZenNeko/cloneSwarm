@@ -1279,7 +1279,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   ShowTopMostFoldoutHeaderGroup: 1
-  speed: 3
+  speed: 4
   suppressDefaultMovement: 0
   wallLayer:
     serializedVersion: 2
@@ -1287,16 +1287,10 @@ MonoBehaviour:
   wallCheckRadius: 0.4
   wallCheckDistance: 0.6
   useFlowField: 1
-  usePathfinding: 0
-  repathInterval: 1
-  repathTargetMoveThresh: 2.5
-  waypointReachDistance: 0.5
-  nearDistanceForRepath: 12
-  farRepathMultiplier: 3
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
-  maxHealth: 60000
+  maxHealth: 400000
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -1308,7 +1302,6 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 30
   serverInvincible: 0
-  drawGizmoAlways: 0
 --- !u!114 &5664926950133900031
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1323,11 +1316,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainBoss
   ShowTopMostFoldoutHeaderGroup: 1
   bossDisplayName: BOSS
-  phase2Threshold: 0.6
-  phase3Threshold: 0.3
+  phase2Threshold: 0.7
+  phase3Threshold: 0.4
   phase1Interval: 3
-  phase2Interval: 2
-  phase3Interval: 1
+  phase2Interval: 2.5
+  phase3Interval: 1.5
   circleRadius: 15
   circleDamage: 25
   circleWarnTime: 2.5

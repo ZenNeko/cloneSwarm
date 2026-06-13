@@ -1,18 +1,18 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Grenade — โยน grenade ไปสุ่มตำแหน่งรอบ player → ระเบิด AoE
-/// ใช้ local coroutine + visual GameObject (ไม่ต้องการ NetworkObject prefab)
-/// Damage ผ่าน FireMeleeServerRpc เมื่อถึง fuseTime
+/// Grenade â€” à¹‚à¸¢à¸™ grenade à¹„à¸›à¸ªà¸¸à¹ˆà¸¡à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸£à¸­à¸š player â†’ à¸£à¸°à¹€à¸šà¸´à¸” AoE
+/// à¹ƒà¸Šà¹‰ local coroutine + visual GameObject (à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£ NetworkObject prefab)
+/// Damage à¸œà¹ˆà¸²à¸™ FireMeleeServerRpc à¹€à¸¡à¸·à¹ˆà¸­à¸–à¸¶à¸‡ fuseTime
 /// </summary>
 public class GrenadeWeapon : WeaponBase
 {
-    [Tooltip("รัศมีระเบิด (scale ตาม AreaSize stat)")]
+    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸£à¸°à¹€à¸šà¸´à¸” (scale à¸•à¸²à¸¡ AreaSize stat)")]
     public float explosionRadius = 3f;
-    [Tooltip("เวลาบินก่อนระเบิด (วินาที)")]
+    [Tooltip("à¹€à¸§à¸¥à¸²à¸šà¸´à¸™à¸à¹ˆà¸­à¸™à¸£à¸°à¹€à¸šà¸´à¸” (à¸§à¸´à¸™à¸²à¸—à¸µ)")]
     public float fuseTime        = 1.5f;
-    [Tooltip("Prefab visual ของ grenade (optional — ถ้าไม่ assign ใช้ sphere สีเหลือง)")]
+    [Tooltip("Prefab visual à¸‚à¸­à¸‡ grenade (optional â€” à¸–à¹‰à¸²à¹„à¸¡à¹ˆ assign à¹ƒà¸Šà¹‰ sphere à¸ªà¸µà¹€à¸«à¸¥à¸·à¸­à¸‡)")]
     public GameObject grenadePrefab;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -37,7 +37,7 @@ public class GrenadeWeapon : WeaponBase
 
     IEnumerator ThrowGrenade(Vector3 from, Vector3 to, float dmg, bool isCrit, float radius)
     {
-        // ── Visual ────────────────────────────────────────────────────────
+        // â”€â”€ Visual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         GameObject visual = grenadePrefab != null
             ? Instantiate(grenadePrefab, from, Quaternion.identity)
             : CreateFallbackVisual(from);
@@ -59,10 +59,10 @@ public class GrenadeWeapon : WeaponBase
 
         if (visual != null) Destroy(visual);
 
-        // ── Damage (server-authoritative) ─────────────────────────────────
-        manager.FireMeleeServerRpc(to, radius, dmg, isCrit);
+        // â”€â”€ Damage (server-authoritative) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        FireMelee(to, radius, dmg, isCrit);
 
-        // ── VFX ──────────────────────────────────────────────────────────
+        // â”€â”€ VFX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         ShowVfx(ResolveHitVfx("GrenadeExplosion"), to, radius, isAttackHit: false);
     }
 

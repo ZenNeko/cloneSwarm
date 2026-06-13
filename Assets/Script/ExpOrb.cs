@@ -20,9 +20,18 @@ public class ExpOrb : NetworkBehaviour
 
     private Transform currentTarget;
     private Vector3   startPos;
+    private bool      forceAttract = false;
 
     // ── Init (เรียกจาก Enemy หลัง Spawn) ─────────────────────────────────
     public void SetExpAmount(float amount) => expAmount = amount;
+
+    public void ForceAttractTo(Transform target)
+    {
+        if (target == null) return;
+        currentTarget = target;
+        forceAttract = true;
+        moveSpeed = 15f;
+    }
 
     public override void OnNetworkSpawn()
     {
@@ -36,7 +45,7 @@ public class ExpOrb : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        if (Time.frameCount % 90 == 0 || currentTarget == null)
+        if (!forceAttract && (Time.frameCount % 90 == 0 || currentTarget == null))
             currentTarget = FindNearestPlayer();
 
         if (currentTarget == null) return;
@@ -49,7 +58,7 @@ public class ExpOrb : NetworkBehaviour
             return;
         }
 
-        if (dist <= GetAttractRadius())
+        if (forceAttract || dist <= GetAttractRadius())
         {
             transform.position = Vector3.MoveTowards(
                 transform.position, currentTarget.position, moveSpeed * Time.deltaTime);
@@ -77,11 +86,14 @@ public class ExpOrb : NetworkBehaviour
         else Destroy(gameObject);
     }
 
-    // ── Fallback Trigger ─────────────────────────────────────────────────
     void OnTriggerEnter(Collider other)
     {
         if (!IsServer) return;
-        if (other.CompareTag("Player")) Collect();
+        if (other.CompareTag("Player"))
+        {
+            var pm = other.GetComponentInParent<playermove>();
+            if (pm != null) Collect();
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
