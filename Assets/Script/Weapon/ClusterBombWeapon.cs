@@ -2,14 +2,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Cluster Blunderbuss â€” FUSION: Blunderbuss (Super Shotgun) + Minefield (Super Grenade)
+/// Cluster Blunderbuss — FUSION: Blunderbuss (Super Shotgun) + Minefield (Super Grenade)
 ///
-/// OnFire: à¸¢à¸´à¸‡ pellets + grenade à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™ (MouseAim)
-///   â€” Pellets: à¸à¸£à¸°à¸ˆà¸²à¸¢ spread à¹€à¸«à¸¡à¸·à¸­à¸™ Shotgun
-///   â€” Grenade: à¸šà¸´à¸™à¹„à¸›à¸—à¸µà¹ˆ mouse à¸£à¸°à¹€à¸šà¸´à¸” AoE (cluster = false)
+/// OnFire: ยิง pellets + grenade พร้อมกัน (MouseAim)
+///   — Pellets: กระจาย spread เหมือน Shotgun
+///   — Grenade: บินไปที่ mouse ระเบิด AoE (cluster = false)
 ///
-/// On Kill: à¹€à¸¡à¸·à¹ˆà¸­ enemy à¸•à¸²à¸¢ â†’ à¸£à¸°à¹€à¸šà¸´à¸” AoE à¸£à¸­à¸šà¸•à¸±à¸§ enemy
-///          + spawn Cluster Bombs (child grenades) à¸à¸£à¸°à¸ˆà¸²à¸¢à¸£à¸­à¸šà¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸•à¸²à¸¢
+/// On Kill: เมื่อ enemy ตาย → ระเบิด AoE รอบตัว enemy
+///          + spawn Cluster Bombs (child grenades) กระจายรอบจุดที่ตาย
 ///
 /// Level data (Fusion tier, 1 level):
 ///   dmg=80, cd=1.5s, count=5, range=12, projSpeed=18
@@ -17,7 +17,7 @@ using UnityEngine;
 public class ClusterBombWeapon : WeaponBase
 {
     [Header("Shotgun Part")]
-    [Tooltip("à¸¡à¸¸à¸¡à¸à¸£à¸°à¸ˆà¸²à¸¢ pellets à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” (à¸­à¸‡à¸¨à¸²)")]
+    [Tooltip("มุมกระจาย pellets ทั้งหมด (องศา)")]
     public float spreadAngle     = 40f;
 
     [Header("Grenade Part")]
@@ -25,23 +25,23 @@ public class ClusterBombWeapon : WeaponBase
     public float fuseTime        = 1.0f;
 
     [Header("On-Kill Explosion")]
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µ AoE à¸—à¸±à¸™à¸—à¸µà¸—à¸µà¹ˆ enemy à¸•à¸²à¸¢")]
+    [Tooltip("รัศมี AoE ทันทีที่ enemy ตาย")]
     public float killExplosionRadius  = 3f;
-    [Tooltip("à¸”à¸²à¹€à¸¡à¸ˆ AoE on-kill")]
+    [Tooltip("ดาเมจ AoE on-kill")]
     public float killExplosionDamage  = 60f;
-    [Tooltip("à¸ˆà¸³à¸™à¸§à¸™ child grenades à¸—à¸µà¹ˆ spawn à¸£à¸­à¸šà¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸•à¸²à¸¢")]
+    [Tooltip("จำนวน child grenades ที่ spawn รอบจุดที่ตาย")]
     public int   childGrenadeCount    = 3;
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸à¸£à¸°à¸ˆà¸²à¸¢ child grenades")]
+    [Tooltip("รัศมีกระจาย child grenades")]
     public float childGrenadeSpread   = 4f;
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸£à¸°à¹€à¸šà¸´à¸” child grenade")]
+    [Tooltip("รัศมีระเบิด child grenade")]
     public float childGrenadeRadius   = 2f;
-    [Tooltip("fuse time à¸‚à¸­à¸‡ child grenade")]
+    [Tooltip("fuse time ของ child grenade")]
     public float childGrenadeFuse     = 0.6f;
-    [Tooltip("à¸ˆà¸³à¸à¸±à¸”à¸ˆà¸³à¸™à¸§à¸™ on-kill explosion à¸•à¹ˆà¸­ frame à¸à¸±à¸™ lag spike (0 = à¹„à¸¡à¹ˆà¸ˆà¸³à¸à¸±à¸”)")]
+    [Tooltip("จำกัดจำนวน on-kill explosion ต่อ frame กัน lag spike (0 = ไม่จำกัด)")]
     [Min(0)] public int maxKillExplosionsPerFrame = 32;
 
-    // Anti-recursion: defer on-kill explosion à¹„à¸› LateUpdate à¸à¸±à¸™ stack overflow
-    // à¹€à¸¡à¸·à¹ˆà¸­ chain kill à¸«à¸¥à¸²à¸¢à¸•à¸±à¸§à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™ (FireMelee â†’ kill â†’ event â†’ FireMelee â†’ ...)
+    // Anti-recursion: defer on-kill explosion ไป LateUpdate กัน stack overflow
+    // เมื่อ chain kill หลายตัวพร้อมกัน (FireMelee → kill → event → FireMelee → ...)
     private readonly List<Vector3> _pendingKillExplosions = new();
 
     protected override void OnInit()
@@ -71,13 +71,13 @@ public class ClusterBombWeapon : WeaponBase
 
         float dmg = RollDamage(ld.damage, out bool isCrit);
 
-        // â”€â”€ Pellets (Shotgun) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Pellets (Shotgun) ─────────────────────────────────────────────
         int pellets = Mathf.Max(1, ld.projectileCount);
         FireProjectile(spawnPos, dir, dmg / pellets, ld.projectileSpeed,
             count: pellets, spreadDeg: spreadAngle / Mathf.Max(1, pellets - 1),
             isCrit: isCrit);
 
-        // â”€â”€ Grenade (à¸ªà¸¸à¹ˆà¸¡à¸£à¸­à¸š player) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Grenade (สุ่มรอบ player) ──────────────────────────────────────
         float radius = grenadeRadius;
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
@@ -91,7 +91,7 @@ public class ClusterBombWeapon : WeaponBase
     {
         if (manager == null || !manager.IsOwner) return;
 
-        // Defer â€” à¸à¸±à¸™ recursive call à¸—à¸³ stack overflow à¸•à¸­à¸™ chain kill à¸«à¸¥à¸²à¸¢à¸•à¸±à¸§
+        // Defer — กัน recursive call ทำ stack overflow ตอน chain kill หลายตัว
         _pendingKillExplosions.Add(deathPos);
     }
 
@@ -112,7 +112,7 @@ public class ClusterBombWeapon : WeaponBase
 
     void ProcessKillExplosion(Vector3 deathPos)
     {
-        // â”€â”€ AoE à¸—à¸±à¸™à¸—à¸µà¸—à¸µà¹ˆà¸ˆà¸¸à¸”à¸•à¸²à¸¢ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── AoE ทันทีที่จุดตาย ────────────────────────────────────────────
         float radius = killExplosionRadius;
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
@@ -120,7 +120,7 @@ public class ClusterBombWeapon : WeaponBase
         FireMelee(deathPos + Vector3.up * 0.5f, radius, killExplosionDamage);
         ShowVfx(ResolveHitVfx("GrenadeExplosion"), deathPos, radius);
 
-        // â”€â”€ Cluster Bombs à¸£à¸­à¸šà¸ˆà¸¸à¸”à¸•à¸²à¸¢ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Cluster Bombs รอบจุดตาย ───────────────────────────────────────
         Vector3 spawnPos = deathPos + Vector3.up * 0.5f;
         float   childRad = childGrenadeRadius;
         if (manager.statManager != null)

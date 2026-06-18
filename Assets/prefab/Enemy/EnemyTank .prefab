@@ -989,6 +989,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 2
+  rotationSpeed: 360
   suppressDefaultMovement: 0
   wallLayer:
     serializedVersion: 2
@@ -996,12 +997,8 @@ MonoBehaviour:
   wallCheckRadius: 0.4
   wallCheckDistance: 0.6
   useFlowField: 1
-  usePathfinding: 0
-  repathInterval: 1
-  repathTargetMoveThresh: 2.5
-  waypointReachDistance: 0.5
-  nearDistanceForRepath: 12
-  farRepathMultiplier: 3
+  separationWeight: 0.3
+  separationRadius: 1.2
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
@@ -1017,7 +1014,6 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 150
   serverInvincible: 0
-  drawGizmoAlways: 0
 --- !u!135 &-8004896936436739533
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1064,7 +1060,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 84
   m_CollisionDetection: 0
 --- !u!1 &7286520512955827787
 GameObject:

@@ -1,17 +1,17 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Tri-Rang â€” Super version à¸‚à¸­à¸‡ Boomerang
-/// à¸¢à¸´à¸‡ 3 Boomerang à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™ spread 30Â° + à¸£à¸°à¹€à¸šà¸´à¸” AoE à¹€à¸¡à¸·à¹ˆà¸­à¸à¸¥à¸±à¸šà¸–à¸¶à¸‡à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™
+/// Tri-Rang — Super version ของ Boomerang
+/// ยิง 3 Boomerang พร้อมกัน spread 30° + ระเบิด AoE เมื่อกลับถึงผู้เล่น
 ///
-/// Super tier â€” 1 level
+/// Super tier — 1 level
 ///   dmg=120, cd=2.0s, range=14, projectileSpeed=16, count=3
 ///
 /// Fusion: Tri-Rang + StarRing = SatelliteRingWeapon
 /// </summary>
 public class TriRangWeapon : WeaponBase
 {
-    [Tooltip("à¸¡à¸¸à¸¡ spread à¸£à¸§à¸¡ (à¸­à¸‡à¸¨à¸²)")]
+    [Tooltip("มุม spread รวม (องศา)")]
     public float spreadAngle = 30f;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -39,20 +39,5 @@ public class TriRangWeapon : WeaponBase
             Vector3 fireDir = Quaternion.Euler(0f, angle, 0f) * dir;
             SpawnBoomerang(spawnPos, fireDir, dmg, speed, range, isCrit);
         }
-    }
-
-    Vector3 GetAimDirection()
-    {
-        int   mask    = LayerMask.GetMask("Enemy");
-        var   cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minDist = float.MaxValue;
-        Vector3 dir   = transform.forward;
-        foreach (var c in cols)
-        {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minDist) { minDist = d; dir = (c.transform.position - transform.position).normalized; }
-        }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
     }
 }

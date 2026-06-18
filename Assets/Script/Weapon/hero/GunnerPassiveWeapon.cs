@@ -34,8 +34,9 @@ public class GunnerPassiveWeapon : WeaponBase, IHUDPassiveBar
     public static event System.Action<GunnerPassiveWeapon, int>  OnKillCountChanged;
 
     // ── State ─────────────────────────────────────────────────────────────
-    public bool IsBuffActive  { get; private set; }
-    public int  KillCount     { get; private set; }
+    public bool  IsBuffActive  { get; private set; }
+    public int   KillCount     { get; private set; }
+    private float buffEndTime;
 
     protected override bool UsesCooldownTimer => false;
 
@@ -74,10 +75,16 @@ public class GunnerPassiveWeapon : WeaponBase, IHUDPassiveBar
     // ── Buff ──────────────────────────────────────────────────────────────
     void TriggerBuff()
     {
-        // ถ้า buff กำลัง active อยู่ ให้ refresh duration (restart coroutine)
-        if (IsBuffActive) StopAllCoroutines();
+        buffEndTime = Time.time + buffDuration;
 
-        StartCoroutine(BuffCoroutine());
+        if (!IsBuffActive)
+        {
+            StartCoroutine(BuffCoroutine());
+        }
+        else
+        {
+            Debug.Log($"[GunnerPassive] 🔄 Buff duration refreshed! Remaining time: {buffDuration}s");
+        }
     }
 
     IEnumerator BuffCoroutine()
@@ -87,9 +94,13 @@ public class GunnerPassiveWeapon : WeaponBase, IHUDPassiveBar
         if (manager.playerMove  != null) manager.playerMove.tempMoveSpeedBonus  += moveSpeedBonus;
         if (manager.statManager != null) manager.statManager.tempAbilityHaste   += abilityHasteBonus;
         OnBuffStateChanged?.Invoke(this, true);
-        Debug.Log($"[GunnerPassive] 🔥 BUFF ACTIVE — MoveSpeed+50% AbilityHaste+50 for {buffDuration}s");
+        Debug.Log($"[GunnerPassive] 🔥 BUFF ACTIVE — MoveSpeed+{moveSpeedBonus * 100}% AbilityHaste+{abilityHasteBonus} for {buffDuration}s");
 
-        yield return new UnityEngine.WaitForSeconds(buffDuration);
+        // Loop checking end time to support duration refresh dynamically
+        while (Time.time < buffEndTime)
+        {
+            yield return new WaitForSeconds(0.1f);
+        }
 
         // Remove
         IsBuffActive = false;

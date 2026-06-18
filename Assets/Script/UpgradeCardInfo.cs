@@ -13,6 +13,9 @@ public enum UpgradeCardType
 public class UpgradeCardInfo
 {
     public UpgradeCardType type;
+    public bool            isRecommended;
+    public System.Collections.Generic.List<Sprite> synergyIcons = new();
+    public bool            showSynergy;
 
     // ── Weapon fields ─────────────────────────────────────────────────────
     public WeaponData weapon;

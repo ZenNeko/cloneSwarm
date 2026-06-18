@@ -3,16 +3,16 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Valor â€” Riven's Q ability  (AbilityBase â€” à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ WeaponBase)
-/// à¸à¸” Q â†’ Dash à¸«à¸²à¸¨à¸±à¸•à¸£à¸¹à¸—à¸µà¹ˆà¹ƒà¸à¸¥à¹‰à¸—à¸µà¹ˆà¸ªà¸¸à¸” + AoE damage at landing
-/// à¹€à¸¡à¸·à¹ˆà¸­ Blade of Exile active â†’ Wind Slash radial à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡
+/// Valor — Riven's Q ability  (AbilityBase — ไม่ใช่ WeaponBase)
+/// กด Q → Dash หาศัตรูที่ใกล้ที่สุด + AoE damage at landing
+/// เมื่อ Blade of Exile active → Wind Slash radial เพิ่มเติม
 ///
-/// AbilityData (cooldown, damage, range) à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ AbilityData asset
+/// AbilityData (cooldown, damage, range) อยู่ใน AbilityData asset
 /// </summary>
 public class ValorWeapon : AbilityBase, IHUDAbility
 {
     [Header("Input Key")]
-    [Tooltip("à¸›à¸¸à¹ˆà¸¡à¸—à¸µà¹ˆà¸à¸”à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸Šà¹‰à¸ªà¸à¸´à¸¥")]
+    [Tooltip("ปุ่มที่กดเพื่อใช้สกิล")]
     public Key activateKey = Key.Q;
 
     [Header("Dash")]
@@ -22,35 +22,35 @@ public class ValorWeapon : AbilityBase, IHUDAbility
     [Header("Wind Slash (during Exile)")]
     public int windSlashCount = 4;
 
-    // â”€â”€ Cooldown state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Cooldown state ────────────────────────────────────────────────────
     public bool  IsOnCooldown      { get; private set; }
     public float CooldownRemaining { get; private set; }
     public float CooldownMax       { get; private set; }
 
-    // â”€â”€ Events (UI à¸Ÿà¸±à¸‡) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Events (UI ฟัง) ───────────────────────────────────────────────────
     public static event System.Action<ValorWeapon, float> OnCooldownChanged;
     public static event System.Action<ValorWeapon>        OnActivated;
 
     private ChargeManager chargeManager;
     private bool          isDashing;
 
-    // â”€â”€ IHUDAbility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public string HUDSlotKey       => "Q";   // Valor à¸‚à¸­à¸‡ Riven à¸­à¸¢à¸¹à¹ˆ Q à¹€à¸ªà¸¡à¸­
+    // ── IHUDAbility ───────────────────────────────────────────────────────
+    public string HUDSlotKey       => "Q";   // Valor ของ Riven อยู่ Q เสมอ
     public string HUDKeyLabel      => activateKey.ToString();
     public bool   IsActiveMode     => false;
     public float  ActiveRemaining  => 0f;
     public float  ActiveMax        => 0f;
 
-    // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Init ──────────────────────────────────────────────────────────────
     protected override void OnInit()
     {
         chargeManager = manager.GetComponent<ChargeManager>();
     }
 
-    // â”€â”€ Update â€” input + cooldown tick â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Update — input + cooldown tick ────────────────────────────────────
     void Update()
     {
-        // Cooldown countdown (à¸—à¸¸à¸ client â€” à¹€à¸žà¸·à¹ˆà¸­ UI sync)
+        // Cooldown countdown (ทุก client — เพื่อ UI sync)
         if (IsOnCooldown)
         {
             CooldownRemaining = Mathf.Max(0f, CooldownRemaining - Time.deltaTime);
@@ -58,7 +58,7 @@ public class ValorWeapon : AbilityBase, IHUDAbility
             if (CooldownRemaining <= 0f) IsOnCooldown = false;
         }
 
-        // Input â€” Owner only
+        // Input — Owner only
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || isDashing) return;
@@ -69,12 +69,12 @@ public class ValorWeapon : AbilityBase, IHUDAbility
             Activate();
     }
 
-    // â”€â”€ Activate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Activate ──────────────────────────────────────────────────────────
     void Activate()
     {
         var ld = data.GetLevelData(currentLevel);
 
-        // Cooldown scale à¸•à¸²à¸¡ Ability Haste
+        // Cooldown scale ตาม Ability Haste
         float cd = ld.cooldown;
         if (manager.statManager != null) cd *= manager.statManager.GetCooldownMultiplier();
         CooldownMax       = cd;
@@ -83,8 +83,8 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         OnCooldownChanged?.Invoke(this, 1f);
         OnActivated?.Invoke(this);
 
-        // à¸—à¸´à¸¨ dash = à¸—à¸´à¸¨à¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¸à¸” input à¸­à¸¢à¸¹à¹ˆ
-        // fallback â†’ à¸—à¸´à¸¨à¸«à¸²à¸¨à¸±à¸•à¸£à¸¹à¸—à¸µà¹ˆà¹ƒà¸à¸¥à¹‰à¸ªà¸¸à¸” â†’ transform.forward
+        // ทิศ dash = ทิศที่ผู้เล่นกด input อยู่
+        // fallback → ทิศหาศัตรูที่ใกล้สุด → transform.forward
         Vector3 dir = manager.playerMove?.MoveDirection ?? Vector3.zero;
         if (dir.sqrMagnitude < 0.001f)
         {
@@ -101,7 +101,7 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         StartCoroutine(DashAndBlast(dir, ld.range, damage, isCrit));
     }
 
-    // â”€â”€ Dash coroutine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Dash coroutine ────────────────────────────────────────────────────
     IEnumerator DashAndBlast(Vector3 dir, float radius, float damage, bool isCrit)
     {
         isDashing = true;
@@ -136,7 +136,7 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         string baseHit = isCrit ? "CritHitEffect" : "HitEffect";
         manager.BroadcastVfxTypeServerRpc(transform.position, baseHit);
 
-        // Wind Slash â€” à¹€à¸‰à¸žà¸²à¸°à¸•à¸­à¸™ Blade of Exile active
+        // Wind Slash — เฉพาะตอน Blade of Exile active
         if (chargeManager != null && chargeManager.IsExileActive)
         {
             float windDmg  = damage * 0.8f;

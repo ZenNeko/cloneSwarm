@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Railgun â€” Super Laser
-/// Instant pierce raycast â€” à¸£à¸±à¸šà¸œà¸¥à¸ˆà¸²à¸ projectileCount
-/// projectileCount > 1 â†’ à¸à¸£à¸°à¸ˆà¸²à¸¢ beams 360Â°/count
+/// Railgun — Super Laser
+/// Instant pierce raycast — รับผลจาก projectileCount
+/// projectileCount > 1 → กระจาย beams 360°/count
 ///
 /// Level data (Super tier, 1 level):
 ///   dmg=200, cd=4.0s, range=50 (full screen)

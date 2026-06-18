@@ -312,7 +312,7 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── ServerRpc: Melee AoE ──────────────────────────────────────────────
     [ServerRpc(RequireOwnership = false)]
-    public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false, string weaponName = "Unknown")
+    public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false, string weaponName = "Unknown", float knockbackForce = 0f, Vector3 knockbackDir = default)
     {
         foreach (var c in OverlapEnemy(center, radius))
         {
@@ -321,13 +321,23 @@ public class PlayerWeaponManager : NetworkBehaviour
             {
                 enemy.EnemyTakeDamage(damage, isCrit);
                 RegisterWeaponDamage(weaponName, damage);
+
+                if (knockbackForce > 0f)
+                {
+                    Vector3 dir = knockbackDir != Vector3.zero ? knockbackDir : (enemy.transform.position - center);
+                    dir.y = 0f;
+                    if (dir.sqrMagnitude > 0.001f)
+                    {
+                        enemy.transform.position += dir.normalized * knockbackForce;
+                    }
+                }
             }
         }
     }
 
     /// <summary>Melee AoE แบบ arc — เฉพาะ enemy ที่อยู่ใน cone ทิศ forward</summary>
     [ServerRpc(RequireOwnership = false)]
-    public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false, string weaponName = "Unknown")
+    public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false, string weaponName = "Unknown", float knockbackForce = 0f, Vector3 knockbackDir = default)
     {
         float halfArc = arcAngle * 0.5f;
         foreach (var c in OverlapEnemy(center, radius))
@@ -341,6 +351,16 @@ public class PlayerWeaponManager : NetworkBehaviour
                 {
                     enemy.EnemyTakeDamage(damage, isCrit);
                     RegisterWeaponDamage(weaponName, damage);
+
+                    if (knockbackForce > 0f)
+                    {
+                        Vector3 dir = knockbackDir != Vector3.zero ? knockbackDir : forward;
+                        dir.y = 0f;
+                        if (dir.sqrMagnitude > 0.001f)
+                        {
+                            enemy.transform.position += dir.normalized * knockbackForce;
+                        }
+                    }
                 }
             }
         }
@@ -796,15 +816,58 @@ public class PlayerWeaponManager : NetworkBehaviour
         }
     }
 
-    // ── ServerRpc: ThunderRail, Stormcaller, and Lightning Chains ─────────
+    // ── ServerRpc: Generic Chain and Raycast-Chain ────────────────────────
+    [ServerRpc(RequireOwnership = false)]
+    public void FireChainServerRpc(
+        Vector3 startPos, float damage, float searchRadius, int chainTargets, float chainSearchRadius, float chainDamageMult,
+        bool searchHighestHP, string weaponName, string beamVfx, string hitVfx,
+        float zoneRadius = 0f, float zoneDamage = 0f, int zoneTicks = 0, float zoneTickInterval = 0f, string zoneVfx = "None", bool isCrit = false)
+    {
+        if (!IsServer) return;
+
+        int mask = LayerMask.GetMask("Enemy");
+        var hitSet = new HashSet<int>();
+
+        Enemy first = searchHighestHP 
+            ? FindHighestHPEnemyServerSide(startPos, searchRadius, mask, hitSet)
+            : FindNearestUnhitEnemyServerSide(startPos, searchRadius, mask, hitSet);
+        if (first == null) return;
+
+        Vector3 prevPos = startPos;
+        Enemy current = first;
+        float curDmg = damage;
+
+        var hitPositions = new List<Vector3>();
+
+        for (int i = 0; i <= chainTargets; i++)
+        {
+            if (current == null) break;
+
+            Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
+
+            current.EnemyTakeDamage(curDmg, isCrit);
+            RegisterWeaponDamage(weaponName, curDmg);
+            BroadcastBeamClientRpc(prevPos, targetPos, beamVfx, hitVfx);
+
+            hitPositions.Add(current.transform.position);
+            hitSet.Add(current.GetInstanceID());
+            prevPos = targetPos;
+            curDmg *= chainDamageMult;
+
+            current = FindNearestUnhitEnemyServerSide(targetPos, chainSearchRadius, mask, hitSet);
+        }
+
+        if (hitPositions.Count > 0 && zoneTicks > 0 && zoneRadius > 0f)
+        {
+            StartCoroutine(SpawnLightningZonesServerSide(hitPositions, zoneTicks, zoneTickInterval, zoneRadius, zoneDamage, isCrit, weaponName, zoneVfx));
+        }
+    }
 
     [ServerRpc(RequireOwnership = false)]
-    public void FireThunderRailServerRpc(
-        Vector3 origin, Vector3 direction,
-        float damage, float range, int beamCount,
-        int chainTargets, float chainDamage, float chainRadius,
-        float zoneRadius, float zoneDamage, int zoneTicks, float zoneTickInterval,
-        bool isCrit, string weaponName, string weaponVfx, string zoneVfx)
+    public void FireRaycastChainServerRpc(
+        Vector3 origin, Vector3 direction, float damage, float range, int beamCount,
+        int chainTargets, float chainDamage, float chainRadius, bool isCrit, string weaponName, string beamVfx,
+        float zoneRadius = 0f, float zoneDamage = 0f, int zoneTicks = 0, float zoneTickInterval = 0f, string zoneVfx = "None")
     {
         if (!IsServer) return;
 
@@ -818,15 +881,15 @@ public class PlayerWeaponManager : NetworkBehaviour
 
         for (int i = 0; i < beamCount; i++)
         {
-            Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * direction;
-            beamDir = beamDir.normalized;
+            Vector3 bDir = Quaternion.Euler(0f, i * angleStep, 0f) * direction;
+            bDir = bDir.normalized;
 
-            var hits = Physics.RaycastAll(origin, beamDir, range, mask);
+            var hits = Physics.RaycastAll(origin, bDir, range, mask);
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-            Vector3 endPoint = origin + beamDir * range;
+            Vector3 endPoint = origin + bDir * range;
 
-            BroadcastBeamClientRpc(origin, endPoint, weaponVfx, "None");
+            BroadcastBeamClientRpc(origin, endPoint, beamVfx, "None");
 
             Enemy firstHitEnemy = null;
 
@@ -839,104 +902,26 @@ public class PlayerWeaponManager : NetworkBehaviour
                 RegisterWeaponDamage(weaponName, damage);
                 hitPositions.Add(enemy.transform.position);
 
-                // เลือกศัตรูตัวแรกที่อยู่ใกล้ผู้เล่นที่สุดในแนวเลเซอร์หลัก เพื่อใช้ปล่อยสายฟ้าชิ่ง
                 if (firstHitEnemy == null)
                 {
                     firstHitEnemy = enemy;
                 }
             }
 
-            // จำกัดการปล่อยสายฟ้าชิ่งให้เริ่มเฉพาะจากศัตรูตัวแรกสุดที่โดนเลเซอร์หลักเท่านั้น (แบบที่ 2 ประหยัดทรัพยากร)
-            if (firstHitEnemy != null)
+            if (firstHitEnemy != null && chainTargets > 0)
             {
                 Vector3 startChainPos = firstHitEnemy.transform.position + Vector3.up * 0.8f;
-                FireLightningChainServerSide(startChainPos, firstHitEnemy, mask, hitPositions, chainTargets, chainDamage, chainRadius, weaponName, weaponVfx);
+                FireLightningChainServerSide(startChainPos, firstHitEnemy, mask, hitPositions, chainTargets, chainDamage, chainRadius, weaponName, beamVfx);
             }
         }
 
-        if (hitPositions.Count > 0)
+        if (hitPositions.Count > 0 && zoneTicks > 0 && zoneRadius > 0f)
         {
             StartCoroutine(SpawnLightningZonesServerSide(hitPositions, zoneTicks, zoneTickInterval, zoneRadius, zoneDamage, isCrit, weaponName, zoneVfx));
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void FireStormcallerServerRpc(
-        float damage, float range, int chainCount, float chainSearchRadius, float chainDamageMult,
-        float zoneRadius, float zoneDamage, int zoneTicks, float zoneTickInterval,
-        bool isCrit, string weaponName, string zoneVfx)
-    {
-        if (!IsServer) return;
-
-        int mask = LayerMask.GetMask("Enemy");
-        var hitSet = new HashSet<int>();
-
-        Enemy first = FindHighestHPEnemyServerSide(transform.position, range, mask, hitSet);
-        if (first == null) return;
-
-        Vector3 prevPos = transform.position + Vector3.up * 0.8f;
-        Enemy current = first;
-        float curDmg = damage;
-
-        var hitPositions = new List<Vector3>();
-
-        for (int i = 0; i <= chainCount; i++)
-        {
-            if (current == null) break;
-
-            Vector3 targetPos = current.transform.position + Vector3.up * 0.8f;
-
-            current.EnemyTakeDamage(curDmg, isCrit);
-            RegisterWeaponDamage(weaponName, curDmg);
-            BroadcastBeamClientRpc(prevPos, targetPos, "Default", "None");
-
-            hitPositions.Add(current.transform.position);
-            hitSet.Add(current.GetInstanceID());
-            prevPos = targetPos;
-            curDmg *= chainDamageMult;
-
-            current = FindNearestUnhitEnemyServerSide(targetPos, chainSearchRadius, mask, hitSet);
-        }
-
-        if (hitPositions.Count > 0)
-        {
-            StartCoroutine(SpawnLightningZonesServerSide(hitPositions, zoneTicks, zoneTickInterval, zoneRadius, zoneDamage, isCrit, weaponName, zoneVfx));
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    public void FireSimpleLightningChainServerRpc(
-        Vector3 startPos, float damage, float searchRadius, int chainTargets, float chainDamageMult, string weaponName)
-    {
-        if (!IsServer) return;
-
-        int mask = LayerMask.GetMask("Enemy");
-        var hitSet = new HashSet<int>();
-
-        Enemy first = FindNearestUnhitEnemyServerSide(startPos, searchRadius, mask, hitSet);
-        if (first == null) return;
-
-        Vector3 prevPos = startPos;
-        Enemy current = first;
-        float curDmg = damage;
-
-        for (int i = 0; i < chainTargets; i++)
-        {
-            if (current == null) break;
-
-            Vector3 targetPos = current.transform.position + Vector3.up * 0.5f;
-
-            current.EnemyTakeDamage(curDmg);
-            RegisterWeaponDamage(weaponName, curDmg);
-            BroadcastBeamClientRpc(prevPos, targetPos, "Default", "None");
-
-            hitSet.Add(current.GetInstanceID());
-            prevPos = targetPos;
-            curDmg *= chainDamageMult;
-
-            current = FindNearestUnhitEnemyServerSide(targetPos, searchRadius, mask, hitSet);
-        }
-    }
+    // ── Helper methods for server-side chaining and zones ─────────────────
 
     private void FireLightningChainServerSide(
         Vector3 startPos, Enemy firstEnemy, int mask, List<Vector3> hitPositions,

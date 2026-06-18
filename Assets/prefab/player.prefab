@@ -183,7 +183,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &1746890018923511425
 MonoBehaviour:
@@ -466,11 +466,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b05f701fbe13e904c894c707da567f93, type: 2}
   - {fileID: 11400000, guid: 1208c1e3404eff34d9a08d6928dfa45a, type: 2}
   allRecipes:
+  - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
   - {fileID: 11400000, guid: cc06f9f7f8663d74a9497b6778b35ae8, type: 2}
+  - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
   - {fileID: 11400000, guid: 13add57572c889d42a33f0bc0829598b, type: 2}
   - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
-  - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
-  - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
   cardsPerLevel: 3
 --- !u!114 &7655913753558015870
 MonoBehaviour:
@@ -617,4 +617,4 @@ MonoBehaviour:
   maxSpeed: 5
   speedSmoothTime: 0.1
   faceMoveDirection: 1
-  rotateSpeed: 720
+  rotateSpeed: 1440

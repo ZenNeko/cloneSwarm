@@ -56,6 +56,6 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
-  burstInterval: 0.33
+  burstInterval: 0.1
   stickyExplosionRadius: 2.5
   stickySpeed: 14

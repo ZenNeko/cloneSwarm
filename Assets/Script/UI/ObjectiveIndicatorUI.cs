@@ -48,6 +48,12 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     [Tooltip("Prefix แสดงข้างหน้าระยะ — '★' หรือ icon character")]
     public string fetchItemPrefix = "★";
 
+    [Header("Player-Relative Indicator (Off-Screen)")]
+    [Tooltip("แสดงตัวนำทางรอบตัวผู้เล่นแทนขอบจอ")]
+    public bool displayNearPlayer = true;
+    [Tooltip("ระยะห่างจากตัวผู้เล่นบนหน้าจอ (พิกเซล)")]
+    public float indicatorRadius = 120f;
+
     // ── Internal ──────────────────────────────────────────────────────────
     private enum Kind { Zone, FetchItem }
 
@@ -165,7 +171,7 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     }
 
     // ── Update ────────────────────────────────────────────────────────────
-    void Update()
+    void FixedUpdate()
     {
         if (_cam == null) _cam = Camera.main;
         if (_cam == null) return;
@@ -210,15 +216,35 @@ public class ObjectiveIndicatorUI : MonoBehaviour
             if (!inFront)
                 screenPos = new Vector3(sw - screenPos.x, sh - screenPos.y, 0f);
 
-            Vector3 center  = new Vector3(sw * 0.5f, sh * 0.5f, 0f);
-            Vector3 dir     = (screenPos - center).normalized;
+            // หาจุดศูนย์กลาง (ใช้หน้าจอผู้เล่นจริง หรือกึ่งกลางจอ)
+            Vector3 center = new Vector3(sw * 0.5f, sh * 0.5f, 0f);
+            bool usePlayerRel = displayNearPlayer && playerT != null;
 
-            float halfW   = sw * 0.5f - edgeMargin;
-            float halfH   = sh * 0.5f - edgeMargin;
-            float scaleX  = Mathf.Abs(dir.x) > 0.001f ? halfW / Mathf.Abs(dir.x) : float.MaxValue;
-            float scaleY  = Mathf.Abs(dir.y) > 0.001f ? halfH / Mathf.Abs(dir.y) : float.MaxValue;
-            float scale   = Mathf.Min(scaleX, scaleY);
-            e.rect.position = center + dir * scale;
+            if (usePlayerRel)
+            {
+                Vector3 pScreen = _cam.WorldToScreenPoint(playerT.position + Vector3.up * 1f);
+                pScreen.z = 0f;
+                center = pScreen;
+            }
+
+            Vector3 dir = (screenPos - center).normalized;
+            if (dir.sqrMagnitude < 0.001f) dir = Vector3.up;
+
+            if (usePlayerRel)
+            {
+                // แสดงใกล้ตัวผู้เล่น
+                e.rect.position = center + dir * indicatorRadius;
+            }
+            else
+            {
+                // แสดงที่ขอบจอตามเดิม
+                float halfW   = sw * 0.5f - edgeMargin;
+                float halfH   = sh * 0.5f - edgeMargin;
+                float scaleX  = Mathf.Abs(dir.x) > 0.001f ? halfW / Mathf.Abs(dir.x) : float.MaxValue;
+                float scaleY  = Mathf.Abs(dir.y) > 0.001f ? halfH / Mathf.Abs(dir.y) : float.MaxValue;
+                float scale   = Mathf.Min(scaleX, scaleY);
+                e.rect.position = center + dir * scale;
+            }
 
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
             if (e.arrowImg != null)

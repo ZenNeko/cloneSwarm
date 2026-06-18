@@ -107,9 +107,12 @@ public class StormBunnyWeapon : BunnyHopWeapon
         float curDmg = damage * 0.6f; // chain damage = 60% of main
 
         // เรียก ServerRpc เพื่อทำดาเมจสายฟ้าชิ่งบนฝั่ง Server
-        manager.FireSimpleLightningChainServerRpc(
-            landingPos + Vector3.up * 0.5f, curDmg, chainRadius, chainCount, chainDamageMult,
-            data != null ? data.weaponName : "Unknown"
+        manager.FireChainServerRpc(
+            landingPos + Vector3.up * 0.5f, curDmg, chainRadius, chainCount, chainRadius, chainDamageMult,
+            searchHighestHP: false,
+            weaponName: data != null ? data.weaponName : "Unknown",
+            beamVfx: "Default",
+            hitVfx: "HitEffect"
         );
     }
 
@@ -134,9 +137,12 @@ public class StormBunnyWeapon : BunnyHopWeapon
             Vector3 prevPos = e.transform.position + Vector3.up * 0.5f;
 
             // เรียก ServerRpc เพื่อเริ่มชิ่งสายฟ้าออกจากศัตรูตัวนี้
-            manager.FireSimpleLightningChainServerRpc(
-                prevPos, miniDmg, exileMiniRadius, exileMiniChain, chainDamageMult,
-                data != null ? data.weaponName : "Unknown"
+            manager.FireChainServerRpc(
+                prevPos, miniDmg, exileMiniRadius, exileMiniChain, exileMiniRadius, chainDamageMult,
+                searchHighestHP: false,
+                weaponName: data != null ? data.weaponName : "Unknown",
+                beamVfx: "Default",
+                hitVfx: "HitEffect"
             );
         }
     }

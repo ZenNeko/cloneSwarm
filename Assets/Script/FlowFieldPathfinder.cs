@@ -67,6 +67,13 @@ public class FlowFieldPathfinder : MonoBehaviour
     [Tooltip("ความถี่ recompute flow field (วินาที) — 0.5 = 2Hz, เพียงพอสำหรับ player เดินปกติ")]
     public float updateInterval = 0.5f;
 
+    [Header("Crowd Density")]
+    [Tooltip("เปิดใช้งานระบบเบี่ยงทิศทางตามความหนาแน่นของฝูงชน (Flanking/Crowd Routing)")]
+    public bool useCrowdDensity = true;
+
+    [Tooltip("ค่าน้ำหนักความหนาแน่นของฝูงชนต่อช่อง — ยิ่งมาก ยิ่งเลี่ยงจุดคนเยอะ")]
+    public float densityWeight = 1.0f;
+
     [Header("Debug Gizmos")]
     public bool drawGizmos       = false;
     public bool drawWalkableOnly = true;   // ถ้า false: วาดทุก cell รวม blocked (ช้า)
@@ -76,8 +83,11 @@ public class FlowFieldPathfinder : MonoBehaviour
     bool[,]     _walkable;
     float[,]    _costs;
     Vector2[,]  _flow;
+    float[,]    _densityMap;
+    float[,]    _precalcDist;
     bool        _baked;
     float       _nextUpdateAt;
+
 
     // Reusable Dijkstra queue + player position buffer — กัน GC
     readonly Queue<Vector2Int> _bfsQueue          = new(2048);
@@ -92,6 +102,13 @@ public class FlowFieldPathfinder : MonoBehaviour
 
     void Start()
     {
+        _precalcDist = new float[5, 5];
+        for (int dx = -2; dx <= 2; dx++)
+        for (int dy = -2; dy <= 2; dy++)
+        {
+            _precalcDist[dx + 2, dy + 2] = Mathf.Sqrt(dx * dx + dy * dy);
+        }
+
         BakeWalkable();
     }
 
@@ -132,12 +149,50 @@ public class FlowFieldPathfinder : MonoBehaviour
     /// <summary>Force re-bake walkable map — เรียกเมื่อ environment เปลี่ยน</summary>
     public void RebakeWalkable() => BakeWalkable();
 
+    /// <summary>
+    /// ดึงชุดจุดนำทาง (Waypoints) ลัดเลาะไปตามเวกเตอร์ทิศทาง Flow Field
+    /// สำหรับใช้ขับเคลื่อนมอนสเตอร์แบบ Waypoint Interpolation
+    /// </summary>
+    public List<Vector3> GetPathWaypoints(Vector3 startPos, int maxSteps = 15)
+    {
+        List<Vector3> path = new List<Vector3>();
+        if (!_baked || _flow == null) return path;
+
+        Vector3 currentPos = startPos;
+        int steps = 0;
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+
+        while (steps < maxSteps)
+        {
+            WorldToGrid(currentPos, out int gx, out int gy);
+            if (gx < 0 || gx >= gridSize.x || gy < 0 || gy >= gridSize.y) break;
+            if (!_walkable[gx, gy]) break;
+
+            Vector2Int currentCell = new Vector2Int(gx, gy);
+            if (visited.Contains(currentCell)) break;
+            visited.Add(currentCell);
+
+            Vector2 direction = _flow[gx, gy];
+            if (direction.sqrMagnitude < 0.001f) break; // ถึงเป้าหมายหลัก
+
+            Vector3 flowDir = new Vector3(direction.x, 0f, direction.y);
+            
+            // ขยับพิกัดเวิลด์ไปข้างหน้า 1 ช่อง (ตามขนาด cellSize)
+            currentPos += flowDir * cellSize;
+            path.Add(currentPos);
+            steps++;
+        }
+        return path;
+    }
+
+
     // ── Bake (static obstacles) ───────────────────────────────────────────
     void BakeWalkable()
     {
         _walkable = new bool[gridSize.x, gridSize.y];
         _costs    = new float[gridSize.x, gridSize.y];
         _flow     = new Vector2[gridSize.x, gridSize.y];
+        _densityMap = new float[gridSize.x, gridSize.y];
 
         int blocked = 0;
         for (int x = 0; x < gridSize.x; x++)
@@ -149,6 +204,7 @@ public class FlowFieldPathfinder : MonoBehaviour
             _walkable[x, y] = !hit;
             if (hit) blocked++;
         }
+
 
         _baked = true;
         Debug.Log($"[FlowField] Baked {gridSize.x}×{gridSize.y} grid — {blocked} blocked cells " +
@@ -169,6 +225,22 @@ public class FlowFieldPathfinder : MonoBehaviour
         for (int x = 0; x < gridSize.x; x++)
         for (int y = 0; y < gridSize.y; y++)
             _costs[x, y] = float.MaxValue;
+
+        // 1.5) ดึงพิกัดความหนาแน่นศัตรูทั้งหมดลงตารางความหนาแน่น (ถ้าเปิดใช้งาน)
+        if (useCrowdDensity && _densityMap != null)
+        {
+            System.Array.Clear(_densityMap, 0, _densityMap.Length);
+            for (int i = 0; i < Enemy.ActiveEnemies.Count; i++)
+            {
+                Enemy enemy = Enemy.ActiveEnemies[i];
+                if (enemy == null) continue;
+                WorldToGrid(enemy.transform.position, out int egx, out int egy);
+                if (egx >= 0 && egx < gridSize.x && egy >= 0 && egy < gridSize.y)
+                {
+                    _densityMap[egx, egy] += 1.0f;
+                }
+            }
+        }
 
         // 2) Seed BFS ด้วยทุก source cell (multi-source)
         _bfsQueue.Clear();
@@ -201,7 +273,12 @@ public class FlowFieldPathfinder : MonoBehaviour
                 if (!_walkable[nx, ny]) continue;
 
                 float step    = (dx != 0 && dy != 0) ? DIAG : 1f;
-                float newCost = baseCost + step;
+                float densityPenalty = 0f;
+                if (useCrowdDensity && _densityMap != null)
+                {
+                    densityPenalty = _densityMap[nx, ny] * densityWeight;
+                }
+                float newCost = baseCost + step + densityPenalty;
 
                 if (newCost < _costs[nx, ny])
                 {
@@ -211,17 +288,19 @@ public class FlowFieldPathfinder : MonoBehaviour
             }
         }
 
+
         // 3) Convert costs → flow vectors (gradient descent)
         for (int x = 0; x < gridSize.x; x++)
         for (int y = 0; y < gridSize.y; y++)
         {
             if (!_walkable[x, y]) { _flow[x, y] = Vector2.zero; continue; }
 
-            float bestCost = _costs[x, y];
+            float currentCost = _costs[x, y];
+            float bestSlope = 0f;
             int   bestDx = 0, bestDy = 0;
 
-            for (int dx = -1; dx <= 1; dx++)
-            for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -2; dx <= 2; dx++)
+            for (int dy = -2; dy <= 2; dy++)
             {
                 if (dx == 0 && dy == 0) continue;
                 int nx = x + dx;
@@ -229,9 +308,18 @@ public class FlowFieldPathfinder : MonoBehaviour
                 if (nx < 0 || nx >= gridSize.x || ny < 0 || ny >= gridSize.y) continue;
                 if (!_walkable[nx, ny]) continue;
 
-                if (_costs[nx, ny] < bestCost)
+                // ตรวจสอบ Line of Sight เพื่อป้องกันการเดินทะลุกำแพง (เช็คก้าวแรก)
+                int stepX = System.Math.Sign(dx);
+                int stepY = System.Math.Sign(dy);
+                if (!_walkable[x + stepX, y + stepY]) continue;
+
+                // เปรียบเทียบความลาดชัน (Cost Slope) = Cost Diff / Distance
+                float dist = _precalcDist[dx + 2, dy + 2];
+                float slope = (currentCost - _costs[nx, ny]) / dist;
+
+                if (slope > bestSlope)
                 {
-                    bestCost = _costs[nx, ny];
+                    bestSlope = slope;
                     bestDx = dx; bestDy = dy;
                 }
             }

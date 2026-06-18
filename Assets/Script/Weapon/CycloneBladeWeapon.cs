@@ -2,17 +2,17 @@
 using UnityEngine;
 
 /// <summary>
-/// Cyclone Blade â€” Fusion: Blade Storm + Chainsaw
-/// 360Â° spin AoE + double forward slash à¸ªà¸¥à¸±à¸šà¸à¸±à¸™ à¸—à¸¸à¸ cooldown
+/// Cyclone Blade — Fusion: Blade Storm + Chainsaw
+/// 360° spin AoE + double forward slash สลับกัน ทุก cooldown
 ///
-/// Fusion tier â€” 1 level
+/// Fusion tier — 1 level
 ///   dmg=100 (spin), forwardDmg=80 (slash), cd=0.8s, range=4.5
 /// </summary>
 public class CycloneBladeWeapon : WeaponBase
 {
-    [Tooltip("à¸ˆà¸³à¸™à¸§à¸™ slash à¹„à¸›à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸²à¸•à¹ˆà¸­ cycle")]
+    [Tooltip("จำนวน slash ไปข้างหน้าต่อ cycle")]
     public int   forwardSlashCount  = 2;
-    [Tooltip("à¸”à¸²à¹€à¸¡à¸ˆ slash à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸² relative à¸à¸±à¸š ld.damage")]
+    [Tooltip("ดาเมจ slash ข้างหน้า relative กับ ld.damage")]
     public float forwardDamageMult  = 0.8f;
     public float slashOffset        = 0.7f;
 
@@ -33,7 +33,7 @@ public class CycloneBladeWeapon : WeaponBase
 
         if (cycleIndex % 2 == 0)
         {
-            // 360Â° spin â€” main VFX
+            // 360° spin — main VFX
             FireMelee(center, radius, dmg);
             ShowVfx(ResolveHitVfx("SlashAoE360"), center, radius, isCrit, isAttackHit: false);
         }
@@ -54,20 +54,5 @@ public class CycloneBladeWeapon : WeaponBase
         }
 
         cycleIndex++;
-    }
-
-    Vector3 GetAimDirection()
-    {
-        int mask    = LayerMask.GetMask("Enemy");
-        var cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minD  = float.MaxValue;
-        Vector3 dir = transform.forward;
-        foreach (var c in cols)
-        {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minD) { minD = d; dir = (c.transform.position - transform.position).normalized; }
-        }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
     }
 }

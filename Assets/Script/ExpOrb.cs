@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 public class ExpOrb : NetworkBehaviour
 {
+    public static readonly List<ExpOrb> ActiveOrbs = new();
+
     [Header("EXP")]
     public float expAmount = 10f;
 
@@ -35,9 +38,20 @@ public class ExpOrb : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (!ActiveOrbs.Contains(this)) ActiveOrbs.Add(this);
         if (!IsServer) return;
         startPos      = transform.position;
         currentTarget = FindNearestPlayer();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ActiveOrbs.Remove(this);
+    }
+
+    private void OnDestroy()
+    {
+        ActiveOrbs.Remove(this);
     }
 
     // ── Update: Server only ───────────────────────────────────────────────

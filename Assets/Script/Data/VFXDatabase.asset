@@ -48,6 +48,11 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 13
     fixedDuration: 0.4
+  - key: SlashHit2
+    prefab: {fileID: 772680919565806998, guid: 0a1cb6412931ac04e8e749d6b31db3ef, type: 3}
+    poolSize: 30
+    designedRadius: 13
+    fixedDuration: 0.4
   - key: VortexSpawn
     prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
     poolSize: 30

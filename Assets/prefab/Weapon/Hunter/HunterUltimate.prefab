@@ -47,9 +47,14 @@ MonoBehaviour:
   data: {fileID: 0}
   currentLevel: 0
   manager: {fileID: 0}
+  castSfx: []
+  hitSfx: []
+  castVolume: 0.8
+  hitVolume: 0.7
+  pitchVariance: 0.05
   activateKey: 19
-  funnelCount: 5
+  funnelCount: 3
   funnelOrbitRadius: 10
   funnelLaserCooldown: 0.6
-  funnelAttackRange: 20
+  funnelAttackRange: 15
   laserCooldownMult: 0.35

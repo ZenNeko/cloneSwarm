@@ -3,11 +3,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Hunter Q Ability â€” Homing Missiles
-/// à¸à¸” Q â†’ à¸¢à¸´à¸‡ Homing Missile à¹„à¸›à¸¢à¸±à¸‡ enemy 5 à¸•à¸±à¸§à¸—à¸µà¹ˆà¹ƒà¸à¸¥à¹‰à¸—à¸µà¹ˆà¸ªà¸¸à¸” (unique)
-/// à¹à¸•à¹ˆà¸¥à¸° missile à¸£à¸°à¹€à¸šà¸´à¸” AoE à¹€à¸¡à¸·à¹ˆà¸­à¸–à¸¶à¸‡à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢
+/// Hunter Q Ability — Homing Missiles
+/// กด Q → ยิง Homing Missile ไปยัง enemy 5 ตัวที่ใกล้ที่สุด (unique)
+/// แต่ละ missile ระเบิด AoE เมื่อถึงเป้าหมาย
 ///
-/// AbilityData à¹à¸™à¸°à¸™à¸³:
+/// AbilityData แนะนำ:
 ///   Lv1: damage=150, range=30, cooldown=12s
 /// </summary>
 public class HunterMissileAbility : AbilityBase, IHUDAbility
@@ -18,25 +18,25 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
     [Header("Missile Config")]
     public int   missileCount      = 5;
     public float explosionRadius   = 3f;
-    public float spawnSpread       = 0.6f;   // à¸£à¸°à¸¢à¸°à¸«à¹ˆà¸²à¸‡à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡à¸ˆà¸¸à¸” spawn à¹à¸•à¹ˆà¸¥à¸°à¸¥à¸¹à¸
+    public float spawnSpread       = 0.6f;   // ระยะห่างระหว่างจุด spawn แต่ละลูก
 
-    // â”€â”€ IHUDAbility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public string HUDSlotKey      => "Q";   // Missile à¸‚à¸­à¸‡ Hunter à¸­à¸¢à¸¹à¹ˆ Q à¹€à¸ªà¸¡à¸­
+    // ── IHUDAbility ───────────────────────────────────────────────────────
+    public string HUDSlotKey      => "Q";   // Missile ของ Hunter อยู่ Q เสมอ
     public string HUDKeyLabel     => activateKey.ToString();
     public bool   IsActiveMode    => false;
     public float  ActiveRemaining => 0f;
     public float  ActiveMax       => 0f;
 
-    // â”€â”€ Cooldown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Cooldown ──────────────────────────────────────────────────────────
     public bool  IsOnCooldown      { get; private set; }
     public float CooldownRemaining { get; private set; }
     public float CooldownMax       { get; private set; }
 
-    // â”€â”€ Events (UI à¸Ÿà¸±à¸‡) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Events (UI ฟัง) ───────────────────────────────────────────────────
     public static event System.Action<HunterMissileAbility, float> OnCooldownChanged;
     public static event System.Action<HunterMissileAbility>        OnFired;
 
-    // â”€â”€ Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Update ────────────────────────────────────────────────────────────
     void Update()
     {
         if (IsOnCooldown)
@@ -54,7 +54,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
             Fire();
     }
 
-    // â”€â”€ Fire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Fire ──────────────────────────────────────────────────────────────
     void Fire()
     {
         var ld = data.GetLevelData(currentLevel);
@@ -74,13 +74,13 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         float dmg = RollDamage(ld.damage * (manager.statManager != null
             ? manager.statManager.GetPowerMultiplier() : 1f), out bool _);
 
-        // à¸«à¸² enemy â€” base missileCount + bonus à¸ˆà¸²à¸ ProjectileCount stat
+        // หา enemy — base missileCount + bonus จาก ProjectileCount stat
         int totalCount = missileCount + (manager.statManager != null
             ? manager.statManager.GetBonusProjectileCount() : 0);
         var targets = FindNearestUniqueEnemies(searchRange, totalCount);
         if (targets.Count == 0)
         {
-            // à¸„à¸·à¸™ cooldown à¸–à¹‰à¸²à¹„à¸¡à¹ˆà¸¡à¸µ target
+            // คืน cooldown ถ้าไม่มี target
             IsOnCooldown      = false;
             CooldownRemaining = 0f;
             return;
@@ -92,7 +92,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
 
         for (int i = 0; i < targets.Count; i++)
         {
-            // Spread spawn position à¹€à¸¥à¹‡à¸à¸™à¹‰à¸­à¸¢à¸£à¸­à¸šà¹† à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™
+            // Spread spawn position เล็กน้อยรอบๆ ผู้เล่น
             float angle   = i * (360f / targets.Count);
             Vector3 offset = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * spawnSpread;
             spawnPositions[i] = origin + offset;
@@ -102,10 +102,10 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         }
 
         SpawnMissiles(spawnPositions, targetNetIds, dmg, radius);
-        Debug.Log($"[HunterMissile] ðŸš€ FIRED {targets.Count} missiles dmg={dmg:F0} radius={radius:F1}");
+        Debug.Log($"[HunterMissile] 🚀 FIRED {targets.Count} missiles dmg={dmg:F0} radius={radius:F1}");
     }
 
-    // â”€â”€ Helper: à¸«à¸² N enemy à¸—à¸µà¹ˆà¹ƒà¸à¸¥à¹‰à¸—à¸µà¹ˆà¸ªà¸¸à¸” (unique, à¹„à¸¡à¹ˆà¸‹à¹‰à¸³) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Helper: หา N enemy ที่ใกล้ที่สุด (unique, ไม่ซ้ำ) ────────────────
     List<UnityEngine.GameObject> FindNearestUniqueEnemies(float range, int maxCount)
     {
         var cols   = PlayerWeaponManager.OverlapEnemy(transform.position, range);

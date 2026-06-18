@@ -18,14 +18,14 @@ MonoBehaviour:
   tier: 1
   prefab: {fileID: 6840295172297232903, guid: bfb9b6229e1ce204db093fcad283440b, type: 3}
   aimMode: 0
+  arcAngle: 360
   projectilePrefab: {fileID: 3992335139775719314, guid: 20419f2d0e1b52740a613cfa170a4c4c, type: 3}
-  hitVfxType: 17
   levels:
   - damage: 160
     cooldown: 0
     projectileCount: 3
-    range: 10
-    projectileSpeed: 7
+    range: 7
+    projectileSpeed: 60
     piercing: 1
     levelUpText: 
   superVersion: {fileID: 0}

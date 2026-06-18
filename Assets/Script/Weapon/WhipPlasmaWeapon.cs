@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// WhipPlasma â€” Super version à¸‚à¸­à¸‡ Whip (Tentacle style)
+/// WhipPlasma — Super version ของ Whip (Tentacle style)
 ///
-/// à¸à¸¥à¹„à¸ Tentacle:
-///   1. à¹€à¸«à¸§à¸µà¹ˆà¸¢à¸‡ tentacle à¸«à¸¥à¸±à¸à¹„à¸›à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸² (line AoE + knockback)
-///   2. à¸›à¸¥à¸²à¸¢ tentacle "à¸à¸£à¸°à¸”à¸­à¸™" à¹„à¸›à¸«à¸² enemy à¹ƒà¸à¸¥à¹‰à¹€à¸„à¸µà¸¢à¸‡ N à¸•à¸±à¸§ (chain beam)
-///   3. à¹à¸•à¹ˆà¸¥à¸° chain hit à¸—à¸³ damage à¸¥à¸”à¸¥à¸‡à¸—à¸µà¸¥à¸°à¸‚à¸±à¹‰à¸™
-///   4. à¸—à¸¸à¸ enemy à¸—à¸µà¹ˆà¹‚à¸”à¸™ â€” à¸œà¸¥à¸±à¸ (knockback) à¸­à¸­à¸à¸ˆà¸²à¸à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™
+/// กลไก Tentacle:
+///   1. เหวี่ยง tentacle หลักไปข้างหน้า (line AoE + knockback)
+///   2. ปลาย tentacle "กระดอน" ไปหา enemy ใกล้เคียง N ตัว (chain beam)
+///   3. แต่ละ chain hit ทำ damage ลดลงทีละขั้น
+///   4. ทุก enemy ที่โดน — ผลัก (knockback) ออกจากผู้เล่น
 ///
-/// Super tier â€” 1 level
+/// Super tier — 1 level
 ///   dmg=55, cd=0.3s, range=5.5, count=3 (chain targets)
 ///
 /// Fusion: PlasmaWhipWeapon (Railgun + WhipPlasma)
@@ -19,22 +19,22 @@ using UnityEngine;
 public class WhipPlasmaWeapon : WhipWeapon
 {
     [Header("Tentacle Chain")]
-    [Tooltip("à¸ˆà¸³à¸™à¸§à¸™ chain à¸•à¹ˆà¸­à¸ˆà¸²à¸ main hit")]
+    [Tooltip("จำนวน chain ต่อจาก main hit")]
     public int   chainCount          = 3;
-    [Tooltip("à¸”à¸²à¹€à¸¡à¸ˆà¸¥à¸”à¸¥à¸‡à¸•à¹ˆà¸­ chain (0.7 = -30%)")]
+    [Tooltip("ดาเมจลดลงต่อ chain (0.7 = -30%)")]
     [Range(0.3f, 1f)]
     public float chainDamageMult     = 0.7f;
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸«à¸² chain target à¸–à¸±à¸”à¹„à¸›")]
+    [Tooltip("รัศมีหา chain target ถัดไป")]
     public float chainSearchRadius   = 8f;
 
     [Header("Knockback")]
-    [Tooltip("à¹à¸£à¸‡à¸œà¸¥à¸±à¸ main hit")]
+    [Tooltip("แรงผลัก main hit")]
     public float knockbackForce      = 4f;
-    [Tooltip("à¹à¸£à¸‡à¸œà¸¥à¸±à¸ chain hit (à¹€à¸šà¸²à¸à¸§à¹ˆà¸² main)")]
+    [Tooltip("แรงผลัก chain hit (เบากว่า main)")]
     public float chainKnockbackForce = 2f;
 
     [Header("Tentacle Timing")]
-    [Tooltip("delay à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ chain à¹à¸•à¹ˆà¸¥à¸° bounce (à¸§à¸´à¸™à¸²à¸—à¸µ)")]
+    [Tooltip("delay ระหว่าง chain แต่ละ bounce (วินาที)")]
     public float chainDelay          = 0.06f;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -50,7 +50,7 @@ public class WhipPlasmaWeapon : WhipWeapon
             range *= manager.statManager.GetAreaMultiplier();
         }
 
-        // â”€â”€ Main Tentacle Strike (narrow line) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Main Tentacle Strike (narrow line) ──────────────────────────
         int        mask       = LayerMask.GetMask("Enemy");
         Vector3    boxCenter  = origin + dir * (range * 0.5f);
         Vector3    halfExtent = new Vector3(width * 0.5f, 1f, range * 0.5f);
@@ -64,19 +64,18 @@ public class WhipPlasmaWeapon : WhipWeapon
             var e = c.GetComponent<Enemy>();
             if (e == null || hitSet.Contains(e.GetInstanceID())) continue;
 
-            FireMelee(e.transform.position, 0.3f, dmg, isCrit);
+            Vector3 kbDir = e.transform.position - transform.position;
+            FireMelee(e.transform.position, 0.3f, dmg, isCrit, knockbackForce, kbDir);
             hitSet.Add(e.GetInstanceID());
             mainHits.Add(e);
-
-            ApplyKnockback(e, knockbackForce);
         }
 
-        // VFX: WhipSlash arc à¸—à¸µà¹ˆà¸ˆà¸¸à¸”à¸à¸¥à¸²à¸‡
+        // VFX: WhipSlash arc ที่จุดกลาง
         Vector3 vfxPos = origin + dir * (range * 0.5f);
         ShowVfx(ResolveHitVfx("WhipSlash"), vfxPos, range, isCrit, isAttackHit: false, direction: dir);
 
-        // â”€â”€ Chain Tentacle Bounce â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        // à¹€à¸£à¸´à¹ˆà¸¡ chain à¸ˆà¸²à¸ enemy à¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆà¹„à¸à¸¥à¸ªà¸¸à¸”à¹ƒà¸™ main hit (à¸›à¸¥à¸²à¸¢ tentacle)
+        // ── Chain Tentacle Bounce ────────────────────────────────────────
+        // เริ่ม chain จาก enemy ที่อยู่ไกลสุดใน main hit (ปลาย tentacle)
         Enemy chainStart = GetFarthestEnemy(mainHits, origin);
         if (chainStart != null)
             StartCoroutine(ChainBounce(chainStart, dmg, isCrit, hitSet, mask));
@@ -97,12 +96,11 @@ public class WhipPlasmaWeapon : WhipWeapon
 
             Vector3 nextPos = next.transform.position + Vector3.up * 0.5f;
 
-            FireMelee(next.transform.position, 0.3f, curDmg, isCrit);
+            Vector3 kbDir = next.transform.position - transform.position;
+            FireMelee(next.transform.position, 0.3f, curDmg, isCrit, chainKnockbackForce, kbDir);
             hitSet.Add(next.GetInstanceID());
 
-            ApplyKnockback(next, chainKnockbackForce);
-
-            // Beam VFX à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ bounce (tentacle line)
+            // Beam VFX ระหว่าง bounce (tentacle line)
             manager.BroadcastBeamServerRpc(prevPos, nextPos, ResolveSecondaryVfx("Default"), "HitEffect");
 
             prevPos  = nextPos;
@@ -110,15 +108,7 @@ public class WhipPlasmaWeapon : WhipWeapon
         }
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    void ApplyKnockback(Enemy e, float force)
-    {
-        if (e == null || force <= 0f) return;
-        Vector3 pushDir = e.transform.position - transform.position;
-        pushDir.y = 0f;
-        if (pushDir.sqrMagnitude > 0.001f)
-            e.transform.position += pushDir.normalized * force;
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────
 
     Enemy GetFarthestEnemy(List<Enemy> list, Vector3 origin)
     {

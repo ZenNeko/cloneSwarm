@@ -37,11 +37,18 @@ public class StormcallerWeapon : WeaponBase
         string zoneVfxKey = ResolveSecondaryVfx("Stormcaller_AOE");
 
         // ส่งข้อมูลไปประมวลผลการทำงานและความเสียหายบนฝั่ง Server
-        manager.FireStormcallerServerRpc(
-            dmg, ld.range, chainCount, chainSearchRadius, chainDamageMult,
-            zoneRadius, actualZoneDmg, zoneTicks, zoneTickInterval,
-            isCrit, data != null ? data.weaponName : "Unknown",
-            zoneVfxKey
+        manager.FireChainServerRpc(
+            transform.position + Vector3.up * 0.8f, dmg, ld.range, chainCount, chainSearchRadius, chainDamageMult,
+            searchHighestHP: true,
+            weaponName: data != null ? data.weaponName : "Unknown",
+            beamVfx: "Default",
+            hitVfx: "None",
+            zoneRadius: zoneRadius,
+            zoneDamage: actualZoneDmg,
+            zoneTicks: zoneTicks,
+            zoneTickInterval: zoneTickInterval,
+            zoneVfx: zoneVfxKey,
+            isCrit: isCrit
         );
     }
 

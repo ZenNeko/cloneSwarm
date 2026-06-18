@@ -2,26 +2,26 @@
 using UnityEngine;
 
 /// <summary>
-/// Death Field â€” Super version à¸‚à¸­à¸‡ Radiant Aura
-/// field à¹ƒà¸«à¸à¹ˆà¸‚à¸¶à¹‰à¸™ + enemy à¸—à¸µà¹ˆà¸•à¸²à¸¢à¹ƒà¸™ field à¸£à¸°à¹€à¸šà¸´à¸” mini AoE à¸£à¸­à¸šà¸•à¸±à¸§
+/// Death Field — Super version ของ Radiant Aura
+/// field ใหญ่ขึ้น + enemy ที่ตายใน field ระเบิด mini AoE รอบตัว
 ///
-/// Super tier â€” 1 level à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™
+/// Super tier — 1 level เท่านั้น
 ///   dmg=30/tick, cd=0.5s, range=6.0
 ///
 /// Fusion: Death Field + Minefield = ExplosiveAuraWeapon
 ///
-/// **Anti-recursion:** Enemy.OnAnyEnemyDiedAt event fires synchronously à¸‚à¸“à¸°
-/// FireMeleeServerRpc à¸à¸³à¸¥à¸±à¸‡ process damage â†’ à¸–à¹‰à¸² explode à¹ƒà¸™ callback à¸•à¸£à¸‡à¹†
-/// à¸ˆà¸° recursive call à¸à¸±à¸™à¸ˆà¸™ stack overflow à¸•à¸­à¸™ chain kill à¸«à¸¥à¸²à¸¢à¸•à¸±à¸§
-/// â†’ defer à¹ƒà¸ªà¹ˆ queue â†’ process à¹ƒà¸™ LateUpdate (frame à¸–à¸±à¸”à¹„à¸›)
+/// **Anti-recursion:** Enemy.OnAnyEnemyDiedAt event fires synchronously ขณะ
+/// FireMeleeServerRpc กำลัง process damage → ถ้า explode ใน callback ตรงๆ
+/// จะ recursive call กันจน stack overflow ตอน chain kill หลายตัว
+/// → defer ใส่ queue → process ใน LateUpdate (frame ถัดไป)
 /// </summary>
 public class DeathFieldWeapon : WeaponBase
 {
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸£à¸°à¹€à¸šà¸´à¸”à¹€à¸¡à¸·à¹ˆà¸­ enemy à¸•à¸²à¸¢à¹ƒà¸™ field")]
+    [Tooltip("รัศมีระเบิดเมื่อ enemy ตายใน field")]
     public float deathExplosionRadius = 3f;
-    [Tooltip("à¸”à¸²à¹€à¸¡à¸ˆà¸‚à¸­à¸‡ mini explosion")]
+    [Tooltip("ดาเมจของ mini explosion")]
     public float deathExplosionDamage = 40f;
-    [Tooltip("à¸ˆà¸³à¸à¸±à¸”à¸ˆà¸³à¸™à¸§à¸™ explosion à¸•à¹ˆà¸­ frame à¸à¸±à¸™ lag spike (0 = à¹„à¸¡à¹ˆà¸ˆà¸³à¸à¸±à¸”)")]
+    [Tooltip("จำกัดจำนวน explosion ต่อ frame กัน lag spike (0 = ไม่จำกัด)")]
     [Min(0)] public int maxExplosionsPerFrame = 32;
 
     private readonly List<Vector3> _pendingExplosions = new();
@@ -67,11 +67,11 @@ public class DeathFieldWeapon : WeaponBase
 
         float fieldRadius = ld.range * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
 
-        // à¸£à¸°à¹€à¸šà¸´à¸”à¹€à¸‰à¸žà¸²à¸° enemy à¸—à¸µà¹ˆà¸•à¸²à¸¢à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ field à¸‚à¸­à¸‡à¹€à¸£à¸²
+        // ระเบิดเฉพาะ enemy ที่ตายอยู่ใน field ของเรา
         float dist = Vector3.Distance(transform.position, deathPos);
         if (dist > fieldRadius) return;
 
-        // Defer â€” à¸à¸±à¸™ recursive call à¸—à¸³ stack overflow à¸•à¸­à¸™ chain kill
+        // Defer — กัน recursive call ทำ stack overflow ตอน chain kill
         _pendingExplosions.Add(deathPos);
     }
 
@@ -80,7 +80,7 @@ public class DeathFieldWeapon : WeaponBase
         if (_pendingExplosions.Count == 0) return;
         if (manager == null || !manager.IsOwner) { _pendingExplosions.Clear(); return; }
 
-        // Process à¸—à¸µà¸¥à¸° batch â€” à¸à¸±à¸™ lag spike à¸ˆà¸²à¸ chain explosion à¸ˆà¸³à¸™à¸§à¸™à¸¡à¸²à¸
+        // Process ทีละ batch — กัน lag spike จาก chain explosion จำนวนมาก
         int processCount = maxExplosionsPerFrame > 0
             ? Mathf.Min(_pendingExplosions.Count, maxExplosionsPerFrame)
             : _pendingExplosions.Count;
@@ -95,7 +95,7 @@ public class DeathFieldWeapon : WeaponBase
     {
         Vector3 explosionCenter = deathPos + Vector3.up * 0.5f;
         FireMelee(explosionCenter, deathExplosionRadius, deathExplosionDamage);
-        // Chain explosion VFX (à¹€à¸¡à¸·à¹ˆà¸­ enemy à¸•à¸²à¸¢à¹ƒà¸™à¸Ÿà¸´à¸¥à¸”à¹Œ)
+        // Chain explosion VFX (เมื่อ enemy ตายในฟิลด์)
         ShowVfx(ResolveSecondaryVfx("GrenadeExplosion"), explosionCenter, deathExplosionRadius);
     }
 }

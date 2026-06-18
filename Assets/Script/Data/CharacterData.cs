@@ -44,22 +44,4 @@ public class CharacterData : ScriptableObject
     public string  passiveName;
     [TextArea(1, 3)]
     public string  passiveDescription;
-
-    [Header("Weapon Ability")]
-    public Sprite  weaponIcon;
-    public string  weaponAbilityName;
-    [TextArea(1, 3)]
-    public string  weaponAbilityDescription;
-
-    [Header("Ability (Q)")]
-    public Sprite  abilityIcon;
-    public string  abilityName;
-    [TextArea(1, 3)]
-    public string  abilityDescription;
-
-    [Header("Ultimate (E / R)")]
-    public Sprite  ultimateIcon;
-    public string  ultimateName;
-    [TextArea(1, 3)]
-    public string  ultimateDescription;
 }

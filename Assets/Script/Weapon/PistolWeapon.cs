@@ -1,10 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Pistol â€” Gunner's main weapon (MouseAim, Burst fire)
-/// à¸›à¸à¸•à¸´: à¸¢à¸´à¸‡ burst (count à¸™à¸±à¸” à¸«à¹ˆà¸²à¸‡à¸à¸±à¸™ burstInterval)
-/// à¸‚à¸“à¸° Rocket Mode active (Q): à¸¢à¸´à¸‡ StickyRocket à¹à¸—à¸™à¸—à¸¸à¸à¸™à¸±à¸”
+/// Pistol — Gunner's main weapon (MouseAim, Burst fire)
+/// ปกติ: ยิง burst (count นัด ห่างกัน burstInterval)
+/// ขณะ Rocket Mode active (Q): ยิง StickyRocket แทนทุกนัด
 ///
 /// LevelData example:
 ///   Lv1: dmg=20, cd=1.0s, count=1, speed=16
@@ -16,13 +16,13 @@ using UnityEngine;
 public class PistolWeapon : WeaponBase
 {
     [Header("Burst")]
-    [Tooltip("à¸«à¸™à¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ burst à¹à¸•à¹ˆà¸¥à¸°à¸™à¸±à¸” (à¸§à¸´à¸™à¸²à¸—à¸µ)")]
+    [Tooltip("หน่วงเวลาระหว่าง burst แต่ละนัด (วินาที)")]
     public float burstInterval = 0.33f;
 
     [Header("Sticky Rocket (Rocket Mode)")]
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸£à¸°à¹€à¸šà¸´à¸”à¸‚à¸­à¸‡ Sticky Rocket")]
+    [Tooltip("รัศมีระเบิดของ Sticky Rocket")]
     public float stickyExplosionRadius = 2.5f;
-    [Tooltip("à¸„à¸§à¸²à¸¡à¹€à¸£à¹‡à¸§ Sticky Rocket")]
+    [Tooltip("ความเร็ว Sticky Rocket")]
     public float stickySpeed = 14f;
 
     private GunnerRocketMode rocketMode;
@@ -32,24 +32,28 @@ public class PistolWeapon : WeaponBase
         if (rocketMode == null)
             rocketMode = manager.GetComponentInChildren<GunnerRocketMode>();
 
-        Vector3 pos = transform.position + Vector3.up * 0.5f;
-        Vector3 dir = GetAimDirection();
-        float   dmg = RollDamage(ld.damage, out bool isCrit);
+        float dmg      = RollDamage(ld.damage, out bool isCrit);
+        bool  isRocket = rocketMode != null && rocketMode.IsRocketModeActive;
 
-        if (rocketMode != null && rocketMode.IsRocketModeActive)
-            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: true, isCrit));
-        else
-            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: false, isCrit));
+        StartCoroutine(BurstFire(dmg, ld.projectileSpeed, ld.projectileCount, isRocket, isCrit));
     }
 
-    IEnumerator BurstFire(Vector3 spawnPos, Vector3 dir, float dmg, float speed, int count, bool rocketMode, bool isCrit)
+    IEnumerator BurstFire(float dmg, float speed, int count, bool rocketMode, bool isCrit)
     {
         for (int i = 0; i < count; i++)
         {
+            Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
+            Vector3 dir      = GetAimDirection();
+
             if (rocketMode)
-                SpawnStickyRocket(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius);
+            {
+                float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+                SpawnStickyRocket(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius * areaMult);
+            }
             else
+            {
                 FireProjectile(spawnPos, dir, dmg, speed, isCrit: isCrit);
+            }
 
             if (i < count - 1)
                 yield return new WaitForSeconds(burstInterval);

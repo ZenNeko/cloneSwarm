@@ -6,6 +6,9 @@ public class DestructibleCrate : Enemy
     [Tooltip("ตารางดรอปไอเทมที่เป็น ScriptableObject (CloneSwarm/Loot Drop Table)")]
     public LootDropTable lootDropTable;
 
+    [Tooltip("จุดที่ต้องการให้ไอเทมดรอปออกมาระหว่างพัง (ปล่อยว่างจะดรอปที่จุดศูนย์กลางของกล่อง)")]
+    public Transform lootDropPoint;
+
     // บดบัง (Shadow) Unity lifecycle methods ของคลาสแม่ (Enemy.cs)
     // เพื่อยกเลิกการวิ่งหาผู้เล่น การเดิน และระบบสร้างความเสียหายเมื่อเดินชน
     private new void Update() {}
@@ -13,15 +16,32 @@ public class DestructibleCrate : Enemy
 
     public override void OnNetworkSpawn()
     {
-        // เรียกใช้งานฟังก์ชันพื้นฐานของคลาสแม่ (สปอว์น/ซิงค์เลือดและอื่นๆ)
+        // บันทึกการตั้งค่า Rigidbody ดั้งเดิมจาก Prefab ก่อนโดนคลาสแม่เขียนทับ
+        var rb = GetComponent<Rigidbody>();
+        bool savedKinematic = false;
+        bool savedGravity = false;
+        CollisionDetectionMode savedCollisionMode = CollisionDetectionMode.Discrete;
+        RigidbodyInterpolation savedInterpolation = RigidbodyInterpolation.None;
+        bool hasRb = rb != null;
+
+        if (hasRb)
+        {
+            savedKinematic = rb.isKinematic;
+            savedGravity   = rb.useGravity;
+            savedCollisionMode = rb.collisionDetectionMode;
+            savedInterpolation = rb.interpolation;
+        }
+
+        // เรียกใช้งานฟังก์ชันพื้นฐานของคลาสแม่ (สปอว์น/ซิงค์เลือดและลงทะเบียน ActiveEnemies)
         base.OnNetworkSpawn();
 
-        // บังคับให้ Rigidbody เป็น kinematic เสมอเพื่อล็อคตำแหน่งกล่อง
-        // ไม่ให้ขยับเขยื้อนเมื่อโดนเบียดโดยผู้เล่นหรือมอนสเตอร์ตัวอื่น
-        var rb = GetComponent<Rigidbody>();
-        if (rb != null)
+        // คืนค่า Rigidbody ของ Prefab ดั้งเดิม
+        if (hasRb)
         {
-            rb.isKinematic = true;
+            rb.isKinematic = savedKinematic;
+            rb.useGravity  = savedGravity;
+            rb.collisionDetectionMode = savedCollisionMode;
+            rb.interpolation = savedInterpolation;
         }
 
         // เชื่อมระบบดรอปของ LootDropTable เข้ากับ Event onDeath อัตโนมัติบน Server
@@ -36,7 +56,8 @@ public class DestructibleCrate : Enemy
     {
         if (lootDropTable != null)
         {
-            lootDropTable.TriggerDrop(transform.position);
+            Vector3 dropPosition = lootDropPoint != null ? lootDropPoint.position : transform.position;
+            lootDropTable.TriggerDrop(dropPosition);
         }
     }
 }

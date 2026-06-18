@@ -1280,6 +1280,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 4
+  rotationSpeed: 360
   suppressDefaultMovement: 0
   wallLayer:
     serializedVersion: 2
@@ -1287,6 +1288,8 @@ MonoBehaviour:
   wallCheckRadius: 0.4
   wallCheckDistance: 0.6
   useFlowField: 1
+  separationWeight: 0.3
+  separationRadius: 1.2
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
@@ -1322,27 +1325,27 @@ MonoBehaviour:
   phase2Interval: 2.5
   phase3Interval: 1.5
   circleRadius: 15
-  circleDamage: 25
+  circleDamage: 100
   circleWarnTime: 2.5
   lineLength: 100
   lineWidth: 10
-  lineDamage: 35
+  lineDamage: 100
   lineWarnTime: 2.5
   crossLineLength: 300
   crossLineWidth: 10
-  crossDamage: 30
+  crossDamage: 100
   crossWarnTime: 2.5
   donutRadius: 30
   donutInnerRadius: 30
-  donutDamage: 35
+  donutDamage: 100
   donutWarnTime: 2.5
   chaseRadius: 3
-  chaseDamage: 35
+  chaseDamage: 100
   chaseWarnTime: 4
   tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
   tetherDistance: 20
   tetherDuration: 6
-  tetherFailDamage: 40
+  tetherFailDamage: 100
   tetherSoloSpawnOffset: 5
   telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
   phaseTransitionDuration: 1.5

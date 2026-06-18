@@ -8,14 +8,26 @@ using UnityEngine;
 /// </summary>
 public class BladeStormWeapon : WeaponBase
 {
-    [Tooltip("จำนวนครั้งที่ slash ใน burst เดียว")]
+    [Tooltip("จำนวนครั้งที่ slash ใน burst เดียว (สูงสุด 6)")]
+    [Range(1, 6)]
     public int   burstCount    = 6;
     [Tooltip("หน่วงระหว่าง slash แต่ละครั้งใน burst (วินาที)")]
     public float burstInterval = 0.12f;
     [Tooltip("มุม arc ของ slash แต่ละครั้ง (องศา)")]
     public float arcAngle      = 120f;
 
+    [Header("Slashes Configuration")]
+    [Tooltip("การตั้งค่าการฟันด้านหน้า (จังหวะคี่: 1, 3, 5)")]
+    public SlashConfig slash1 = new SlashConfig { forwardOffset = 0.4f, rightOffset = 0f, rotationY = 0f };
+    [Tooltip("การตั้งค่าการฟันด้านหลัง (จังหวะคู่: 2, 4, 6)")]
+    public SlashConfig slash2 = new SlashConfig { forwardOffset = 0.4f, rightOffset = 0f, rotationY = 0f };
+
+    [Header("Alternate")]
+    [Tooltip("สลับลำดับการฟันทุกครั้งที่ยิง (จากหน้าไปหลัง -> หลังมาหน้า)")]
+    public bool alternatePerFire = true;
+
     private bool isBursting;
+    private bool _swapState;
 
     protected override void OnFire(WeaponLevelData ld)
     {
@@ -36,35 +48,85 @@ public class BladeStormWeapon : WeaponBase
         }
 
         Vector3 center = transform.position + Vector3.up * 0.5f;
-        Vector3 dir    = GetForwardDir();
+        float   arc    = data != null ? data.arcAngle : arcAngle;
 
-        for (int i = 0; i < burstCount; i++)
+        int count = Mathf.Clamp(burstCount, 1, 6);
+        bool reverse = _swapState;
+        if (alternatePerFire) _swapState = !_swapState;
+
+        for (int i = 0; i < count; i++)
         {
-            // สลับหน้า-หลัง: 0=หน้า, 1=หลัง, 2=หน้า
-            Vector3 slashDir = (i % 2 == 0) ? dir : -dir;
-            // ใช้ FireArcMelee เพื่อส่งคำสั่งทำดาเมจและลงทะเบียนสถิติไปทำบน Server (ServerRpc)
-            FireArcMelee(center, slashDir, radius, arcAngle, dmg, isCrit);
-            ShowVfx(ResolveHitVfx("SlashHit"), center + slashDir * (radius * 0.4f), radius, isCrit, isAttackHit: false, direction: slashDir);
+            Vector3 pos;
+            Vector3 slashDir;
+            Vector3 dmgDir;
+            float rotZ = 0f;
 
-            if (i < burstCount - 1)
+            // ค้นหาทิศการเล็งล่าสุดแบบไดนามิกในทุกครั้งที่ปล่อยคมดาบ
+            Vector3 dir = GetAimDirection();
+
+            // สลับหน้า-หลัง
+            bool isEven = (i % 2 == 0);
+            if (reverse) isEven = !isEven;
+
+            var cfg = isEven ? slash1 : slash2;
+
+            if (cfg != null)
+            {
+                Vector3 baseDir = isEven ? dir : -dir;
+                Vector3 right = Vector3.Cross(Vector3.up, baseDir).normalized;
+
+                pos = center 
+                    + baseDir * (radius * cfg.forwardOffset)
+                    + right   * (radius * cfg.rightOffset);
+
+                Quaternion rot = Quaternion.LookRotation(baseDir, Vector3.up)
+                               * Quaternion.Euler(cfg.rotationX, cfg.rotationY, 0f);
+                slashDir = rot * Vector3.forward;
+                dmgDir   = baseDir; // ดาเมจตามทิศทางจริง (หน้า หรือ หลัง)
+                rotZ     = cfg.rotationZ;
+            }
+            else
+            {
+                // Fallback
+                slashDir = isEven ? dir : -dir;
+                pos = center + slashDir * (radius * 0.4f);
+                dmgDir = slashDir;
+            }
+
+            // ใช้ FireArcMelee เพื่อส่งคำสั่งทำดาเมจและลงทะเบียนสถิติไปทำบน Server (ServerRpc)
+            FireArcMelee(pos, dmgDir, radius, arc, dmg, isCrit);
+
+            string vfxKey = cfg != null && cfg.useSecondaryVfx ? ResolveSecondaryVfx("SlashHit") : ResolveHitVfx("SlashHit");
+            ShowVfx(vfxKey, pos, radius, isCrit, isAttackHit: false, direction: slashDir, arcAngle: arc, roll: rotZ);
+
+            if (i < count - 1)
                 yield return new WaitForSeconds(burstInterval);
         }
 
         isBursting = false;
     }
 
-    Vector3 GetForwardDir()
+    protected override void OnDrawGizmosSelected()
     {
-        int   mask    = LayerMask.GetMask("Enemy");
-        var   cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minDist = float.MaxValue;
-        Vector3 dir   = transform.forward;
-        foreach (var c in cols)
+        base.OnDrawGizmosSelected();
+
+        if (data == null) return;
+        float radius = data.GetLevelData(currentLevel).range;
+        Vector3 center = transform.position + Vector3.up * 0.5f;
+        Vector3 forward = transform.forward;
+
+        int count = Mathf.Clamp(burstCount, 1, 6);
+
+        for (int i = 0; i < count; i++)
         {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minDist) { minDist = d; dir = (c.transform.position - transform.position).normalized; }
+            float t = count > 1 ? (float)i / (count - 1) : 0f;
+            Color color = Color.Lerp(Color.cyan, Color.magenta, t);
+
+            bool isEven = (i % 2 == 0);
+            var cfg = isEven ? slash1 : slash2;
+            Vector3 baseDir = isEven ? forward : -forward;
+
+            DrawSlashGizmo(center, baseDir, radius, cfg, color, $"Slash {i + 1}");
         }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
     }
 }

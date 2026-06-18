@@ -15,11 +15,12 @@ MonoBehaviour:
   abilityName: Blade of Exile
   description: Blade of Exile
   icon: {fileID: 2037185278, guid: 16c624dce00d2f34e80083d085d2bf8d, type: 3}
+  slotType: 1
   prefab: {fileID: 7060057563466003552, guid: b498ce9fc7a7a10468ab3d0e86d0d854, type: 3}
   levels:
   - damage: 0
-    cooldown: 1
-    duration: 11
+    cooldown: 60
+    duration: 15
     range: 0
     levelUpText: 
   - damage: 0

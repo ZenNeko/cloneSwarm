@@ -174,13 +174,10 @@ public class ZoneObjective : NetworkBehaviour
             default:
                 Debug.LogError($"[ZoneObjective] Unimplemented QuestType: {chosen}");
                 CompleteAndReward();
-                yield break;
+                break;
         }
 
-        if (CurrentPhase == Phase.Complete) yield break;   // already finished by quest coroutine
-
-        // Quest completed normally
-        CompleteAndReward();
+        yield break;
     }
 
     // ── Quest: FetchAndDeliver ────────────────────────────────────────────
@@ -213,6 +210,7 @@ public class ZoneObjective : NetworkBehaviour
         }
 
         progress.Value = 1f;
+        CompleteAndReward();
     }
 
     // ── Quest: Survive ────────────────────────────────────────────────────
@@ -253,6 +251,7 @@ public class ZoneObjective : NetworkBehaviour
         ClearSpawnBoostIfActive();
         progress.Value       = 1f;
         deliveredCount.Value = requiredCount.Value;
+        CompleteAndReward();
     }
 
     void ApplySpawnBoost()
@@ -345,10 +344,23 @@ public class ZoneObjective : NetworkBehaviour
         spawnedItems.Clear();
     }
 
+    void ResetAllPlayersCarriedItems()
+    {
+        if (NetworkManager.Singleton == null) return;
+        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var obj = c.PlayerObject;
+            if (obj == null) continue;
+            var pm = obj.GetComponent<playermove>();
+            if (pm != null) pm.DrainCarriedQuestItems();
+        }
+    }
+
     void ExpireAndDespawn()
     {
         CleanupSpawnedItems();
         ClearSpawnBoostIfActive();
+        ResetAllPlayersCarriedItems();
         ObjectiveExpiredClientRpc();
         OnObjectiveExpired?.Invoke(this);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
@@ -358,6 +370,7 @@ public class ZoneObjective : NetworkBehaviour
     {
         phaseInt.Value = (int)Phase.Complete;
         progress.Value = 1f;
+        ResetAllPlayersCarriedItems();
         GiveRewards();
         ObjectiveCompleteClientRpc();
         OnObjectiveCompleted?.Invoke(this);

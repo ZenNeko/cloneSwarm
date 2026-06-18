@@ -49,13 +49,12 @@ public class ThunderRailWeapon : WeaponBase
         // ดึงคีย์ 2nd VFX (secondaryVfxType) หรือใช้ Stormcaller_AOE เป็น fallback
         string zoneVfxKey = ResolveSecondaryVfx("Stormcaller_AOE");
 
-        // เรียก ServerRpc เพื่อทำดาเมจและบันทึกสถิติดาเมจของอาวุธอย่างถูกต้อง
-        manager.FireThunderRailServerRpc(
+        manager.FireRaycastChainServerRpc(
             origin, dir, dmg, ld.range, beamCount,
             chainTargets, actualChainDmg, chainSearchRadius,
-            zoneRadius, actualZoneDmg, zoneTicks, zoneTickInterval,
             isCrit, data != null ? data.weaponName : "Unknown",
             vfxKey,
+            zoneRadius, actualZoneDmg, zoneTicks, zoneTickInterval,
             zoneVfxKey
         );
     }

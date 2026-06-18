@@ -18,8 +18,8 @@ MonoBehaviour:
   tier: 0
   prefab: {fileID: 6840295172297232903, guid: bfb9b6229e1ce204db093fcad283440b, type: 3}
   aimMode: 0
+  arcAngle: 360
   projectilePrefab: {fileID: 3992335139775719314, guid: 20419f2d0e1b52740a613cfa170a4c4c, type: 3}
-  hitVfxType: 17
   levels:
   - damage: 45
     cooldown: 0
@@ -57,6 +57,10 @@ MonoBehaviour:
     piercing: 1
     levelUpText: 
   superVersion: {fileID: 11400000, guid: 56d064c4bc69e6646b855a071b262d53, type: 2}
-  superConditions: []
+  superConditions:
+  - conditionType: 0
+    requiredStatType: 9
+    requiredLevel: 1
+    requiredWeapon: {fileID: 0}
   weight: 90
   exclusiveCharacter: {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}

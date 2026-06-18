@@ -2,23 +2,23 @@
 using UnityEngine;
 
 /// <summary>
-/// Orbiter â€” à¸§à¸™ Orb à¸£à¸­à¸šà¸•à¸±à¸§à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™
-/// à¹ƒà¸Šà¹‰à¸ªà¸³à¸«à¸£à¸±à¸š Normal (Orbiter) à¹à¸¥à¸° Super (Star Ring)
+/// Orbiter — วน Orb รอบตัวผู้เล่น
+/// ใช้สำหรับ Normal (Orbiter) และ Super (Star Ring)
 ///
 /// Cycle:
-///   1. à¸‹à¹ˆà¸­à¸™ orb â†’ à¸£à¸­ summonCooldown à¸§à¸´à¸™à¸²à¸—à¸µ
-///   2. à¸£à¹ˆà¸²à¸¢ â†’ orb à¸›à¸£à¸²à¸à¸ activeDuration * DurationStat à¸§à¸´à¸™à¸²à¸—à¸µ
-///      â†’ à¸•à¸£à¸§à¸ˆ collision à¸—à¸¸à¸ hitCheckInterval (continuous)
-///      â†’ enemy à¹à¸•à¹ˆà¸¥à¸°à¸•à¸±à¸§à¸¡à¸µ hit cooldown à¸›à¹‰à¸­à¸‡à¸à¸±à¸™ spam
-///   3. à¸‹à¹ˆà¸­à¸™à¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡ â†’ à¸§à¸™à¸‹à¹‰à¸³
+///   1. ซ่อน orb → รอ summonCooldown วินาที
+///   2. ร่าย → orb ปรากฏ activeDuration * DurationStat วินาที
+///      → ตรวจ collision ทุก hitCheckInterval (continuous)
+///      → enemy แต่ละตัวมี hit cooldown ป้องกัน spam
+///   3. ซ่อนอีกครั้ง → วนซ้ำ
 ///
-/// Orb à¹€à¸›à¹‡à¸™ Local GameObject (à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ NetworkObject) â€” visual à¸šà¸™ Owner
-///   â†’ à¸›à¸¥à¸” parent à¸­à¸­à¸à¸ˆà¸²à¸ player â†’ orbit angle à¹„à¸¡à¹ˆà¸œà¸¹à¸à¸à¸±à¸š rotation à¸‚à¸­à¸‡à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™
-/// Damage à¸ªà¹ˆà¸‡à¸œà¹ˆà¸²à¸™ FireMeleeServerRpc à¸—à¸µà¹ˆà¸•à¸³à¹à¸«à¸™à¹ˆà¸‡ orb à¹€à¸¡à¸·à¹ˆà¸­ overlap enemy à¸ˆà¸£à¸´à¸‡
+/// Orb เป็น Local GameObject (ไม่ใช่ NetworkObject) — visual บน Owner
+///   → ปลด parent ออกจาก player → orbit angle ไม่ผูกกับ rotation ของผู้เล่น
+/// Damage ส่งผ่าน FireMeleeServerRpc ที่ตำแหน่ง orb เมื่อ overlap enemy จริง
 ///
-/// StarRing à¸•à¹ˆà¸²à¸‡à¸à¸±à¸™: orbCount à¸¡à¸²à¸à¸‚à¸¶à¹‰à¸™, aoeOnHit = true
+/// StarRing ต่างกัน: orbCount มากขึ้น, aoeOnHit = true
 ///
-/// Level data à¹à¸™à¸°à¸™à¸³:
+/// Level data แนะนำ:
 ///   Lv1: dmg=18, cd=1.5s, count=2, range=3 (orbit radius)
 ///   Lv2: dmg=22, cd=1.4s, count=2, range=3
 ///   Lv3: dmg=28, cd=1.3s, count=3, range=3.5
@@ -30,28 +30,28 @@ public class OrbiterWeapon : WeaponBase
     [Header("Orb Visual")]
     public GameObject orbPrefab;      // Simple sphere mesh (no NetworkObject)
     public float      orbSize  = 0.4f;
-    public float      rotSpeed = 90f; // à¸­à¸‡à¸¨à¸²/à¸§à¸´à¸™à¸²à¸—à¸µ (à¸„à¸‡à¸—à¸µà¹ˆ â€” à¹„à¸¡à¹ˆà¸‚à¸¶à¹‰à¸™à¸à¸±à¸š player)
+    public float      rotSpeed = 90f; // องศา/วินาที (คงที่ — ไม่ขึ้นกับ player)
 
     [Header("Summon Cycle")]
-    [Tooltip("à¸§à¸´à¸™à¸²à¸—à¸µà¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡à¸à¸²à¸£à¸£à¹ˆà¸²à¸¢ orb à¹à¸•à¹ˆà¸¥à¸°à¸£à¸­à¸š (à¸™à¸±à¸šà¸ˆà¸²à¸à¸—à¸µà¹ˆ orb à¸‹à¹ˆà¸­à¸™à¸ˆà¸™à¸–à¸¶à¸‡à¸£à¹ˆà¸²à¸¢à¸„à¸£à¸±à¹‰à¸‡à¸–à¸±à¸”à¹„à¸›)")]
+    [Tooltip("วินาทีระหว่างการร่าย orb แต่ละรอบ (นับจากที่ orb ซ่อนจนถึงร่ายครั้งถัดไป)")]
     public float summonCooldown = 8f;
-    [Tooltip("à¸§à¸´à¸™à¸²à¸—à¸µà¸—à¸µà¹ˆ orb à¹à¸ªà¸”à¸‡à¸œà¸¥à¸•à¹ˆà¸­à¸£à¸­à¸š (à¸ªà¹€à¸à¸¥à¸•à¸²à¸¡ Duration stat)")]
+    [Tooltip("วินาทีที่ orb แสดงผลต่อรอบ (สเกลตาม Duration stat)")]
     public float activeDuration = 3f;
 
     [Header("Damage on Contact")]
-    [Tooltip("à¸£à¸±à¸¨à¸¡à¸µà¸•à¸£à¸§à¸ˆ enemy à¸£à¸­à¸š orb (à¸„à¸§à¸£à¹ƒà¸à¸¥à¹‰à¸à¸±à¸šà¸‚à¸™à¸²à¸” visual)")]
+    [Tooltip("รัศมีตรวจ enemy รอบ orb (ควรใกล้กับขนาด visual)")]
     public float orbHitRadius = 0.8f;
-    [Tooltip("à¸•à¸£à¸§à¸ˆ collision à¸—à¸¸à¸à¸à¸µà¹ˆà¸§à¸´à¸™à¸²à¸—à¸µ (à¸„à¹ˆà¸²à¸™à¹‰à¸­à¸¢ = à¸•à¸­à¸šà¸ªà¸™à¸­à¸‡à¹„à¸§ à¹à¸•à¹ˆà¹ƒà¸Šà¹‰ CPU à¸¡à¸²à¸à¸‚à¸¶à¹‰à¸™)")]
+    [Tooltip("ตรวจ collision ทุกกี่วินาที (ค่าน้อย = ตอบสนองไว แต่ใช้ CPU มากขึ้น)")]
     public float hitCheckInterval = 0.08f;
-    [Tooltip("à¹€à¸§à¸¥à¸²à¸—à¸µà¹ˆ enemy à¹à¸•à¹ˆà¸¥à¸°à¸•à¸±à¸§à¸•à¹‰à¸­à¸‡à¸£à¸­à¸à¹ˆà¸­à¸™à¸–à¸¹à¸ orb à¹€à¸”à¸´à¸¡à¸•à¸µà¸­à¸µà¸ (à¸à¸±à¸™ multi-hit à¸•à¹ˆà¸­à¸£à¸­à¸š)")]
+    [Tooltip("เวลาที่ enemy แต่ละตัวต้องรอก่อนถูก orb เดิมตีอีก (กัน multi-hit ต่อรอบ)")]
     public float perEnemyHitCooldown = 0.5f;
 
     [Header("Star Ring Super")]
     public bool  aoeOnHit  = false;
-    public float aoeRadius = 1.5f;   // radius à¸‚à¸­à¸‡ AoE à¹€à¸¡à¸·à¹ˆà¸­ orb à¸Šà¸™à¸¨à¸±à¸•à¸£à¸¹
+    public float aoeRadius = 1.5f;   // radius ของ AoE เมื่อ orb ชนศัตรู
 
-    // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    protected override bool UsesCooldownTimer => false;   // à¹€à¸£à¸²à¸ˆà¸±à¸”à¸à¸²à¸£ timer à¹€à¸­à¸‡
+    // ── State ──────────────────────────────────────────────────────────────
+    protected override bool UsesCooldownTimer => false;   // เราจัดการ timer เอง
 
     private List<Transform>          orbs     = new();
     private float                    orbitAngle;
@@ -62,15 +62,15 @@ public class OrbiterWeapon : WeaponBase
     private float                    orbSyncTimer;
     private const float              OrbSyncInterval = 0.05f;
 
-    // à¸›à¹‰à¸­à¸‡à¸à¸±à¸™ multi-hit: enemyInstanceID â†’ unscaledTime à¸—à¸µà¹ˆà¸ˆà¸° hit à¹„à¸”à¹‰à¸­à¸µà¸
+    // ป้องกัน multi-hit: enemyInstanceID → unscaledTime ที่จะ hit ได้อีก
     private readonly Dictionary<int, float> _hitCooldowns = new();
 
-    // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Init ───────────────────────────────────────────────────────────────
     protected override void OnInit()
     {
         SpawnOrbs(data.GetLevelData(currentLevel).projectileCount);
         SetOrbsVisible(false);
-        Summon(); // à¹à¸ªà¸”à¸‡ orb à¸—à¸±à¸™à¸—à¸µà¸—à¸µà¹ˆà¹„à¸”à¹‰ weapon
+        Summon(); // แสดง orb ทันทีที่ได้ weapon
     }
 
     protected override void OnLevelUp()
@@ -79,16 +79,16 @@ public class OrbiterWeapon : WeaponBase
         if (orbs.Count < needed) SpawnOrbs(needed - orbs.Count);
     }
 
-    // OnFire à¹„à¸¡à¹ˆà¹ƒà¸Šà¹‰ â€” à¹€à¸£à¸²à¸ˆà¸±à¸”à¸à¸²à¸£ damage à¸œà¹ˆà¸²à¸™ CheckHits() à¸—à¸¸à¸ frame (continuous)
+    // OnFire ไม่ใช้ — เราจัดการ damage ผ่าน CheckHits() ทุก frame (continuous)
     protected override void OnFire(WeaponLevelData ld) { }
 
-    // â”€â”€ Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Update ─────────────────────────────────────────────────────────────
     protected override void Update()
     {
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
 
-        // à¸«à¸¡à¸¸à¸™ orb à¸”à¹‰à¸§à¸¢à¸­à¸±à¸•à¸£à¸²à¸„à¸‡à¸—à¸µà¹ˆ â€” à¹„à¸¡à¹ˆà¸‚à¸¶à¹‰à¸™à¸à¸±à¸šà¸à¸²à¸£à¸«à¸¡à¸¸à¸™ player
+        // หมุน orb ด้วยอัตราคงที่ — ไม่ขึ้นกับการหมุน player
         orbitAngle += rotSpeed * Time.deltaTime;
         UpdateOrbPositions();
 
@@ -96,13 +96,13 @@ public class OrbiterWeapon : WeaponBase
         else          TickInactive();
     }
 
-    // â”€â”€ Active Phase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Active Phase ───────────────────────────────────────────────────────
     void TickActive()
     {
         activeTimer -= Time.deltaTime;
         if (activeTimer <= 0f) { Deactivate(); return; }
 
-        // à¸•à¸£à¸§à¸ˆ collision à¸­à¸¢à¹ˆà¸²à¸‡à¸•à¹ˆà¸­à¹€à¸™à¸·à¹ˆà¸­à¸‡
+        // ตรวจ collision อย่างต่อเนื่อง
         hitCheckTimer += Time.deltaTime;
         if (hitCheckTimer < hitCheckInterval) return;
         hitCheckTimer = 0f;
@@ -110,7 +110,7 @@ public class OrbiterWeapon : WeaponBase
         CheckHits();
     }
 
-    // â”€â”€ Inactive Phase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inactive Phase ─────────────────────────────────────────────────────
     void TickInactive()
     {
         summonTimer += Time.deltaTime;
@@ -129,7 +129,7 @@ public class OrbiterWeapon : WeaponBase
         isActive     = true;
         _hitCooldowns.Clear();
         SetOrbsVisible(true);
-        Debug.Log($"[Orbiter] âœ¨ Summoned â€” {orbs.Count} orbs, active {activeTimer:F1}s, hitRadius={orbHitRadius}");
+        Debug.Log($"[Orbiter] ✨ Summoned — {orbs.Count} orbs, active {activeTimer:F1}s, hitRadius={orbHitRadius}");
     }
 
     void Deactivate()
@@ -138,10 +138,10 @@ public class OrbiterWeapon : WeaponBase
         SetOrbsVisible(false);
         summonTimer = 0f;
         manager.HideRemoteOrbsServerRpc();
-        Debug.Log($"[Orbiter] ðŸ’¤ Deactivated â€” next summon in {summonCooldown:F0}s");
+        Debug.Log($"[Orbiter] 💤 Deactivated — next summon in {summonCooldown:F0}s");
     }
 
-    // â”€â”€ Damage on Contact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Damage on Contact ─────────────────────────────────────────────────
     void CheckHits()
     {
         var ld         = data.GetLevelData(currentLevel);
@@ -151,7 +151,7 @@ public class OrbiterWeapon : WeaponBase
         float now      = Time.time;
         float radius   = orbHitRadius;
 
-        // à¸¥à¸š entry à¸—à¸µà¹ˆà¸«à¸¡à¸”à¸­à¸²à¸¢à¸¸ (à¸à¸±à¸™ dictionary à¹‚à¸•)
+        // ลบ entry ที่หมดอายุ (กัน dictionary โต)
         if (_hitCooldowns.Count > 32)
             CleanupCooldowns(now);
 
@@ -176,16 +176,16 @@ public class OrbiterWeapon : WeaponBase
 
                 if (aoeOnHit)
                 {
-                    // StarRing: à¸—à¸³ AoE à¸£à¸­à¸š orb â€” Enemy.cs spawn HitEffect à¹€à¸­à¸‡à¸•à¸­à¸™ TakeDamage
+                    // StarRing: ทำ AoE รอบ orb — Enemy.cs spawn HitEffect เองตอน TakeDamage
                     FireMelee(orb.position, aoeRadius, dmg, isCrit);
-                    Debug.Log($"[Orbiter] ðŸ’¥ AoE hit at orb pos â€” dmg {dmg:F0}");
-                    break; // 1 hit à¸•à¹ˆà¸­ orb à¸•à¹ˆà¸­ tick (AoE à¸„à¸£à¸­à¸šà¹„à¸›à¸—à¸±à¹‰à¸‡à¸à¸¥à¸¸à¹ˆà¸¡à¹à¸¥à¹‰à¸§)
+                    Debug.Log($"[Orbiter] 💥 AoE hit at orb pos — dmg {dmg:F0}");
+                    break; // 1 hit ต่อ orb ต่อ tick (AoE ครอบไปทั้งกลุ่มแล้ว)
                 }
                 else
                 {
-                    // à¸•à¸µà¹€à¸‰à¸žà¸²à¸°à¸•à¸±à¸§à¸—à¸µà¹ˆà¸Šà¸™ â€” Enemy.cs spawn HitEffect à¹€à¸­à¸‡à¸•à¸­à¸™ TakeDamage
+                    // ตีเฉพาะตัวที่ชน — Enemy.cs spawn HitEffect เองตอน TakeDamage
                     FireMelee(e.transform.position, 0.5f, dmg, isCrit);
-                    Debug.Log($"[Orbiter] ðŸ’¥ Hit enemy {e.name} â€” dmg {dmg:F0}");
+                    Debug.Log($"[Orbiter] 💥 Hit enemy {e.name} — dmg {dmg:F0}");
                 }
             }
         }
@@ -199,7 +199,7 @@ public class OrbiterWeapon : WeaponBase
         foreach (var id in stale) _hitCooldowns.Remove(id);
     }
 
-    // â”€â”€ Orb Position (world-space, à¹„à¸¡à¹ˆà¸œà¸¹à¸ parent rotation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Orb Position (world-space, ไม่ผูก parent rotation) ────────────────
     void UpdateOrbPositions()
     {
         Vector3 center = transform.position + Vector3.up * 0.5f;
@@ -210,11 +210,11 @@ public class OrbiterWeapon : WeaponBase
             if (orbs[i] == null) continue;
             float a   = orbitAngle + (360f / orbs.Count) * i;
             float rad = Mathf.Deg2Rad * a;
-            // world-space position â€” à¹„à¸¡à¹ˆà¹ƒà¸Šà¹‰ localPosition à¹€à¸žà¸·à¹ˆà¸­à¸à¸±à¸™à¸à¸²à¸£à¸«à¸¡à¸¸à¸™à¸•à¸²à¸¡ player
+            // world-space position — ไม่ใช้ localPosition เพื่อกันการหมุนตาม player
             orbs[i].position = center + new Vector3(Mathf.Cos(rad) * r, 0f, Mathf.Sin(rad) * r);
         }
 
-        // Sync à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡ world-space à¹„à¸›à¸¢à¸±à¸‡ client à¸­à¸·à¹ˆà¸™ (à¹€à¸‰à¸žà¸²à¸°à¸•à¸­à¸™ active)
+        // Sync ตำแหน่ง world-space ไปยัง client อื่น (เฉพาะตอน active)
         if (!isActive) return;
         orbSyncTimer += Time.deltaTime;
         if (orbSyncTimer < OrbSyncInterval) return;
@@ -230,25 +230,25 @@ public class OrbiterWeapon : WeaponBase
     {
         if (orbPrefab == null)
         {
-            Debug.LogError($"[OrbiterWeapon] orbPrefab à¹„à¸¡à¹ˆà¸–à¸¹à¸ assign à¸šà¸™ weapon prefab â€” orb à¸ˆà¸°à¹„à¸¡à¹ˆà¸›à¸£à¸²à¸à¸");
+            Debug.LogError($"[OrbiterWeapon] orbPrefab ไม่ถูก assign บน weapon prefab — orb จะไม่ปรากฏ");
             return;
         }
         for (int i = 0; i < count; i++)
         {
-            // parent = null â†’ à¹„à¸¡à¹ˆà¸£à¸±à¸šà¸à¸²à¸£à¸«à¸¡à¸¸à¸™à¸‚à¸­à¸‡ player
+            // parent = null → ไม่รับการหมุนของ player
             var go = Instantiate(orbPrefab);
             go.transform.localScale = Vector3.one * orbSize;
             go.SetActive(false);
 
-            // â”€â”€ Strip components à¸—à¸µà¹ˆà¸­à¸²à¸ˆ interfere â”€â”€
-            // OrbiterWeapon à¸ˆà¸±à¸”à¸à¸²à¸£ damage + position à¹€à¸­à¸‡ à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£ network/physics behavior
+            // ── Strip components ที่อาจ interfere ──
+            // OrbiterWeapon จัดการ damage + position เอง ไม่ต้องการ network/physics behavior
             var no = go.GetComponent<Unity.Netcode.NetworkObject>();
             if (no != null) Destroy(no);
             var proj = go.GetComponent<Projectile>();
             if (proj != null) Destroy(proj);
             var rb = go.GetComponent<Rigidbody>();
             if (rb != null) Destroy(rb);
-            // à¹€à¸à¹‡à¸š Collider isTrigger à¹„à¸§à¹‰à¸à¹‡à¹„à¸”à¹‰ â€” à¹„à¸¡à¹ˆà¸à¸£à¸°à¸—à¸š Physics.OverlapSphere
+            // เก็บ Collider isTrigger ไว้ก็ได้ — ไม่กระทบ Physics.OverlapSphere
 
             orbs.Add(go.transform);
         }

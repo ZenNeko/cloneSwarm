@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Tentacle (Lance) â€” à¹€à¸ªà¸·à¸­à¸à¸«à¸™à¸§à¸” tendril à¹€à¸”à¸µà¸¢à¸§à¸žà¸¸à¹ˆà¸‡à¸•à¸£à¸‡à¹„à¸›à¸‚à¹‰à¸²à¸‡à¸«à¸™à¹‰à¸²
+/// Tentacle (Lance) — เสือกหนวด tendril เดียวพุ่งตรงไปข้างหน้า
 /// Holocure-style Summon Tentacle: narrow forward line AoE
 ///
 /// Level progression (5 levels):
@@ -16,17 +16,17 @@
 public class LanceWeapon : WeaponBase
 {
     [Header("Lance Config")]
-    [Tooltip("à¸„à¸§à¸²à¸¡à¸à¸§à¹‰à¸²à¸‡à¸‚à¸­à¸‡ pierce (à¹à¸„à¸š = single tendril)")]
+    [Tooltip("ความกว้างของ pierce (แคบ = single tendril)")]
     public float pierceWidth = 0.8f;
-    [Tooltip("à¸ˆà¸³à¸™à¸§à¸™à¸„à¸£à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¹à¸—à¸‡ â€” 1=single tendril, 2+=rapid (à¸¡à¸±à¸à¹Œà¹ƒà¸Šà¹‰à¹€à¸›à¹‡à¸™ 1)")]
+    [Tooltip("จำนวนครั้งที่แทง — 1=single tendril, 2+=rapid (มัก์ใช้เป็น 1)")]
     public int   thrustCount = 1;
-    [Tooltip("à¸«à¸™à¹ˆà¸§à¸‡à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ thrust à¸«à¸¥à¸²à¸¢à¸„à¸£à¸±à¹‰à¸‡ (à¸§à¸´à¸™à¸²à¸—à¸µ)")]
+    [Tooltip("หน่วงระหว่าง thrust หลายครั้ง (วินาที)")]
     public float thrustDelay = 0.12f;
 
     [Header("Knockback (unlocks at level)")]
-    [Tooltip("Level à¸—à¸µà¹ˆà¸›à¸¥à¸”à¸¥à¹‡à¸­à¸ knockback")]
+    [Tooltip("Level ที่ปลดล็อก knockback")]
     public int   knockbackUnlockLevel = 5;
-    [Tooltip("à¹à¸£à¸‡à¸œà¸¥à¸±à¸ enemy (à¹€à¸¡à¸•à¸£) à¸•à¸²à¸¡à¹à¸™à¸§à¸žà¸¸à¹ˆà¸‡")]
+    [Tooltip("แรงผลัก enemy (เมตร) ตามแนวพุ่ง")]
     public float knockbackForce       = 1.5f;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -52,7 +52,7 @@ public class LanceWeapon : WeaponBase
         }
     }
 
-    /// <summary>à¸¢à¸´à¸‡ tentacle 1 à¸„à¸£à¸±à¹‰à¸‡ (forward line AoE + VFX) â€” à¹ƒà¸Šà¹‰à¹ƒà¸™ subclass à¹„à¸”à¹‰</summary>
+    /// <summary>ยิง tentacle 1 ครั้ง (forward line AoE + VFX) — ใช้ใน subclass ได้</summary>
     protected void DoThrust(Vector3 origin, Vector3 dir, float dmg, float range, bool isCrit)
     {
         float kb = (currentLevel >= knockbackUnlockLevel) ? knockbackForce : 0f;
