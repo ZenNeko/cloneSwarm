@@ -2711,6 +2711,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 3
+  rotationSpeed: 360
   suppressDefaultMovement: 0
   wallLayer:
     serializedVersion: 2
@@ -2718,6 +2719,8 @@ MonoBehaviour:
   wallCheckRadius: 0.4
   wallCheckDistance: 0.6
   useFlowField: 1
+  separationWeight: 0.3
+  separationRadius: 1.2
   contactDamage: 10
   damageCooldown: 1
   damageRadius: 1.2
@@ -2746,7 +2749,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MiniBossAI
   ShowTopMostFoldoutHeaderGroup: 1
-  bossName: 
+  bossDisplayName: R
   config: {fileID: 11400000, guid: dc7d4e54db3a62f468b3ace731162303, type: 2}
   telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
   tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}

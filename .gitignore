@@ -85,3 +85,9 @@ crashlytics-build.properties
 # Claude Code local-only state
 /.claude/worktrees/
 /.claude/settings.local.json
+
+# IDE and Recovery directories
+.vscode/
+Assets/_Recovery/
+GeneratedAssets/
+

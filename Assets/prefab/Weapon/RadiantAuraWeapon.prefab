@@ -51,9 +51,7 @@ MonoBehaviour:
   tempCooldownMult: 1
   weaponVfxType: O_AoE_RadiantAura
   secondaryVfxType: None
-  fireSfx:
-  - {fileID: 8300000, guid: ba041dae0e6c5334d840591a3e1ce5fb, type: 3}
-  - {fileID: 8300000, guid: 33bc19747bc7f4340973857ff90b2782, type: 3}
+  fireSfx: []
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6

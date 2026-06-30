@@ -15,12 +15,12 @@ MonoBehaviour:
   entries:
   - key: HitEffect
     prefab: {fileID: 3077343761403282166, guid: f78aaaec3b393e24ca74cd6de8194347, type: 3}
-    poolSize: 40
+    poolSize: 200
     designedRadius: 0
     fixedDuration: 0
   - key: CritHitEffect
     prefab: {fileID: 4503612902121041701, guid: 5a936c83b1746f14f9100db745e94f04, type: 3}
-    poolSize: 80
+    poolSize: 200
     designedRadius: 0
     fixedDuration: 0
   - key: GrenadeExplosion

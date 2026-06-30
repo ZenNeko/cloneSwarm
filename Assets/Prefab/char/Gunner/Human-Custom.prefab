@@ -5024,6 +5024,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2923971455983436811}
   - component: {fileID: 1414091686784563831}
+  - component: {fileID: -6256403400512978495}
   m_Layer: 0
   m_Name: Human-Custom
   m_TagString: Untagged
@@ -5070,6 +5071,24 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &-6256403400512978495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3794016916180676343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 613151c9eb69cc4499f5a96d13c4daa0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimationEvents
+  footstepClips: []
+  footstepVolume: 0.4
+  footstepPitchVariance: 0.1
+  landClips: []
+  landVolume: 0.6
+  footstepVfxPrefab: {fileID: 0}
 --- !u!1 &3872406624013463888
 GameObject:
   m_ObjectHideFlags: 0

@@ -51,7 +51,8 @@ MonoBehaviour:
   tempCooldownMult: 1
   weaponVfxType: VFX_Lance
   secondaryVfxType: VFX_Lance
-  fireSfx: []
+  fireSfx:
+  - {fileID: 8300000, guid: d5cf797657053fe4da26d4a0ba4ceff1, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6

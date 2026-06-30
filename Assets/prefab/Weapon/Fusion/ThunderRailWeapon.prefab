@@ -63,8 +63,9 @@ MonoBehaviour:
   pitchVariance: 0.05
   chainTargets: 3
   chainDamageRatio: 0.4
-  chainSearchRadius: 8
+  chainSearchRadius: 10
   zoneRadius: 2.5
   zoneDamageRatio: 0.2
   zoneTicks: 1
   zoneTickInterval: 0.3
+  width: 2.5

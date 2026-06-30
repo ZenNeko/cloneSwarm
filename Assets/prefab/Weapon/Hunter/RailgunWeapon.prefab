@@ -61,3 +61,4 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
+  width: 2

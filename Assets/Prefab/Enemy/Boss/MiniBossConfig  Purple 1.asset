@@ -12,26 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 597f7a7473cb85a4caf994a00211ad0e, type: 3}
   m_Name: MiniBossConfig  Purple 1
   m_EditorClassIdentifier: Assembly-CSharp::MiniBossConfig
-  mechanics: 0000000001000000
+  phases:
+  - transitionHealthPct: 0
+    invincibilityDuration: 1.5
+    cameraShakeMagnitude: 0.4
+    actions:
+    - {fileID: 11400000, guid: 115fa27f1556ccb46a45dddebcab06e2, type: 2}
+    - {fileID: 11400000, guid: 13d9847fd4418664396f4b9001f5b657, type: 2}
+    - {fileID: 11400000, guid: 50973767a0e3ab446b5a18c7de9547da, type: 2}
   attackInterval: 4
   firstAttackDelay: 2
-  circleRadius: 8
-  circleDamage: 18
-  circleWarnTime: 3
-  lineLength: 100
-  lineWidth: 6
-  lineDamage: 22
-  lineWarnTime: 3
-  tetherDistance: 6
-  tetherDuration: 5
-  tetherFailDamage: 30
-  tetherSoloOffset: 2
-  chaseRadius: 2.5
-  chaseDamage: 20
-  chaseWarnTime: 3
   extraExpOrbs: 4
   extraExpPerOrb: 5
-  dropScatterRadius: 2
+  dropScatterRadius: 4
   bonusDrops:
   - prefab: {fileID: 1276859104628764932, guid: 05b33c50f6e4ac44da9d9381c810e5e5, type: 3}
     count: 1
@@ -39,3 +32,4 @@ MonoBehaviour:
   - prefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
     count: 10
     scatterRadius: 2
+  actions: []

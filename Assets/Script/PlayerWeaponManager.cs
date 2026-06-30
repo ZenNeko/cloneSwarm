@@ -490,14 +490,24 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage,
                                      float maxDist = 50f, string vfxKey = "None",
-                                     bool isCrit = false, bool playHitVfx = true, string weaponName = "Unknown")
+                                     bool isCrit = false, bool playHitVfx = true, string weaponName = "Unknown",
+                                     float thickness = 0f)
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
         direction = direction.normalized;
 
         var mask = LayerMask.GetMask("Enemy");
-        var hits = Physics.RaycastAll(origin, direction, maxDist, mask);
+        RaycastHit[] hits;
+        if (thickness > 0f)
+        {
+            hits = Physics.SphereCastAll(origin, thickness * 0.5f, direction, maxDist, mask);
+        }
+        else
+        {
+            hits = Physics.RaycastAll(origin, direction, maxDist, mask);
+        }
+
         foreach (var h in hits)
         {
             var enemy = h.collider.GetComponent<Enemy>();
@@ -867,7 +877,8 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void FireRaycastChainServerRpc(
         Vector3 origin, Vector3 direction, float damage, float range, int beamCount,
         int chainTargets, float chainDamage, float chainRadius, bool isCrit, string weaponName, string beamVfx,
-        float zoneRadius = 0f, float zoneDamage = 0f, int zoneTicks = 0, float zoneTickInterval = 0f, string zoneVfx = "None")
+        float zoneRadius = 0f, float zoneDamage = 0f, int zoneTicks = 0, float zoneTickInterval = 0f, string zoneVfx = "None",
+        float thickness = 0f)
     {
         if (!IsServer) return;
 
@@ -884,7 +895,15 @@ public class PlayerWeaponManager : NetworkBehaviour
             Vector3 bDir = Quaternion.Euler(0f, i * angleStep, 0f) * direction;
             bDir = bDir.normalized;
 
-            var hits = Physics.RaycastAll(origin, bDir, range, mask);
+            RaycastHit[] hits;
+            if (thickness > 0f)
+            {
+                hits = Physics.SphereCastAll(origin, thickness * 0.5f, bDir, range, mask);
+            }
+            else
+            {
+                hits = Physics.RaycastAll(origin, bDir, range, mask);
+            }
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
             Vector3 endPoint = origin + bDir * range;

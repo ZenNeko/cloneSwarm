@@ -1319,37 +1319,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainBoss
   ShowTopMostFoldoutHeaderGroup: 1
   bossDisplayName: BOSS
-  phase2Threshold: 0.7
-  phase3Threshold: 0.4
-  phase1Interval: 3
-  phase2Interval: 2.5
-  phase3Interval: 1.5
-  circleRadius: 15
-  circleDamage: 100
-  circleWarnTime: 2.5
-  lineLength: 100
-  lineWidth: 10
-  lineDamage: 100
-  lineWarnTime: 2.5
-  crossLineLength: 300
-  crossLineWidth: 10
-  crossDamage: 100
-  crossWarnTime: 2.5
-  donutRadius: 30
-  donutInnerRadius: 30
-  donutDamage: 100
-  donutWarnTime: 2.5
-  chaseRadius: 3
-  chaseDamage: 100
-  chaseWarnTime: 4
-  tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
-  tetherDistance: 20
-  tetherDuration: 6
-  tetherFailDamage: 100
-  tetherSoloSpawnOffset: 5
+  config: {fileID: 0}
   telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
-  phaseTransitionDuration: 1.5
-  phaseShakeMagnitude: 0.4
+  tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
+  legacyPhase2Threshold: 0.75
+  legacyPhase3Threshold: 0.3
+  circleRadius: 5
+  circleWarnTime: 2
+  circleDamage: 20
+  lineLength: 15
+  lineWidth: 3
+  lineWarnTime: 2
+  lineDamage: 25
+  crossLineLength: 15
+  crossLineWidth: 3
+  crossWarnTime: 2.5
+  crossDamage: 25
+  donutRadius: 10
+  donutInnerRadius: 4
+  donutWarnTime: 2.5
+  donutDamage: 30
+  chaseRadius: 4
+  chaseWarnTime: 2.5
+  chaseDamage: 20
+  tetherDistance: 25
+  tetherDuration: 10
+  tetherFailDamage: 50
+  tetherSoloSpawnOffset: 10
 --- !u!65 &4194741810231641617
 BoxCollider:
   m_ObjectHideFlags: 0

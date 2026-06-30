@@ -49,9 +49,13 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: Beam_Laser
+  weaponVfxType: Beam_Lightning
   secondaryVfxType: Stormcaller_AOE
-  fireSfx: []
+  fireSfx:
+  - {fileID: 8300000, guid: cea58e327832b8049b85e4aa06ccb704, type: 3}
+  - {fileID: 8300000, guid: 5d13775a31a10b2489635741c5024396, type: 3}
+  - {fileID: 8300000, guid: 8f102c4733d4f7a4884695aa3397ed67, type: 3}
+  - {fileID: 8300000, guid: 05440a2feba9fa741b5a69c184eb0e65, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
@@ -59,6 +63,6 @@ MonoBehaviour:
   chainSearchRadius: 10
   chainDamageMult: 0.85
   zoneRadius: 2.5
-  zoneDamage: 25
+  zoneDamageRatio: 0.3
   zoneTicks: 3
   zoneTickInterval: 0.3

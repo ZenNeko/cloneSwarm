@@ -33,7 +33,8 @@ public class StormcallerWeapon : WeaponBase
         // คำนวณดาเมจของโซนเป็นเปอร์เซ็นต์จากดาเมจหลัก (ซึ่งรวมสเตตัสและเลเวลอาวุธเรียบร้อยแล้ว)
         float actualZoneDmg = dmg * zoneDamageRatio;
 
-        // ดึงคีย์ 2nd VFX (secondaryVfxType) หรือใช้ Stormcaller_AOE เป็น fallback
+        // ดึงคีย์หลักและรองของ VFX (หลัก: ลำแสงสายฟ้าชิ่ง, รอง: โซนระเบิดสายฟ้าลงพื้น)
+        string beamVfxKey = ResolveHitVfx("Default");
         string zoneVfxKey = ResolveSecondaryVfx("Stormcaller_AOE");
 
         // ส่งข้อมูลไปประมวลผลการทำงานและความเสียหายบนฝั่ง Server
@@ -41,7 +42,7 @@ public class StormcallerWeapon : WeaponBase
             transform.position + Vector3.up * 0.8f, dmg, ld.range, chainCount, chainSearchRadius, chainDamageMult,
             searchHighestHP: true,
             weaponName: data != null ? data.weaponName : "Unknown",
-            beamVfx: "Default",
+            beamVfx: beamVfxKey,
             hitVfx: "None",
             zoneRadius: zoneRadius,
             zoneDamage: actualZoneDmg,

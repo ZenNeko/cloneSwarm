@@ -3,7 +3,7 @@
 > **Genre:** Top-down Co-op Bullet Heaven / Horde Survival
 > **Platform:** PC (Unity 6, Netcode for GameObjects)
 > **Players:** 1-4 Online Co-op
-> **Inspiration:** LoL Swarm, Vampire Survivors, Brotato
+> **Inspiration:** LoL Swarm, Vampire Survivors, rabbit and steel
 
 ---
 
@@ -11,6 +11,9 @@
 
 ### 1.1 Concept
 ผู้เล่น 1-4 คน เลือก Hero แล้วเอาตัวรอดจาก horde ของศัตรูที่ยากขึ้นเรื่อยๆ เป็นเวลา **15 นาที** โดยสะสม weapon, stat, และ upgrade ระหว่างทาง เป้าหมายคือ **ฆ่า Main Boss** ที่ spawn ตอนนาทีที่ 15
+
+> [!NOTE]
+> **สถานะโครงการปัจจุบัน (Project Status):** โครงการในขั้นตอนนี้เป็นการจำลองระบบ **Proof of Concept (PoC) / Mock-up** เพื่อทดสอบระบบเครือข่าย (Multiplayer Synchronization) และระบบการโจมตีเชิงกลไกเป็นหลัก งานศิลป์ (Art Assets) รวมถึงโมเดล 3 มิติของตัวละคร ศัตรู ฉาก และอินเตอร์เฟส (UI) ทั้งหมดที่เห็นเป็นตัวต้นแบบชั่วคราว (Placeholder Art) โดยมีแผนจะ **ออกแบบและจัดทำชิ้นงานศิลป์ใหม่ทั้งหมด** ในเวอร์ชันจำหน่ายจริง ยกเว้นระบบเอฟเฟกต์ (VFX System) ที่พัฒนาขึ้นเป็นพิเศษเสร็จสมบูรณ์แล้ว
 
 ### 1.2 Win / Lose Condition
 | Condition | Trigger |
@@ -78,61 +81,57 @@ Normal weapon ต้องถึง Lv5 + เงื่อนไขเพิ่�
 
 ### 3.3 Weapon List
 
-#### Projectile Weapons
-| Weapon | Mechanic | Aim Mode |
+#### Normal Weapons (Normal Tier - Lv 1-5)
+| Weapon | Type | Mechanic |
 |---|---|---|
-| **Pistol** | ยิงกระสุนเดี่ยว | Auto/Mouse |
-| **Shotgun** | ยิงกระสุนหลายลูก spread | Auto/Mouse |
-| **Orbital Cannon** | ยิง projectile ลงจากบน | Auto |
-| **Boomerang** | ขว้างบูมเมอแรง กลับมา | Auto |
-| **TriRang** | ขว้าง 3 ทิศ | Auto |
-| **Vortex** | spawn vortex ที่ดูดศัตรู + ยิง projectile | Auto |
-| **Spiral Galaxy** | vortex variant | Auto |
+| **Pistol** | Projectile | ยิงกระสุนเดี่ยวตรงหน้า เล็ง Auto (ศัตรูใกล้สุด) หรือ Mouse Aim |
+| **Shotgun** | Projectile | ยิงกระสุนลูกปรายกระจายมุมกว้าง (Spread) เล็ง Auto หรือ Mouse Aim |
+| **Orbital Cannon (Normal Base)** | Projectile | ยิงอุกกาบาต/ลำแสงสุ่มลงมาจากฟากฟ้า |
+| **Boomerang** | Projectile | ขว้างบูมเมอแรงพุ่งออกไปและลอยย้อนกลับมาหาตัวละคร |
+| **TriRang** | Projectile | ขว้างบูมเมอแรงกระจายออกไป 3 ทิศทางพร้อมกัน |
+| **Vortex** | Projectile | สร้างพายุดูดศัตรูเข้าจุดศูนย์กลางพร้อมยิงกระสุนปะทะ |
+| **Spiral Galaxy** | Projectile | พายุดูดศัตรูที่ยิงกระสุนกระจายรอบตัวเป็นก้นหอย |
+| **Dual Slash** | Melee / AoE | ฟันดาบคู่ซ้าย-ขวา สร้างความเสียหายกวาดหน้า |
+| **Whip** | Melee / AoE | ฟาดแส้หนวดทิศทางเดียว (Line AoE) ด้านหน้าและหลังตัวละคร |
+| **Lance** | Melee / AoE | เสือกแทงหนวดเดี่ยวพุ่งทะลวงไปข้างหน้า (Narrow Line AoE) ปลดล็อก Knockback ที่เลเวล 5 |
+| **Laser** | Beam | ยิงลำแสงเลเซอร์ยาวแนวตรงค้างชั่วขณะ (Line AoE) |
+| **Lightning Chain** | Beam | ยิงกระแสไฟฟ้าช็อตชิ่งข้ามตัวศัตรูในระยะใกล้เคียงต่อเนื่อง |
+| **Orbiter** | Orbital | ลูกบอลพลังงานโคจรรอบตัว สร้างความเสียหาย melee เมื่อศัตรูเดินชน |
+| **Radiant Aura** | Orbital | วงออร่าแผ่รัศมีสร้างดาเมจรอบตัวผู้เล่นอย่างต่อเนื่อง |
+| **Grenade** | Explosive | โยนระเบิดไปจุดเป้าหมาย สร้างแรงระเบิด AoE วงกว้าง |
 
-#### Melee / AoE Weapons
-| Weapon | Mechanic |
-|---|---|
-| **Dual Slash** | ฟันซ้าย-ขวา AoE |
-| **Blade Storm** | หมุนฟัน 360 องศา |
-| **Chainsaw** | ฟันต่อเนื่อง + chain beam |
-| **Cyclone Blade** | หมุนฟันรอบตัว |
-| **Whip** | ฟาดแส้ทิศเดียว + line AoE |
+#### Super Weapons (Super Tier - Lv 1)
+*สลัดอาวุธเลเวล 5 ทิ้งเพื่ออัปเกรดเมื่อผ่านเงื่อนไขจาก Zone Objective*
+| Super Weapon | Base Weapon | Special Mechanic |
+|---|---|---|
+| **Tendril Storm** | Lance | แทงหนวดหลักไปข้างหน้า และงอกหนวดเสริมอีก N เส้น (default 3) แทงทิศสุ่มต่อเนื่องจากปลายหนวดหลัก |
+| **Whip Plasma** | Whip | ฟาดแส้หนวดหลักพร้อมผลักศัตรู (Knockback) แล้วสร้างสายฟ้ากระดอน (chain beam) ช็อตชิ่งต่อหาศัตรูใกล้สุด 3 ขั้น |
+| **Blade Storm** | Dual Slash | หมุนตัวฟันดาบพายุหมุน 360 องศารอบตัว |
+| **Death Field** | Radiant Aura | กางสนามพลังความมืดรอบตัวต่อเนื่อง เมื่อศัตรูตายในสนามจะระเบิดพลังงานออกมา |
+| **Minefield** | Grenade | วางทุ่นระเบิดสุ่มบนพื้นรอบตัว เมื่อศัตรูเหยียบจะระเบิดเป็นวงกว้าง |
+| **Stormcaller** | Lightning Chain | เรียกสายฟ้าผ่ากระจายลงมารอบตัว ช็อตชิ่งเป้าหมายหนาแน่น |
+| **Magnum** | Pistol | อัปเกรดปืนพกยิงกระสุนขนาดใหญ่เจาะทะลวงศัตรูทั้งหมด |
+| **Star Ring** | Orbiter | วงแหวนดาวเคราะห์โคจรรอบตัวด้วยความเร็วและรัศมีที่กว้างขึ้น |
+| **Blunderbuss** | Shotgun | ปืนลูกซองยักษ์ยิงกระจายกระสุนหนาแน่นและผลักศัตรูถอยหลังอย่างรุนแรง |
 
-#### Beam / Raycast Weapons
-| Weapon | Mechanic |
-|---|---|
-| **Laser** | ยิง beam เส้นตรง (line AoE) |
-| **Railgun** | ยิง raycast ทะลุ pierce |
-| **Lightning Chain** | สายฟ้าโซ่กระโดดหาศัตรูถัดไป |
-| **Plasma Whip** | แส้ + raycast combo |
-
-#### Orbital / Persistent Weapons
-| Weapon | Mechanic |
-|---|---|
-| **Orbiter** | ลูกบอลโคจรรอบตัว damage ศัตรูที่ชน |
-| **Radiant Aura** | AoE damage รอบตัวต่อเนื่อง |
-| **Death Field** | persistent AoE + ระเบิดตอนตาย |
-
-#### Explosive Weapons
-| Weapon | Mechanic |
-|---|---|
-| **Grenade** | โยนระเบิด AoE |
-| **Cluster Bomb** | ระเบิดแตกหลายลูก |
-| **Minefield** | วางกับระเบิดบนพื้น |
-
-#### Movement Weapons
-| Weapon | Mechanic |
-|---|---|
-| **BunnyHop** | dash + ยิง projectile/AoE ขณะ dash |
-| **Storm Bunny** | BunnyHop + lightning chain variant |
+#### Fusion Weapons (Fusion Tier - Lv 1)
+*รวมร่างอาวุธระดับ Super 2 ชนิดเมื่อสวมใส่ครบสูตร (สูตรผสมถูกประมวลผลอัตโนมัติ)*
+*   **Plasma Whip** (Railgun + Whip Plasma / Chainsaw): หมุนฟันรอบตัวเป็นวงกว้าง (Melee Spin AoE) พร้อมยิงลำแสง Raycast ออกไป N ทิศทางพร้อมกันตาม projectile count
+*   **Cluster Bomb** (Blunderbuss + Minefield): ยิงลูกปรายกระบอกกระจายรอบหน้าพร้อมโยน Grenade วงกว้าง และเมื่อศัตรูตายจะระเบิด AoE ที่จุดตายพร้อมกระจายลูกระเบิดย่อย (Child Grenades) เด้งเกลื่อนพื้นรอบบริเวณ
+*   **Cyclone Blade** (Blade Storm + Chainsaw): ทำการสลับโหมดโจมตีสลับกันทุก Cooldown ระหว่างหมุนดาบฟันรอบตัว 360 องศา และการปล่อยคลื่นฟันดับเบิ้ลสแลชพุ่งตรงไปด้านหน้าสองเส้นคู่
+*   **Orbital Cannon** (Magnum + Star Ring): เรียกใช้วัตถุโคจรสร้างดาเมจมีเลย์รอบตัว โดยที่ตัวลูกบอลแต่ละลูกจะทำการค้นหาและยิงกระสุนแสงใส่ศัตรูที่ใกล้ที่สุดแยกกันอย่างอิสระ
+*   **Thunder Rail** (Stormcaller + Railgun): ยิงลำเลเซอร์ทะลวงแถวยาวแนวตรง โดยทุกเป้าหมายที่โดนจะเกิดสายฟ้าชิ่งต่อเนื่อง (Chain Lightning) พร้อมทิ้งแอ่งกระแสไฟฟ้าแปรปรวน (Mini Lightning Zone) ช็อตดาเมจบนพื้นต่อเนื่อง
+*   **Storm Bunny** (BunnyHop Super + Stormcaller): การพุ่งหลบหลีก (Dash) ที่ทำดาเมจกระแทกพื้นกว้าง (Meteor AoE) และฟาดสายฟ้าช็อตชิ่งที่จุดแลนดิ้ง พร้อมมอบบาเรียป้องกันดาเมจแก่ผู้เล่น เมื่ออยู่ในโหมดปลุกพลัง Exile จะยิงกระสุนเลเซอร์ชิ่งสายฟ้ารอบทิศเพิ่มเติม
 
 ### 3.4 Fusion Recipes
-Super Weapon A + Super Weapon B = Fusion Weapon
-
-| Super A | Super B | Fusion Result |
+| Super Weapon A | Super Weapon B | Fusion Result |
 |---|---|---|
-| Stormcaller | (Thunder variant) | **Thunder Rail** |
-| (อื่นๆ กำหนดใน WeaponFusionRecipe assets) | | |
+| **Stormcaller** (Super Lightning Chain) | **Railgun** (Super Laser) | **Thunder Rail** |
+| **Blunderbuss** (Super Shotgun) | **Minefield** (Super Grenade) | **Cluster Bomb** |
+| **Railgun** (Super Laser) | **Whip Plasma** (Super Whip) | **Plasma Whip** |
+| **Blade Storm** (Super Dual Slash) | **Chainsaw** | **Cyclone Blade** |
+| **Magnum** (Super Pistol) | **Star Ring** (Super Orbiter) | **Orbital Cannon** |
+| **BunnyHop Super** | **Stormcaller** (Super Lightning Chain) | **Storm Bunny** |
 
 ### 3.5 Weapon Stats Per Level
 แต่ละ level กำหนด:
@@ -149,41 +148,42 @@ Super Weapon A + Super Weapon B = Fusion Weapon
 
 ---
 
-## 4. VFX System
+## 4. VFX System (String-based Overhauled System)
 
-### 4.1 VFX Types (9 active)
-| ID | Type | Usage |
-|---|---|---|
-| 0 | **HitEffect** | base hit impact — ทุก weapon แสดงเมื่อโดน enemy |
-| 1 | **CritHitEffect** | critical hit — แสดงแทน HitEffect เมื่อ crit |
-| 3 | **GrenadeExplosion** | Grenade / Rocket / Mine explosion |
-| 5 | **OrbiterHit** | Orbiter / RadiantAura / DeathField impact |
-| 6 | **OrbPickup** | เก็บ Objective Orb |
-| 7 | **EnemyDeath** | ศัตรูตาย |
-| 10 | **WhipSlash** | Whip tentacle slash |
-| 11 | **SlashHit** | DualSlash / BladeStorm / Cyclone / Chainsaw |
-| 15 | **VortexSpawn** | Vortex spawn indicator |
-| 16 | **DashTrail** | BunnyHop dash trail |
-| 17 | **MeteorAoE** | BunnyHop landing AoE |
+### 4.1 VFX Database & Keys
+ระบบ VFX ได้รับการปรับปรุงโครงสร้างจากเดิมที่เป็น Enum-based (ID ตัวเลข) มาเป็นระบบ **String-key-based lookup** ผ่าน **VFXDatabase** (ScriptableObject) ซึ่งช่วยให้ดีไซเนอร์ปรับจูนและกำหนดค่า Prefab, ขนาดวัตถุ และขนาด Pool Size ได้ผ่านอินเตอร์เฟส Unity Editor โดยตรงโดยไม่ต้องทำการแก้ไขโค้ดใหม่
 
-### 4.2 Hit VFX Flow
-```
-Weapon fires → RollDamage(baseDmg, out isCrit) → isCrit?
-  → true:  CritHitEffect (slot 1)
-  → false: HitEffect (slot 0)
-  
-If weapon has extra VFX (e.g. SlashHit):
-  → ShowVfx() plays extra VFX + base HitEffect/CritHitEffect overlay
-```
+คีย์ VFX หลักที่พอร์ตมาใช้งานเรียบร้อยแล้ว:
+*   **"HitEffect"**: พาร์ติเคิลปะทะการโจมตีพื้นฐาน — แสดงเมื่อการโจมตีปกติโดน Enemy
+*   **"CritHitEffect"**: พาร์ติเคิลปะทะแบบคริติคอล — แสดงทดแทน HitEffect เมื่อเกิดการโจมตีติดคริติคอล
+*   **"GrenadeExplosion"**: เอฟเฟกต์การระเบิดวงกว้าง สำหรับ Grenade, Rocket และทุ่นระเบิด Mine
+*   **"OrbiterHit"**: เอฟเฟกต์การชน/ปะทะสำหรับอาวุธประเภท Orbiter, RadiantAura และ DeathField
+*   **"OrbPickup"**: เอฟเฟกต์การเก็บไอเทมเควส และการสัมผัสเก็บ Objective Orb
+*   **"EnemyDeath"**: เอฟเฟกต์กระจายตัวเมื่อศัตรูตาย
+*   **"WhipSlash"**: เอฟเฟกต์ฟันฟาดรูปเสี้ยวคลื่นสำหรับอาวุธแส้ Whip และ WhipPlasma
+*   **"SlashHit"**: เอฟเฟกต์รอยดาบตัดผ่านสำหรับอาวุธ DualSlash, BladeStorm, Cyclone และ Chainsaw
+*   **"VortexSpawn"**: วงแสดงจุดศูนย์กลางพายุดูดของอาวุธ Vortex
+*   **"DashTrail"**: ควันที่ลากตามรอยการพุ่งแดชของตัวละคร (เช่น BunnyHop)
+*   **"MeteorAoE"**: เอฟเฟกต์หินระเบิดกระแทกพื้น AoE ณ จุดแดชแลนดิ้ง
+*   **"Stormcaller_AOE"**: เอฟเฟกต์พายุสายฟ้าผ่าของ Stormcaller
+*   **"Beam_Railgun"**: พาร์ติเคิลเส้นแสงแนวตรงของ Railgun
 
-### 4.3 Beam VFX
-Beam weapons (Lightning Chain, Railgun, Laser) วาด **LineRenderer** จาก A→B
-Hit particle ใช้ HitEffect/CritHitEffect ที่ `ShowBaseHitVfx` จัดการ (ไม่มี endpoint particle แยก)
+### 4.2 Networked Object Pooling (NetworkedVFXPool)
+*   **Pre-allocation:** เพื่อลดอาการหน่วง (GC Spikes) ขณะเล่นเกม ไคลเอนต์ทุกคนจะทำการสร้างอินสแตนซ์ของเอฟเฟกต์ตามจำนวน `poolSize` ที่กำหนดในฐานข้อมูลตั้งแต่วินาทีแรกที่โหลดเข้าฉาก และเก็บกลับเข้าพูลเมื่อหมดอายุการแสดงผล
+*   **Recursion Guard:** ระบบพูลติดตั้ง depth limit ตรวจสอบความลึกการเกิดซ้ำกรณี Prefab ไปเรียกคำสั่งเปิดตัวเองวนลูป (สูงสุด 8 ชั้น) ป้องกันปัญหาระบบค้างแบบ Stack Overflow
+*   **VFXFactory API (Static wrapper):**
+    *   `VFXFactory.Play(string key, Vector3 position, float scale = 1f)` - เล่นเอฟเฟกต์ปกติระบุพิกัดและอัตราขยาย
+    *   `VFXFactory.PlayBeam(string beamKey, string hitVfxKey, Vector3 from, Vector3 to)` - สั่งวาดเส้นเอฟเฟกต์ลำแสงพร้อมสปอว์น burst ปะทะที่ปลายสาย
 
-### 4.4 VFX Scale System
-- แต่ละ VFXType มี `designedRadius` (radius ที่ prefab ถูกออกแบบมา)
-- `ComputeVfxScale(type, actualRange)` = actualRange / designedRadius
-- Weapon ส่ง actual range (หลัง stat scaling) → VFX scale ตามอัตโนมัติ
+### 4.3 Beam VFX Pool
+อาวุธลำแสงประเภทเลเซอร์และสายฟ้าวาดผ่าน **LineRenderer** โดยพูลของ Beam จะถูกจัดเก็บเป็นวัตถุเฉพาะทางในพูล:
+*   รองรับการระบุ **`beamKey`** เพื่อดึงดีไซน์พาร์ติเคิลเส้นเลเซอร์จากพูลขึ้นมาวาดตำแหน่งจาก `from` ไปยัง `to`
+*   หากไม่มีการกำหนดหรือหาไม่เจอ ระบบจะทำงาน fallback อัตโนมัติด้วยการสร้าง LineRenderer ชั่วคราว (สีฟ้าใส)
+
+### 4.4 Dynamic VFX Scaling
+*   เอฟเฟกต์แต่ละตัวในฐานข้อมูลจะมีคุณสมบัติ **`designedRadius`** (รัศมีขนาดดั้งเดิมของพาร์ติเคิล)
+*   เมื่อส่งระยะจริงที่คำนวณผ่านสเตตัสของผู้เล่น (Actual Range) มาให้พูล ระบบจะทำการคำนวณอัตราส่วนย่อขยาย `ComputeVfxScale = actualRange / designedRadius` เพื่อแปลงขนาด Prefab VFX ให้ตรงกับขอบเขตดาเมจจริงโดยอัตโนมัติ
+*   มีฟังก์ชัน `PlayByName3D` สำหรับย่อขยายขนาดแบบ 3D (Non-uniform scale) เหมาะกับการใช้สร้างกรอบ Warning Telegraph แบบเส้นหรือพัด (Line / Cross / Cone) ที่ยืดความยาวแยกจากความกว้างได้
 
 ---
 
@@ -245,12 +245,16 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 - Card pool: Weighted random จาก allWeapons + allStats
 - Character-exclusive weapons: ออกเฉพาะ hero ที่กำหนด
 - หมดเวลา → auto-pick สุ่ม
+- **ระบบแนะนำการ์ด (Card Recommendation System):** เพิ่มเครื่องหมายกากดาวหรือแถบ `⭐ Recommended` บนหน้าการ์ดที่สุ่มได้ เพื่อช่วยให้ผู้เล่นตัดสินใจได้เร็วขึ้นในจังหวะเร่งรีบ:
+  * **Fusion/Super Builder:** แนะนำการ์ดที่เป็นวัตถุดิบในการอัปเกรด Super/Fusion ร่วมกับอาวุธที่ผู้เล่นสวมใส่อยู่ปัจจุบัน
+  * **Hero Core Synergy:** แนะนำสเตตัสที่เป็น Core Stat ของฮีโร่นั้นๆ (เช่น แนะนำ Ability Haste ให้ Hunter / แนะนำ Move Speed หรือ Area Size ให้ Riven)
 
 ### 6.3 Zone Objective (Orb Reward)
 - ทุก 2 นาที → spawn Zone Objective ที่จุดสุ่ม (ห่างจาก player)
 - ผู้เล่นเข้าไปยืนใน zone → capture progress
 - เสร็จ → ทุกคนได้ 1 Orb Reward card (upgrade weapon/stat ที่มีอยู่แล้ว)
 - ให้ EXP bonus + heal ทุกคน
+- **Objective Pointer (ตัวชี้เป้าหมาย):** หลีกเลี่ยงการทำมินิแมป (เนื่องจากตัวเกมมีกระสุนและศัตรูหนาแน่น ผู้เล่นต้องเพ่งสายตาอยู่ที่ตัวละคร การเหลือบมองมุมจอจะทำให้แทงก์/ตัวละครหลบกระสุนไม่ทัน) จึงเลือกใช้ **"ลูกศรบอกระยะรอบตัวผู้เล่น (Orbiting Arrow/Pointer)"** หรือ **"ลูกศรบอกระยะที่ขอบจอ (Edge-of-Screen Pointer)"** ชี้ระบุทิศทางไปยัง Objective พร้อมแสดงระยะห่างเป็นเมตร (เช่น `Objective 45m ➔`) เพื่อช่วยไกด์ผู้เล่นโดยไม่ต้องละสายตาจากสถานการณ์ตรงหน้า (เลียนแบบการนำทางของ Rabbit and Steel)
 
 ### 6.4 Super Upgrade
 - Normal weapon Lv5 + เงื่อนไข SuperCondition ครบ → Zone Objective ให้โอกาส Super
@@ -272,12 +276,12 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 | **Charge** | เดินตรง + ชาร์จพุ่งเป็นระยะ (x4 speed, 0.4s) | `Enemy.cs` + `EnemyCharge.cs` |
 | **Ranged** | ยืนห่าง + ยิง bullet-hell pattern (multi-shot spread) | `Enemy.cs` + `EnemyRanged.cs` |
 
-### 7.2 Enemy Stats
+### 7.2 Enemy Stats & Targeting
 - `speed` — ความเร็วเคลื่อนที่
 - `contactDamage` — damage เมื่อชน player
 - `maxHealth` — HP
 - `expReward` — EXP ที่ drop เมื่อตาย
-- Re-target player ใกล้สุดทุก ~1 วินาที (ข้าม player ที่ตายแล้ว)
+- ทำงานร่วมกับ **Flow Field Pathfinder** เพื่อระบุทิศทางเดินไปยังตำแหน่งเป้าหมายที่อัปเดตแบบเรียลไทม์
 
 ### 7.3 Wave Scaling
 - ทุก `waveDuration` (60s) → wave ถัดไป
@@ -286,6 +290,14 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 - **EXP reward**: +15% per wave
 - **Spawn rate**: เร็วขึ้น 10% per wave (min 0.3s)
 - Wave config เปลี่ยน enemy composition ทุก 3 waves
+
+### 7.4 Flow Field Pathfinding (Server-only)
+เพื่อรองรับศัตรูจำนวนหลักพันในหน้าจอเดียวแบบลื่นไหลและประมวลผลได้ดี เกมจึงใช้งานระบบนำทางแบบ **Flow Field Pathfinding** (เทียบเท่า LoL Swarm):
+*   **Grid Partitioning:** แบ่งพื้นที่ในแผนที่เป็นตาราง Grid (ดีฟอลต์ 100×100 ช่อง ขนาดช่องละ 2 เมตร ครอบคลุมพื้นที่ 200m×200m)
+*   **Static Obstacle Baking:** ตรวจสอบและอบ (Bake) พิกัดสิ่งกีดขวาง (เช่น กำแพงบน Layer "Wall") ตั้งแต่เริ่มฉาก ทำให้ประหยัดโหลดประมวลผลฟิสิกส์ก้าวต่อก้าว
+*   **Multi-Source Dijkstra (BFS):** ทำการรัน BFS บนเซิร์ฟเวอร์ทุกๆ `updateInterval` (ปกติทุกๆ 0.5 วินาที) โดยอ้างอิงตำแหน่งของ Player ทุกคนที่ยังมีชีวิตอยู่ ทำให้มอนสเตอร์ถูกคำนวณทางเดินแยกสายกระจายออกไปรุมผู้เล่นที่อยู่ใกล้ที่สุดโดยอัตโนมัติ (Voronoi-like behavior)
+*   **Flanking / Crowd Routing (ระบบเบี่ยงฝูงชน):** มีการอัปเดตตาราง **Crowd Density Map** ด้วยพิกัดมอนสเตอร์ทั้งหมด หากจุดใดมีมอนสเตอร์หนาแน่น ช่องแถวนั้นจะได้รับค่า Cost Penalty เพิ่มขึ้น ทำให้มอนสเตอร์ด้านหลังตัดสินใจเดินเบี่ยงออกซ้ายขวาเพื่อโอบล้อม (Flank) ผู้เล่นแทนการเดินต่อคิวเรียงเป็นเส้นตรงเดียว
+*   **O(1) Sample Lookup:** มอนสเตอร์แต่ละตัวดึงเวกเตอร์ทิศทางจากช่องพิกัดที่ตนเองทับอยู่ได้ทันที ทำให้ใช้ทรัพยากร CPU ต่ำมาก สามารถรองรับศัตรูจำนวนมากได้โดยไม่มีอาการสะดุด
 
 ---
 
@@ -320,6 +332,16 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 - AoE Types: `Circle`, `Line`, `Cross`, `Spread`, `Donut`, `Cone`
 - Donut มี safe zone สีเขียว (teal) ตรงกลาง ไม่ blink
 - Cone หันหน้าหา player ที่ใกล้สุด
+
+### 8.4 Boss HP Bar UI / HUD (BossHUDUI)
+ระบบแสดงผลแถบพลังชีวิตของระดับบอส เพื่อความตื่นเต้นและชัดเจนแก่ผู้เล่นทุกคน:
+*   **Main Boss HP Bar (ด้านบนกลางจอ):**
+    *   แสดงผลพร้อมหลอดสีเปลี่ยนตามเฟส: เฟส 1 (สีแดง) -> เฟส 2 (สีส้ม) -> เฟส 3 (สีแดงเข้ม/Enrage)
+    *   มีจุดระบุมาร์กเกอร์เฟส (`Phase2Marker` 60% และ `Phase3Marker` 30%) ชัดเจนบนหน้าหลอด
+    *   **Enrage Warning:** เมื่อหมดเวลาของด่านหลักและบอสกำลังจะเปิดเฟสคลั่งในอีก 45 วินาที จะมีระบบส่งประกาศขึ้นข้อความเตือนตัวเบ้อเร่อกลางหน้าจอ (`⚠ ENRAGE IN X seconds!`) พร้อมแจ้งเตือนผู้เล่น
+*   **Mini Boss HP Bars (ด้านขวา/มุมล่าง):**
+    *   ทำงานแบบไดนามิก (Dynamic Layout Panel) ดึงข้อมูลผ่าน static event เมื่อ Mini Boss เกิดหรือตาย
+    *   หลอด HP ของ Mini Boss แต่ละตัวจะถูกสร้าง (Instantiate) และจัดกลุ่มเข้า Layout อัตโนมัติ และจะลบแถบออก (Destroy) ทันทีที่ผู้เล่นกำจัดสำเร็จ
 
 ---
 
@@ -379,14 +401,20 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 - **Ability HUD** — Q/E ability + cooldown/active timer
 - **Passive Bar** — Charge bar (Riven) / Kill counter (Gunner) / Hit counter (Hunter)
 - **HP Bar** — player health
+- **Boss HP HUD** — แถบเลือดหลักของ Main Boss (บนกลางจอ) พร้อมมาร์กเกอร์เฟส และแถบย่อยแบบซ้อนของ Mini Boss ทุกตัวที่กำลัง active (มุมล่าง/ขวา)
+- **Objective Distance Pointer** — ลูกศรบอกทิศทางของ Zone Objective รอบตัวหรือขอบจอพร้อมระบุระยะห่างเป็นเมตร ช่วยไกด์ผู้เล่นโดยไม่ต้องเหลือบมองมินิแมป
 
 ### 11.2 Level Up UI
 - 3 Upgrade Cards แสดงพร้อมกัน
 - แต่ละ card แสดง: icon, name, description, level
 - Countdown timer (30s)
 - "X / Y players picked" status
+- **ระบบแนะนำการ์ด (Card Recommendation System):** แสดงเครื่องหมาย `⭐ Recommended` บนหน้าการ์ดที่แนะนำ เช่น การ์ดวัตถุดิบทำ Fusion หรือ Core Stat ของฮีโร่นั้นๆ
 
-### 11.3 End Screen
+### 11.3 Online Lobby & Session UX
+- **Online Menu & Character Select UI:** หน้าต่างเลือกฮีโร่และตั้งค่าล็อบบี้ รองรับการตรวจจับการเชื่อมต่อและแสดงสถานะความพร้อม (Ready) ของผู้เล่นแต่ละคนก่อนเริ่มเกม
+
+### 11.4 End Screen
 - WIN / LOSE
 - Game time + Level reached
 
@@ -443,3 +471,49 @@ WaveConfig     → enemy composition per wave bracket
 WeaponFusionRecipe  → Super A + Super B = Fusion
 WeaponUpgradeData   → legacy upgrade (deprecated)
 ```
+
+---
+
+## 13. Developer Tools & Test Playgrounds
+
+เพื่ออำนวยความสะดวกในระหว่างการทดสอบสมดุลและการทำงานของอาวุธ ได้มีการสร้างห้องทดลองจำลองเฉพาะสำหรับทีมผู้พัฒนาขึ้น:
+
+### 13.1 Weapon Test Scene & WeaponTestManager
+*   **Quick Equip Panel:** เมนูปุ่มกดบนหน้าจอที่จะเจนชื่ออาวุธทั้งหมดของฐานข้อมูล (`allWeapons[]`) และความสามารถพิเศษขึ้นมาแบบไดนามิก เพื่อคลิกสวมใส่อาวุธเลเวล 5 หรือความสามารถนั้นๆ ได้ทันทีแบบไม่ต้องรอเลเวลอัป
+*   **Real-time DPS Tracker:** ระบบนับดาเมจรวมสะสม และคำนวณ DPS (Damage Per Second) เฉลี่ยแบบเรียลไทม์ (คำนวณแยกและรีเซ็ตค่าเฉลี่ยใหม่ทุกๆ 1 วินาที) เพื่อเปรียบเทียบระดับความแรงที่แท้จริง
+*   **Target Dummies (ตุ๊กตาหุ่นทดลอง):** หุ่นทดสอบแบบตั้งเป้าที่สามารถ respawn ใหม่ได้โดยกดปุ่มบนหน้าจอ หรือกดปุ่มรีเซ็ตเลือดหุ่นทั้งหมดพร้อมกันเพื่อทดสอบคอมโบ
+*   **Stat Multiplier Sliders:** สไลเดอร์ปรับตัวคูณและสเตตัสเฉพาะแบบเรียลไทม์เพื่อจำลองบิลด์ของผู้เล่น เช่น ปรับดาเมจ (1x–10x), เพิ่ม Ability Haste (0–200) หรือคริติคอลแชนซ์ (0–100%) เพื่อดูผลกระทบต่ออาวุธที่กำลังสวมใส่ได้ทันที
+
+---
+
+## 14. Meta-Progression System (ระบบพัฒนาการนอกเกม)
+
+เพื่อสร้างเป้าหมายระยะยาวให้แก่ผู้เล่น (Long-term Progression Loop) โครงการจะออกแบบระบบการพัฒนาตัวละครถาวรนอกเกม:
+*   **Gold Accumulation (การสะสมทอง):** ผู้เล่นจะสะสมเหรียญทองจากการกำจัดมอนสเตอร์/บอส และการผ่านด่าน/Objective ในแต่ละรอบ (Run) โดยเหรียญทองจะซิงก์เข้าบัญชีส่วนกลางเมื่อสิ้นสุดการเล่น (ไม่ว่าจะแพ้หรือชนะ)
+*   **Talent Shop (ร้านอัปเกรดความสามารถถาวร):** นำทองที่สะสมได้มาปลดล็อกและอัปเกรดสเตตัสถาวรที่จะส่งผลกับตัวละครทุกตัวตั้งแต่เลเวล 1:
+    *   *Attack Power Up:* เพิ่มพลังโจมตีถาวร (+3% ต่อระดับเลเวล, สูงสุดเลเวล 5)
+    *   *Max Health Up:* เพิ่ม HP สูงสุดถาวร (+50 HP ต่อระดับเลเวล, สูงสุดเลเวล 5)
+    *   *Haste Speed:* เพิ่มค่า Ability Haste เริ่มต้น (+5 flat ต่อระดับเลเวล, สูงสุดเลเวล 5)
+    *   *Magnet Boost:* เพิ่มรัศมีการดูดเหรียญ/EXP ถาวร (+10% ต่อระดับเลเวล, สูงสุดเลเวล 5)
+    *   *Gold Finder:* เพิ่มโอกาสดรอปและตัวคูณทองถาวร (+10% ต่อระดับเลเวล, สูงสุดเลเวล 5)
+    *   *Second Chance (ชุบชีวิต):* ฟื้นคืนชีพตัวละครทันทีเมื่อพลังชีวิตหมดลง 1 ครั้งต่อเกม (ชุบชีวิตขึ้นมาด้วย HP 30%, ซื้อได้สูงสุดเลเวล 1)
+*   **Unlocks (การปลดล็อกคอนเทนต์):** ใช้ทองในการปลดล็อกตัวละครใหม่ (เช่น Gunner, Hunter) หรือการ์ดอาวุธเฉพาะตัวละครในตารางเลือกอัปเกรด
+
+---
+
+## 15. Stage Difficulty System (ระบบความยากของด่าน)
+
+ก่อนเริ่มห้องเล่นออนไลน์ Co-op หัวหน้าห้อง (Host) สามารถเลือกปรับระดับความยากของด่านในหน้าล็อบบี้ ซึ่งจะมีผลโดยตรงต่อการคำนวณข้อมูลฝั่ง Server-authoritative ดังนี้:
+
+### 15.1 ตารางเปรียบเทียบระดับความยาก (Difficulty Multipliers)
+
+| ระดับความยาก (Difficulty) | ตัวคูณ HP ศัตรู | ตัวคูณดาเมจศัตรู | ตัวคูณทอง & EXP | คุณลักษณะเด่นและผลกระทบเชิงระบบ (System Impact) |
+| :--- | :---: | :---: | :---: | :--- |
+| **Easy (ง่าย)** | 0.7x | 0.7x | 0.7x | เหมาะสำหรับผู้เริ่มต้น หรือใช้ทดลองการประสานอาวุธใหม่ๆ |
+| **Normal (ปกติ)** | 1.0x | 1.0x | 1.0x | ค่าสเตตัสมาตรฐานและความเร็วปกติ |
+| **Hard (ยาก)** | 1.5x | 1.5x | 2.0x | เพิ่มโอกาส 20% ที่มอนสเตอร์ระดับ Elite จะสุ่มเกิดมาพร้อมม็อดพิเศษ (เช่น บาเรียซับดาเมจ Shielding หรือ ปล่อยไฟรอบตัว Fire Aura) |
+| **Nightmare (ฝันร้าย)** | 2.5x | 2.5x | 4.0x | ศัตรูเดินเร็วขึ้น 15%, บอสลด Cast time การโจมตีลง 20%, และลดเวลาเตือนภัยของ Telegraph Area ลงเหลือ 2.0 วินาที (จาก 2.5 วินาที) |
+
+### 15.2 ผลกระทบระบบภายใต้โหมดความยากระดับสูง (Advanced Mechanics Impact)
+1.  **AI Aggression Scaling:** ยิ่งเลือกระดับความยากสูง ความถี่ในการเปลี่ยนพิกัดเป้าหมาย (Re-target interval) ของฝูงศัตรูจะเร็วขึ้น ทำให้ศัตรูโอบล้อมบีบผู้เล่นได้รวดเร็วยิ่งขึ้น
+2.  **Raid Mechanic Modification (Nightmare Mode):** บอสระดับ Main Boss จะข้ามลำดับคูลดาวน์บางตัว และอาจใช้กลไกการโจมตีแบบซ้อนทับกัน (Overlapping Telegraphs) เช่น การบังคับให้ผู้เล่นทำกลไกแชร์ดาเมจ (Stack) ไปพร้อมกับการหันหลังหลบพลังงานบอส (Gaze) บังคับการจัดตำแหน่งที่แม่นยำสูงแบบวินาทีต่อวินาที (สไตล์เกมแนว *Rabbit and Steel*)

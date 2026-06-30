@@ -27,6 +27,10 @@ public class ThunderRailWeapon : WeaponBase
     [Tooltip("หน่วงระหว่าง tick (วินาที)")]
     public float zoneTickInterval = 0.3f;
 
+    [Header("Laser Config")]
+    [Tooltip("ความกว้างของ AoE (หน่วย Unity) — ยิ่งมาก ยิ่งกว้าง")]
+    public float width = 1.5f;
+
     protected override void OnFire(WeaponLevelData ld)
     {
         float dmg = RollDamage(ld.damage, out bool isCrit);
@@ -55,7 +59,8 @@ public class ThunderRailWeapon : WeaponBase
             isCrit, data != null ? data.weaponName : "Unknown",
             vfxKey,
             zoneRadius, actualZoneDmg, zoneTicks, zoneTickInterval,
-            zoneVfxKey
+            zoneVfxKey,
+            thickness: width
         );
     }
 

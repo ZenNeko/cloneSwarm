@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Railgun — Super Laser
@@ -10,6 +10,10 @@
 /// </summary>
 public class RailgunWeapon : WeaponBase
 {
+    [Header("Laser Config")]
+    [Tooltip("ความกว้างของ AoE (หน่วย Unity) — ยิ่งมาก ยิ่งกว้าง")]
+    public float width = 1.5f;
+
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 origin    = transform.position + Vector3.up * 0.5f;
@@ -22,7 +26,7 @@ public class RailgunWeapon : WeaponBase
         for (int i = 0; i < beamCount; i++)
         {
             Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * dir;
-            FireRaycast(origin, beamDir, dmg, maxDist: ld.range, vfxKey: ResolveHitVfx("Beam_Railgun"), isCrit: isCrit);
+            FireRaycast(origin, beamDir, dmg, maxDist: ld.range, vfxKey: ResolveHitVfx("Beam_Railgun"), isCrit: isCrit, thickness: width);
         }
     }
 }

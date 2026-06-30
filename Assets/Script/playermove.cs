@@ -124,11 +124,30 @@ public class playermove : NetworkBehaviour
 
     /// <summary>ตั้งเป็น true ระหว่าง dash — ทำให้ FixedUpdate ไม่เขียนทับ velocity</summary>
     [HideInInspector] public bool isDashing;
+    /// <summary>ตั้งเป็น true ระหว่างโดน knockback — ทำให้ FixedUpdate ไม่เขียนทับ velocity</summary>
+    [HideInInspector] public bool isKnockedBack;
+
+    [ClientRpc]
+    public void ApplyKnockbackClientRpc(Vector3 velocity, float duration)
+    {
+        if (IsOwner && rb != null && !isDead.Value)
+        {
+            StartCoroutine(KnockbackCoroutine(velocity, duration));
+        }
+    }
+
+    private IEnumerator KnockbackCoroutine(Vector3 velocity, float duration)
+    {
+        isKnockedBack = true;
+        rb.velocity = new Vector3(velocity.x, rb.velocity.y, velocity.z);
+        yield return new WaitForSeconds(duration);
+        isKnockedBack = false;
+    }
 
     void FixedUpdate()
     {
         if (!IsOwner || rb == null || isDead.Value) return;
-        if (isDashing) return;   // ปล่อยให้ dash coroutine ควบคุม position เอง
+        if (isDashing || isKnockedBack) return;   // ปล่อยให้ dash หรือ knockback ควบคุม position เอง
 
         Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y);
         var   sm            = IsOwner ? GetComponent<PlayerStatManager>() : null;

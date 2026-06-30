@@ -51,7 +51,12 @@ MonoBehaviour:
   tempCooldownMult: 1
   weaponVfxType: None
   secondaryVfxType: None
-  fireSfx: []
+  fireSfx:
+  - {fileID: 8300000, guid: 78d0dc01fc8348b4da2d83c68557aab1, type: 3}
+  - {fileID: 8300000, guid: e12fcbe4cb6610741b0815b059a3fad1, type: 3}
+  - {fileID: 8300000, guid: 491c6d2857ffb864fb1c23d9939e7776, type: 3}
+  - {fileID: 8300000, guid: e700d471ac38b584eb89c11acc7def57, type: 3}
+  - {fileID: 8300000, guid: c19ce39f266d475418f1023ec76d0bb1, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6

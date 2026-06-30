@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 8330123794831941679}
   - component: {fileID: 2971741010885257765}
   m_Layer: 0
-  m_Name: 'BossTether '
+  m_Name: BossTether
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

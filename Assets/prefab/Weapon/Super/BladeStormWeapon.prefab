@@ -51,7 +51,8 @@ MonoBehaviour:
   tempCooldownMult: 1
   weaponVfxType: SlashHit
   secondaryVfxType: SlashHit2
-  fireSfx: []
+  fireSfx:
+  - {fileID: 8300000, guid: 48b7a3c2182504f4cb57859d9113a115, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
