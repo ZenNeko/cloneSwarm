@@ -25,6 +25,8 @@ public class StickyRocketProjectile : NetworkBehaviour
 
     private Vector3 direction;
     private bool    hasExploded;
+    private float   maxLifetime = 6f; // ป้องกันกระสุนลอยค้างนอกแผนที่
+    private float   lifeTimer;
 
     public void InitDirection(Vector3 dir)
     {
@@ -35,6 +37,12 @@ public class StickyRocketProjectile : NetworkBehaviour
     {
         if (!IsServer || hasExploded) return;
         transform.position += direction * moveSpeed * Time.deltaTime;
+
+        lifeTimer += Time.deltaTime;
+        if (lifeTimer >= maxLifetime)
+        {
+            Explode();
+        }
     }
 
     void OnTriggerEnter(Collider other)
@@ -74,8 +82,11 @@ public class StickyRocketProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos, float radius)
     {
-        VFXFactory.Play("HitEffect", pos);          // base hit
-        VFXFactory.Play(explosionVfxType, pos);            // explosion
+        // ถอด HitEffect ที่ซ้ำซ้อนออก เหลือเพียงระเบิดลูกใหญ่
+        string vfxKey = (NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.HasMapping(explosionVfxType))
+            ? explosionVfxType
+            : "GrenadeExplosion";
+        VFXFactory.Play(vfxKey, pos);
     }
 
 #if UNITY_EDITOR

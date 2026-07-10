@@ -16,6 +16,10 @@ using System.Collections;
 /// </summary>
 public class DualSlashWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("มุม arc ของการโจมตี melee (องศา)")]
+    [Range(10f, 360f)]
+    public float arcAngle = 360f;
     [Header("Slash 1")]
     public SlashConfig slash1 = new SlashConfig
     {
@@ -47,10 +51,7 @@ public class DualSlashWeapon : WeaponBase
         float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = ld.range;
 
-        if (manager.statManager != null)
-            radius *= manager.statManager.GetAreaMultiplier();
-
-        float   arc     = data != null ? data.arcAngle : 360f;
+        float   arc     = arcAngle;
 
         // สลับลำดับ slash ทุก fire
         SlashConfig first  = _swapState ? slash2 : slash1;

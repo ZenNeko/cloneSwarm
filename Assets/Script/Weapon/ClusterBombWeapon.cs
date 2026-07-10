@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Cluster Blunderbuss — FUSION: Blunderbuss (Super Shotgun) + Minefield (Super Grenade)
+/// Cluster Blunderbuss — FUSION: Blunderbuss (Super Shotgun) + Splitter Bomb (Super Grenade)
 ///
 /// OnFire: ยิง pellets + grenade พร้อมกัน (MouseAim)
 ///   — Pellets: กระจาย spread เหมือน Shotgun
@@ -16,6 +16,11 @@ using UnityEngine;
 /// </summary>
 public class ClusterBombWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Header("Shotgun Part")]
     [Tooltip("มุมกระจาย pellets ทั้งหมด (องศา)")]
     public float spreadAngle     = 40f;
@@ -84,7 +89,7 @@ public class ClusterBombWeapon : WeaponBase
 
         Vector2 rnd         = Random.insideUnitCircle * ld.range;
         Vector3 grenadePos  = transform.position + new Vector3(rnd.x, 0f, rnd.y);
-        ThrowGrenade(spawnPos, grenadePos, dmg, radius, fuseTime, cluster: false);
+        ThrowGrenade(spawnPos, grenadePos, dmg, radius, fuseTime, cluster: false, isCrit: isCrit);
     }
 
     void OnEnemyKilled(Vector3 deathPos)
@@ -117,8 +122,9 @@ public class ClusterBombWeapon : WeaponBase
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
 
-        FireMelee(deathPos + Vector3.up * 0.5f, radius, killExplosionDamage);
-        ShowVfx(ResolveHitVfx("GrenadeExplosion"), deathPos, radius);
+        float dmg = RollDamage(killExplosionDamage, out bool isCrit);
+        FireMelee(deathPos + Vector3.up * 0.5f, radius, dmg, isCrit);
+        ShowVfx(ResolveHitVfx("GrenadeExplosion"), deathPos, radius, isCrit);
 
         // ── Cluster Bombs รอบจุดตาย ───────────────────────────────────────
         Vector3 spawnPos = deathPos + Vector3.up * 0.5f;
@@ -130,8 +136,8 @@ public class ClusterBombWeapon : WeaponBase
         {
             Vector2 rnd      = Random.insideUnitCircle * childGrenadeSpread;
             Vector3 childPos = deathPos + new Vector3(rnd.x, 0f, rnd.y);
-            ThrowGrenade(spawnPos, childPos, killExplosionDamage * 0.6f,
-                childRad, childGrenadeFuse, cluster: false);
+            ThrowGrenade(spawnPos, childPos, dmg * 0.6f,
+                childRad, childGrenadeFuse, cluster: false, isCrit: isCrit);
         }
     }
 

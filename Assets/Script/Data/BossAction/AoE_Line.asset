@@ -9,22 +9,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c7333236021b214e9dff502ed7daff6, type: 3}
+  m_Script: {fileID: 11500000, guid: 2cd326737635bdc4288602aea8857430, type: 3}
   m_Name: AoE_Line
-  m_EditorClassIdentifier: Assembly-CSharp::SpawnAoEAction
+  m_EditorClassIdentifier: Assembly-CSharp::LineAoEAction
   actionDelay: 0
   cooldownAfter: 0
-  targetingMode: 1
+  targetingMode: 0
   targetOffset: {x: 0, y: 0, z: 0}
-  aoeType: 1
-  radius: 3
-  lineLength: 8
-  lineWidth: 1.5
   warningDuration: 2.5
-  damage: 30
-  innerRadius: 1.5
+  damage: 25
   isChasing: 0
+  followCaster: 0
+  isRotatingChase: 1
   isStackMarker: 0
   isGaze: 0
   knockbackForce: 0
   knockbackDuration: 0.2
+  lineLength: 75
+  lineWidth: 6

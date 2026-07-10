@@ -108,7 +108,7 @@ public class BossTether : NetworkBehaviour
         ulong myId = NetworkManager.Singleton.LocalClientId;
         if (myId == pA || myId == pB)
         {
-            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+            GameHUD.Instance
                 ?.ShowAnnouncement("🔗 TETHER! วิ่งออกจากกัน!", new Color(0f, 1f, 1f));
         }
     }
@@ -129,7 +129,7 @@ public class BossTether : NetworkBehaviour
         ulong myId = NetworkManager.Singleton.LocalClientId;
         if (myId == pA)
         {
-            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+            GameHUD.Instance
                 ?.ShowAnnouncement("🔗 TETHER! วิ่งออกจากเสา!", new Color(0f, 1f, 1f));
         }
     }
@@ -137,14 +137,14 @@ public class BossTether : NetworkBehaviour
     [ClientRpc]
     void TetherBrokenClientRpc()
     {
-        UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+        GameHUD.Instance
             ?.ShowAnnouncement("✅ TETHER BROKEN!", Color.green);
     }
 
     [ClientRpc]
     void TetherFailedClientRpc()
     {
-        UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+        GameHUD.Instance
             ?.ShowAnnouncement("💥 TETHER EXPLODED!", Color.red);
     }
 

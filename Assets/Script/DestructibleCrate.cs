@@ -9,10 +9,8 @@ public class DestructibleCrate : Enemy
     [Tooltip("จุดที่ต้องการให้ไอเทมดรอปออกมาระหว่างพัง (ปล่อยว่างจะดรอปที่จุดศูนย์กลางของกล่อง)")]
     public Transform lootDropPoint;
 
-    // บดบัง (Shadow) Unity lifecycle methods ของคลาสแม่ (Enemy.cs)
-    // เพื่อยกเลิกการวิ่งหาผู้เล่น การเดิน และระบบสร้างความเสียหายเมื่อเดินชน
-    private new void Update() {}
-    private new void FixedUpdate() {}
+    private void Update() {}
+    private void FixedUpdate() {}
 
     public override void OnNetworkSpawn()
     {

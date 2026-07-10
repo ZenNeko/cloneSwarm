@@ -89,14 +89,14 @@ public class FloorHazard : NetworkBehaviour
         CreateVisuals(center, arenaR, safeR);
         clientReady = true;
 
-        UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+        GameHUD.Instance
             ?.ShowAnnouncement("☢ FLOOR HAZARD! วิ่งเข้า Safe Zone!", new Color(1f, 0.5f, 0f));
     }
 
     [ClientRpc]
     void FloorDetonateClientRpc()
     {
-        UnityEngine.Object.FindAnyObjectByType<GameHUD>()
+        GameHUD.Instance
             ?.ShowAnnouncement("💥 FLOOR EXPLODES!", Color.red);
         DestroyVisuals();
     }

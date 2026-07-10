@@ -19,10 +19,19 @@ public class BossController : NetworkBehaviour
     public GameObject telegraphZonePrefab;
     public GameObject tetherPrefab;
 
+    // ── Static Events (ALL clients) ───────────────────────────────────────
+    public static event System.Action<BossController> OnAnyBossSpawned;
+    public static event System.Action<BossController> OnAnyBossDespawned;
+
+    // ── Phase Threshold Properties for BossHUDUI ─────────────────────────
+    public virtual float phase2Threshold => (config != null && config.phases != null && config.phases.Count > 0) ? config.phases[0].transitionHealthPct : 0.75f;
+    public virtual float phase3Threshold => (config != null && config.phases != null && config.phases.Count > 1) ? config.phases[1].transitionHealthPct : 0.30f;
+
     protected Enemy enemy;
     protected int currentPhaseIndex = 0;
     protected int mechanicIndex = 0;
     protected bool deathHandled = false;
+    protected float currentPhaseStartTime = 0f;
     
     protected Coroutine attackLoopCoroutine;
     protected Coroutine phaseTransitionCoroutine;
@@ -30,6 +39,7 @@ public class BossController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        OnAnyBossSpawned?.Invoke(this);
 
         if (!IsServer) return;
 
@@ -48,12 +58,14 @@ public class BossController : NetworkBehaviour
 
         currentPhaseIndex = 0;
         mechanicIndex = 0;
+        currentPhaseStartTime = Time.time;
         attackLoopCoroutine = StartCoroutine(AttackLoop());
     }
 
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
+        OnAnyBossDespawned?.Invoke(this);
         if (enemy != null)
         {
             enemy.onDeath.RemoveListener(OnDeath);
@@ -99,6 +111,7 @@ public class BossController : NetworkBehaviour
         }
 
         phaseTransitionCoroutine = null;
+        currentPhaseStartTime = Time.time;
         attackLoopCoroutine = StartCoroutine(AttackLoop());
     }
 
@@ -137,23 +150,36 @@ public class BossController : NetworkBehaviour
 
             BossPhase currentPhase = config.phases[currentPhaseIndex];
 
-            if (currentPhase.actions == null || currentPhase.actions.Count == 0)
+            // ── Check Enrage Timer ──
+            bool isEnraged = false;
+            if (currentPhase.enrageTime > 0f && Time.time - currentPhaseStartTime >= currentPhase.enrageTime)
+            {
+                isEnraged = true;
+            }
+
+            var currentActionList = isEnraged && currentPhase.enrageActions != null && currentPhase.enrageActions.Count > 0
+                ? currentPhase.enrageActions
+                : currentPhase.actions;
+
+            if (currentActionList == null || currentActionList.Count == 0)
             {
                 yield return new WaitForSeconds(1f);
                 continue;
             }
 
-            BossAction action = currentPhase.actions[mechanicIndex % currentPhase.actions.Count];
+            BossAction action = currentActionList[mechanicIndex % currentActionList.Count];
             if (action != null)
             {
                 yield return StartCoroutine(action.ExecuteCoroutine(this, telegraphZonePrefab));
 
-                float cooldown = action.cooldownAfter > 0f ? action.cooldownAfter : config.attackInterval;
+                float phaseInterval = currentPhase.attackInterval > 0f ? currentPhase.attackInterval : config.attackInterval;
+                float cooldown = action.cooldownAfter > 0f ? action.cooldownAfter : phaseInterval;
                 yield return new WaitForSeconds(cooldown);
             }
             else
             {
-                yield return new WaitForSeconds(config.attackInterval);
+                float phaseInterval = currentPhase.attackInterval > 0f ? currentPhase.attackInterval : config.attackInterval;
+                yield return new WaitForSeconds(phaseInterval);
             }
 
             mechanicIndex++;

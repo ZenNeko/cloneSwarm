@@ -3,16 +3,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-[System.Serializable]
-public struct StatRowUI
-{
-    public GameObject root;
-    public TextMeshProUGUI nameText;
-    public TextMeshProUGUI beforeText;
-    public GameObject arrowIcon;
-    public TextMeshProUGUI afterText;
-}
-
 /// <summary>
 /// UI ของ card แต่ละใบใน Level Up / Objective Reward panel
 /// รับ UpgradeCardInfo ที่อาจเป็น Weapon หรือ Stat
@@ -35,8 +25,11 @@ public class UpgradeCardUI : MonoBehaviour
     public GameObject      recommendedRibbon;
     public Animator        cardAnimator;
 
-    [Header("Comparative Stat Rows")]
-    public System.Collections.Generic.List<StatRowUI> statRows = new();
+    [Header("Comparative Stat Rows (Prefab Mode)")]
+    [Tooltip("Prefab ของแถวแสดงสเตตัสเปรียบเทียบ")]
+    public UpgradeStatRowUI statRowPrefab;
+    [Tooltip("Container สำหรับใส่แถวสเตตัสเปรียบเทียบ")]
+    public Transform        statRowsContainer;
 
     [Header("Visual — Weapon vs Stat")]
     public Image    cardBackground;
@@ -68,25 +61,23 @@ public class UpgradeCardUI : MonoBehaviour
             cardAnimator.SetBool("IsRecommended", card.isRecommended);
 
         // --- Comparative Stats ---
-        if (statRows != null && statRows.Count > 0)
+        // 1. ลบแถวเดิมออกก่อน
+        if (statRowsContainer != null)
+        {
+            foreach (Transform child in statRowsContainer)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        // 2. สร้างแถวใหม่ตามจำนวนสเตตัสที่อัปเกรด
+        if (statRowPrefab != null && statRowsContainer != null)
         {
             var changes = GetStatChanges(card);
-            for (int i = 0; i < statRows.Count; i++)
+            foreach (var change in changes)
             {
-                if (statRows[i].root == null) continue;
-
-                if (i < changes.Count)
-                {
-                    statRows[i].root.SetActive(true);
-                    if (statRows[i].nameText)   statRows[i].nameText.text   = changes[i].statName;
-                    if (statRows[i].beforeText) statRows[i].beforeText.text = changes[i].beforeValue;
-                    if (statRows[i].afterText)  statRows[i].afterText.text  = changes[i].afterValue;
-                    if (statRows[i].arrowIcon)  statRows[i].arrowIcon.SetActive(true);
-                }
-                else
-                {
-                    statRows[i].root.SetActive(false);
-                }
+                var row = Instantiate(statRowPrefab, statRowsContainer);
+                row.SetData(change.statName, change.beforeValue, change.afterValue);
             }
         }
 
@@ -148,8 +139,11 @@ public class UpgradeCardUI : MonoBehaviour
 
         if (card.type == UpgradeCardType.Stat && card.stat != null)
         {
-            float prevVal = card.currentStatLevel > 0 ? card.stat.GetValueAtLevel(card.currentStatLevel - 1) : 0f;
-            float newVal  = card.stat.GetValueAtLevel(card.currentStatLevel);
+            // ได้ครั้งแรก (currentStatLevel == 0) -> ไม่ต้องแสดงแถบพลังเปรียบเทียบ
+            if (card.currentStatLevel == 0) return list;
+
+            float prevVal = GetAccumulatedStatValue(card.stat, card.currentStatLevel);
+            float newVal  = GetAccumulatedStatValue(card.stat, card.currentStatLevel + 1);
             bool isNew = card.currentStatLevel == 0;
 
             string name = card.stat.statType switch
@@ -235,31 +229,27 @@ public class UpgradeCardUI : MonoBehaviour
                     });
                 }
             }
-            else // WeaponNew, Super, Fusion
-            {
-                var ld = card.weapon.GetLevelData(0);
-                list.Add(new StatChangeInfo {
-                    statName = "Damage",
-                    beforeValue = "0",
-                    afterValue = ld.damage.ToString("F0")
-                });
-                list.Add(new StatChangeInfo {
-                    statName = "Cooldown",
-                    beforeValue = "0s",
-                    afterValue = ld.cooldown.ToString("F1") + "s"
-                });
-                if (ld.projectileCount > 0)
-                {
-                    list.Add(new StatChangeInfo {
-                        statName = "Projectiles",
-                        beforeValue = "0",
-                        afterValue = "x" + ld.projectileCount
-                    });
-                }
-            }
+            // WeaponNew, Super, Fusion (ได้ครั้งแรก) -> ไม่ต้องแสดงสเตตัสเปรียบเทียบ
         }
 
         return list;
+    }
+
+    float GetAccumulatedStatValue(StatData stat, int level)
+    {
+        if (stat == null || level <= 0) return 0f;
+
+        if (stat.statType == StatType.ProjectileCount)
+        {
+            return stat.GetValueAtLevel(level - 1);
+        }
+
+        float sum = 0f;
+        for (int i = 0; i < level; i++)
+        {
+            sum += stat.GetValueAtLevel(i);
+        }
+        return sum;
     }
 
     string FormatStatVal(StatType type, float val, bool isNew)

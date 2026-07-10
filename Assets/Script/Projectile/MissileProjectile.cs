@@ -74,7 +74,7 @@ public class MissileProjectile : NetworkBehaviour
 
         Vector3 toTarget = targetTransform.position - transform.position;
 
-        if (toTarget.magnitude <= arrivalDistance)
+        if (toTarget.sqrMagnitude <= arrivalDistance * arrivalDistance)
         {
             Explode(targetTransform.position);
             return;
@@ -120,7 +120,7 @@ public class MissileProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos)
     {
-        VFXFactory.Play("HitEffect", pos);
+        // ถอด HitEffect ซ้ำซ้อนออก เหลือเพียงระเบิดลูกใหญ่
         VFXFactory.Play("GrenadeExplosion", pos);
     }
 }

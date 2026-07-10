@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Tentacle (Lance) — เสือกหนวด tendril เดียวพุ่งตรงไปข้างหน้า
@@ -35,12 +35,6 @@ public class LanceWeapon : WeaponBase
         Vector3 dir    = GetAimDirection();
         float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
-
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
 
         if (thrustCount <= 1)
         {

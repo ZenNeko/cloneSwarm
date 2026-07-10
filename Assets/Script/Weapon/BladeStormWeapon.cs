@@ -13,8 +13,11 @@ public class BladeStormWeapon : WeaponBase
     public int   burstCount    = 6;
     [Tooltip("หน่วงระหว่าง slash แต่ละครั้งใน burst (วินาที)")]
     public float burstInterval = 0.12f;
+
+    [Header("Settings (Per-Weapon Prefab)")]
     [Tooltip("มุม arc ของ slash แต่ละครั้ง (องศา)")]
-    public float arcAngle      = 120f;
+    [Range(10f, 360f)]
+    public float arcAngle = 120f;
 
     [Header("Slashes Configuration")]
     [Tooltip("การตั้งค่าการฟันด้านหน้า (จังหวะคี่: 1, 3, 5)")]
@@ -41,14 +44,8 @@ public class BladeStormWeapon : WeaponBase
         float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = ld.range;
 
-        if (manager.statManager != null)
-        {
-            dmg    *= manager.statManager.GetPowerMultiplier();
-            radius *= manager.statManager.GetAreaMultiplier();
-        }
-
         Vector3 center = transform.position + Vector3.up * 0.5f;
-        float   arc    = data != null ? data.arcAngle : arcAngle;
+        float   arc    = arcAngle;
 
         int count = Mathf.Clamp(burstCount, 1, 6);
         bool reverse = _swapState;

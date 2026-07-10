@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SD_ProjectileCount
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: ProjectileCount
-  description: "\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E2A\u0E30\u0E2A\u0E21 \u0E17\u0E38\u0E01
-    weapon"
+  description: "\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E08\u0E33\u0E19\u0E27\u0E19 Projectile
+    \u0E17\u0E38\u0E01 weapon"
   icon: {fileID: -152921185, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 4
   valuePerLevel:

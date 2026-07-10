@@ -61,6 +61,7 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
-  burstInterval: 0.1
+  projectilePrefab: {fileID: 9165026677116411631, guid: 015a9d8893b22174f82d11e1b08179e1, type: 3}
+  burstInterval: 0.2
   stickyExplosionRadius: 2.5
   stickySpeed: 14

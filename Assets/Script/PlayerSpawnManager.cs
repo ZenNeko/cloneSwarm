@@ -165,7 +165,7 @@ public class PlayerSpawnManager : MonoBehaviour
         if (rb != null)
         {
             rb.position = pos;
-            rb.velocity = Vector3.zero;       // เคลียร์ velocity เผื่อมีค่าค้าง
+            rb.linearVelocity = Vector3.zero;       // เคลียร์ velocity เผื่อมีค่าค้าง
             rb.angularVelocity = Vector3.zero;
         }
 

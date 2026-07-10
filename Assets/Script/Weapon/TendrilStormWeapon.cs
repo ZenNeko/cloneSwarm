@@ -28,12 +28,6 @@ public class TendrilStormWeapon : LanceWeapon
         float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
 
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
-
         // Main tendril — forward (knockback applied via base class)
         DoThrust(origin, dir, dmg, range, isCrit);
 

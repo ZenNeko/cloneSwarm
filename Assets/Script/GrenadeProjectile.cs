@@ -26,6 +26,8 @@ public class GrenadeProjectile : NetworkBehaviour
     public GameObject explosionVfxPrefab;
 
     [Header("Cluster")]
+    [Tooltip("Prefab ของกระสุนลูกย่อยที่จะปล่อยออกไป (ปล่อยว่าง = ใช้กระสุนธรรมดาเป็น fallback)")]
+    public GameObject clusterProjectilePrefab;
     public int   clusterPellets    = 8;
     public float clusterDmgPercent = 0.4f;   // % ของ damage หลัก
     public float clusterProjSpeed  = 14f;
@@ -80,6 +82,12 @@ public class GrenadeProjectile : NetworkBehaviour
         // Cluster pellets
         if (cluster && weaponManager != null)
         {
+            int projId = -1;
+            if (clusterProjectilePrefab != null && NetworkedVFXPool.Instance != null)
+            {
+                projId = NetworkedVFXPool.Instance.GetProjectileId(clusterProjectilePrefab);
+            }
+
             float pelletDmg = damage * clusterDmgPercent;
             for (int i = 0; i < clusterPellets; i++)
             {
@@ -87,7 +95,8 @@ public class GrenadeProjectile : NetworkBehaviour
                 Vector3 dir   = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
                 weaponManager.FireProjectileServerRpc(
                     targetPos + Vector3.up * 0.3f, dir,
-                    pelletDmg, clusterProjSpeed, 1, 0f, weaponName: weaponName);
+                    pelletDmg, clusterProjSpeed, 1, 0f,
+                    projPrefabId: projId, weaponName: weaponName);
             }
         }
 
@@ -101,7 +110,6 @@ public class GrenadeProjectile : NetworkBehaviour
     [ClientRpc]
     void SpawnVfxClientRpc(Vector3 pos)
     {
-        VFXFactory.Play("HitEffect", pos);          // base hit
         if (explosionVfxPrefab != null)
             Destroy(Instantiate(explosionVfxPrefab, pos, Quaternion.identity), 3f);
         else

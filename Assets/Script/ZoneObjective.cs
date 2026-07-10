@@ -525,7 +525,7 @@ public class ZoneObjective : NetworkBehaviour
     // ── Helpers ───────────────────────────────────────────────────────────
     static void AnnounceHUD(string text, Color color)
     {
-        Object.FindAnyObjectByType<GameHUD>()?.ShowAnnouncement(text, color);
+        GameHUD.Instance?.ShowAnnouncement(text, color);
     }
 
     void OnDrawGizmosSelected()

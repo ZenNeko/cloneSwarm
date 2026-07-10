@@ -61,6 +61,7 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
+  projectilePrefab: {fileID: 8074367145943022193, guid: d5effb961510faa458b89651ea468b1c, type: 3}
   spreadAngle: 40
   explodeOnHit: 0
   explosionRadius: 2.5

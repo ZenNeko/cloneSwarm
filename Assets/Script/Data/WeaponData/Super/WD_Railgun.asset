@@ -18,8 +18,6 @@ MonoBehaviour:
   tier: 1
   prefab: {fileID: 3816367557295518186, guid: ee12a72b8668a664b92695ebb9fefb1a, type: 3}
   aimMode: 1
-  arcAngle: 360
-  projectilePrefab: {fileID: 4913074562992064063, guid: 3c556c1709c300249b70eb88824d9394, type: 3}
   levels:
   - damage: 200
     cooldown: 1.5

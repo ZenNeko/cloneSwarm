@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -15,6 +15,11 @@ using UnityEngine;
 /// </summary>
 public class OrbitalCannonWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Header("Orb Visual")]
     public GameObject orbPrefab;
     public float      orbSize    = 0.5f;
@@ -29,8 +34,9 @@ public class OrbitalCannonWeapon : WeaponBase
         SpawnOrbs(data.GetLevelData(currentLevel).projectileCount);
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (manager == null || !manager.IsOwner) return;
         orbitAngle += rotSpeed * Time.deltaTime;
         float radius = data.GetLevelData(currentLevel).range;
@@ -54,7 +60,7 @@ public class OrbitalCannonWeapon : WeaponBase
             Vector3 orbPos = orb.position;
 
             // Melee AoE ที่ตำแหน่ง orb
-            FireMelee(orbPos, 0.8f, meleeDmg);
+            FireMelee(orbPos, 0.8f, meleeDmg, isCrit);
 
             // ยิง projectile หาศัตรูใกล้สุดจาก orb
             var enemy = FindNearestEnemy(ld.range * 2f);

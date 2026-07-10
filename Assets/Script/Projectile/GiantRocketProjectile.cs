@@ -41,7 +41,7 @@ public class GiantRocketProjectile : NetworkBehaviour
         transform.position += direction * moveSpeed * Time.deltaTime;
 
         // หมดระยะ → ระเบิด AoE
-        if (Vector3.Distance(spawnPos, transform.position) >= maxRange)
+        if ((transform.position - spawnPos).sqrMagnitude >= maxRange * maxRange)
             Explode(transform.position);
     }
 
@@ -83,8 +83,11 @@ public class GiantRocketProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos, float radius)
     {
-        VFXFactory.Play("HitEffect", pos);
-        VFXFactory.Play(explosionVfxType, pos);
+        // ป้องกันคีย์ระเบิดว่าง หรือไม่พบในคลัง และถอด HitEffect ดั้งเดิมที่ซ้ำกับศัตรูออก
+        string vfxKey = (NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.HasMapping(explosionVfxType))
+            ? explosionVfxType
+            : "GrenadeExplosion";
+        VFXFactory.Play(vfxKey, pos);
     }
 
 #if UNITY_EDITOR

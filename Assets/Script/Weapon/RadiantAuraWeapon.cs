@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Radiant Aura — passive damage field รอบตัวผู้เล่น ไม่ต้อง aim
@@ -11,7 +11,7 @@
 ///   Lv5: dmg=22, cd=0.6s, range=4.0
 ///
 /// Super: DeathFieldWeapon (range ใหญ่ + enemy ที่ตายระเบิด)
-/// Fusion: Death Field + Minefield = ExplosiveAuraWeapon
+/// Fusion: Death Field + Splitter Bomb = ExplosiveAuraWeapon
 /// </summary>
 public class RadiantAuraWeapon : WeaponBase
 {
@@ -21,13 +21,7 @@ public class RadiantAuraWeapon : WeaponBase
         float   radius = ld.range;
         float   dmg    = RollDamage(ld.damage, out bool isCrit);
 
-        if (manager.statManager != null)
-        {
-            radius *= manager.statManager.GetAreaMultiplier();
-            dmg    *= manager.statManager.GetPowerMultiplier();
-        }
-
-        FireMelee(center, radius, dmg);
+        FireMelee(center, radius, dmg, isCrit);
         if (!string.IsNullOrEmpty(weaponVfxType) && weaponVfxType != "None")
         {
             float scale = radius > 0f ? ComputeVfxScale(weaponVfxType, radius) : 1f;

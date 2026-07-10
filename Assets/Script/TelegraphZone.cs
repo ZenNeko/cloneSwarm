@@ -65,6 +65,13 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public float   knockbackForce    = 0f;
     [HideInInspector] public float   knockbackDuration = 0.2f;
 
+    [HideInInspector] public bool    isRotatingChase   = false;
+    [HideInInspector] public NetworkObject casterNetworkObject;
+
+    // ── Rabbit & Steel: Color Match ──
+    public NetworkVariable<bool> isColorMatch = new NetworkVariable<bool>(false);
+    public NetworkVariable<ulong> requiredClientId = new NetworkVariable<ulong>(ulong.MaxValue);
+
     [Header("Chase Settings")]
     [Tooltip("Chase: ระยะเวลาก่อนระเบิดที่ zone หยุดติดตาม (วินาที)\n" +
              "ให้ผู้เล่นมีเวลาวิ่งหนี — 0.8 = lock-in 0.8 วินาทีสุดท้าย")]
@@ -114,13 +121,13 @@ public class TelegraphZone : NetworkBehaviour
     public void BroadcastInit()
     {
         InitClientRpc((int)aoeType, radius, lineLength, lineWidth, warningDuration, damage,
-                      innerRadius, chaseTargetClientId, isChasing, isStackMarker, isGaze);
+                      innerRadius, chaseTargetClientId, isChasing, isStackMarker, isGaze, isRotatingChase);
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
     [ClientRpc]
     void InitClientRpc(int type, float r, float len, float wid, float warn, float dmg,
-                       float innerR, ulong chaseId, bool chasing, bool stack, bool gaze)
+                       float innerR, ulong chaseId, bool chasing, bool stack, bool gaze, bool rotatingChase)
     {
         aoeType               = (AoEType)type;
         radius                = r;
@@ -133,6 +140,7 @@ public class TelegraphZone : NetworkBehaviour
         isChasing             = chasing;
         isStackMarker         = stack;
         isGaze                = gaze;
+        isRotatingChase       = rotatingChase;
         totalWarning          = warn;
         elapsed               = 0f;
         initialized           = true;
@@ -141,8 +149,7 @@ public class TelegraphZone : NetworkBehaviour
         if (isChasing && NetworkManager.Singleton != null
             && NetworkManager.Singleton.LocalClientId == chaseTargetClientId)
         {
-            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
-                ?.ShowAnnouncement("⚡ TARGETED — RUN AWAY!", Color.magenta);
+            GameHUD.Instance?.ShowAnnouncement("⚡ TARGETED — RUN AWAY!", Color.magenta);
         }
 
         // Visual: 3D prefab (preferred) > runtime primitive (fallback)
@@ -221,6 +228,15 @@ public class TelegraphZone : NetworkBehaviour
         return true;
     }
 
+    [ClientRpc]
+    public void NotifyColorClientRpc(ulong targetClientId, string colorName, Color uiColor)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.LocalClientId == targetClientId)
+        {
+            GameHUD.Instance?.ShowAnnouncement($"Stand in the {colorName} circle!", uiColor);
+        }
+    }
+
     void CollectRenderersAndApplyShaderParams(GameObject root)
     {
         var rends = root.GetComponentsInChildren<Renderer>();
@@ -238,6 +254,20 @@ public class TelegraphZone : NetworkBehaviour
                     mat.SetColor("_WarningColor", new Color(1f, 0.2f, 1f, 1f));
                 if (mat.HasProperty("_DangerColor"))
                     mat.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
+            }
+            
+            // Color Match: override สีตาม Client ID
+            if (isColorMatch.Value)
+            {
+                Color c = ((int)(requiredClientId.Value % 4)) switch
+                {
+                    0 => Color.red,
+                    1 => Color.blue,
+                    2 => Color.green,
+                    _ => Color.yellow,
+                };
+                if (mat.HasProperty("_WarningColor")) mat.SetColor("_WarningColor", c);
+                if (mat.HasProperty("_DangerColor")) mat.SetColor("_DangerColor", c * 0.8f);
             }
 
             // เริ่ม fill ที่ 0 (กันค่าค้างจาก material asset)
@@ -276,7 +306,26 @@ public class TelegraphZone : NetworkBehaviour
         if (isChasing)
             yield return StartCoroutine(ChaseSequence());
         else
-            yield return new WaitForSeconds(warningDuration);
+        {
+            if (casterNetworkObject != null)
+            {
+                float timer = 0f;
+                while (timer < warningDuration)
+                {
+                    if (casterNetworkObject != null)
+                    {
+                        transform.position = casterNetworkObject.transform.position;
+                        SyncChaseTransformClientRpc(transform.position, transform.rotation);
+                    }
+                    timer += Time.deltaTime;
+                    yield return null;
+                }
+            }
+            else
+            {
+                yield return new WaitForSeconds(warningDuration);
+            }
+        }
 
         DealDamage();
         ExplodeClientRpc();
@@ -302,22 +351,42 @@ public class TelegraphZone : NetworkBehaviour
         // Phase 1: Follow player ด้วย smoothing
         while (timer < followDuration)
         {
+            if (casterNetworkObject != null)
+            {
+                transform.position = casterNetworkObject.transform.position;
+            }
+
             if (NetworkManager.Singleton != null &&
                 NetworkManager.Singleton.ConnectedClients.TryGetValue(chaseTargetClientId, out var client) &&
                 client.PlayerObject != null)
             {
                 Vector3 tp = client.PlayerObject.transform.position;
-                Vector3 targetPos = new Vector3(tp.x, transform.position.y, tp.z);
 
-                // Lazy follow — smooth lerp แทน snap
-                transform.position = chaseSmoothing > 0f
-                    ? Vector3.Lerp(transform.position, targetPos, 1f - Mathf.Pow(chaseSmoothing, Time.deltaTime * 60f))
-                    : targetPos;
+                if (isRotatingChase)
+                {
+                    Vector3 dir = (tp - transform.position).normalized;
+                    dir.y = 0f;
+                    if (dir != Vector3.zero)
+                    {
+                        Quaternion targetRot = Quaternion.LookRotation(dir);
+                        transform.rotation = chaseSmoothing > 0f
+                            ? Quaternion.Slerp(transform.rotation, targetRot, 1f - Mathf.Pow(chaseSmoothing, Time.deltaTime * 60f))
+                            : targetRot;
+                    }
+                }
+                else
+                {
+                    Vector3 targetPos = new Vector3(tp.x, transform.position.y, tp.z);
+                    // Lazy follow — smooth lerp แทน snap
+                    transform.position = chaseSmoothing > 0f
+                        ? Vector3.Lerp(transform.position, targetPos, 1f - Mathf.Pow(chaseSmoothing, Time.deltaTime * 60f))
+                        : targetPos;
+                }
 
                 syncTimer += Time.deltaTime;
                 if (syncTimer >= syncInterval)
                 {
-                    SyncChasePositionClientRpc(transform.position);
+                    SyncChaseTransformClientRpc(transform.position, transform.rotation);
                     syncTimer = 0f;
                 }
             }
@@ -327,11 +396,27 @@ public class TelegraphZone : NetworkBehaviour
         }
 
         // Phase 2: Lock-in — หยุดติดตาม sync ตำแหน่งสุดท้ายให้ทุก client
-        SyncChasePositionClientRpc(transform.position);
+        if (casterNetworkObject != null)
+        {
+            transform.position = casterNetworkObject.transform.position;
+        }
+        SyncChaseTransformClientRpc(transform.position, transform.rotation);
         NotifyChaseLockedClientRpc();
 
         if (chaseLockInTime > 0f)
-            yield return new WaitForSeconds(chaseLockInTime);
+        {
+            float timer2 = 0f;
+            while (timer2 < chaseLockInTime)
+            {
+                if (casterNetworkObject != null)
+                {
+                    transform.position = casterNetworkObject.transform.position;
+                    SyncChaseTransformClientRpc(transform.position, transform.rotation);
+                }
+                timer2 += Time.deltaTime;
+                yield return null;
+            }
+        }
     }
 
     [ClientRpc]
@@ -342,16 +427,16 @@ public class TelegraphZone : NetworkBehaviour
         if (NetworkManager.Singleton != null
             && NetworkManager.Singleton.LocalClientId == chaseTargetClientId)
         {
-            UnityEngine.Object.FindAnyObjectByType<GameHUD>()
-                ?.ShowAnnouncement("⚠ LOCKED IN!", new Color(1f, 0.3f, 0.2f));
+            GameHUD.Instance?.ShowAnnouncement("⚠ LOCKED IN!", new Color(1f, 0.3f, 0.2f));
         }
     }
 
     [ClientRpc]
-    void SyncChasePositionClientRpc(Vector3 newPos)
+    void SyncChaseTransformClientRpc(Vector3 newPos, Quaternion newRot)
     {
-        // อัปเดตตำแหน่ง zone บน client — visual เป็น child จะเลื่อนตามอัตโนมัติ
+        // อัปเดตตำแหน่งและทิศทางบน client — visual เป็น child จะหมุน/เลื่อนตามอัตโนมัติ
         transform.position = newPos;
+        transform.rotation = newRot;
     }
 
     void DealDamage()
@@ -359,6 +444,7 @@ public class TelegraphZone : NetworkBehaviour
         if (!IsServer || NetworkManager.Singleton == null) return;
 
         List<playermove> playersInZone = new List<playermove>();
+        List<playermove> allActivePlayers = new List<playermove>();
 
         foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
         {
@@ -368,6 +454,7 @@ public class TelegraphZone : NetworkBehaviour
             var pm = playerObj.GetComponent<playermove>();
             if (pm == null || pm.isDead.Value) continue;
 
+            allActivePlayers.Add(pm);
             Vector3 playerPos = playerObj.transform.position;
             bool inZone = aoeType switch
             {
@@ -398,14 +485,38 @@ public class TelegraphZone : NetworkBehaviour
             }
         }
 
+        List<playermove> hitPlayers = new List<playermove>();
+
+        if (isColorMatch.Value)
+        {
+            foreach (var pm in allActivePlayers)
+            {
+                bool isTarget = pm.OwnerClientId == requiredClientId.Value;
+                bool inZone = playersInZone.Contains(pm);
+
+                if (isTarget && !inZone)
+                {
+                    hitPlayers.Add(pm); // เจ้าของสีไม่ได้ยืนในวง = โดนดาเมจ
+                }
+                else if (!isTarget && inZone)
+                {
+                    hitPlayers.Add(pm); // คนอื่นมายืนเหยียบวง = โดนดาเมจ
+                }
+            }
+        }
+        else
+        {
+            hitPlayers = playersInZone;
+        }
+
         // Calculate final damage (split for Stack Marker)
-        int count = playersInZone.Count;
+        int count = hitPlayers.Count;
         float finalDamage = (isStackMarker && count > 0) ? (damage / count) : damage;
 
-        foreach (var pm in playersInZone)
+        foreach (var pm in hitPlayers)
         {
             pm.TakeDamage(finalDamage);
-            Debug.Log($"[TelegraphZone] ⚡ Hit player {pm.OwnerClientId} — {finalDamage} dmg (isStack={isStackMarker}, isGaze={isGaze})");
+            Debug.Log($"[TelegraphZone] ⚡ Hit player {pm.OwnerClientId} — {finalDamage} dmg (isStack={isStackMarker}, isColorMatch={isColorMatch.Value})");
 
             if (knockbackForce > 0f)
             {

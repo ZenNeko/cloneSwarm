@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -15,12 +16,12 @@ public class GrenadeWeapon : WeaponBase
     [Tooltip("Prefab visual ของ grenade (optional — ถ้าไม่ assign ใช้ sphere สีเหลือง)")]
     public GameObject grenadePrefab;
 
+    private readonly List<GameObject> _activeVisuals = new();
+
     protected override void OnFire(WeaponLevelData ld)
     {
         float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = explosionRadius;
-        if (manager.statManager != null)
-            dmg    *= manager.statManager.GetPowerMultiplier();
         if (manager.statManager != null)
             radius *= manager.statManager.GetAreaMultiplier();
 
@@ -42,6 +43,8 @@ public class GrenadeWeapon : WeaponBase
             ? Instantiate(grenadePrefab, from, Quaternion.identity)
             : CreateFallbackVisual(from);
 
+        if (visual != null) _activeVisuals.Add(visual);
+
         float elapsed    = 0f;
         float arcHeight  = 1.8f;
 
@@ -57,13 +60,24 @@ public class GrenadeWeapon : WeaponBase
             yield return null;
         }
 
-        if (visual != null) Destroy(visual);
+        if (visual != null)
+        {
+            _activeVisuals.Remove(visual);
+            Destroy(visual);
+        }
 
         // ── Damage (server-authoritative) ─────────────────────────────────
         FireMelee(to, radius, dmg, isCrit);
 
         // ── VFX ──────────────────────────────────────────────────────────
         ShowVfx(ResolveHitVfx("GrenadeExplosion"), to, radius, isAttackHit: false);
+    }
+
+    void OnDestroy()
+    {
+        foreach (var go in _activeVisuals)
+            if (go != null) Destroy(go);
+        _activeVisuals.Clear();
     }
 
     static GameObject CreateFallbackVisual(Vector3 pos)

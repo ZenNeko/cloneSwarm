@@ -65,7 +65,7 @@ public class UpgradeCardInfo
         UpgradeCardType.WeaponLevelUp => $"Lv {targetLevel} / {weapon?.MaxLevel}",
         UpgradeCardType.WeaponSuper   => "SUPER ★",
         UpgradeCardType.WeaponFusion  => "FUSION ★★",
-        UpgradeCardType.Stat          => $"Lv {currentStatLevel + 1} / {stat?.MaxLevel}",
+        UpgradeCardType.Stat          => currentStatLevel == 0 ? "NEW" : $"Lv {currentStatLevel + 1} / {stat?.MaxLevel}",
         _                             => ""
     };
 

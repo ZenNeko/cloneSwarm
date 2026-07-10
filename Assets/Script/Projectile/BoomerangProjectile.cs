@@ -96,8 +96,6 @@ public class BoomerangProjectile : NetworkBehaviour
                 pwm.RegisterWeaponDamage(weaponName, damage);
             }
         }
-
-        VFXFactory.Play(isCrit ? "CritHitEffect" : "HitEffect", transform.position);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

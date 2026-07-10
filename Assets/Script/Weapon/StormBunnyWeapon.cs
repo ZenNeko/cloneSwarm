@@ -40,7 +40,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
         if (rb != null && pm != null)
         {
             pm.isDashing = true;
-            rb.velocity  = Vector3.zero;
+            rb.linearVelocity  = Vector3.zero;
 
             Vector3 startPos = rb.position;
             Vector3 endPos   = startPos + dir * dashDistance;
@@ -55,7 +55,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
             }
 
             rb.MovePosition(endPos);
-            rb.velocity  = Vector3.zero;
+            rb.linearVelocity  = Vector3.zero;
             pm.isDashing = false;
         }
         else yield return null;
@@ -63,9 +63,8 @@ public class StormBunnyWeapon : BunnyHopWeapon
         Vector3 center      = transform.position;
         int     aoeHitCount = (IsSuper && bigSlash) ? 2 : 1;
 
-        // ── AoE 360° ──────────────────────────────────────────────
         for (int i = 0; i < aoeHitCount; i++)
-            FireMelee(center, radius, damage);
+            FireMelee(center, radius, damage, isCrit);
         ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────
@@ -74,7 +73,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
         manager.AddShieldServerRpc(shieldAmount);
 
         // ── Chain Lightning ที่จุดลงจอด ───────────────────────────
-        StartCoroutine(ChainLightningFromLanding(center, damage));
+        StartCoroutine(ChainLightningFromLanding(center, damage, isCrit));
 
         // ── Exile Bonus: Projectile + Lightning ────────────────────
         if (exileActive)
@@ -96,12 +95,12 @@ public class StormBunnyWeapon : BunnyHopWeapon
             }
 
             // Mini chain lightning จาก projectile hits (delayed)
-            StartCoroutine(ExileLightningBonus(center, damage, radius));
+            StartCoroutine(ExileLightningBonus(center, damage, radius, isCrit));
         }
     }
 
     // ── Chain Lightning ที่จุดลงจอด ───────────────────────────────────────
-    IEnumerator ChainLightningFromLanding(Vector3 landingPos, float damage)
+    IEnumerator ChainLightningFromLanding(Vector3 landingPos, float damage, bool isCrit)
     {
         yield return null; // 1 frame delay เพื่อให้ AoE ทำงานก่อน
         float curDmg = damage * 0.6f; // chain damage = 60% of main
@@ -112,12 +111,13 @@ public class StormBunnyWeapon : BunnyHopWeapon
             searchHighestHP: false,
             weaponName: data != null ? data.weaponName : "Unknown",
             beamVfx: "Default",
-            hitVfx: "HitEffect"
+            hitVfx: "HitEffect",
+            isCrit: isCrit
         );
     }
 
     // ── Exile Bonus: mini chain lightning จาก AoE radius (delayed) ────────
-    IEnumerator ExileLightningBonus(Vector3 center, float damage, float radius)
+    IEnumerator ExileLightningBonus(Vector3 center, float damage, float radius, bool isCrit)
     {
         yield return new WaitForSeconds(exileChainDelay);
 
@@ -142,7 +142,8 @@ public class StormBunnyWeapon : BunnyHopWeapon
                 searchHighestHP: false,
                 weaponName: data != null ? data.weaponName : "Unknown",
                 beamVfx: "Default",
-                hitVfx: "HitEffect"
+                hitVfx: "HitEffect",
+                isCrit: isCrit
             );
         }
     }

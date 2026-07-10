@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Tri-Rang — Super version ของ Boomerang
@@ -11,6 +11,12 @@
 /// </summary>
 public class TriRangWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + BoomerangProjectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
+
     [Tooltip("มุม spread รวม (องศา)")]
     public float spreadAngle = 30f;
 
@@ -20,12 +26,6 @@ public class TriRangWeapon : WeaponBase
         float range = ld.range;
         float speed = ld.projectileSpeed > 0f ? ld.projectileSpeed : 16f;
         int   count = Mathf.Max(1, ld.projectileCount);
-
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
 
         Vector3 spawnPos = transform.position + Vector3.up * 0.8f;
         Vector3 dir      = GetAimDirection();

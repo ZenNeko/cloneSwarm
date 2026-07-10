@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections;
 using System.Collections.Generic;
 
 public class Enemy : NetworkBehaviour
@@ -108,9 +109,10 @@ public class Enemy : NetworkBehaviour
         ActiveEnemies.Remove(this);
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         ActiveEnemies.Remove(this);
+        base.OnDestroy();
     }
 
     // ── Update: Server only (targeting + damage) ──────────────────────────
@@ -143,10 +145,66 @@ public class Enemy : NetworkBehaviour
         }
     }
 
+    // ── Knock Up (Server-side CC) ────────────────────────────────────────
+    private bool  isKnockedUp = false;
+    private float knockUpTimer = 0f;
+    private float knockUpDuration = 0f;
+    private float knockUpSpeedY = 0f;
+    private float gravityY = -9.81f;
+
+    public void ApplyKnockUp(float force, float duration)
+    {
+        if (!IsServer) return;
+        isKnockedUp = true;
+        knockUpDuration = duration;
+        knockUpTimer = 0f;
+        knockUpSpeedY = force;
+    }
+
     // ── FixedUpdate: Server only (movement with physics) ────────────────
     void FixedUpdate()
     {
-        if (!IsServer || suppressDefaultMovement || currentTarget == null) return;
+        if (!IsServer || currentTarget == null) return;
+
+        if (isKnockedUp)
+        {
+            knockUpTimer += Time.fixedDeltaTime;
+            if (knockUpTimer >= knockUpDuration)
+            {
+                isKnockedUp = false;
+                var p = transform.position;
+                p.y = 0f;
+                if (rb != null)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.MovePosition(p);
+                }
+                else
+                {
+                    transform.position = p;
+                }
+            }
+            else
+            {
+                knockUpSpeedY += gravityY * Time.fixedDeltaTime;
+                var p = transform.position;
+                p.y += knockUpSpeedY * Time.fixedDeltaTime;
+                if (p.y < 0f) p.y = 0f;
+
+                if (rb != null)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.MovePosition(p);
+                }
+                else
+                {
+                    transform.position = p;
+                }
+            }
+            return;
+        }
+
+        if (suppressDefaultMovement) return;
 
         Vector3 dir          = Vector3.zero;
         bool    flowProvided = false;
@@ -253,13 +311,13 @@ public class Enemy : NetworkBehaviour
         }
 
 
-        Vector3 move = finalDir * speed * Time.fixedDeltaTime;
+        Vector3 move = finalDir * speed * _speedMultiplier * Time.fixedDeltaTime;
         Vector3 next = transform.position + move;
 
         if (rb != null)
         {
             // ล้างความเร็วและแรงหมุนตกค้างจากฟิสิกส์ชนในเฟรมก่อน เพื่อป้องกันแรงเฉื่อยสะสมต้านการเดิน
-            rb.velocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             rb.MovePosition(next);
         }
@@ -316,7 +374,136 @@ public class Enemy : NetworkBehaviour
         SpawnExpOrb();
         NotifyDeathClientRpc(transform.position);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
-        else Destroy(gameObject);
+    }
+
+    // ── Burn DOT (Server-side) ────────────────────────────────────────────
+    private Coroutine burnCoroutine;
+    private float     activeBurnEndTime;
+
+    public void ApplyBurnDot(float duration, float damagePerTick, float tickInterval, bool isCrit, string weaponName, PlayerWeaponManager manager)
+    {
+        if (!IsServer) return;
+
+        float newEndTime = Time.time + duration;
+        if (burnCoroutine != null)
+        {
+            if (newEndTime > activeBurnEndTime)
+            {
+                activeBurnEndTime = newEndTime;
+            }
+            return;
+        }
+
+        activeBurnEndTime = newEndTime;
+        burnCoroutine     = StartCoroutine(BurnRoutine(damagePerTick, tickInterval, isCrit, weaponName, manager));
+    }
+
+    private System.Collections.IEnumerator BurnRoutine(float damagePerTick, float tickInterval, bool isCrit, string weaponName, PlayerWeaponManager manager)
+    {
+        while (Time.time < activeBurnEndTime)
+        {
+            yield return new WaitForSeconds(tickInterval);
+            if (netHealth.Value <= 0f) break;
+
+            EnemyTakeDamage(damagePerTick, isCrit);
+            if (manager != null)
+            {
+                manager.RegisterWeaponDamage(weaponName, damagePerTick);
+            }
+        }
+        burnCoroutine = null;
+    }
+
+    // ── Slow / Freeze Debuff (Server-side) ────────────────────────────────
+    /// <summary>Speed multiplier ชั่วคราว — 1 = ปกติ, 0.5 = slow 50%, 0 = freeze</summary>
+    private float     _speedMultiplier = 1f;
+    private Coroutine _slowCoroutine;
+    private float     _slowEndTime;
+    private Coroutine _freezeCoroutine;
+    private float     _freezeEndTime;
+
+    /// <summary>ลดความเร็ว enemy ชั่วคราว — Server only
+    /// slowPercent: 0.5 = ลดเหลือ 50% speed, 0.3 = ลดเหลือ 30%</summary>
+    public void ApplySlowDebuff(float duration, float slowPercent)
+    {
+        if (!IsServer) return;
+
+        float newEnd = Time.time + duration;
+        if (_slowCoroutine != null)
+        {
+            // ต่ออายุถ้า duration ใหม่ยาวกว่า
+            if (newEnd > _slowEndTime) _slowEndTime = newEnd;
+            // ใช้ slow ที่แรงกว่า (ค่าต่ำกว่า = ช้ากว่า)
+            float currentSlow = _speedMultiplier;
+            if (slowPercent < currentSlow) _speedMultiplier = slowPercent;
+            return;
+        }
+
+        _slowEndTime     = newEnd;
+        _speedMultiplier = Mathf.Clamp01(slowPercent);
+        _slowCoroutine   = StartCoroutine(SlowRoutine());
+    }
+
+    private IEnumerator SlowRoutine()
+    {
+        while (Time.time < _slowEndTime)
+            yield return null;
+
+        _speedMultiplier = 1f;
+        _slowCoroutine   = null;
+    }
+
+    /// <summary>แช่แข็ง enemy — หยุดเคลื่อนที่ทั้งหมด ชั่วคราว — Server only</summary>
+    public void ApplyFreeze(float duration)
+    {
+        if (!IsServer) return;
+
+        float newEnd = Time.time + duration;
+        if (_freezeCoroutine != null)
+        {
+            if (newEnd > _freezeEndTime) _freezeEndTime = newEnd;
+            return;
+        }
+
+        _freezeEndTime = newEnd;
+        // หยุด slow ถ้ามี (freeze แรงกว่า)
+        if (_slowCoroutine != null) { StopCoroutine(_slowCoroutine); _slowCoroutine = null; }
+        _speedMultiplier         = 0f;
+        suppressDefaultMovement  = true;
+        _freezeCoroutine         = StartCoroutine(FreezeRoutine());
+        NotifyFreezeClientRpc(true);
+    }
+
+    private IEnumerator FreezeRoutine()
+    {
+        // หยุด velocity ขณะ freeze
+        if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
+
+        while (Time.time < _freezeEndTime)
+            yield return null;
+
+        suppressDefaultMovement = false;
+        _speedMultiplier        = 1f;
+        _freezeCoroutine        = null;
+        NotifyFreezeClientRpc(false);
+    }
+
+    [ClientRpc]
+    void NotifyFreezeClientRpc(bool frozen)
+    {
+        // Visual feedback: เปลี่ยนสี / material ชั่วคราว (optional — designer implement ทีหลัง)
+        var mr = GetComponentInChildren<MeshRenderer>();
+        if (mr != null)
+        {
+            if (frozen)
+            {
+                mr.material.color = new Color(0.5f, 0.8f, 1f, 1f); // ice-blue
+            }
+            else
+            {
+                mr.material.color = Color.white;
+            }
+        }
     }
 
     // ── Drop ExpOrb ───────────────────────────────────────────────────────

@@ -15,11 +15,13 @@ MonoBehaviour:
   phases:
   - transitionHealthPct: 0
     invincibilityDuration: 1.5
+    attackInterval: -1
     cameraShakeMagnitude: 0.4
     actions:
-    - {fileID: 11400000, guid: 115fa27f1556ccb46a45dddebcab06e2, type: 2}
-    - {fileID: 11400000, guid: 13d9847fd4418664396f4b9001f5b657, type: 2}
-    - {fileID: 11400000, guid: 88a885616f8ec9347b62e53b97497c8c, type: 2}
+    - {fileID: 11400000, guid: a65568856861b1c4fba2f0ebd0dd4163, type: 2}
+    - {fileID: 11400000, guid: 5c57f8002f2cb4247a9920190288eea5, type: 2}
+    enrageTime: -1
+    enrageActions: []
   attackInterval: 4
   firstAttackDelay: 2
   extraExpOrbs: 4

@@ -561,6 +561,14 @@ public class NetworkedVFXPool : MonoBehaviour
     public int GetProjectileId(GameObject prefab)
         => prefab != null && _projToId.TryGetValue(prefab, out int id) ? id : -1;
 
+    /// <summary>คืน Vfx prefab ดั้งเดิมจาก string key ใน database</summary>
+    public GameObject GetVfxPrefab(string key)
+    {
+        if (vfxDatabase == null || string.IsNullOrEmpty(key)) return null;
+        var entry = vfxDatabase.entries.Find(e => e.key == key);
+        return entry?.prefab;
+    }
+
     /// <summary>คืน projectile prefab จาก ID (null = ไม่พบ → ใช้ default)</summary>
     public GameObject GetProjectilePrefab(int id)
         => id >= 0 && id < projectilePrefabs.Count ? projectilePrefabs[id] : null;

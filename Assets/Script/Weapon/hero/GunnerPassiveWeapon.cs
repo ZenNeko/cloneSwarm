@@ -53,6 +53,15 @@ public class GunnerPassiveWeapon : WeaponBase, IHUDPassiveBar
     void OnDestroy()
     {
         Enemy.OnAnyEnemyDied -= OnEnemyKilled;
+        if (IsBuffActive)
+        {
+            if (manager != null)
+            {
+                if (manager.playerMove  != null) manager.playerMove.tempMoveSpeedBonus  -= moveSpeedBonus;
+                if (manager.statManager != null) manager.statManager.tempAbilityHaste   -= abilityHasteBonus;
+            }
+            IsBuffActive = false;
+        }
     }
 
     // ── Kill Tracking ─────────────────────────────────────────────────────

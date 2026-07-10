@@ -49,9 +49,10 @@ public class ExpOrb : NetworkBehaviour
         ActiveOrbs.Remove(this);
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         ActiveOrbs.Remove(this);
+        base.OnDestroy();
     }
 
     // ── Update: Server only ───────────────────────────────────────────────

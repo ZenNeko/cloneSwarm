@@ -17,9 +17,6 @@ public class LightningChainWeapon : WeaponBase
         float dmg        = RollDamage(ld.damage, out bool isCrit);
         int   chainCount = Mathf.Max(1, ld.projectileCount);   // count = จำนวน chain targets
 
-        if (manager.statManager != null)
-            dmg *= manager.statManager.GetPowerMultiplier();
-
         Vector3 origin = transform.position + Vector3.up * 0.8f;
         string beamVfx = ResolveHitVfx("Default");
 

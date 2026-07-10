@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: SD_MoveSpeed
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: MoveSpeed
-  description: "+9% \u0E04\u0E27\u0E32\u0E21\u0E40\u0E23\u0E47\u0E27/lv"
+  description: "+5% \u0E04\u0E27\u0E32\u0E21\u0E40\u0E23\u0E47\u0E27/lv"
   icon: {fileID: -1073007861, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 9
   valuePerLevel:
-  - 0.09
-  - 0.09
-  - 0.09
-  - 0.09
-  - 0.09
+  - 0.05
+  - 0.05
+  - 0.05
+  - 0.05
+  - 0.05
   weight: 55

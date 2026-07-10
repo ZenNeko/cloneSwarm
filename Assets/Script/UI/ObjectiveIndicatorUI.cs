@@ -73,6 +73,7 @@ public class ObjectiveIndicatorUI : MonoBehaviour
 
     private readonly List<Entry> _entries = new();
     private Camera _cam;
+    private playermove _cachedLocalPlayer;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void OnEnable()
@@ -291,8 +292,16 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     // ── Helpers ───────────────────────────────────────────────────────────
     Transform GetLocalPlayerTransform()
     {
-        var pm = Object.FindAnyObjectByType<playermove>();
-        if (pm == null) return null;
-        return pm.IsOwner ? pm.transform : null;
+        if (_cachedLocalPlayer != null) return _cachedLocalPlayer.transform;
+
+        foreach (var pm in Object.FindObjectsByType<playermove>(FindObjectsSortMode.None))
+        {
+            if (pm != null && pm.IsOwner)
+            {
+                _cachedLocalPlayer = pm;
+                return pm.transform;
+            }
+        }
+        return null;
     }
 }

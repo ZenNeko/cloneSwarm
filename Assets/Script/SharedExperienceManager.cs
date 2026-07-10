@@ -125,7 +125,7 @@ public class SharedExperienceManager : NetworkBehaviour
     }
 
     /// <summary>UpgradeManager เรียกหลังเลือก ExpBonus card</summary>
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void ApplyExpMultiplierServerRpc(float newMultiplier)
     {
         expMultiplier.Value = newMultiplier;
@@ -133,8 +133,8 @@ public class SharedExperienceManager : NetworkBehaviour
     }
 
     /// <summary>UpgradeManager เรียกหลังเลือก card เสร็จ — ส่ง Server รู้ว่า player นี้พร้อมแล้ว</summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void PlayerUpgradePickedServerRpc(ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server)]
+    public void PlayerUpgradePickedServerRpc(RpcParams rpcParams = default)
     {
         if (!isUpgradePhase) return;
 
@@ -293,8 +293,8 @@ public class SharedExperienceManager : NetworkBehaviour
     }
 
     /// <summary>UpgradeManager เรียกหลังเลือก card — รอทุกคนเลือกครบ</summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void PlayerOrbPickedServerRpc(ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server)]
+    public void PlayerOrbPickedServerRpc(RpcParams rpcParams = default)
     {
         if (!isOrbPhase) return;
         pickedPlayers.Add(rpcParams.Receive.SenderClientId);

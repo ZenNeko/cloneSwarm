@@ -19,10 +19,13 @@ public class PlayerStatManager : NetworkBehaviour
     /// <summary>Ability Haste bonus ชั่วคราว — บวกกับค่า permanent จาก stat cards</summary>
     [HideInInspector] public float tempAbilityHaste = 0f;
 
+    /// <summary>Damage bonus ชั่วคราว (additive %) — set โดย SupportArenaWeapon / abilities</summary>
+    [HideInInspector] public float tempDamageBonusMult = 0f;
+
     // ── Weapon Multipliers (WeaponBase อ่าน) ─────────────────────────────
     /// <summary>+10% damage per Lv — 1.0 = no bonus</summary>
     public float GetPowerMultiplier()
-        => 1f + GetTotal(StatType.Damage);
+        => 1f + GetTotal(StatType.Damage) + tempDamageBonusMult;
 
     /// <summary>Ability Haste → cooldown multiplier (Haste / (100 + Haste))
     /// รวม tempAbilityHaste จาก Gunner passive หรือ abilities อื่น</summary>

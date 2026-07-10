@@ -7,10 +7,6 @@ using System.Collections.Generic;
 /// </summary>
 public class MainBoss : BossController
 {
-    // ── Static Events (ALL clients) ───────────────────────────────────────
-    public static event System.Action<MainBoss> OnAnyBossSpawned;
-    public static event System.Action           OnAnyBossDespawned;
-
     // ── Legacy Settings (ใช้กรณีไม่มี BossEncounterConfig) ────────────────
     [Header("Phase Thresholds")]
     [Tooltip("จุดเปลี่ยนเลือด Phase 2")]
@@ -48,8 +44,8 @@ public class MainBoss : BossController
     public float tetherSoloSpawnOffset = 10f;
 
     // ── Backward Compatibility for BossHUDUI ──────────────────────────────
-    public float phase2Threshold => (config != null && config.phases != null && config.phases.Count > 0) ? config.phases[0].transitionHealthPct : legacyPhase2Threshold;
-    public float phase3Threshold => (config != null && config.phases != null && config.phases.Count > 1) ? config.phases[1].transitionHealthPct : legacyPhase3Threshold;
+    public override float phase2Threshold => (config != null && config.phases != null && config.phases.Count > 0) ? config.phases[0].transitionHealthPct : legacyPhase2Threshold;
+    public override float phase3Threshold => (config != null && config.phases != null && config.phases.Count > 1) ? config.phases[1].transitionHealthPct : legacyPhase3Threshold;
 
     public override void OnNetworkSpawn()
     {
@@ -60,13 +56,11 @@ public class MainBoss : BossController
         }
 
         base.OnNetworkSpawn();
-        OnAnyBossSpawned?.Invoke(this);
     }
 
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
-        OnAnyBossDespawned?.Invoke();
     }
 
     protected override void OnPhaseChangedClient(int phaseIndex)
@@ -87,7 +81,7 @@ public class MainBoss : BossController
             _ => Color.white,
         };
         
-        UnityEngine.Object.FindAnyObjectByType<GameHUD>()?.ShowAnnouncement(msg, col);
+        GameHUD.Instance?.ShowAnnouncement(msg, col);
         NetworkedVFXPool.Instance?.PlayByName("PhaseShockwave", transform.position);
     }
 
@@ -100,20 +94,20 @@ public class MainBoss : BossController
         config.firstAttackDelay = 4f;
 
         // --- สร้างท่าโจมตีต่างๆ (แบบเดียวกับของเดิม) ---
-        var actCircle = ScriptableObject.CreateInstance<SpawnAoEAction>();
-        actCircle.aoeType = AoEType.Circle; actCircle.radius = circleRadius; actCircle.warningDuration = circleWarnTime; actCircle.damage = circleDamage;
+        var actCircle = ScriptableObject.CreateInstance<CircleAoEAction>();
+        actCircle.radius = circleRadius; actCircle.warningDuration = circleWarnTime; actCircle.damage = circleDamage;
 
-        var actLine = ScriptableObject.CreateInstance<SpawnAoEAction>();
-        actLine.aoeType = AoEType.Line; actLine.lineLength = lineLength; actLine.lineWidth = lineWidth; actLine.warningDuration = lineWarnTime; actLine.damage = lineDamage;
+        var actLine = ScriptableObject.CreateInstance<LineAoEAction>();
+        actLine.lineLength = lineLength; actLine.lineWidth = lineWidth; actLine.warningDuration = lineWarnTime; actLine.damage = lineDamage;
 
-        var actCrossX = ScriptableObject.CreateInstance<SpawnAoEAction>();
-        actCrossX.aoeType = AoEType.Cross; actCrossX.lineLength = crossLineLength; actCrossX.lineWidth = crossLineWidth; actCrossX.warningDuration = crossWarnTime; actCrossX.damage = crossDamage; actCrossX.targetOffset = new Vector3(0, 0.1f, 0); // isX logic (hacky offset but works as marker)
+        var actCrossX = ScriptableObject.CreateInstance<CrossAoEAction>();
+        actCrossX.lineLength = crossLineLength; actCrossX.lineWidth = crossLineWidth; actCrossX.warningDuration = crossWarnTime; actCrossX.damage = crossDamage; actCrossX.targetOffset = new Vector3(0, 0.1f, 0); // isX logic (hacky offset but works as marker)
 
-        var actDonut = ScriptableObject.CreateInstance<SpawnAoEAction>();
-        actDonut.aoeType = AoEType.Donut; actDonut.radius = donutRadius; actDonut.innerRadius = donutInnerRadius; actDonut.warningDuration = donutWarnTime; actDonut.damage = donutDamage;
+        var actDonut = ScriptableObject.CreateInstance<DonutAoEAction>();
+        actDonut.radius = donutRadius; actDonut.innerRadius = donutInnerRadius; actDonut.warningDuration = donutWarnTime; actDonut.damage = donutDamage;
 
-        var actChase = ScriptableObject.CreateInstance<SpawnAoEAction>();
-        actChase.aoeType = AoEType.Circle; actChase.isChasing = true; actChase.targetingMode = SpawnAoEAction.TargetingMode.RandomPlayer; actChase.radius = chaseRadius; actChase.warningDuration = chaseWarnTime; actChase.damage = chaseDamage;
+        var actChase = ScriptableObject.CreateInstance<CircleAoEAction>();
+        actChase.isChasing = true; actChase.targetingMode = SpawnAoEActionBase.TargetingMode.RandomPlayer; actChase.radius = chaseRadius; actChase.warningDuration = chaseWarnTime; actChase.damage = chaseDamage;
 
         var actTether = ScriptableObject.CreateInstance<TetherAction>();
         actTether.tetherDistance = tetherDistance; actTether.tetherDuration = tetherDuration; actTether.tetherFailDamage = tetherFailDamage; actTether.tetherSoloSpawnOffset = tetherSoloSpawnOffset;

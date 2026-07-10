@@ -15,6 +15,11 @@ using UnityEngine;
 /// </summary>
 public class PistolWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Header("Burst")]
     [Tooltip("หน่วงเวลาระหว่าง burst แต่ละนัด (วินาที)")]
     public float burstInterval = 0.33f;

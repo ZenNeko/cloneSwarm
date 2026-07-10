@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
+  m_Name: WD_Fence
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: Fence
+  description: Fence
+  icon: {fileID: 0}
+  tier: 0
+  prefab: {fileID: 1572960083255152768, guid: 3ae957fcb5339a74689480dcf25b8434, type: 3}
+  aimMode: 0
+  levels:
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    piercing: 0
+    levelUpText: 
+  superVersion: {fileID: 0}
+  superConditions:
+  - conditionType: 0
+    requiredStatType: 9
+    requiredLevel: 1
+    requiredWeapon: {fileID: 0}
+  weight: 100
+  exclusiveCharacter: {fileID: 0}

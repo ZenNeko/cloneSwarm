@@ -120,4 +120,14 @@ public class HunterUltimate : AbilityBase, IHUDAbility
         cachedLaser = manager.GetComponentInChildren<LaserWeapon>();
         return cachedLaser;
     }
+
+    void OnDestroy()
+    {
+        if (IsActive)
+        {
+            var laser = GetLaser();
+            if (laser != null) laser.tempCooldownMult = 1f;
+            IsActive = false;
+        }
+    }
 }

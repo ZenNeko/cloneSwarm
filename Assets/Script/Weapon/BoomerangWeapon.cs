@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Boomerang — ยิง projectile ออกไป maxRange แล้วบินกลับ, pierce ทุก enemy
@@ -15,17 +15,17 @@
 /// </summary>
 public class BoomerangWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + BoomerangProjectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
+
     protected override void OnFire(WeaponLevelData ld)
     {
         float   dmg   = RollDamage(ld.damage, out bool isCrit);
         float   range = ld.range;
         float   speed = ld.projectileSpeed > 0f ? ld.projectileSpeed : 14f;
-
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
 
         Vector3 spawnPos = transform.position + Vector3.up * 0.8f;
         Vector3 dir      = GetAimDirection();   // ใช้ WeaponBase.GetAimDirection() — รองรับ MouseAim + AutoNearest

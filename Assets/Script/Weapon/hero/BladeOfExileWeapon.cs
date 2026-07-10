@@ -120,4 +120,16 @@ public class BladeOfExileWeapon : AbilityBase, IHUDAbility
         OnCooldownChanged?.Invoke(this, 1f);
         Debug.Log($"[Blade of Exile] Exile ended — cooldown {cd:F0}s");
     }
+
+    void OnDestroy()
+    {
+        if (IsExileActive)
+        {
+            if (manager != null && manager.playerMove != null)
+                manager.playerMove.tempMoveSpeedBonus -= moveSpeedBonus;
+            if (chargeManager != null)
+                chargeManager.IsExileActive = false;
+            IsExileActive = false;
+        }
+    }
 }

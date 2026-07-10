@@ -98,9 +98,10 @@ public class FunnelObject : NetworkBehaviour
         ActiveFunnels.Remove(this);
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         ActiveFunnels.Remove(this);
+        base.OnDestroy();
     }
 
     // ── Update (Server only) ──────────────────────────────────────────────
@@ -262,7 +263,8 @@ public class FunnelObject : NetworkBehaviour
             weaponManager.FireRaycastChainServerRpc(
                 origin, baseDir, laserDamage, attackRange, finalBeams,
                 3, actualChainDmg, 8f, false, "Funnel Thunder Rail",
-                "Beam_Railgun", 2.5f, actualZoneDmg, 1, 0.3f, "Stormcaller_AOE"
+                "Beam_Railgun", 2.5f, actualZoneDmg, 1, 0.3f, "Stormcaller_AOE",
+                1.5f
             );
             return;
         }
@@ -291,7 +293,7 @@ public class FunnelObject : NetworkBehaviour
                 Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * baseDir;
                 weaponManager.FireRaycastServerRpc(
                     origin, beamDir, laserDamage * 1.5f, attackRange, "Beam_Railgun",
-                    false, true, "Funnel Railgun"
+                    false, true, "Funnel Railgun", 1.5f
                 );
             }
             return;

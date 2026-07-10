@@ -73,6 +73,8 @@ public class GameHUD : MonoBehaviour
     }
 
     // ── Internal ──────────────────────────────────────────────────────────
+    public static GameHUD Instance { get; private set; }
+
     private playermove   localPlayer;
     private float        localElapsed;
 
@@ -82,6 +84,11 @@ public class GameHUD : MonoBehaviour
     private IHUDPassiveBar passiveBar;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
+    void Awake()
+    {
+        Instance = this;
+    }
+
     void Start()
     {
         if (announcementLabel) announcementLabel.gameObject.SetActive(false);

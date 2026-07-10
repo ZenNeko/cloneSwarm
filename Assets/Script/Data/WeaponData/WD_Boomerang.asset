@@ -19,22 +19,13 @@ MonoBehaviour:
   tier: 0
   prefab: {fileID: 5993201688506033904, guid: 68e9b37e85365db44b48625513869dc2, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
-  hitVfxType: 0
-  fireSfx:
-  - {fileID: 8300000, guid: e9c2ea7944b0b8149bac62705f646777, type: 3}
-  hitSfx:
-  - {fileID: 0}
-  fireVolume: 1
-  hitVolume: 0.6
-  pitchVariance: 0.05
   levels:
   - damage: 20
     cooldown: 1
     projectileCount: 1
     range: 8
     projectileSpeed: 12
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 22
@@ -42,6 +33,7 @@ MonoBehaviour:
     projectileCount: 2
     range: 8
     projectileSpeed: 13
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 24
@@ -49,6 +41,7 @@ MonoBehaviour:
     projectileCount: 2
     range: 8
     projectileSpeed: 14
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 26
@@ -56,6 +49,7 @@ MonoBehaviour:
     projectileCount: 3
     range: 8
     projectileSpeed: 14
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 28
@@ -63,9 +57,10 @@ MonoBehaviour:
     projectileCount: 4
     range: 8
     projectileSpeed: 15
+    radius: 0
     piercing: 0
     levelUpText: 
-  superVersion: {fileID: 0}
+  superVersion: {fileID: 11400000, guid: c5a4a137eee152243a36cc412d127855, type: 2}
   superConditions:
   - conditionType: 0
     requiredStatType: 9

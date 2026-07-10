@@ -21,6 +21,9 @@ public abstract class WeaponBase : MonoBehaviour
     /// <summary>cooldown multiplier ชั่วคราว — 1 = ปกติ, 0.5 = เร็ว 2× (set โดย HunterUltimate)</summary>
     [HideInInspector] public float tempCooldownMult = 1f;
 
+    protected virtual GameObject GetProjectilePrefab() => null;
+    public GameObject PublicGetProjectilePrefab() => GetProjectilePrefab();
+
     [Header("VFX (Per-Weapon Prefab)")]
     [Tooltip("VFX หลักของ weapon (slash arc, explosion shape, beam ฯลฯ)\n" +
              "None = ใช้ default ของ script (มี fallback hardcoded)\n" +
@@ -152,8 +155,9 @@ public abstract class WeaponBase : MonoBehaviour
         bool  isCrit    = false)
     {
         var pool   = NetworkedVFXPool.Instance;
-        int projId = pool != null && data?.projectilePrefab != null
-            ? pool.GetProjectileId(data.projectilePrefab)
+        var prefab = GetProjectilePrefab();
+        int projId = pool != null && prefab != null
+            ? pool.GetProjectileId(prefab)
             : -1;
         manager.FireProjectileServerRpc(
             pos, dir, damage, speed, count, spreadDeg,
@@ -182,12 +186,18 @@ public abstract class WeaponBase : MonoBehaviour
 
     protected void SpawnBoomerang(Vector3 spawnPos, Vector3 direction, float damage, float speed, float maxRange, bool isCrit = false)
     {
-        manager.SpawnBoomerangServerRpc(spawnPos, direction, damage, speed, maxRange, isCrit, data != null ? data.weaponName : "Unknown");
+        var pool   = NetworkedVFXPool.Instance;
+        var prefab = GetProjectilePrefab();
+        int projId = pool != null && prefab != null ? pool.GetProjectileId(prefab) : -1;
+        manager.SpawnBoomerangServerRpc(spawnPos, direction, damage, speed, maxRange, isCrit, data != null ? data.weaponName : "Unknown", projId);
     }
 
-    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false)
+    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false, bool isCrit = false)
     {
-        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.weaponName : "Unknown");
+        var pool   = NetworkedVFXPool.Instance;
+        var prefab = GetProjectilePrefab();
+        int projId = pool != null && prefab != null ? pool.GetProjectileId(prefab) : -1;
+        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.weaponName : "Unknown", projId, isCrit);
     }
 
     protected void DropMine(Vector3 position, float damage, float triggerRadius)

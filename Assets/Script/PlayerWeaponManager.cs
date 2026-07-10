@@ -232,6 +232,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Header("Weapon Prefabs")]
     public GameObject boomerangPrefab;   // BoomerangProjectile NetworkObject
     public GameObject grenadePrefab;       // GrenadeProjectile NetworkObject
+    public GameObject molotovPrefab;       // MolotovProjectile NetworkObject
     public GameObject minePrefab;          // MineObject NetworkObject
     public GameObject stickyRocketPrefab;  // StickyRocketProjectile NetworkObject
     public GameObject giantRocketPrefab;   // GiantRocketProjectile NetworkObject
@@ -239,20 +240,27 @@ public class PlayerWeaponManager : NetworkBehaviour
     public GameObject funnelPrefab;        // FunnelObject NetworkObject
 
     // ── ServerRpc: Boomerang ──────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void SpawnBoomerangServerRpc(
         Vector3 spawnPos, Vector3 direction,
-        float damage, float speed, float maxRange, bool isCrit = false, string weaponName = "Unknown")
+        float damage, float speed, float maxRange, bool isCrit = false, string weaponName = "Unknown", int projPrefabId = -1)
     {
-        if (boomerangPrefab == null)
+        var targetPrefab = boomerangPrefab;
+        if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
+        {
+            var resolved = NetworkedVFXPool.Instance.GetProjectilePrefab(projPrefabId);
+            if (resolved != null) targetPrefab = resolved;
+        }
+
+        if (targetPrefab == null)
         {
             Debug.LogError("[PlayerWeaponManager] boomerangPrefab ไม่ได้ assign — ลาก Proj_Boomerang.prefab ใส่ Inspector");
             return;
         }
         Quaternion rot = (direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity)
-                       * boomerangPrefab.transform.localRotation;   // คง prefab offset ไว้ (เหมือน StickyRocket)
-        var go   = Instantiate(boomerangPrefab, spawnPos, rot);
-        go.transform.localScale = boomerangPrefab.transform.localScale;
+                       * targetPrefab.transform.localRotation;   // คง prefab offset ไว้ (เหมือน StickyRocket)
+        var go   = Instantiate(targetPrefab, spawnPos, rot);
+        go.transform.localScale = targetPrefab.transform.localScale;
         var proj = go.GetComponent<BoomerangProjectile>();
         var no   = go.GetComponent<NetworkObject>();
         if (proj == null || no == null) { Destroy(go); return; }
@@ -267,17 +275,33 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Projectile ─────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireProjectileServerRpc(
         Vector3 spawnPos, Vector3 baseDir,
         float damage, float projSpeed, int count, float spreadDeg,
         bool piercing = false, int projPrefabId = -1, float maxRange = -1f,
         bool isCrit = false, string weaponName = "Unknown")
     {
-        // หา prefab จาก NetworkedVFXPool registry (ทุก client มีข้อมูลเดียวกัน)
-        // fallback → projectilePrefab default บน manager
-        GameObject prefab = NetworkedVFXPool.Instance?.GetProjectilePrefab(projPrefabId)
-                            ?? projectilePrefab;
+        GameObject prefab = null;
+        if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
+        {
+            prefab = NetworkedVFXPool.Instance.GetProjectilePrefab(projPrefabId);
+        }
+
+        if (prefab == null)
+        {
+            var slot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
+            if (slot != null && slot.script != null)
+            {
+                prefab = slot.script.PublicGetProjectilePrefab();
+            }
+        }
+
+        if (prefab == null)
+        {
+            prefab = projectilePrefab; // fallback to default bullet
+        }
+
         if (prefab == null) return;
 
         baseDir.y = 0f;
@@ -292,26 +316,84 @@ public class PlayerWeaponManager : NetworkBehaviour
 
             var proj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(dir));
             var p    = proj.GetComponent<Projectile>();
-            if (p == null) { Destroy(proj); continue; }
-            p.damage   = damage;
-            p.speed    = projSpeed;
-            p.piercing = piercing;
-            p.isCrit   = isCrit;
-            p.weaponName = weaponName;
-            p.ownerManager = this;
-            if (maxRange > 0f) p.maxRange = maxRange;   // -1 = ใช้ค่าบน prefab
-            p.InitDirection(dir);
+            var bsp  = proj.GetComponent<BouncingSpikeProjectile>();
+            var tp   = proj.GetComponent<TrainProjectile>();
+            if (p == null && bsp == null && tp == null) { Destroy(proj); continue; }
 
-            var netObj = proj.GetComponent<NetworkObject>();
-            if (netObj == null)
-                Debug.LogWarning($"[Projectile] '{prefab.name}' ไม่มี NetworkObject component — projectile จะ spawn บน Server เท่านั้น ไม่ถูก replicate ไปยัง clients!");
-            else
-                netObj.Spawn(true);
+            // Lookup weapon slot to override hit VFX from WeaponBase prefab configuration
+            string weaponVfx = "None";
+            var slot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
+            if (slot != null && slot.script != null)
+            {
+                weaponVfx = slot.script.weaponVfxType;
+            }
+
+            if (p != null)
+            {
+                p.damage   = damage;
+                p.speed    = projSpeed;
+                p.piercing = piercing;
+                p.isCrit   = isCrit;
+                p.weaponName = weaponName;
+                p.ownerManager = this;
+                if (maxRange > 0f) p.maxRange = maxRange;
+                if (!string.IsNullOrEmpty(weaponVfx) && weaponVfx != "None")
+                    p.hitVFX = weaponVfx;
+
+                p.InitDirection(dir);
+
+                var netObj = proj.GetComponent<NetworkObject>();
+                if (netObj == null)
+                    Debug.LogWarning($"[Projectile] '{prefab.name}' ไม่มี NetworkObject component!");
+                else
+                    netObj.Spawn(true);
+            }
+            else if (bsp != null)
+            {
+                bsp.damage   = damage;
+                bsp.speed    = projSpeed;
+                bsp.piercing = piercing;
+                bsp.isCrit   = isCrit;
+                bsp.weaponName = weaponName;
+                bsp.ownerManager = this;
+                if (maxRange > 0f) bsp.maxRange = maxRange;
+                if (!string.IsNullOrEmpty(weaponVfx) && weaponVfx != "None")
+                    bsp.hitVfxKey = weaponVfx;
+
+                var netObj = proj.GetComponent<NetworkObject>();
+                if (netObj == null)
+                    Debug.LogWarning($"[BouncingSpike] '{prefab.name}' ไม่มี NetworkObject component!");
+                else
+                {
+                    netObj.Spawn(true);
+                    bsp.Init(dir);
+                }
+            }
+            else if (tp != null)
+            {
+                tp.damage   = damage;
+                tp.speed    = projSpeed;
+                tp.piercing = piercing;
+                tp.isCrit   = isCrit;
+                tp.weaponName = weaponName;
+                tp.ownerManager = this;
+                if (maxRange > 0f) tp.maxRange = maxRange;
+                tp.isSuper = weaponName.Contains("Express") || weaponName.Contains("Super") || (slot != null && slot.data != null && slot.data.tier == WeaponTier.Super);
+
+                var netObj = proj.GetComponent<NetworkObject>();
+                if (netObj == null)
+                    Debug.LogWarning($"[TrainProjectile] '{prefab.name}' ไม่มี NetworkObject component!");
+                else
+                {
+                    netObj.Spawn(true);
+                    tp.Init(dir);
+                }
+            }
         }
     }
 
     // ── ServerRpc: Melee AoE ──────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false, string weaponName = "Unknown", float knockbackForce = 0f, Vector3 knockbackDir = default)
     {
         foreach (var c in OverlapEnemy(center, radius))
@@ -336,7 +418,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     /// <summary>Melee AoE แบบ arc — เฉพาะ enemy ที่อยู่ใน cone ทิศ forward</summary>
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false, string weaponName = "Unknown", float knockbackForce = 0f, Vector3 knockbackDir = default)
     {
         float halfArc = arcAngle * 0.5f;
@@ -383,18 +465,39 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Grenade (throw → AoE on land) ──────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void ThrowGrenadeServerRpc(
         Vector3 spawnPos, Vector3 targetPos,
         float damage, float radius,
-        float fuseTime = 1.5f, bool cluster = false, string weaponName = "Unknown")
+        float fuseTime = 1.5f, bool cluster = false, string weaponName = "Unknown", int projPrefabId = -1, bool isCrit = false)
     {
-        if (grenadePrefab == null)
+        var targetPrefab = grenadePrefab;
+        if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
         {
-            Debug.LogError("[PlayerWeaponManager] grenadePrefab ไม่ได้ assign — ต้องการ NetworkObject prefab ที่มี GrenadeProjectile.cs");
+            var resolved = NetworkedVFXPool.Instance.GetProjectilePrefab(projPrefabId);
+            if (resolved != null) targetPrefab = resolved;
+        }
+
+        if (targetPrefab == grenadePrefab)
+        {
+            var slot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
+            if (slot != null && slot.script != null)
+            {
+                var resolved = slot.script.PublicGetProjectilePrefab();
+                if (resolved != null) targetPrefab = resolved;
+            }
+            else if (weaponName.Contains("Molotov") || weaponName.Contains("Napalm"))
+            {
+                if (molotovPrefab != null) targetPrefab = molotovPrefab;
+            }
+        }
+
+        if (targetPrefab == null)
+        {
+            Debug.LogError("[PlayerWeaponManager] grenadePrefab ไม่ได้ assign — ต้องการ NetworkObject prefab ที่มี GrenadeProjectile.cs หรือ MolotovProjectile.cs");
             return;
         }
-        var go = Instantiate(grenadePrefab, spawnPos, Quaternion.identity);
+        var go = Instantiate(targetPrefab, spawnPos, Quaternion.identity);
         var gp = go.GetComponent<GrenadeProjectile>();
         if (gp != null)
         {
@@ -404,8 +507,28 @@ public class PlayerWeaponManager : NetworkBehaviour
             gp.cluster   = cluster;
             gp.targetPos = targetPos;
             gp.weaponName = weaponName;
-            // อ้างอิง manager เพื่อให้ Cluster bomb เรียก FireProjectileServerRpc ได้
             gp.weaponManager = this;
+        }
+        var mp = go.GetComponent<MolotovProjectile>();
+        if (mp != null)
+        {
+            mp.damage    = damage;
+            mp.radius    = radius;
+            mp.fuseTime  = fuseTime;
+            mp.targetPos = targetPos;
+            mp.weaponName = weaponName;
+            mp.weaponManager = this;
+            mp.isCrit    = isCrit;
+
+            // Lookup weapon slot to override VFX keys from WeaponBase prefab configuration
+            var slot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
+            if (slot != null && slot.script != null)
+            {
+                if (!string.IsNullOrEmpty(slot.script.weaponVfxType) && slot.script.weaponVfxType != "None")
+                    mp.explosionVfxKey = slot.script.weaponVfxType;
+                if (!string.IsNullOrEmpty(slot.script.secondaryVfxType) && slot.script.secondaryVfxType != "None")
+                    mp.zoneVfxKey = slot.script.secondaryVfxType;
+            }
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
@@ -415,7 +538,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     /// AoE เส้นตรงแบบมีความกว้าง — ใช้ Physics.OverlapBox ตามแนวยิง
     /// damage enemy ทุกตัวในกล่องสี่เหลี่ยม (width × height × range)
     /// </summary>
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireLineAoEServerRpc(
         Vector3 origin, Vector3 direction,
         float damage, float range, float width = 1.5f, bool isCrit = false,
@@ -487,7 +610,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Raycast Pierce (Railgun / PlasmaWhip / WindSlash) ────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireRaycastServerRpc(Vector3 origin, Vector3 direction, float damage,
                                      float maxDist = 50f, string vfxKey = "None",
                                      bool isCrit = false, bool playHitVfx = true, string weaponName = "Unknown",
@@ -535,7 +658,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Drop Mine ──────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void DropMineServerRpc(Vector3 position, float damage, float triggerRadius, string weaponName = "Unknown")
     {
         if (minePrefab == null) return;
@@ -552,7 +675,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Hunter Missiles (Q) ───────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void SpawnMissilesServerRpc(
         Vector3[] spawnPositions, ulong[] targetNetIds,
         float damage, float explosionRadius, string weaponName = "Unknown")
@@ -575,7 +698,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Hunter Funnels (Ultimate) ──────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void SpawnFunnelsServerRpc(
         Vector3 center, int count, float orbitRadius,
         float laserDamage, float laserCooldown,
@@ -595,14 +718,14 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Add Shield ─────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void AddShieldServerRpc(float amount)
     {
         playerMove?.AddShield(amount);
     }
 
     // ── ServerRpc: Sticky Rocket (Gunner Q mode) ──────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void SpawnStickyRocketServerRpc(
         Vector3 spawnPos, Vector3 direction,
         float damage, float speed, float explosionRadius, string weaponName = "Unknown")
@@ -625,7 +748,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Giant Rocket (Gunner E) ────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void SpawnGiantRocketServerRpc(
         Vector3 spawnPos, Vector3 direction,
         float baseDamage, float speed,
@@ -658,16 +781,16 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── VFX Broadcast by string key → NetworkedVFXPool ──────────────────────
     /// <summary>Weapon scripts ทุกตัวใช้ช่องทางนี้ผ่าน ShowHitVfx() หรือ BroadcastVfxTypeServerRpc โดยตรง</summary>
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void BroadcastVfxTypeServerRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
         => BroadcastVfxTypeClientRpc(pos, vfxKey, scale, direction, arcAngle, roll);
 
     [ClientRpc]
-    void BroadcastVfxTypeClientRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    public void BroadcastVfxTypeClientRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
         => NetworkedVFXPool.Instance?.PlayByName(vfxKey, pos, scale, direction, arcAngle, roll);
 
     // ── VFX Broadcast parented to player ────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void BroadcastVfxParentedServerRpc(string vfxKey, float scale = 1f, bool isLoop = false)
         => BroadcastVfxParentedClientRpc(vfxKey, scale, isLoop);
 
@@ -700,7 +823,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void StopLoopVfxServerRpc(string vfxKey)
         => StopLoopVfxClientRpc(vfxKey);
 
@@ -719,7 +842,7 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── Beam VFX Broadcast (Lightning Chain, Thunder Rail ฯลฯ) ───────────
     /// <summary>วาด LineRenderer beam จาก from→to บนทุก client</summary>
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void BroadcastBeamServerRpc(Vector3 from, Vector3 to, string beamVfxKey, string hitVfxKey)
         => BroadcastBeamClientRpc(from, to, beamVfxKey, hitVfxKey);
 
@@ -730,7 +853,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     // ── Orbiter Orb Sync — ตำแหน่ง orb สำหรับ client ที่ไม่ใช่ owner ────────
     private readonly List<GameObject> _remoteOrbVisuals = new();
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void SyncOrbPositionsServerRpc(Vector3[] positions)
         => SyncOrbPositionsClientRpc(positions);
 
@@ -760,7 +883,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             if (_remoteOrbVisuals[i]) _remoteOrbVisuals[i].transform.position = positions[i];
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void HideRemoteOrbsServerRpc() => HideRemoteOrbsClientRpc();
 
     [ClientRpc]
@@ -827,7 +950,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── ServerRpc: Generic Chain and Raycast-Chain ────────────────────────
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireChainServerRpc(
         Vector3 startPos, float damage, float searchRadius, int chainTargets, float chainSearchRadius, float chainDamageMult,
         bool searchHighestHP, string weaponName, string beamVfx, string hitVfx,
@@ -873,7 +996,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server)]
     public void FireRaycastChainServerRpc(
         Vector3 origin, Vector3 direction, float damage, float range, int beamCount,
         int chainTargets, float chainDamage, float chainRadius, bool isCrit, string weaponName, string beamVfx,
@@ -1002,9 +1125,16 @@ public class PlayerWeaponManager : NetworkBehaviour
         return best;
     }
 
+    public void SpawnDamageZone(Vector3 position, int ticks, float tickInterval, float radius, float damage, bool isCrit, string weaponName, string zoneVfx,
+        float burnDuration = 0f, float burnDmgPerTick = 0f, float burnInterval = 1f)
+    {
+        StartCoroutine(SpawnLightningZonesServerSide(new List<Vector3> { position }, ticks, tickInterval, radius, damage, isCrit, weaponName, zoneVfx, burnDuration, burnDmgPerTick, burnInterval));
+    }
+
     private System.Collections.IEnumerator SpawnLightningZonesServerSide(
         List<Vector3> positions, int zoneTicks, float zoneTickInterval,
-        float zoneRadius, float zoneDamage, bool isCrit, string weaponName, string zoneVfx)
+        float zoneRadius, float zoneDamage, bool isCrit, string weaponName, string zoneVfx,
+        float burnDuration = 0f, float burnDmgPerTick = 0f, float burnInterval = 1f)
     {
         float effectiveZoneDmg = zoneDamage;
 
@@ -1020,14 +1150,52 @@ public class PlayerWeaponManager : NetworkBehaviour
                     {
                         enemy.EnemyTakeDamage(effectiveZoneDmg, isCrit);
                         RegisterWeaponDamage(weaponName, effectiveZoneDmg);
+
+                        if (burnDuration > 0f && burnDmgPerTick > 0f)
+                        {
+                            enemy.ApplyBurnDot(burnDuration, burnDmgPerTick, burnInterval, isCrit, weaponName, this);
+                        }
                     }
                 }
-                BroadcastVfxTypeClientRpc(pos + Vector3.up * 0.5f, zoneVfx, 1f);
+                string activeVfx = zoneVfx;
+                if (NetworkedVFXPool.Instance != null && !NetworkedVFXPool.Instance.HasMapping(activeVfx))
+                {
+                    activeVfx = "O_AoE_RadiantAura";
+                }
+
+                float scale = 1f;
+                if (NetworkedVFXPool.Instance != null && zoneRadius > 0f)
+                {
+                    float designed = NetworkedVFXPool.Instance.GetDesignedRadius(activeVfx);
+                    if (designed > 0f) scale = zoneRadius / designed;
+                }
+                BroadcastVfxTypeClientRpc(pos + Vector3.up * 0.5f, activeVfx, scale);
             }
         }
     }
 
-    void OnDestroy()
+    // ── ServerRpc: Debuffs (Slow / Freeze) ────────────────────────────────
+    [Rpc(SendTo.Server)]
+    public void ApplySlowToEnemiesServerRpc(Vector3 center, float radius, float duration, float slowPercent)
+    {
+        foreach (var c in OverlapEnemy(center, radius))
+        {
+            var enemy = c.GetComponent<Enemy>();
+            enemy?.ApplySlowDebuff(duration, slowPercent);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void ApplyFreezeToEnemiesServerRpc(Vector3 center, float radius, float duration)
+    {
+        foreach (var c in OverlapEnemy(center, radius))
+        {
+            var enemy = c.GetComponent<Enemy>();
+            enemy?.ApplyFreeze(duration);
+        }
+    }
+
+    public override void OnDestroy()
     {
         if (NetworkedVFXPool.Instance != null)
         {
@@ -1043,5 +1211,6 @@ public class PlayerWeaponManager : NetworkBehaviour
 
         foreach (var o in _remoteOrbVisuals) if (o) Destroy(o);
         _remoteOrbVisuals.Clear();
+        base.OnDestroy();
     }
 }

@@ -18,6 +18,11 @@ using UnityEngine;
 /// </summary>
 public class VortexWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Tooltip("องศา/วินาที ที่ angle หมุน (บวก = ทวนเข็ม)")]
     public float rotSpeed = 140f;
 
@@ -40,12 +45,6 @@ public class VortexWeapon : WeaponBase
         float   dmg   = RollDamage(ld.damage, out bool isCrit);
         float   speed = ld.projectileSpeed > 0f ? ld.projectileSpeed : 10f;
         float   range = ld.range;
-
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
 
         float   rad      = Mathf.Deg2Rad * angleDeg;
         Vector3 offset   = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * spawnRadius;

@@ -118,3 +118,13 @@ MonoBehaviour:
     poolSize: 40
     designedRadius: 0.9
     fixedDuration: 0
+  - key: BigAOEBome
+    prefab: {fileID: 4748681987041982144, guid: 1e9c209764f16b148a34080ebdbf4c15, type: 3}
+    poolSize: 5
+    designedRadius: 3
+    fixedDuration: 0
+  - key: BigAOEBome_chargeTime
+    prefab: {fileID: 4748681987041982144, guid: 31ff451a88873b9489fb3fad93871fb6, type: 3}
+    poolSize: 5
+    designedRadius: 10
+    fixedDuration: 0

@@ -50,12 +50,13 @@ MonoBehaviour:
   aimMode: 0
   tempCooldownMult: 1
   weaponVfxType: None
-  secondaryVfxType: -1
+  secondaryVfxType: None
   fireSfx: []
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
+  projectilePrefab: {fileID: 0}
   rotSpeed: 140
   spawnRadius: 1.2
   reverseRotSpeed: -140

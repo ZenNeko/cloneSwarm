@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -111,7 +111,7 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         if (rb != null && pm != null)
         {
             pm.isDashing      = true;
-            rb.velocity       = Vector3.zero;
+            rb.linearVelocity  = Vector3.zero;
 
             Vector3 startPos  = rb.position;
             Vector3 endPos    = startPos + dir * dashDistance;
@@ -126,13 +126,12 @@ public class ValorWeapon : AbilityBase, IHUDAbility
             }
 
             rb.MovePosition(endPos);
-            rb.velocity  = Vector3.zero;
+            rb.linearVelocity  = Vector3.zero;
             pm.isDashing = false;
         }
         else yield return null;
 
-        // AoE blast at landing
-        FireMelee(transform.position, radius, damage);
+        FireMelee(transform.position, radius, damage, isCrit);
         string baseHit = isCrit ? "CritHitEffect" : "HitEffect";
         manager.BroadcastVfxTypeServerRpc(transform.position, baseHit);
 

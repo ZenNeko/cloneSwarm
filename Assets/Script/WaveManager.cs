@@ -72,7 +72,7 @@ public class WaveManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        spawner = FindObjectOfType<EnemySpawner>();
+        spawner = FindAnyObjectByType<EnemySpawner>();
         if (spawner == null) { Debug.LogError("[WaveManager] ❌ EnemySpawner not found!"); return; }
 
         spawner.StopSpawning();
