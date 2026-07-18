@@ -92,46 +92,56 @@ Normal weapon ต้องถึง Lv5 + เงื่อนไขเพิ่�
 | **Vortex** | Projectile | สร้างพายุดูดศัตรูเข้าจุดศูนย์กลางพร้อมยิงกระสุนปะทะ |
 | **Spiral Galaxy** | Projectile | พายุดูดศัตรูที่ยิงกระสุนกระจายรอบตัวเป็นก้นหอย |
 | **Dual Slash** | Melee / AoE | ฟันดาบคู่ซ้าย-ขวา สร้างความเสียหายกวาดหน้า |
-| **Whip** | Melee / AoE | ฟาดแส้หนวดทิศทางเดียว (Line AoE) ด้านหน้าและหลังตัวละคร |
 | **Lance** | Melee / AoE | เสือกแทงหนวดเดี่ยวพุ่งทะลวงไปข้างหน้า (Narrow Line AoE) ปลดล็อก Knockback ที่เลเวล 5 |
 | **Laser** | Beam | ยิงลำแสงเลเซอร์ยาวแนวตรงค้างชั่วขณะ (Line AoE) |
 | **Lightning Chain** | Beam | ยิงกระแสไฟฟ้าช็อตชิ่งข้ามตัวศัตรูในระยะใกล้เคียงต่อเนื่อง |
 | **Orbiter** | Orbital | ลูกบอลพลังงานโคจรรอบตัว สร้างความเสียหาย melee เมื่อศัตรูเดินชน |
 | **Radiant Aura** | Orbital | วงออร่าแผ่รัศมีสร้างดาเมจรอบตัวผู้เล่นอย่างต่อเนื่อง |
 | **Grenade** | Explosive | โยนระเบิดไปจุดเป้าหมาย สร้างแรงระเบิด AoE วงกว้าง |
+| **BigAoE** | Projectile | อัญเชิญเขตระเบิดเวทมนตร์โจมตีเป็นวงกว้างรอบตัว |
+| **BigCannon** | Projectile | ยิงลูกปืนใหญ่ขนาดใหญ่ทำความเสียหายทะลวงแนวตรงและระเบิดสร้าง AoE วงกว้างเมื่อปะทะศัตรูหรือหมดระยะ |
+| **Fence** | Projectile | ปักเสาสัญญาณไฟฟ้าเชื่อมแนวกั้นเลเซอร์ช็อตดาเมจศัตรูที่เดินผ่านระหว่างเสาสองต้น |
+| **MagicMissile** | Projectile | ยิงกระสุนเวทมนตร์ติดตามเป้าหมายอัตโนมัติ |
+| **Molotov** | Explosive | โยนระเบิดขวดสร้างแอ่งไฟดาเมจต่อเนื่องบนพื้นผิว |
+| **Orbital Strike** | Projectile | เรียกยิงลำแสงเลเซอร์ทำลายล้างกว้างจากวงโคจรลงมายังพื้น |
+| **Spike** | Projectile | ยิงหนามแหลมเจาะทะลวงเป้าหมายและสะท้อนเด้งชนกำแพง/สิ่งกีดขวาง |
+| **Support Arena** | Utility / AoE | ปักเสาสร้างอาณาเขตสนับสนุน มอบบัฟความเร็วเคลื่อนที่ บาเรีย และฟื้นฟูพลังชีวิตให้ผู้เล่น |
 
 #### Super Weapons (Super Tier - Lv 1)
 *สลัดอาวุธเลเวล 5 ทิ้งเพื่ออัปเกรดเมื่อผ่านเงื่อนไขจาก Zone Objective*
 | Super Weapon | Base Weapon | Special Mechanic |
 |---|---|---|
 | **Tendril Storm** | Lance | แทงหนวดหลักไปข้างหน้า และงอกหนวดเสริมอีก N เส้น (default 3) แทงทิศสุ่มต่อเนื่องจากปลายหนวดหลัก |
-| **Whip Plasma** | Whip | ฟาดแส้หนวดหลักพร้อมผลักศัตรู (Knockback) แล้วสร้างสายฟ้ากระดอน (chain beam) ช็อตชิ่งต่อหาศัตรูใกล้สุด 3 ขั้น |
 | **Blade Storm** | Dual Slash | หมุนตัวฟันดาบพายุหมุน 360 องศารอบตัว |
 | **Death Field** | Radiant Aura | กางสนามพลังความมืดรอบตัวต่อเนื่อง เมื่อศัตรูตายในสนามจะระเบิดพลังงานออกมา |
-| **Minefield** | Grenade | วางทุ่นระเบิดสุ่มบนพื้นรอบตัว เมื่อศัตรูเหยียบจะระเบิดเป็นวงกว้าง |
 | **Stormcaller** | Lightning Chain | เรียกสายฟ้าผ่ากระจายลงมารอบตัว ช็อตชิ่งเป้าหมายหนาแน่น |
 | **Magnum** | Pistol | อัปเกรดปืนพกยิงกระสุนขนาดใหญ่เจาะทะลวงศัตรูทั้งหมด |
 | **Star Ring** | Orbiter | วงแหวนดาวเคราะห์โคจรรอบตัวด้วยความเร็วและรัศมีที่กว้างขึ้น |
 | **Blunderbuss** | Shotgun | ปืนลูกซองยักษ์ยิงกระจายกระสุนหนาแน่นและผลักศัตรูถอยหลังอย่างรุนแรง |
+| **SuperBigAoE** | BigAoE | อัญเชิญเขตระเบิดพลังงานขนาดใหญ่ยักษ์ สร้างความเสียหายต่อเนื่องรุนแรงมาก |
+| **SuperFence** | Fence | ลิงก์เชื่อมโยงแนวกั้นเลเซอร์ไฟฟ้าระหว่างเสาได้หลายทิศทางและทำดาเมจแรงขึ้นพร้อมหยุดศัตรู (Stun/Slow) |
+| **SuperOrbitalStrike** | Orbital Strike | เรียกถล่มลำแสงเลเซอร์ทำลายล้างขนาดมหึมาและหนาแน่นขึ้นจากวงโคจร |
+| **EvoMagicMissile** | MagicMissile | ยิงมิสไซล์เวทย์ติดตามจำนวนมากขึ้นด้วยความถี่สูง และมีอัตราการติดคริติคอลสูงมาก |
+| **SuperSupportArena** | Support Arena | สร้างโดมบัฟออร่าขนาดใหญ่ที่เพิ่มความเร็วเคลื่อนที่ บาเรีย และรัศมีการรักษาพลังชีวิตแก่ผู้เล่นทุกคน |
+| **NapalmBomb** | Molotov | โยนระเบิดเพลิงนาปาล์มที่จะระเบิดพ่นไฟเผาผลาญพื้นผิวเป็นวงกว้างอย่างยาวนานและรุนแรง |
+| **SplitSpike** | Spike | ยิงหนามแหลมเจาะทะลวง เมื่อกระทบชนสิ่งกีดขวางจะสะท้อนและแตกตัวออกเพิ่มขึ้นเป็น 2 ลูกทันที |
+| **SplitterBomb** | Grenade | ยิงระเบิดขนาดใหญ่แล้วกระจายลูกระเบิดขนาดเล็ก (Cluster bombs) กระจัดกระจายสร้างความเสียหายซ้อนบนพื้นผิว |
+| **SuperBigCannon** | BigCannon | ปืนใหญ่ยักษ์ยิงกระสุนทำลายล้างแนวตรงกว้างขึ้นและสร้างดาเมจระเบิดหนักหน่วงยิ่งขึ้น |
 
 #### Fusion Weapons (Fusion Tier - Lv 1)
 *รวมร่างอาวุธระดับ Super 2 ชนิดเมื่อสวมใส่ครบสูตร (สูตรผสมถูกประมวลผลอัตโนมัติ)*
-*   **Plasma Whip** (Railgun + Whip Plasma / Chainsaw): หมุนฟันรอบตัวเป็นวงกว้าง (Melee Spin AoE) พร้อมยิงลำแสง Raycast ออกไป N ทิศทางพร้อมกันตาม projectile count
-*   **Cluster Bomb** (Blunderbuss + Minefield): ยิงลูกปรายกระบอกกระจายรอบหน้าพร้อมโยน Grenade วงกว้าง และเมื่อศัตรูตายจะระเบิด AoE ที่จุดตายพร้อมกระจายลูกระเบิดย่อย (Child Grenades) เด้งเกลื่อนพื้นรอบบริเวณ
-*   **Cyclone Blade** (Blade Storm + Chainsaw): ทำการสลับโหมดโจมตีสลับกันทุก Cooldown ระหว่างหมุนดาบฟันรอบตัว 360 องศา และการปล่อยคลื่นฟันดับเบิ้ลสแลชพุ่งตรงไปด้านหน้าสองเส้นคู่
+*   **Cluster Bomb** (Blunderbuss + SplitterBomb): ยิงลูกปรายกระบอกกระจายรอบหน้าพร้อมโยน Grenade วงกว้าง และเมื่อศัตรูตายจะระเบิด AoE ที่จุดตายพร้อมกระจายลูกระเบิดย่อย (Child Grenades) เด้งเกลื่อนพื้นรอบบริเวณ
+*   **Cyclone Blade** (Blade Storm + NapalmBomb): ทำการสลับโหมดโจมตีสลับกันทุก Cooldown ระหว่างหมุนดาบฟันรอบตัว 360 องศา และการปล่อยคลื่นฟันดับเบิ้ลสแลชพุ่งตรงไปด้านหน้าสองเส้นคู่
 *   **Orbital Cannon** (Magnum + Star Ring): เรียกใช้วัตถุโคจรสร้างดาเมจมีเลย์รอบตัว โดยที่ตัวลูกบอลแต่ละลูกจะทำการค้นหาและยิงกระสุนแสงใส่ศัตรูที่ใกล้ที่สุดแยกกันอย่างอิสระ
 *   **Thunder Rail** (Stormcaller + Railgun): ยิงลำเลเซอร์ทะลวงแถวยาวแนวตรง โดยทุกเป้าหมายที่โดนจะเกิดสายฟ้าชิ่งต่อเนื่อง (Chain Lightning) พร้อมทิ้งแอ่งกระแสไฟฟ้าแปรปรวน (Mini Lightning Zone) ช็อตดาเมจบนพื้นต่อเนื่อง
-*   **Storm Bunny** (BunnyHop Super + Stormcaller): การพุ่งหลบหลีก (Dash) ที่ทำดาเมจกระแทกพื้นกว้าง (Meteor AoE) และฟาดสายฟ้าช็อตชิ่งที่จุดแลนดิ้ง พร้อมมอบบาเรียป้องกันดาเมจแก่ผู้เล่น เมื่ออยู่ในโหมดปลุกพลัง Exile จะยิงกระสุนเลเซอร์ชิ่งสายฟ้ารอบทิศเพิ่มเติม
 
 ### 3.4 Fusion Recipes
 | Super Weapon A | Super Weapon B | Fusion Result |
 |---|---|---|
 | **Stormcaller** (Super Lightning Chain) | **Railgun** (Super Laser) | **Thunder Rail** |
-| **Blunderbuss** (Super Shotgun) | **Minefield** (Super Grenade) | **Cluster Bomb** |
-| **Railgun** (Super Laser) | **Whip Plasma** (Super Whip) | **Plasma Whip** |
-| **Blade Storm** (Super Dual Slash) | **Chainsaw** | **Cyclone Blade** |
+| **Blunderbuss** (Super Shotgun) | **SplitterBomb** (Super Grenade) | **Cluster Bomb** |
+| **Blade Storm** (Super Dual Slash) | **NapalmBomb** (Super Molotov) | **Cyclone Blade** |
 | **Magnum** (Super Pistol) | **Star Ring** (Super Orbiter) | **Orbital Cannon** |
-| **BunnyHop Super** | **Stormcaller** (Super Lightning Chain) | **Storm Bunny** |
 
 ### 3.5 Weapon Stats Per Level
 แต่ละ level กำหนด:
@@ -343,6 +353,17 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
     *   ทำงานแบบไดนามิก (Dynamic Layout Panel) ดึงข้อมูลผ่าน static event เมื่อ Mini Boss เกิดหรือตาย
     *   หลอด HP ของ Mini Boss แต่ละตัวจะถูกสร้าง (Instantiate) และจัดกลุ่มเข้า Layout อัตโนมัติ และจะลบแถบออก (Destroy) ทันทีที่ผู้เล่นกำจัดสำเร็จ
 
+### 8.5 ระบบ Boss Action แบบแยกส่วนโค้ด (Decoupled Scriptable Actions)
+เพื่อลดความซับซ้อนของคลาส `SpawnAoEAction` แบบดั้งเดิมที่ผูกกลไกโจมตีทั้งหมดไว้ด้วยกัน ระบบ Boss Actions ได้ถูกปรับปรุงใหม่ให้ทำงานผ่านสถาปัตยกรรม **ScriptableObject-based Actions** โดยมีคลาสฐานคือ `SpawnAoEActionBase` และสคริปต์แยกย่อยสำหรับกลไกโจมตีแต่ละประเภท ช่วยให้การจัดรูปแบบการต่อสู้ในแต่ละเฟสของบอสมีความหลากหลายและปรับแก้ค่าได้ง่ายผ่านตัวแปรใน Editor:
+*   **CircleAoEAction:** สั่งสร้างเขตพื้นที่อันตรายรูปวงกลม (Circle) ณ ตำแหน่งของผู้เล่น หรือจุดอ้างอิงของบอส
+*   **ColorMatchAoEAction:** กลไกโจมตีสลับจับคู่สี โดยจะสุ่มสปอว์นเขตพื้นที่สีที่เป็นอันตรายและปลอดภัยทับซ้อนกัน ผู้เล่นทุกคนต้องเคลื่อนที่ไปยังเขตปลอดภัยที่มีสีตรงกับเงื่อนไขที่กำหนด
+*   **CrossAoEAction:** การโจมตีแนวตัดกากบาท 4 ทิศทาง (Cross) ที่แผ่กระจายออกรอบพิกัดตัวบอส
+*   **DonutAoEAction:** โจมตีพื้นที่วงแหวน (Donut) โดยมีพื้นที่ว่างตรงกลางรอบตัวบอสเป็นเขตปลอดภัย (Safe Zone) บังคับให้ผู้เล่นขยับเข้ามาประชิดตัว
+*   **LineAoEAction:** สปอว์นพื้นที่อันตรายแบบแนวยาวตรง (Line) มักใช้เล็งพุ่งชนหรือเลเซอร์ระเบิดกวาดพื้นที่
+*   **KeepMovingAction:** กลไกโจมตีท้าทายความคล่องแคล่ว หากตัวละครของผู้เล่นหยุดเคลื่อนที่เกินกว่าระยะเวลาที่กำหนด (Stop Threshold) ระบบจะระเบิดความเสียหายใส่ตัวละครโดยตรง บังคับให้ผู้เล่นต้องเดินตลอดเวลา
+*   **RandomAttackAction:** โจมตีแบบสุ่มพิกัด (Random Artillery Bombardment) รอบพื้นที่ฉากเพื่อจำลองเหตุการณ์ฝนตกหินไฟหรือกระสุนปูพรม
+*   **TetherAction:** การยึดโยงผู้เล่นด้วยโซ่พลังงาน (Tether) ลากดึงผู้เล่นเข้าหาเขตอันตรายหรือหน่วงความเร็วการเดิน ซึ่งสามารถหลุดพ้นได้โดยการวิ่งออกห่างจากระยะดึงของบอส
+
 ---
 
 ## 9. Game Timeline
@@ -403,6 +424,7 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 - **HP Bar** — player health
 - **Boss HP HUD** — แถบเลือดหลักของ Main Boss (บนกลางจอ) พร้อมมาร์กเกอร์เฟส และแถบย่อยแบบซ้อนของ Mini Boss ทุกตัวที่กำลัง active (มุมล่าง/ขวา)
 - **Objective Distance Pointer** — ลูกศรบอกทิศทางของ Zone Objective รอบตัวหรือขอบจอพร้อมระบุระยะห่างเป็นเมตร ช่วยไกด์ผู้เล่นโดยไม่ต้องเหลือบมองมินิแมป
+- **Floating Buff Indicators** — ตัวหนังสือจำลองสถานะบัฟค่าความสามารถ (เช่น บัฟเพิ่มความเร็ว/บาเรียจาก Support Arena) แสดงผลลอยเหนือศีรษะตัวละครผู้เล่นชั่วคราว
 
 ### 11.2 Level Up UI
 - 3 Upgrade Cards แสดงพร้อมกัน
@@ -446,8 +468,8 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 ### 12.3 Weapon Architecture
 ```
 WeaponBase (abstract)
-  ├── PistolWeapon, ShotgunWeapon, ...  (Normal weapons)
-  ├── StormcallerWeapon, ThunderRailWeapon, ...  (Super/Fusion)
+  ├── PistolWeapon, ShotgunWeapon, BigAoEWeapon, BigCannonWeapon, FenceWeapon, MagicMissileWeapon, MolotovWeapon, OrbitalStrikeWeapon, SpikeWeapon, SupportArenaWeapon (Normal weapons)
+  ├── StormcallerWeapon, ThunderRailWeapon, SuperBigAoEWeapon, SuperFenceWeapon, SuperOrbitalStrikeWeapon, SplitSpikeWeapon, SplitterBombWeapon, NapalmBombWeapon (Super/Fusion)
   ├── BunnyHopWeapon, StormBunnyWeapon  (Movement weapons)
   ├── GunnerPassiveWeapon, HunterPassiveWeapon  (Passive, no slot)
   └── OrbiterWeapon  (Orbital persistent)
@@ -460,6 +482,14 @@ AbilityBase (abstract)
   ├── HunterMissileAbility  (Hunter Q)
   └── HunterUltimate  (Hunter E/R)
 ```
+
+### 12.5 Projectile Script Structure (โครงสร้างสคริปต์กระสุน)
+เพื่อหลีกเลี่ยงความหนาแน่นและพึ่งพิงกัน (Tight Coupling) ระหว่างสคริปต์อาวุธหลักและตรรกะการประมวลผลกระสุนปืน สคริปต์สำหรับวัตถุกระสุน (Projectiles) ทั้งหมดได้รับการจัดหมวดหมู่อยู่ภายใต้โฟลเดอร์ `Assets/Script/Projectile/`:
+*   `BouncingSpikeProjectile`: ประมวลผลการเคลื่อนที่ การปะทะ และตรรกะการสะท้อนเด้งกำแพงพร้อมแตกหนามแยกตัว
+*   `GrenadeProjectile`: ประมวลผลแรงระเบิด รัศมีวงกว้าง และการถ่วงเวลาหน่วงระเบิดมือ
+*   `MolotovProjectile`: ประมวลผลและสร้างเอฟเฟกต์แอ่งไฟดาเมจต่อเนื่องบนพื้นผิว
+*   `MagicMissileProjectile`: ประมวลผลการค้นหาล็อกเป้าหมายและการเคลื่อนที่ติดตาม (Homing movement) ของมิสไซล์เวทย์
+
 
 ### 12.4 Data Architecture (ScriptableObjects)
 ```
