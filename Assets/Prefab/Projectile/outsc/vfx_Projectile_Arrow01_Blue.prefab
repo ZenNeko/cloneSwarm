@@ -15175,7 +15175,6 @@ GameObject:
   - component: {fileID: 3782625982915006339}
   - component: {fileID: 3858209544819701378}
   - component: {fileID: -3362550437116003736}
-  - component: {fileID: 8941526421407927664}
   m_Layer: 0
   m_Name: vfx_Projectile_Arrow01_Blue
   m_TagString: Untagged
@@ -15309,36 +15308,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &8941526421407927664
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6729598477372940667}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67e8b40b0f5bd9643a2ecd6663a05dca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MolotovProjectile
-  ShowTopMostFoldoutHeaderGroup: 1
-  damage: 0
-  radius: 0
-  fuseTime: 0
-  targetPos: {x: 0, y: 0, z: 0}
-  weaponManager: {fileID: 0}
-  weaponName: Unknown
-  isCrit: 0
-  zoneTicks: 5
-  zoneTickInterval: 1
-  zoneDamagePercent: 0.4
-  zoneVfxKey: FireZone
-  explosionVfxKey: MolotovExplosion
-  childPoolsCount: 0
-  childPoolOffset: 2.5
-  burnDuration: 0
-  burnDamageRatio: 0.5
-  burnTickInterval: 1
 --- !u!1 &6729809215031393373
 GameObject:
   m_ObjectHideFlags: 0

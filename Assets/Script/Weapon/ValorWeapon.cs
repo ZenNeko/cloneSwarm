@@ -83,12 +83,15 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         OnCooldownChanged?.Invoke(this, 1f);
         OnActivated?.Invoke(this);
 
+        float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+        float range = ld.range * areaMult;
+
         // ทิศ dash = ทิศที่ผู้เล่นกด input อยู่
         // fallback → ทิศหาศัตรูที่ใกล้สุด → transform.forward
         Vector3 dir = manager.playerMove?.MoveDirection ?? Vector3.zero;
         if (dir.sqrMagnitude < 0.001f)
         {
-            Transform nearest = FindNearestEnemy(ld.range * 1.5f);
+            Transform nearest = FindNearestEnemy(range * 1.5f);
             dir = nearest != null
                 ? (nearest.position - transform.position)
                 : transform.forward;
@@ -98,7 +101,7 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         }
 
         float damage = RollDamage(ld.damage, out bool isCrit);
-        StartCoroutine(DashAndBlast(dir, ld.range, damage, isCrit));
+        StartCoroutine(DashAndBlast(dir, range, damage, isCrit));
     }
 
     // ── Dash coroutine ────────────────────────────────────────────────────
@@ -138,8 +141,9 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         // Wind Slash — เฉพาะตอน Blade of Exile active
         if (chargeManager != null && chargeManager.IsExileActive)
         {
+            float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
             float windDmg  = damage * 0.8f;
-            float maxRange = data.GetLevelData(currentLevel).range * 2f;
+            float maxRange = data.GetLevelData(currentLevel).range * areaMult * 2f;
             for (int i = 0; i < windSlashCount; i++)
             {
                 float   angle    = i * (360f / windSlashCount);

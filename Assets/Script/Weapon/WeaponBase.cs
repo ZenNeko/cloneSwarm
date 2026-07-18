@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-public enum AimMode { AutoNearest, MouseAim, PlayerMovement }
+public enum AimMode { AutoNearest, MouseAim, PlayerMovement, Random }
 
 /// <summary>
 /// Base class สำหรับทุก weapon script
@@ -136,6 +137,8 @@ public abstract class WeaponBase : MonoBehaviour
             projectileCount  = base_ld.projectileCount + sm.GetBonusProjectileCount(),
             range            = base_ld.range * sm.GetAreaMultiplier(),
             projectileSpeed  = base_ld.projectileSpeed,
+            radius           = base_ld.radius,
+            duration         = base_ld.duration,
             piercing         = base_ld.piercing
         };
     }
@@ -152,16 +155,25 @@ public abstract class WeaponBase : MonoBehaviour
         float spreadDeg = 0f,
         bool  piercing  = false,
         float maxRange  = -1f,
-        bool  isCrit    = false)
+        bool  isCrit    = false,
+        Transform target = null)
     {
         var pool   = NetworkedVFXPool.Instance;
         var prefab = GetProjectilePrefab();
         int projId = pool != null && prefab != null
             ? pool.GetProjectileId(prefab)
             : -1;
+
+        ulong targetId = 999999;
+        if (target != null)
+        {
+            var targetNo = target.GetComponent<Unity.Netcode.NetworkObject>();
+            if (targetNo != null) targetId = targetNo.NetworkObjectId;
+        }
+
         manager.FireProjectileServerRpc(
             pos, dir, damage, speed, count, spreadDeg,
-            piercing, projId, maxRange, isCrit, data != null ? data.weaponName : "Unknown");
+            piercing, projId, maxRange, isCrit, data != null ? data.weaponName : "Unknown", targetId);
     }
 
     protected void FireMelee(Vector3 center, float radius, float damage, bool isCrit = false, float knockbackForce = 0f, Vector3 knockbackDir = default)
@@ -241,6 +253,8 @@ public abstract class WeaponBase : MonoBehaviour
     {
         SoundManager.Instance.PlayRandomSfx(hitSfx, pos, hitVolume, pitchVariance);
     }
+
+    public void PublicPlayHitSfx(Vector3 pos) => PlayHitSfx(pos);
 
     // ── VFX Resolvers (อ่านจาก field ของ weapon prefab) ──────────────────
     /// <summary>
@@ -349,8 +363,8 @@ public abstract class WeaponBase : MonoBehaviour
             return _lastMoveDir;
         }
 
-        // Fallback: Auto-Nearest
-        Transform enemy = FindNearestEnemy(data.GetLevelData(currentLevel).range);
+        // Fallback: Auto-Nearest / Random
+        Transform enemy = FindTargetEnemy(data.GetLevelData(currentLevel).range);
         if (enemy == null) return _lastMoveDir;
         Vector3 d = enemy.position - transform.position;
         d.y = 0f;
@@ -369,6 +383,29 @@ public abstract class WeaponBase : MonoBehaviour
             if (d < minDist) { minDist = d; nearest = c.transform; }
         }
         return nearest;
+    }
+
+    protected Transform FindTargetEnemy(float range)
+    {
+        if (aimMode == AimMode.Random)
+        {
+            var cols = PlayerWeaponManager.OverlapEnemy(transform.position, range);
+            if (cols != null && cols.Length > 0)
+            {
+                var validCols = new List<Collider>();
+                foreach (var c in cols)
+                {
+                    if (c != null) validCols.Add(c);
+                }
+                if (validCols.Count > 0)
+                {
+                    int rIdx = Random.Range(0, validCols.Count);
+                    return validCols[rIdx].transform;
+                }
+            }
+            return null;
+        }
+        return FindNearestEnemy(range);
     }
 
     protected Collider[] FindAllEnemiesInRange(float range)

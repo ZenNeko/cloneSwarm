@@ -1,29 +1,18 @@
 using UnityEngine;
 
 /// <summary>
-/// Spiral Galaxy — Super version ของ Vortex
-/// 2 streams หมุนสวนทางกัน (CW + CCW) พร้อมกัน
-///
-/// Super tier — 1 level
-///   dmg=40, cd=0.20s, range=18, projectileSpeed=14
-///
-/// Fusion: Spiral Galaxy + OrbitalCannon = CosmicStormWeapon
+/// Spiral Galaxy — Super version of Vortex
+/// 4 streams (cross shape) rotating around the player at double speed.
 /// </summary>
 public class SpiralGalaxyWeapon : VortexWeapon
 {
-    [Tooltip("องศา/วินาที ของ stream ที่ 2 (ค่าลบ = สวนทาง)")]
-    public float reverseRotSpeed = -140f;
+    protected override int GetStreamCount() => 4; // Super version has 4 streams in a cross shape
 
-    private float reverseAngle;
-
-    protected override void OnFire(WeaponLevelData ld)
+    protected override void OnInit()
     {
-        // Stream 1: CW (ใช้ base class orbitAngle)
-        orbitAngle += rotSpeed * ld.cooldown;
-        SpawnOrbAt(orbitAngle, ld);
-
-        // Stream 2: CCW
-        reverseAngle += reverseRotSpeed * ld.cooldown;
-        SpawnOrbAt(reverseAngle, ld);
+        // Double rotation speed for the super version
+        rotSpeed *= 2.0f;
+        base.OnInit();
     }
 }
+

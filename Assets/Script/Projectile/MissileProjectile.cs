@@ -72,6 +72,17 @@ public class MissileProjectile : NetworkBehaviour
             return;
         }
 
+        // ตรวจจับชนศัตรูตัวอื่นก่อนถึงเป้าหมายหลัก
+        var cols = PlayerWeaponManager.OverlapEnemy(transform.position, 0.6f);
+        foreach (var c in cols)
+        {
+            if (c != null && c.gameObject.activeInHierarchy && c.transform != targetTransform)
+            {
+                Explode(transform.position);
+                return;
+            }
+        }
+
         Vector3 toTarget = targetTransform.position - transform.position;
 
         if (toTarget.sqrMagnitude <= arrivalDistance * arrivalDistance)

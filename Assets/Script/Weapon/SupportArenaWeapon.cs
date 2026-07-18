@@ -3,28 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Support Arena — วาง pillar สร้าง buff zone ให้ผู้เล่นทุกคนที่อยู่ใน zone
+/// Support Arena — วาง pillar สร้าง buff zone ให้ผู้เล่นทุกคนที่อยู่ใน zone (เชื่อมโยงกับ SupportArenaPillar component)
 ///
 /// กลไก:
 ///   • OnFire → Instantiate pillar visual ที่ตำแหน่ง player
-///   • Pillar มี buff zone (radius) → ตรวจ player ใน zone ทุก frame → apply temp buffs
-///   • +20% Damage, +20% Move Speed, +20% Ability Haste (as 20 haste), +10 HP/s Regen
-///   • เมื่อ player ออกนอก zone → ลบ buff
-///   • Pillar มี lifetime → Destroy
-///
-///   Evo: +5% ทุกอย่าง (รวม 25%) + เมื่อ HP เต็ม → เติมโล่ (ปริมาณ = maxHP)
-///
-/// Level data แนะนำ:
-///   Lv1: cd=12s, range=6
-///   Lv2: cd=11s, range=7
-///   Lv3: cd=10s, range=8
-///   Lv4: cd=9s,  range=9
-///   Lv5: cd=8s,  range=10
+///   • Pillar มีวัตถุหรือสคริปต์ SupportArenaPillar คอยตรวจจับฟิสิกส์การชนและจ่ายบัฟ
+///   • +20% Damage, +20% Move Speed, +20% Ability Haste (as 20 haste)
+///   • ฮีลผู้เล่นที่อยู่ในรัศมีแบบรายวินาที (Tick-based) ฮีลตรงๆ บน Server
+///   • Evo: +5% ทุกอย่าง (รวม 25%) + เมื่อ HP เต็ม → เติมโล่ (ปริมาณ = maxHP)
 /// </summary>
 public class SupportArenaWeapon : WeaponBase
 {
     [Header("Support Arena Settings")]
-    [Tooltip("Prefab visual ของ pillar (optional — ถ้าไม่ assign ใช้ cylinder)")]
+    [Tooltip("Prefab visual ของ pillar (optional — ถ้าไม่ assign ใช้ cylinder fallback)")]
     public GameObject pillarPrefab;
 
     [Tooltip("อายุ pillar (วินาที) — scale ตาม Duration stat")]
@@ -34,7 +25,6 @@ public class SupportArenaWeapon : WeaponBase
     public float damageBuff     = 0.20f;    // +20%
     public float moveSpeedBuff  = 0.20f;    // +20%
     public float abilityHaste   = 20f;      // +20 haste
-    public float hpRegenBuff    = 10f;      // +10 HP/s
 
     [Header("Evolution")]
     [Tooltip("เปิด Evo mode")]
@@ -48,8 +38,6 @@ public class SupportArenaWeapon : WeaponBase
     [Tooltip("Tick interval สำหรับ shield fill เมื่อ HP เต็ม (วินาที)")]
     public float shieldTickInterval = 1f;
 
-    private readonly List<ArenaPillar> _pillars = new();
-
     protected override void OnFire(WeaponLevelData ld)
     {
         Vector3 pos = transform.position;
@@ -58,105 +46,59 @@ public class SupportArenaWeapon : WeaponBase
 
     void SpawnArena(Vector3 position, WeaponLevelData ld)
     {
-        // Visual
-        float radius = ld.range;
-        GameObject go = pillarPrefab != null
-            ? Instantiate(pillarPrefab, position, Quaternion.identity)
-            : CreateFallbackPillar(position);
+        float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+        float radius = ld.radius * areaMult;
 
         float durationMult = manager.statManager != null ? manager.statManager.GetDurationMultiplier() : 1f;
-        float lifetime     = arenaDuration * durationMult;
+        float baseDuration = ld.duration > 0f ? ld.duration : arenaDuration;
+        float lifetime     = baseDuration * durationMult;
 
-        var arena = new ArenaPillar
+        // คำนวณปริมาณการฮีล: ดึงมาจาก ld.damage และสเกลตามพลังโจมตีตัวละคร
+        float powerMult = manager.statManager != null ? manager.statManager.GetPowerMultiplier() : 1f;
+        float finalHealAmount = ld.damage * powerMult;
+
+        // สปอว์นเสาบัฟโซนที่เครื่องตัวเอง
+        SpawnLocalArena(position, radius, lifetime, evoEnabled, finalHealAmount);
+
+        // บรอดแคสต์ผ่าน ServerRpc ไปยัง Server พร้อมปริมาณการฮีล
+        if (manager != null && manager.IsOwner)
         {
-            go            = go,
-            position      = position,
-            radius        = radius,
-            spawnTime     = Time.time,
-            lifetime      = lifetime,
-            buffedPlayers = new HashSet<playermove>(),
-        };
-        _pillars.Add(arena);
-
-        StartCoroutine(ArenaCoroutine(arena));
+            manager.SpawnSupportArenaServerRpc(position, radius, lifetime, evoEnabled, finalHealAmount);
+            
+            // แสดง VFX ของอาวุธ (MeteorAoE วงเตือนและระเบิดลงพื้น)
+            ShowVfx(ResolveHitVfx("MeteorAoE"), position, radius, isAttackHit: false);
+        }
     }
 
-    IEnumerator ArenaCoroutine(ArenaPillar arena)
+    public void SpawnLocalArena(Vector3 position, float radius, float lifetime, bool evo, float healAmount)
     {
-        // คำนวณ buff values (รวม evo ถ้าเปิด)
-        float dmgBuff   = damageBuff    + (evoEnabled ? evoBonusPercent : 0f);
-        float moveBuff  = moveSpeedBuff + (evoEnabled ? evoBonusPercent : 0f);
-        float hasteBuff = abilityHaste  + (evoEnabled ? evoHasteBonus   : 0f);
-        float regenBuff = hpRegenBuff   + (evoEnabled ? evoRegenBonus   : 0f);
+        GameObject go = SpawnLocalArenaPrefab(position, radius);
+        if (go == null) return;
 
-        float shieldTimer = 0f;
-
-        while (Time.time - arena.spawnTime < arena.lifetime)
+        // ดึงสคริปต์ SupportArenaPillar หรือแอดอัตโนมัติหากไม่มีอยู่ใน Prefab
+        var pillar = go.GetComponent<SupportArenaPillar>();
+        if (pillar == null)
         {
-            // หาผู้เล่นทุกคนใน zone
-            var players = FindPlayersInRadius(arena.position, arena.radius);
-            var currentInZone = new HashSet<playermove>();
-
-            foreach (var pm in players)
-            {
-                currentInZone.Add(pm);
-
-                // ถ้ายังไม่ได้ buff → apply
-                if (!arena.buffedPlayers.Contains(pm))
-                {
-                    ApplyBuffs(pm, dmgBuff, moveBuff, hasteBuff, regenBuff);
-                    arena.buffedPlayers.Add(pm);
-                }
-
-                // Evo: Shield fill เมื่อ HP เต็ม
-                if (evoEnabled)
-                {
-                    shieldTimer += Time.deltaTime;
-                    if (shieldTimer >= shieldTickInterval)
-                    {
-                        shieldTimer = 0f;
-                        if (pm.netHealth.Value >= pm.maxHealth)
-                        {
-                            manager.AddShieldServerRpc(pm.maxHealth);
-                        }
-                    }
-                }
-            }
-
-            // ผู้เล่นที่ออกนอก zone → ลบ buff
-            var leftPlayers = new List<playermove>();
-            foreach (var pm in arena.buffedPlayers)
-            {
-                if (!currentInZone.Contains(pm))
-                    leftPlayers.Add(pm);
-            }
-            foreach (var pm in leftPlayers)
-            {
-                RemoveBuffs(pm, dmgBuff, moveBuff, hasteBuff, regenBuff);
-                arena.buffedPlayers.Remove(pm);
-            }
-
-            yield return null;
+            pillar = go.AddComponent<SupportArenaPillar>();
         }
 
-        // Cleanup: ลบ buff จากทุกคนที่ยังอยู่ใน zone
-        foreach (var pm in arena.buffedPlayers)
-        {
-            if (pm != null)
-                RemoveBuffs(pm, dmgBuff, moveBuff, hasteBuff, regenBuff);
-        }
-        arena.buffedPlayers.Clear();
+        float dmgBuff   = damageBuff    + (evo ? evoBonusPercent : 0f);
+        float moveBuff  = moveSpeedBuff + (evo ? evoBonusPercent : 0f);
+        float hasteBuff = abilityHaste  + (evo ? evoHasteBonus   : 0f);
 
-        _pillars.Remove(arena);
-        if (arena.go != null) Destroy(arena.go);
+        // รีเซตค่าพิกัดและเริ่มทำงาน
+        pillar.Init(this, dmgBuff, moveBuff, hasteBuff, 0f, evo, shieldTickInterval, radius);
+        pillar.SetHealAmount(healAmount);
+
+        // ทำลายตามอายุเสา
+        Destroy(go, lifetime);
     }
 
-    void ApplyBuffs(playermove pm, float dmg, float move, float haste, float regen)
+    public void ApplyBuffs(playermove pm, float dmg, float move, float haste, float regen)
     {
         if (pm == null) return;
 
         pm.tempMoveSpeedBonus  += move;
-        pm.tempHealthRegenBonus += regen;
 
         var sm = pm.GetComponent<PlayerStatManager>();
         if (sm != null)
@@ -164,14 +106,16 @@ public class SupportArenaWeapon : WeaponBase
             sm.tempDamageBonusMult += dmg;
             sm.tempAbilityHaste   += haste;
         }
+
+        bool isServer = manager != null && manager.IsServer;
+        Debug.Log($"[SupportArena] ApplyBuffs to {pm.name} on {(isServer ? "Server" : "Client")}: Speed={pm.tempMoveSpeedBonus}, Damage={sm?.tempDamageBonusMult}");
     }
 
-    void RemoveBuffs(playermove pm, float dmg, float move, float haste, float regen)
+    public void RemoveBuffs(playermove pm, float dmg, float move, float haste, float regen)
     {
         if (pm == null) return;
 
         pm.tempMoveSpeedBonus   -= move;
-        pm.tempHealthRegenBonus -= regen;
 
         var sm = pm.GetComponent<PlayerStatManager>();
         if (sm != null)
@@ -179,83 +123,178 @@ public class SupportArenaWeapon : WeaponBase
             sm.tempDamageBonusMult -= dmg;
             sm.tempAbilityHaste   -= haste;
         }
+
+        bool isServer = manager != null && manager.IsServer;
+        Debug.Log($"[SupportArena] RemoveBuffs from {pm.name} on {(isServer ? "Server" : "Client")}: Speed={pm.tempMoveSpeedBonus}, Damage={sm?.tempDamageBonusMult}");
     }
 
-    /// <summary>หาผู้เล่นทุกคนใน radius (ใช้ OverlapSphere กับ player layer)</summary>
-    List<playermove> FindPlayersInRadius(Vector3 center, float radius)
+    GameObject SpawnLocalArenaPrefab(Vector3 position, float radius)
     {
-        var result = new List<playermove>();
-        var cols = Physics.OverlapSphere(center, radius, LayerMask.GetMask("Player"), QueryTriggerInteraction.Ignore);
-        foreach (var c in cols)
+        // 1. สปอว์นตัวเสาหลัก (Physical Pillar) จาก pillarPrefab
+        GameObject go = pillarPrefab != null
+            ? Instantiate(pillarPrefab, position, Quaternion.identity)
+            : null;
+
+        if (go == null)
         {
-            var pm = c.GetComponent<playermove>();
-            if (pm != null && !pm.isDead.Value)
-                result.Add(pm);
+            return CreateFallbackPillar(position, radius);
         }
 
-        // Fallback: ถ้า Player layer ไม่ match → ลองหาจาก NetworkManager
-        if (result.Count == 0 && Unity.Netcode.NetworkManager.Singleton != null)
+        // หารล้างสเกลจากเสาแม่เพื่อให้ขนาดวงแหวนและ VFX แสดงผลได้ตามค่าจริงของ WD เสมอ
+        float parentScaleX = go.transform.lossyScale.x;
+        float parentScaleY = go.transform.lossyScale.y;
+        float parentScaleZ = go.transform.lossyScale.z;
+        if (parentScaleX <= 0f) parentScaleX = 1f;
+        if (parentScaleY <= 0f) parentScaleY = 1f;
+        if (parentScaleZ <= 0f) parentScaleZ = 1f;
+
+        // 2. ดึงพรีแฟบเอฟเฟกต์อาณาเขต (Arena Zone VFX) จาก NetworkedVFXPool ตาม weaponVfxType
+        GameObject areaVfxPrefab = null;
+        if (NetworkedVFXPool.Instance != null)
         {
-            foreach (var client in Unity.Netcode.NetworkManager.Singleton.ConnectedClientsList)
+            string vfxKey = ResolveHitVfx("None");
+            if (!string.IsNullOrEmpty(vfxKey) && vfxKey != "None")
             {
-                if (client.PlayerObject == null) continue;
-                var pm = client.PlayerObject.GetComponent<playermove>();
-                if (pm == null || pm.isDead.Value) continue;
-                float dist = Vector3.Distance(center, pm.transform.position);
-                if (dist <= radius)
-                    result.Add(pm);
+                areaVfxPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(vfxKey);
             }
         }
-        return result;
-    }
 
-    void OnDestroy()
-    {
-        // Cleanup ทั้งหมด
-        foreach (var arena in _pillars)
+        if (areaVfxPrefab != null)
         {
-            foreach (var pm in arena.buffedPlayers)
+            // สปอว์นเอฟเฟกต์ไดนามิกเป็นลูกของเสา
+            var vfxGo = Instantiate(areaVfxPrefab, go.transform);
+            vfxGo.transform.localPosition = Vector3.zero;
+            vfxGo.transform.localRotation = Quaternion.identity;
+
+            // คำนวณอัตราสเกลของ VFX ตามจริงเทียบกับขนาดออกแบบเดิม (designedRadius) และล้างสเกลแม่
+            float designedRad = NetworkedVFXPool.Instance.GetDesignedRadius(ResolveHitVfx("None"));
+            float targetWorldScale = designedRad > 0f ? (radius / designedRad) : radius;
+            float localScaleVal = targetWorldScale / parentScaleX;
+            vfxGo.transform.localScale = new Vector3(localScaleVal, localScaleVal, localScaleVal);
+
+            // สั่งเล่นเอฟเฟกต์ (ค้นหาทั้ง root และ child)
+            var vfxGraph = vfxGo.GetComponentInChildren<UnityEngine.VFX.VisualEffect>();
+            if (vfxGraph != null) vfxGraph.Play();
+            else
             {
-                if (pm != null)
+                foreach (var ps in vfxGo.GetComponentsInChildren<ParticleSystem>())
                 {
-                    float dmgBuff   = damageBuff    + (evoEnabled ? evoBonusPercent : 0f);
-                    float moveBuff  = moveSpeedBuff + (evoEnabled ? evoBonusPercent : 0f);
-                    float hasteBuff = abilityHaste  + (evoEnabled ? evoHasteBonus   : 0f);
-                    float regenBuff = hpRegenBuff   + (evoEnabled ? evoRegenBonus   : 0f);
-                    RemoveBuffs(pm, dmgBuff, moveBuff, hasteBuff, regenBuff);
+                    ps.Play();
                 }
             }
-            if (arena.go != null) Destroy(arena.go);
         }
-        _pillars.Clear();
-    }
-
-    static GameObject CreateFallbackPillar(Vector3 pos)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        go.transform.position   = pos + Vector3.up * 1.5f;
-        go.transform.localScale = new Vector3(0.6f, 3f, 0.6f);
-
-        var col = go.GetComponent<Collider>();
-        if (col != null) Object.Destroy(col);
-
-        var mr = go.GetComponent<MeshRenderer>();
-        if (mr != null)
+        else
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
-            mat.color = new Color(0.2f, 1f, 0.4f); // green glow
-            mr.material = mat;
+            // หากไม่ได้เซตหรือไม่มีเอฟเฟกต์ในฐานข้อมูล จะใช้แผ่นวงกลมสีเขียวโปร่งแสงเป็นตัวสำรอง (Fallback)
+            var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            disc.transform.SetParent(go.transform, false);
+            disc.transform.localPosition = Vector3.up * 0.05f;
+            
+            float scaleX = (radius * 2f) / parentScaleX;
+            float scaleZ = (radius * 2f) / parentScaleZ;
+            disc.transform.localScale = new Vector3(scaleX, 0.05f / parentScaleY, scaleZ);
+            
+            var col = disc.GetComponent<Collider>();
+            if (col != null) Object.Destroy(col);
+            var mr = disc.GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+                mat.color = new Color(0.2f, 1f, 0.4f, 0.15f);
+                
+                mat.SetFloat("_Surface", 1);
+                mat.SetFloat("_Blend", 0);
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetInt("_ZWrite", 0);
+                mat.DisableKeyword("_ALPHATEST_ON");
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                mat.renderQueue = 3000;
+                
+                mr.material = mat;
+            }
         }
+
         return go;
     }
 
-    private class ArenaPillar
+    GameObject CreateFallbackPillar(Vector3 pos, float radius)
     {
-        public GameObject          go;
-        public Vector3             position;
-        public float               radius;
-        public float               spawnTime;
-        public float               lifetime;
-        public HashSet<playermove> buffedPlayers;
+        var go = new GameObject("SupportArenaPillar");
+        go.transform.position = pos;
+
+        var cyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        cyl.transform.SetParent(go.transform, false);
+        cyl.transform.localPosition = Vector3.up * 1.5f;
+        cyl.transform.localScale = new Vector3(0.6f, 3f, 0.6f);
+        var col1 = cyl.GetComponent<Collider>();
+        if (col1 != null) Object.Destroy(col1);
+        var mr1 = cyl.GetComponent<MeshRenderer>();
+        if (mr1 != null)
+        {
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            mat.color = new Color(0.2f, 1f, 0.4f);
+            mr1.material = mat;
+        }
+
+        // ดึงพรีแฟบเอฟเฟกต์อาณาเขตใส่เสาสำรอง
+        GameObject areaVfxPrefab = null;
+        if (NetworkedVFXPool.Instance != null)
+        {
+            string vfxKey = ResolveHitVfx("None");
+            if (!string.IsNullOrEmpty(vfxKey) && vfxKey != "None")
+            {
+                areaVfxPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(vfxKey);
+            }
+        }
+
+        if (areaVfxPrefab != null)
+        {
+            var vfxGo = Instantiate(areaVfxPrefab, go.transform);
+            vfxGo.transform.localPosition = Vector3.zero;
+            vfxGo.transform.localRotation = Quaternion.identity;
+
+            float designedRad = NetworkedVFXPool.Instance.GetDesignedRadius(ResolveHitVfx("None"));
+            float targetWorldScale = designedRad > 0f ? (radius / designedRad) : radius;
+            vfxGo.transform.localScale = new Vector3(targetWorldScale, targetWorldScale, targetWorldScale);
+
+            var vfxGraph = vfxGo.GetComponentInChildren<UnityEngine.VFX.VisualEffect>();
+            if (vfxGraph != null) vfxGraph.Play();
+            else
+            {
+                foreach (var ps in vfxGo.GetComponentsInChildren<ParticleSystem>())
+                {
+                    ps.Play();
+                }
+            }
+        }
+        else
+        {
+            var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            disc.transform.SetParent(go.transform, false);
+            disc.transform.localPosition = Vector3.up * 0.05f;
+            disc.transform.localScale = new Vector3(radius * 2f, 0.05f, radius * 2f);
+            var col2 = disc.GetComponent<Collider>();
+            if (col2 != null) Object.Destroy(col2);
+            var mr2 = disc.GetComponent<MeshRenderer>();
+            if (mr2 != null)
+            {
+                var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+                mat.color = new Color(0.2f, 1f, 0.4f, 0.15f);
+                
+                mat.SetFloat("_Surface", 1);
+                mat.SetFloat("_Blend", 0);
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetInt("_ZWrite", 0);
+                mat.DisableKeyword("_ALPHATEST_ON");
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                mat.renderQueue = 3000;
+                
+                mr2.material = mat;
+            }
+        }
+
+        return go;
     }
 }

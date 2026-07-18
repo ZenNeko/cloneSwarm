@@ -55,6 +55,209 @@ public class PlayerWeaponManager : NetworkBehaviour
         _serverWeaponDamages[weaponName] += damage;
     }
 
+    [ClientRpc]
+    public void PlayWeaponHitSfxClientRpc(string weaponName, Vector3 pos)
+    {
+        var slot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
+        if (slot != null && slot.script != null)
+        {
+            slot.script.PublicPlayHitSfx(pos);
+        }
+    }
+
+    [ClientRpc]
+    public void SpawnOrbitalWarningClientRpc(Vector3 position, float radius, float duration)
+    {
+        if (IsOwner) return; // Owner runs locally
+        var slot = slots.Find(s => s.script is OrbitalStrikeWeapon);
+        if (slot != null && slot.script is OrbitalStrikeWeapon osw)
+        {
+            osw.SpawnLocalWarningVisualOnly(position, radius, duration);
+        }
+    }
+
+    [ClientRpc]
+    public void SpawnFencePillarClientRpc(Vector3 position, float lifetime)
+    {
+        if (IsOwner) return; // Owner runs locally
+        var slot = slots.Find(s => s.script is FenceWeapon);
+        if (slot != null && slot.script is FenceWeapon fw)
+        {
+            fw.SpawnLocalPillarVisualOnly(position, lifetime);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SpawnSupportArenaServerRpc(Vector3 position, float radius, float lifetime, bool evo, float healAmount)
+    {
+        if (!IsOwner)
+        {
+            var slot = slots.Find(s => s.script is SupportArenaWeapon);
+            if (slot != null && slot.script is SupportArenaWeapon saw)
+            {
+                saw.SpawnLocalArena(position, radius, lifetime, evo, healAmount);
+            }
+        }
+        SpawnSupportArenaClientRpc(position, radius, lifetime, evo, healAmount);
+    }
+
+    [ClientRpc]
+    public void SpawnSupportArenaClientRpc(Vector3 position, float radius, float lifetime, bool evo, float healAmount)
+    {
+        if (IsOwner || IsServer) return;
+        var slot = slots.Find(s => s.script is SupportArenaWeapon);
+        if (slot != null && slot.script is SupportArenaWeapon saw)
+        {
+            saw.SpawnLocalArena(position, radius, lifetime, evo, healAmount);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void AddWeaponServerRpc(string weaponName)
+    {
+        if (!IsOwner)
+        {
+            var data = FindWeaponDataByName(weaponName);
+            if (data != null) AddWeapon(data);
+        }
+        AddWeaponClientRpc(weaponName);
+    }
+
+    [ClientRpc]
+    public void AddWeaponClientRpc(string weaponName)
+    {
+        if (IsOwner || IsServer) return;
+        var data = FindWeaponDataByName(weaponName);
+        if (data != null)
+        {
+            AddWeapon(data);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void UpgradeWeaponServerRpc(string weaponName)
+    {
+        if (!IsOwner)
+        {
+            var data = FindWeaponDataByName(weaponName);
+            if (data != null) UpgradeWeapon(data);
+        }
+        UpgradeWeaponClientRpc(weaponName);
+    }
+
+    [ClientRpc]
+    public void UpgradeWeaponClientRpc(string weaponName)
+    {
+        if (IsOwner || IsServer) return;
+        var data = FindWeaponDataByName(weaponName);
+        if (data != null)
+        {
+            UpgradeWeapon(data);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void ReplaceWeaponServerRpc(string oldName, string newName)
+    {
+        if (!IsOwner)
+        {
+            var oldData = FindWeaponDataByName(oldName);
+            var newData = FindWeaponDataByName(newName);
+            if (oldData != null && newData != null) ReplaceWeapon(oldData, newData);
+        }
+        ReplaceWeaponClientRpc(oldName, newName);
+    }
+
+    [ClientRpc]
+    public void ReplaceWeaponClientRpc(string oldName, string newName)
+    {
+        if (IsOwner || IsServer) return;
+        var oldData = FindWeaponDataByName(oldName);
+        var newData = FindWeaponDataByName(newName);
+        if (oldData != null && newData != null)
+        {
+            ReplaceWeapon(oldData, newData);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void FuseWeaponsServerRpc(string superAName, string superBName, string resultName)
+    {
+        if (!IsOwner)
+        {
+            var superA = FindWeaponDataByName(superAName);
+            var superB = FindWeaponDataByName(superBName);
+            var result = FindWeaponDataByName(resultName);
+            if (superA != null && superB != null && result != null) FuseWeapons(superA, superB, result);
+        }
+        FuseWeaponsClientRpc(superAName, superBName, resultName);
+    }
+
+    [ClientRpc]
+    public void FuseWeaponsClientRpc(string superAName, string superBName, string resultName)
+    {
+        if (IsOwner || IsServer) return;
+        var superA = FindWeaponDataByName(superAName);
+        var superB = FindWeaponDataByName(superBName);
+        var result = FindWeaponDataByName(resultName);
+        if (superA != null && superB != null && result != null)
+        {
+            FuseWeapons(superA, superB, result);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SpawnPassiveWeaponServerRpc(string weaponName)
+    {
+        if (!IsOwner)
+        {
+            var data = FindWeaponDataByName(weaponName);
+            if (data != null) SpawnPassiveWeapon(data);
+        }
+        SpawnPassiveWeaponClientRpc(weaponName);
+    }
+
+    [ClientRpc]
+    public void SpawnPassiveWeaponClientRpc(string weaponName)
+    {
+        if (IsOwner || IsServer) return;
+        var data = FindWeaponDataByName(weaponName);
+        if (data != null)
+        {
+            SpawnPassiveWeapon(data);
+        }
+    }
+
+    private WeaponData FindWeaponDataByName(string name)
+    {
+        var upgradeManager = GetComponent<UpgradeManager>();
+        if (upgradeManager != null && upgradeManager.allWeapons != null)
+        {
+            // 1. ค้นหาในอาวุธทั่วไป
+            var found = upgradeManager.allWeapons.Find(w => w.weaponName == name);
+            if (found != null) return found;
+
+            // 2. ค้นหาในอาวุธเวอร์ชัน Super (ผ่านความสัมพันธ์ของอาวุธทั่วไปที่มี)
+            foreach (var w in upgradeManager.allWeapons)
+            {
+                if (w != null && w.superVersion != null && w.superVersion.weaponName == name)
+                    return w.superVersion;
+            }
+
+            // 3. ค้นหาในอาวุธเวอร์ชัน Fusion (ผ่านสูตรผสม)
+            if (upgradeManager.allRecipes != null)
+            {
+                foreach (var r in upgradeManager.allRecipes)
+                {
+                    if (r != null && r.fusionResult != null && r.fusionResult.weaponName == name)
+                        return r.fusionResult;
+                }
+            }
+        }
+        return null;
+    }
+
+
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
@@ -96,6 +299,11 @@ public class PlayerWeaponManager : NetworkBehaviour
     {
         if (data == null || HasWeapon(data) || slots.Count >= MaxWeaponSlots) return false;
         SpawnWeapon(data, 0);
+
+        if (IsOwner)
+        {
+            AddWeaponServerRpc(data.weaponName);
+        }
         return true;
     }
 
@@ -108,7 +316,12 @@ public class PlayerWeaponManager : NetworkBehaviour
         if (next >= data.levels.Length) return false;
         slot.level = next;
         slot.script?.SetLevel(next);
-        Debug.Log($"[WeaponManager] ⬆ {data.weaponName} Lv{next + 1}");
+        Debug.Log($"[WeaponManager] [Upgrade] {data.weaponName} Lv{next + 1}");
+
+        if (IsOwner)
+        {
+            UpgradeWeaponServerRpc(data.weaponName);
+        }
         return true;
     }
 
@@ -123,6 +336,11 @@ public class PlayerWeaponManager : NetworkBehaviour
         if (oldW != null && !string.IsNullOrEmpty(oldW.weaponVfxType) && oldW.weaponVfxType != "None")
         {
             StopLoopVfxServerRpc(oldW.weaponVfxType);
+        }
+
+        if (IsOwner)
+        {
+            ReplaceWeaponServerRpc(oldData.weaponName, newData.weaponName);
         }
     }
 
@@ -144,6 +362,11 @@ public class PlayerWeaponManager : NetworkBehaviour
         if (oldB != null && !string.IsNullOrEmpty(oldB.weaponVfxType) && oldB.weaponVfxType != "None")
         {
             StopLoopVfxServerRpc(oldB.weaponVfxType);
+        }
+
+        if (IsOwner)
+        {
+            FuseWeaponsServerRpc(superA.weaponName, superB.weaponName, result.weaponName);
         }
     }
 
@@ -200,6 +423,11 @@ public class PlayerWeaponManager : NetworkBehaviour
         var script = go.GetComponent<WeaponBase>();
         script?.Init(data, 0, this);
         Debug.Log($"[WeaponManager] 🔹 Passive '{data.weaponName}' spawned (no slot)");
+
+        if (IsOwner)
+        {
+            SpawnPassiveWeaponServerRpc(data.weaponName);
+        }
     }
 
     void SpawnWeapon(WeaponData data, int level)
@@ -280,7 +508,8 @@ public class PlayerWeaponManager : NetworkBehaviour
         Vector3 spawnPos, Vector3 baseDir,
         float damage, float projSpeed, int count, float spreadDeg,
         bool piercing = false, int projPrefabId = -1, float maxRange = -1f,
-        bool isCrit = false, string weaponName = "Unknown")
+        bool isCrit = false, string weaponName = "Unknown",
+        ulong targetNetworkObjectId = 999999)
     {
         GameObject prefab = null;
         if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
@@ -318,7 +547,8 @@ public class PlayerWeaponManager : NetworkBehaviour
             var p    = proj.GetComponent<Projectile>();
             var bsp  = proj.GetComponent<BouncingSpikeProjectile>();
             var tp   = proj.GetComponent<TrainProjectile>();
-            if (p == null && bsp == null && tp == null) { Destroy(proj); continue; }
+            var mmp  = proj.GetComponent<MagicMissileProjectile>();
+            if (p == null && bsp == null && tp == null && mmp == null) { Destroy(proj); continue; }
 
             // Lookup weapon slot to override hit VFX from WeaponBase prefab configuration
             string weaponVfx = "None";
@@ -389,6 +619,59 @@ public class PlayerWeaponManager : NetworkBehaviour
                     tp.Init(dir);
                 }
             }
+            else if (mmp != null)
+            {
+                mmp.damage = damage;
+                mmp.speed = projSpeed;
+                mmp.isCrit = isCrit;
+                mmp.weaponName = weaponName;
+                mmp.ownerManager = this;
+
+                // ดึงสเตตัสและการตั้งค่าดีบัฟจากสล็อตอาวุธ
+                if (slot != null && slot.script is MagicMissileWeapon mmw)
+                {
+                    mmp.slowPercent = mmw.slowPercent;
+                    mmp.slowDuration = mmw.slowDuration;
+                    mmp.evoEnabled = mmw.evoEnabled;
+                    mmp.freezeChance = mmw.freezeChance;
+                    mmp.freezeDuration = mmw.freezeDuration;
+
+                    float baseRadius = mmw.impactRadius;
+                    if (slot.data != null)
+                    {
+                        var ld = slot.data.GetLevelData(slot.level);
+                        if (ld != null && ld.radius > 0f)
+                        {
+                            baseRadius = ld.radius;
+                        }
+                    }
+
+                    float areaMult = 1f;
+                    if (statManager != null)
+                    {
+                        areaMult = statManager.GetAreaMultiplier();
+                    }
+                    mmp.impactRadius = baseRadius * areaMult;
+                }
+
+                if (!string.IsNullOrEmpty(weaponVfx) && weaponVfx != "None")
+                    mmp.hitVfxKey = weaponVfx;
+
+                Transform targetTransform = null;
+                if (targetNetworkObjectId != 999999 && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(targetNetworkObjectId, out var netObjTarget))
+                {
+                    targetTransform = netObjTarget.transform;
+                }
+
+                var netObj = proj.GetComponent<NetworkObject>();
+                if (netObj == null)
+                    Debug.LogWarning($"[MagicMissile] '{prefab.name}' ไม่มี NetworkObject component!");
+                else
+                {
+                    netObj.Spawn(true);
+                    mmp.Init(targetTransform, dir);
+                }
+            }
         }
     }
 
@@ -443,6 +726,28 @@ public class PlayerWeaponManager : NetworkBehaviour
                             enemy.transform.position += dir.normalized * knockbackForce;
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /// <summary>ดึงศัตรูเข้าหาจุดศูนย์กลาง (Gravity Well — reverse knockback)</summary>
+    [Rpc(SendTo.Server)]
+    public void PullEnemiesServerRpc(Vector3 center, float radius, float force)
+    {
+        foreach (var c in OverlapEnemy(center, radius))
+        {
+            var enemy = c.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                Vector3 dir = center - enemy.transform.position;
+                dir.y = 0f;
+                if (dir.sqrMagnitude > 0.01f)
+                {
+                    // ดูดเข้าหาศูนย์กลาง แต่ไม่ให้เลยจุดศูนย์กลาง
+                    float dist = dir.magnitude;
+                    float move = Mathf.Min(force, dist);
+                    enemy.transform.position += dir.normalized * move;
                 }
             }
         }
@@ -788,6 +1093,54 @@ public class PlayerWeaponManager : NetworkBehaviour
     [ClientRpc]
     public void BroadcastVfxTypeClientRpc(Vector3 pos, string vfxKey, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
         => NetworkedVFXPool.Instance?.PlayByName(vfxKey, pos, scale, direction, arcAngle, roll);
+
+    // ── Temporary Damage Buff for SuperBigAoE ──────────────────────────
+    [ClientRpc]
+    public void ApplyDamageBuffClientRpc(float amount, float duration)
+    {
+        if (statManager != null)
+        {
+            StartCoroutine(DamageBuffRoutine(statManager, amount, duration));
+        }
+
+        // เล่นเอฟเฟกต์สีส้ม/ทองล้อมตัวผู้เล่นชั่วคราวเพื่อบอกว่ากำลังรับบัฟอยู่
+        BroadcastVfxParentedClientRpc("O_AoE_RadiantAura", 0.6f, false);
+
+        // สร้าง UI แจ้งเตือนเวลาลอยเหนือหัว
+        FloatingBuffUI.Create(transform, duration);
+    }
+
+    private System.Collections.IEnumerator DamageBuffRoutine(PlayerStatManager sm, float amount, float duration)
+    {
+        sm.tempDamageBonusMult += amount;
+        yield return new WaitForSeconds(duration);
+        sm.tempDamageBonusMult -= amount;
+    }
+
+    [Rpc(SendTo.Server)]
+    public void ApplySuperBigAoEExplosionServerRpc(Vector3 center, float radius, float buffAmount, float buffDuration, float expMultiplier)
+    {
+        // 1. บัฟผู้เล่นในระยะ
+        var playerMask = LayerMask.GetMask("Player");
+        foreach (var c in Physics.OverlapSphere(center, radius, playerMask))
+        {
+            var targetManager = c.GetComponentInParent<PlayerWeaponManager>();
+            if (targetManager != null)
+            {
+                targetManager.ApplyDamageBuffClientRpc(buffAmount, buffDuration);
+            }
+        }
+
+        // 2. อัปเกรดลูกแก้ว EXP ทั้งหมดในระยะระเบิด
+        for (int i = ExpOrb.ActiveOrbs.Count - 1; i >= 0; i--)
+        {
+            var orb = ExpOrb.ActiveOrbs[i];
+            if (orb != null && Vector3.Distance(orb.transform.position, center) <= radius)
+            {
+                orb.UpgradeOrb(expMultiplier);
+            }
+        }
+    }
 
     // ── VFX Broadcast parented to player ────────────────────────────────
     [Rpc(SendTo.Server)]

@@ -53,11 +53,11 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 13
     fixedDuration: 0.4
-  - key: VortexSpawn
-    prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
+  - key: VortexFlame
+    prefab: {fileID: 1634767862067424, guid: 007c57e2df8e9b144b99f471b84f3d56, type: 3}
     poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
+    designedRadius: 11
+    fixedDuration: 0.4
   - key: DashTrail
     prefab: {fileID: 5818205763518135594, guid: 395d5ec7f996d364f94e11cfb40736d3, type: 3}
     poolSize: 9
@@ -67,11 +67,6 @@ MonoBehaviour:
     prefab: {fileID: 7957833072274404953, guid: 37eb70a72cb0a094cb3a88aa02fd2234, type: 3}
     poolSize: 40
     designedRadius: 3
-    fixedDuration: 0
-  - key: WhipSlash
-    prefab: {fileID: 5545173171955001552, guid: 7ac879c2caac1ca41b6c438e77d8b25d, type: 3}
-    poolSize: 30
-    designedRadius: 0
     fixedDuration: 0
   - key: O_AoE_RadiantAura
     prefab: {fileID: 4748681987041982144, guid: 363ff038782d0c3478c244d3a48f75fe, type: 3}
@@ -126,5 +121,5 @@ MonoBehaviour:
   - key: BigAOEBome_chargeTime
     prefab: {fileID: 4748681987041982144, guid: 31ff451a88873b9489fb3fad93871fb6, type: 3}
     poolSize: 5
-    designedRadius: 10
+    designedRadius: 3
     fixedDuration: 0

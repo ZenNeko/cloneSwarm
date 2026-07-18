@@ -13,10 +13,10 @@ public class GrenadeWeapon : WeaponBase
     public float explosionRadius = 3f;
     [Tooltip("เวลาบินก่อนระเบิด (วินาที)")]
     public float fuseTime        = 1.5f;
-    [Tooltip("Prefab visual ของ grenade (optional — ถ้าไม่ assign ใช้ sphere สีเหลือง)")]
+    [Tooltip("Prefab visual ของ grenade (ต้องมี NetworkObject + GrenadeProjectile script)")]
     public GameObject grenadePrefab;
 
-    private readonly List<GameObject> _activeVisuals = new();
+    protected override GameObject GetProjectilePrefab() => grenadePrefab;
 
     protected override void OnFire(WeaponLevelData ld)
     {
@@ -32,70 +32,9 @@ public class GrenadeWeapon : WeaponBase
         {
             Vector2 rnd       = Random.insideUnitCircle.normalized * (ld.range * Random.Range(0.4f, 1f));
             Vector3 targetPos = transform.position + new Vector3(rnd.x, 0f, rnd.y);
-            StartCoroutine(ThrowGrenade(spawnPos, targetPos, dmg, isCrit, radius));
+            
+            // โยนระเบิดผ่านเซิร์ฟเวอร์แบบซิงก์เน็ตเวิร์ก (จะไปเกิดเป็น GrenadeProjectile ตัวจริง)
+            ThrowGrenade(spawnPos, targetPos, dmg, radius, fuseTime, cluster: false, isCrit: isCrit);
         }
-    }
-
-    IEnumerator ThrowGrenade(Vector3 from, Vector3 to, float dmg, bool isCrit, float radius)
-    {
-        // ── Visual ────────────────────────────────────────────────────────
-        GameObject visual = grenadePrefab != null
-            ? Instantiate(grenadePrefab, from, Quaternion.identity)
-            : CreateFallbackVisual(from);
-
-        if (visual != null) _activeVisuals.Add(visual);
-
-        float elapsed    = 0f;
-        float arcHeight  = 1.8f;
-
-        while (elapsed < fuseTime)
-        {
-            elapsed += Time.deltaTime;
-            float t  = Mathf.Clamp01(elapsed / fuseTime);
-
-            Vector3 pos = Vector3.Lerp(from, to, t);
-            pos.y += arcHeight * Mathf.Sin(t * Mathf.PI);
-
-            if (visual != null) visual.transform.position = pos;
-            yield return null;
-        }
-
-        if (visual != null)
-        {
-            _activeVisuals.Remove(visual);
-            Destroy(visual);
-        }
-
-        // ── Damage (server-authoritative) ─────────────────────────────────
-        FireMelee(to, radius, dmg, isCrit);
-
-        // ── VFX ──────────────────────────────────────────────────────────
-        ShowVfx(ResolveHitVfx("GrenadeExplosion"), to, radius, isAttackHit: false);
-    }
-
-    void OnDestroy()
-    {
-        foreach (var go in _activeVisuals)
-            if (go != null) Destroy(go);
-        _activeVisuals.Clear();
-    }
-
-    static GameObject CreateFallbackVisual(Vector3 pos)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        go.transform.position   = pos;
-        go.transform.localScale = Vector3.one * 0.3f;
-
-        var col = go.GetComponent<Collider>();
-        if (col != null) Object.Destroy(col);
-
-        var mr = go.GetComponent<MeshRenderer>();
-        if (mr != null)
-        {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
-            mat.color = new Color(1f, 0.85f, 0.1f);
-            mr.material = mat;
-        }
-        return go;
     }
 }

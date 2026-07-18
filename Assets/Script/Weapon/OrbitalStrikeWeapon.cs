@@ -20,23 +20,45 @@ using UnityEngine;
 public class OrbitalStrikeWeapon : WeaponBase
 {
     [Header("Orbital Strike Settings")]
-    [Tooltip("รัศมีระเบิดแต่ละจุด (scale ตาม AreaSize stat)")]
-    public float explosionRadius = 3.5f;
-
     [Tooltip("วินาทีหน่วงก่อนระเบิด (warning indicator time)")]
     public float strikeDelay = 0.6f;
 
-    [Tooltip("Prefab visual ของ warning circle (optional — ถ้าไม่ assign ใช้ cylinder สีแดง)")]
-    public GameObject warningPrefab;
 
-    private readonly List<GameObject> _activeVisuals = new();
+
+    protected readonly List<GameObject> _activeVisuals = new();
 
     protected override void OnFire(WeaponLevelData ld)
     {
         float dmg    = RollDamage(ld.damage, out bool isCrit);
-        float radius = explosionRadius;
-        if (manager.statManager != null)
-            radius *= manager.statManager.GetAreaMultiplier();
+        float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+
+        // 1. ดึงรัศมีวงเตือนภัย (ถ้ากำหนดใน WeaponData จะใช้ค่าจาก WeaponData หากไม่มีจึงใช้ designedRadius จากคลัง VFX)
+        float wRadius;
+        if (ld.radius > 0f)
+        {
+            wRadius = ld.radius * areaMult;
+        }
+        else
+        {
+            string warningVfxKey = !string.IsNullOrEmpty(secondaryVfxType) && secondaryVfxType != "None" ? secondaryVfxType : "";
+            float baseWarningRadius = 3.5f;
+            if (NetworkedVFXPool.Instance != null && !string.IsNullOrEmpty(warningVfxKey))
+            {
+                float d = NetworkedVFXPool.Instance.GetDesignedRadius(warningVfxKey);
+                if (d > 0f) baseWarningRadius = d;
+            }
+            wRadius = baseWarningRadius * areaMult;
+        }
+
+        // 2. ดึงรัศมีระเบิดจาก VFX Database
+        string explosionVfxKey = ResolveHitVfx("GrenadeExplosion");
+        float baseExplosionRadius = 3.5f;
+        if (NetworkedVFXPool.Instance != null && !string.IsNullOrEmpty(explosionVfxKey))
+        {
+            float d = NetworkedVFXPool.Instance.GetDesignedRadius(explosionVfxKey);
+            if (d > 0f) baseExplosionRadius = d;
+        }
+        float eRadius = baseExplosionRadius * areaMult;
 
         int count = Mathf.Max(1, ld.projectileCount);
 
@@ -60,20 +82,31 @@ public class OrbitalStrikeWeapon : WeaponBase
                 targetPos = transform.position + new Vector3(rnd.x, 0f, rnd.y);
             }
 
-            StartCoroutine(StrikeCoroutine(targetPos, dmg, isCrit, radius));
+            StartCoroutine(StrikeCoroutine(targetPos, dmg, isCrit, wRadius, eRadius));
         }
     }
 
-    IEnumerator StrikeCoroutine(Vector3 pos, float dmg, bool isCrit, float radius)
+    private readonly List<GameObject> _localWarningsOnly = new();
+
+    protected virtual IEnumerator StrikeCoroutine(Vector3 pos, float dmg, bool isCrit, float wRadius, float eRadius)
     {
-        // ── Warning Indicator ─────────────────────────────────────────────
-        GameObject warning = warningPrefab != null
-            ? Instantiate(warningPrefab, pos, Quaternion.identity)
-            : CreateFallbackWarning(pos, radius);
+        // ── Broadcast Warning Indicator to other clients ──────────────────
+        if (manager != null)
+        {
+            manager.SpawnOrbitalWarningClientRpc(pos, wRadius, strikeDelay);
+        }
+
+        // ── Warning Indicator (Local for Owner) ───────────────────────────
+        GameObject warning = SpawnWarningObject(pos, wRadius);
 
         if (warning != null) _activeVisuals.Add(warning);
 
+        // อนิเมชันจำลองการชาร์จแบบเดียวกับ BigAoE
+        Coroutine anim = StartCoroutine(AnimateWarning(warning, wRadius, strikeDelay));
+
         yield return new WaitForSeconds(strikeDelay);
+
+        if (anim != null) StopCoroutine(anim);
 
         if (warning != null)
         {
@@ -82,10 +115,96 @@ public class OrbitalStrikeWeapon : WeaponBase
         }
 
         // ── Damage (server-authoritative) ─────────────────────────────────
-        FireMelee(pos + Vector3.up * 0.5f, radius, dmg, isCrit);
+        FireMelee(pos + Vector3.up * 0.5f, eRadius, dmg, isCrit);
 
         // ── VFX ──────────────────────────────────────────────────────────
-        ShowVfx(ResolveHitVfx("GrenadeExplosion"), pos, radius, isCrit, isAttackHit: false);
+        ShowVfx(ResolveHitVfx("GrenadeExplosion"), pos, eRadius, isCrit, isAttackHit: false);
+    }
+
+    public void SpawnLocalWarningVisualOnly(Vector3 position, float radius, float duration)
+    {
+        GameObject warning = SpawnWarningObject(position, radius);
+
+        if (warning != null)
+        {
+            _localWarningsOnly.Add(warning);
+            StartCoroutine(AnimateAndDestroyLocalWarning(warning, radius, duration));
+        }
+    }
+
+    IEnumerator AnimateAndDestroyLocalWarning(GameObject warning, float radius, float duration)
+    {
+        yield return StartCoroutine(AnimateWarning(warning, radius, duration));
+        if (warning != null)
+        {
+            _localWarningsOnly.Remove(warning);
+            Destroy(warning);
+        }
+    }
+
+    protected GameObject SpawnWarningObject(Vector3 pos, float radius)
+    {
+        GameObject resolvedPrefab = null;
+        if (NetworkedVFXPool.Instance != null && !string.IsNullOrEmpty(secondaryVfxType) && secondaryVfxType != "None")
+        {
+            resolvedPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(secondaryVfxType);
+        }
+
+        if (resolvedPrefab != null)
+        {
+            return Instantiate(resolvedPrefab, pos, Quaternion.identity);
+        }
+        else
+        {
+            return CreateFallbackWarning(pos, radius);
+        }
+    }
+
+    protected IEnumerator AnimateWarning(GameObject warning, float radius, float duration)
+    {
+        if (warning == null) yield break;
+
+        // ── Check if the visual uses custom shader with _FillProgress ────────
+        Renderer rend = warning.GetComponentInChildren<Renderer>();
+        Material mat = rend != null ? rend.material : null;
+        bool hasFillProgress = mat != null && mat.HasProperty("_FillProgress");
+
+        Vector3 baseScale = warning.transform.localScale;
+
+        // Calculate designed scale factor (fallback to radius * 2f if designedRadius <= 0)
+        float designed = -1f;
+        if (NetworkedVFXPool.Instance != null && !string.IsNullOrEmpty(secondaryVfxType) && secondaryVfxType != "None")
+        {
+            designed = NetworkedVFXPool.Instance.GetDesignedRadius(secondaryVfxType);
+        }
+
+        float scaleFactor = (designed > 0f) ? (radius / designed) : (radius * 2f);
+
+        if (hasFillProgress)
+        {
+            // Set scale immediately for warning zone style
+            warning.transform.localScale = new Vector3(baseScale.x * scaleFactor, baseScale.y, baseScale.z * scaleFactor);
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            if (warning == null) yield break;
+
+            if (hasFillProgress)
+            {
+                mat.SetFloat("_FillProgress", t);
+            }
+            else
+            {
+                // Scale up fallback
+                float scale = Mathf.Lerp(0.1f, scaleFactor, t);
+                warning.transform.localScale = new Vector3(baseScale.x * scale, baseScale.y, baseScale.z * scale);
+            }
+            yield return null;
+        }
     }
 
     void OnDestroy()
@@ -93,6 +212,10 @@ public class OrbitalStrikeWeapon : WeaponBase
         foreach (var go in _activeVisuals)
             if (go != null) Destroy(go);
         _activeVisuals.Clear();
+
+        foreach (var go in _localWarningsOnly)
+            if (go != null) Destroy(go);
+        _localWarningsOnly.Clear();
     }
 
     static GameObject CreateFallbackWarning(Vector3 pos, float radius)

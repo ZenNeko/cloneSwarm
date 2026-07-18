@@ -86,11 +86,11 @@ public class BunnyHopWeapon : WeaponBase
         bool exileActive = GetExileActive();
         if (exileActive) aoeRadius *= exileAoeMult;
 
-        // Runic Blade: ยิ่งไกลศัตรู → damage +0–15%
-        Transform nearest = FindNearestEnemy(aoeRadius * 2f);
-        if (nearest != null)
+        // Runic Blade: ยิ่งไกลศัตรู → damage +0–15% (รองรับการเล็งแบบสุ่มและใกล้สุด)
+        Transform targetEnemy = FindTargetEnemy(aoeRadius * 2f);
+        if (targetEnemy != null)
         {
-            float dist  = Vector3.Distance(transform.position, nearest.position);
+            float dist  = Vector3.Distance(transform.position, targetEnemy.position);
             float bonus = Mathf.Clamp01(dist / runicMaxRange) * 0.15f;
             damage *= (1f + bonus);
         }
@@ -101,8 +101,8 @@ public class BunnyHopWeapon : WeaponBase
         Vector3 dashDir = manager.playerMove?.MoveDirection ?? Vector3.zero;
         if (dashDir.sqrMagnitude < 0.001f)
         {
-            dashDir = nearest != null
-                ? (nearest.position - transform.position)
+            dashDir = targetEnemy != null
+                ? (targetEnemy.position - transform.position)
                 : transform.forward;
             dashDir.y = 0f;
             if (dashDir.sqrMagnitude > 0.001f) dashDir = dashDir.normalized;

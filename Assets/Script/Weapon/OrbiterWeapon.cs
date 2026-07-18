@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -147,9 +147,10 @@ public class OrbiterWeapon : WeaponBase
         var ld         = data.GetLevelData(currentLevel);
         var sm         = manager.statManager;
         float dmgMult  = sm != null ? sm.GetPowerMultiplier() : 1f;
+        float areaMult = sm != null ? sm.GetAreaMultiplier() : 1f;
         float baseDmg  = ld.damage * dmgMult;
         float now      = Time.time;
-        float radius   = orbHitRadius;
+        float radius   = orbHitRadius * areaMult;
 
         // ลบ entry ที่หมดอายุ (กัน dictionary โต)
         if (_hitCooldowns.Count > 32)
@@ -177,7 +178,7 @@ public class OrbiterWeapon : WeaponBase
                 if (aoeOnHit)
                 {
                     // StarRing: ทำ AoE รอบ orb — Enemy.cs spawn HitEffect เองตอน TakeDamage
-                    FireMelee(orb.position, aoeRadius, dmg, isCrit);
+                    FireMelee(orb.position, aoeRadius * areaMult, dmg, isCrit);
                     Debug.Log($"[Orbiter] 💥 AoE hit at orb pos — dmg {dmg:F0}");
                     break; // 1 hit ต่อ orb ต่อ tick (AoE ครอบไปทั้งกลุ่มแล้ว)
                 }
@@ -203,7 +204,8 @@ public class OrbiterWeapon : WeaponBase
     void UpdateOrbPositions()
     {
         Vector3 center = transform.position + Vector3.up * 0.5f;
-        float r = data.GetLevelData(currentLevel).range;
+        float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+        float r = data.GetLevelData(currentLevel).range * areaMult;
 
         for (int i = 0; i < orbs.Count; i++)
         {
@@ -212,6 +214,7 @@ public class OrbiterWeapon : WeaponBase
             float rad = Mathf.Deg2Rad * a;
             // world-space position — ไม่ใช้ localPosition เพื่อกันการหมุนตาม player
             orbs[i].position = center + new Vector3(Mathf.Cos(rad) * r, 0f, Mathf.Sin(rad) * r);
+            orbs[i].localScale = Vector3.one * (orbSize * areaMult);
         }
 
         // Sync ตำแหน่ง world-space ไปยัง client อื่น (เฉพาะตอน active)

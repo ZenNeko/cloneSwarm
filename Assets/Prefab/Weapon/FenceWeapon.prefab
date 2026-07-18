@@ -56,7 +56,7 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
-  pillarPrefab: {fileID: 0}
+  pillarPrefab: {fileID: 4651553569606056895, guid: 0082e3d2af4ff0545a01febd159bf8c8, type: 3}
   linkRadius: 10
   pillarLifetime: 8
   tickInterval: 0.5

@@ -48,13 +48,6 @@ public class UpgradeCardInfo
 
             if (weapon == null) return "";
 
-            if (type is UpgradeCardType.WeaponNew or UpgradeCardType.WeaponLevelUp)
-            {
-                var ld = weapon.GetLevelData(targetLevel - 1);
-                return string.IsNullOrEmpty(ld.levelUpText)
-                    ? weapon.description
-                    : ld.levelUpText;
-            }
             return weapon.description;
         }
     }

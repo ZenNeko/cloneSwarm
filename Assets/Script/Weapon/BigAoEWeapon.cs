@@ -100,6 +100,12 @@ public class BigAoEWeapon : WeaponBase
         // ── ตำแหน่งล่าสุดของ player (ไม่ใช่ตอน charge เริ่ม) ─────────────
         center = transform.position + Vector3.up * 0.5f;
 
+        // ── Explode (virtual to support Super subclass overriding) ───────
+        Explode(center, radius, dmg, isCrit);
+    }
+
+    protected virtual void Explode(Vector3 center, float radius, float dmg, bool isCrit)
+    {
         // ── Damage (server-authoritative) ─────────────────────────────────
         FireMelee(center, radius, dmg, isCrit);
 

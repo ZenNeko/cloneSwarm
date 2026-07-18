@@ -383,7 +383,9 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   isDashing: 0
+  isKnockedBack: 0
   tempMoveSpeedBonus: 0
+  tempHealthRegenBonus: 0
 --- !u!114 &4642509835648411498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,6 +406,7 @@ MonoBehaviour:
   startingWeapon: {fileID: 0}
   boomerangPrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
   grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
+  molotovPrefab: {fileID: 0}
   minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}
   stickyRocketPrefab: {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
   giantRocketPrefab: {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
@@ -432,7 +435,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
   - {fileID: 11400000, guid: 9f931c4b300bae7478f93523e50d1e68, type: 2}
   - {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
-  - {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}
+  - {fileID: 11400000, guid: c2280762053d4b54fa351a0211c48023, type: 2}
   - {fileID: 11400000, guid: 78c82c6cdaac98d48ae8fe1b4f7219e8, type: 2}
   - {fileID: 11400000, guid: ff3e9a3dcb66bc140a7c5cb6e0100f00, type: 2}
   - {fileID: 11400000, guid: afc0e65b3612c1647a9e3bd5f6ece9d4, type: 2}
@@ -448,10 +451,23 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 539da540417cbd04ab9b68faf03e8bee, type: 2}
   - {fileID: 11400000, guid: 1207c6eec5e8cbb4b9b68e1987c53f56, type: 2}
   - {fileID: 11400000, guid: 492887282d5f46544b1cfbafc3464cc2, type: 2}
-  - {fileID: 11400000, guid: 3bf30fb8ceee2204eb30d8151f2368fe, type: 2}
+  - {fileID: 11400000, guid: e3c8246fe3c7cc34ea3200bc35c79b54, type: 2}
   - {fileID: 11400000, guid: f2391673500fdb341b17be4751471342, type: 2}
   - {fileID: 11400000, guid: 5ed29817e58b1954d9f28939db81ea2c, type: 2}
   - {fileID: 11400000, guid: 1d795b8f00ffba544893c924b31a9771, type: 2}
+  - {fileID: 11400000, guid: c2f31333154558c42ae132714e0616d1, type: 2}
+  - {fileID: 11400000, guid: 35275847dcf290949a3eda079e42f56a, type: 2}
+  - {fileID: 11400000, guid: dfbd9117dfe110040a222d67b63ca77e, type: 2}
+  - {fileID: 11400000, guid: a8b80ee6c166311458d5519c805542b9, type: 2}
+  - {fileID: 11400000, guid: 2252aa68877e669439ad22fd5fcad766, type: 2}
+  - {fileID: 11400000, guid: cd9074720d50cec4f84180898cbee4a5, type: 2}
+  - {fileID: 11400000, guid: ac2b7b2b4a920dc438b4a6ff71ac02d7, type: 2}
+  - {fileID: 11400000, guid: 83c0b1e490e59d849bd328d41fcae821, type: 2}
+  - {fileID: 11400000, guid: c0def996a0a34d04796da1ebdff3d69c, type: 2}
+  - {fileID: 11400000, guid: 1c56706a9e8d0ac4692d013d4cdf1763, type: 2}
+  - {fileID: 11400000, guid: a3f5b2cc37444f340bb76a6bf9044e37, type: 2}
+  - {fileID: 11400000, guid: 2b5bf41d9968ab0488da6c39237ae1db, type: 2}
+  - {fileID: 11400000, guid: 1f7aab15c8f308b48989848016512ccd, type: 2}
   allStats:
   - {fileID: 11400000, guid: baabf1a1a51e22241bfab42bb6367df4, type: 2}
   - {fileID: 11400000, guid: ee3f6447d1cd59245bdcda73bb6ee14c, type: 2}
@@ -564,6 +580,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatManager
   ShowTopMostFoldoutHeaderGroup: 1
   tempAbilityHaste: 0
+  tempDamageBonusMult: 0
 --- !u!114 &8713204962959621646
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -48,10 +48,9 @@ public class WeaponLevelData
     public float  projectileSpeed = 12f;
     [Tooltip("รัศมีการทำลายล้าง/พื้นที่แสดงผลพิเศษ (เช่น วงระเบิด, ออร่า)")]
     public float  radius          = 0f;
+    [Tooltip("ระยะเวลาการคงอยู่ของอาวุธประเภทติดตั้ง (วินาที) — ตั้งค่า 0 เพื่อใช้ค่าเริ่มต้นใน Script")]
+    public float  duration        = 0f;
     public bool   piercing        = false;
-    [TextArea(1, 2)]
-    [Tooltip("ข้อความที่แสดงบน card เช่น 'ความเสียหาย +5, ยิง 2 ลูก'")]
-    public string levelUpText;
 }
 
 [CreateAssetMenu(fileName = "Weapon_New", menuName = "LoL Swarm/Weapon Data")]

@@ -122,6 +122,28 @@ public class ExpOrb : NetworkBehaviour
         return attractRadius * mult;
     }
 
+    // ── Upgrade Orb (SuperBigAoEWeapon) ──────────────────────────────────
+    private bool isUpgraded = false;
+
+    public void UpgradeOrb(float multiplier = 2f)
+    {
+        if (!IsServer || isUpgraded) return;
+        isUpgraded = true;
+        expAmount *= multiplier;
+        UpgradeOrbVisualClientRpc(multiplier);
+    }
+
+    [ClientRpc]
+    private void UpgradeOrbVisualClientRpc(float scaleMult)
+    {
+        transform.localScale *= scaleMult;
+        var mr = GetComponentInChildren<MeshRenderer>();
+        if (mr != null)
+        {
+            mr.material.color = new Color(1f, 0.85f, 0f); // Gold tint
+        }
+    }
+
     Transform FindNearestPlayer()
     {
         if (NetworkManager.Singleton == null) return null;

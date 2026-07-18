@@ -20,46 +20,46 @@ MonoBehaviour:
   aimMode: 0
   levels:
   - damage: 25
-    cooldown: 2
+    cooldown: 10
     projectileCount: 1
-    range: 8
+    range: 20
     projectileSpeed: 12
-    radius: 2.5
+    radius: 20
+    duration: 8
     piercing: 0
-    levelUpText: 
   - damage: 20
     cooldown: 1
     projectileCount: 1
-    range: 8
+    range: 20
     projectileSpeed: 12
     radius: 2.8
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 20
     cooldown: 1
     projectileCount: 1
     range: 8
     projectileSpeed: 12
     radius: 3.1
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 20
     cooldown: 1
     projectileCount: 1
     range: 8
     projectileSpeed: 12
     radius: 3.4
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 20
     cooldown: 1
     projectileCount: 1
     range: 8
     projectileSpeed: 12
     radius: 3.8
+    duration: 0
     piercing: 0
-    levelUpText: 
-  superVersion: {fileID: 0}
+  superVersion: {fileID: 11400000, guid: 2b5bf41d9968ab0488da6c39237ae1db, type: 2}
   superConditions:
   - conditionType: 0
     requiredStatType: 3

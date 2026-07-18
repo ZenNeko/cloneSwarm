@@ -114,6 +114,7 @@ public class BouncingSpikeProjectile : NetworkBehaviour
             proj.ownerManager  = ownerManager;
             proj.isCrit        = isCrit;
             proj.weaponName    = weaponName;
+            proj.hitVfxKey     = hitVfxKey;
         }
 
         var no = go.GetComponent<NetworkObject>();

@@ -19,21 +19,21 @@ MonoBehaviour:
   prefab: {fileID: 80500625944189811, guid: 55e63764678885f449b5e8231abb470b, type: 3}
   aimMode: 0
   levels:
-  - damage: 25
+  - damage: 20
     cooldown: 2
-    projectileCount: 1
-    range: 8
-    projectileSpeed: 12
+    projectileCount: 10
+    range: 25
+    projectileSpeed: 14
     radius: 2.5
-    piercing: 0
+    piercing: 1
     levelUpText: 
   - damage: 20
     cooldown: 1
     projectileCount: 1
-    range: 8
+    range: 25
     projectileSpeed: 12
     radius: 2.8
-    piercing: 0
+    piercing: 1
     levelUpText: 
   - damage: 20
     cooldown: 1

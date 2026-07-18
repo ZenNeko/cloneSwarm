@@ -59,7 +59,7 @@ MonoBehaviour:
     radius: 0
     piercing: 0
     levelUpText: 
-  superVersion: {fileID: 0}
+  superVersion: {fileID: 11400000, guid: ac2b7b2b4a920dc438b4a6ff71ac02d7, type: 2}
   superConditions:
   - conditionType: 0
     requiredStatType: 1
