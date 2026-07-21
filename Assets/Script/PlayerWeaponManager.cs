@@ -847,7 +847,8 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void FireLineAoEServerRpc(
         Vector3 origin, Vector3 direction,
         float damage, float range, float width = 1.5f, bool isCrit = false,
-        float knockbackForce = 0f, string vfxKey = "None", string weaponName = "Unknown")
+        float knockbackForce = 0f, string vfxKey = "None", string weaponName = "Unknown",
+        float slowPercent = 1f, float slowDuration = 0f, float freezeChance = 0f, float freezeDuration = 0f)
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
@@ -887,6 +888,16 @@ public class PlayerWeaponManager : NetworkBehaviour
             {
                 enemy.EnemyTakeDamage(damage, isCrit);
                 RegisterWeaponDamage(weaponName, damage);
+
+                // Apply Slow/Freeze debuffs if configured
+                if (slowDuration > 0f && slowPercent < 1f)
+                {
+                    enemy.ApplySlowDebuff(slowDuration, slowPercent);
+                }
+                if (freezeDuration > 0f && freezeChance > 0f && UnityEngine.Random.value < freezeChance)
+                {
+                    enemy.ApplyFreeze(freezeDuration);
+                }
             }
             // Knockback (server-authoritative push along line direction)
             if (knockbackForce > 0f)

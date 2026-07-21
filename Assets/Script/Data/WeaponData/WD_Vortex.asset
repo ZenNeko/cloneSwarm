@@ -21,7 +21,7 @@ MonoBehaviour:
   levels:
   - damage: 20
     cooldown: 1
-    projectileCount: 4
+    projectileCount: 1
     range: 10
     projectileSpeed: 12
     radius: 0

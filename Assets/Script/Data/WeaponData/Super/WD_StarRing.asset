@@ -16,18 +16,17 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   tier: 1
-  prefab: {fileID: 1935411019707455659, guid: b492ddaadafc90c419d635faa3a2fd5e, type: 3}
+  prefab: {fileID: 1935411019707455659, guid: ceeca7ca5058fc247a0288a5ac953bf6, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 0}
   levels:
   - damage: 60
     cooldown: 0.1
     projectileCount: 6
     range: 5
     projectileSpeed: 0
+    radius: 0
+    duration: 10
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 150

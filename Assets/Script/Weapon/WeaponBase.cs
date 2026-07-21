@@ -186,9 +186,11 @@ public abstract class WeaponBase : MonoBehaviour
         manager.FireArcMeleeServerRpc(center, forward, radius, arcAngle, damage, isCrit, data != null ? data.weaponName : "Unknown", knockbackForce, knockbackDir);
     }
 
-    protected void FireLineAoE(Vector3 origin, Vector3 direction, float damage, float range, float width = 1.5f, bool isCrit = false, float knockbackForce = 0f, string vfxKey = "None")
+    protected void FireLineAoE(Vector3 origin, Vector3 direction, float damage, float range, float width = 1.5f, bool isCrit = false, float knockbackForce = 0f, string vfxKey = "None",
+                               float slowPercent = 1f, float slowDuration = 0f, float freezeChance = 0f, float freezeDuration = 0f)
     {
-        manager.FireLineAoEServerRpc(origin, direction, damage, range, width, isCrit, knockbackForce, vfxKey, data != null ? data.weaponName : "Unknown");
+        manager.FireLineAoEServerRpc(origin, direction, damage, range, width, isCrit, knockbackForce, vfxKey, data != null ? data.weaponName : "Unknown",
+                                     slowPercent, slowDuration, freezeChance, freezeDuration);
     }
 
     protected void FireRaycast(Vector3 origin, Vector3 direction, float damage, float maxDist = 50f, string vfxKey = "None", bool isCrit = false, bool playHitVfx = true, float thickness = 0f)

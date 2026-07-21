@@ -30,6 +30,9 @@ public class VortexWeapon : WeaponBase
     [Tooltip("Width of the flamethrower sweep box")]
     public float streamWidth = 2.0f;
 
+    [Tooltip("Distance of the nozzles from the center (player position)")]
+    public float orbitRadius = 1.2f;
+
     [Tooltip("Nozzle transforms. If empty, the script will look for child GameObjects named 'Nozzle1', 'Nozzle2', etc.")]
     public List<Transform> nozzles = new();
 
@@ -38,7 +41,7 @@ public class VortexWeapon : WeaponBase
     protected float orbitAngle;
     private float damageTimer;
 
-    private List<GameObject> vfxInstances = new();
+    protected List<GameObject> vfxInstances = new();
 
     protected override void OnInit()
     {
@@ -60,18 +63,30 @@ public class VortexWeapon : WeaponBase
             }
         }
 
-
-        // Dynamically instantiate the visual prefab from the NetworkedVFXPool under the PREDEFINED nozzles on all clients
-        string vfxKey = ResolveHitVfx("VortexSpawn");
-        GameObject vfxPrefab = null;
-        if (NetworkedVFXPool.Instance != null && vfxKey != "None")
+        // Force all predefined nozzles to be direct children of this weapon root
+        // to prevent uneven rotation/scale if they were nested under other rotating/scaled transforms
+        for (int i = 0; i < nozzles.Count; i++)
         {
-            vfxPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(vfxKey);
+            if (nozzles[i] != null && nozzles[i] != transform)
+            {
+                nozzles[i].SetParent(this.transform, false);
+            }
         }
 
+        // Dynamically instantiate the visual prefab under the PREDEFINED nozzles on all clients
         for (int i = 0; i < nozzles.Count; i++)
         {
             if (nozzles[i] == null) continue;
+
+            string key = IsIceStream(i) ? ResolveSecondaryVfx("None") : ResolveHitVfx("VortexSpawn");
+            if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("VortexSpawn");
+
+            GameObject vfxPrefab = null;
+            if (NetworkedVFXPool.Instance != null && key != "None")
+            {
+                vfxPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(key);
+            }
+
             if (vfxPrefab != null)
             {
                 GameObject vfxGo = Instantiate(vfxPrefab, nozzles[i]);
@@ -89,6 +104,10 @@ public class VortexWeapon : WeaponBase
                         ps.Play();
                     }
                 }
+            }
+            else
+            {
+                vfxInstances.Add(null);
             }
         }
 
@@ -144,25 +163,15 @@ public class VortexWeapon : WeaponBase
             baseStreams = ld.projectileCount;
         }
 
-        int bonusProj = (manager != null && manager.statManager != null)
-            ? manager.statManager.GetBonusProjectileCount()
-            : 0;
-
-        return baseStreams + bonusProj;
+        return baseStreams;
     }
+
+    protected virtual bool IsIceStream(int index) => false;
 
     private void RebuildNozzles()
     {
         int targetCount = GetStreamCount();
         if (targetCount <= 0) return;
-
-        // If we need more nozzles than currently available, dynamically create pivots
-        string vfxKey = ResolveHitVfx("VortexSpawn");
-        GameObject vfxPrefab = null;
-        if (NetworkedVFXPool.Instance != null && vfxKey != "None")
-        {
-            vfxPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(vfxKey);
-        }
 
         while (nozzles.Count < targetCount)
         {
@@ -173,6 +182,16 @@ public class VortexWeapon : WeaponBase
             newNozzleGo.transform.localRotation = Quaternion.identity;
             newNozzleGo.transform.localScale = Vector3.one;
             nozzles.Add(newNozzleGo.transform);
+
+            int currentIdx = nozzles.Count - 1;
+            string key = IsIceStream(currentIdx) ? ResolveSecondaryVfx("None") : ResolveHitVfx("VortexSpawn");
+            if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("VortexSpawn");
+
+            GameObject vfxPrefab = null;
+            if (NetworkedVFXPool.Instance != null && key != "None")
+            {
+                vfxPrefab = NetworkedVFXPool.Instance.GetVfxPrefab(key);
+            }
 
             if (vfxPrefab != null)
             {
@@ -190,6 +209,10 @@ public class VortexWeapon : WeaponBase
                         ps.Play();
                     }
                 }
+            }
+            else
+            {
+                vfxInstances.Add(null);
             }
         }
 
@@ -215,8 +238,13 @@ public class VortexWeapon : WeaponBase
             // Divide the 360 degree circle evenly among all active streams
             float localOffset = i * (360f / streamCount);
 
-            // Apply 45-degree angle offset for the spiral vortex effect (sprays outward/tangent)
-            float finalAngle = orbitAngle + localOffset + 45f;
+            // 1. Position the nozzle on the circle of radius orbitRadius at radialAngle
+            float radialAngle = orbitAngle + localOffset;
+            float rad = radialAngle * Mathf.Deg2Rad;
+            nozzles[i].localPosition = new Vector3(Mathf.Sin(rad) * orbitRadius, 0f, Mathf.Cos(rad) * orbitRadius);
+
+            // 2. Rotate the nozzle by finalAngle so it sprays outward diagonally (45 degrees offset)
+            float finalAngle = radialAngle + 45f;
             nozzles[i].localRotation = Quaternion.Euler(0f, finalAngle, 0f);
         }
     }
@@ -224,19 +252,21 @@ public class VortexWeapon : WeaponBase
     private void UpdateVfxScales()
     {
         if (NetworkedVFXPool.Instance == null) return;
-        string vfxKey = ResolveHitVfx("VortexSpawn");
-        float designed = NetworkedVFXPool.Instance.GetDesignedRadius(vfxKey);
 
         var ld = data.GetLevelData(currentLevel);
         float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
         float range = ld.range * areaMult;
 
-        float scaleVal = designed > 0f ? (range / designed) : range;
-
         for (int i = 0; i < vfxInstances.Count; i++)
         {
             if (vfxInstances[i] != null)
             {
+                string key = IsIceStream(i) ? ResolveSecondaryVfx("None") : ResolveHitVfx("VortexSpawn");
+                if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("VortexSpawn");
+
+                float designed = NetworkedVFXPool.Instance.GetDesignedRadius(key);
+                float scaleVal = designed > 0f ? (range / designed) : range;
+
                 // Parent Scale Cancellation to ensure world scale matches range exactly
                 Transform parent = vfxInstances[i].transform.parent;
                 float px = parent != null ? parent.lossyScale.x : 1f;
@@ -260,21 +290,25 @@ public class VortexWeapon : WeaponBase
         float range = effective.range; // Stat-multiplied range (includes GetAreaMultiplier())
         int streamCount = GetStreamCount();
 
-        Vector3 origin = transform.position + Vector3.up * 0.5f;
-
         for (int i = 0; i < nozzles.Count; i++)
         {
             if (nozzles[i] == null || i >= streamCount) continue;
-
-            // Get the world forward direction of the active nozzle
-            Vector3 dir = nozzles[i].forward;
-            dir.y = 0f;
-            if (dir.sqrMagnitude < 0.001f) continue;
-            dir = dir.normalized;
-
-            // Perform Line AoE damage sweep (using FireLineAoE with vfxKey: "None" since particles are simulated locally)
-            FireLineAoE(origin, dir, dmg, range, streamWidth, isCrit, knockbackForce: 0f, vfxKey: "None");
+            SweepNozzleDamage(i, dmg, range, isCrit);
         }
     }
-}
 
+    protected virtual void SweepNozzleDamage(int index, float dmg, float range, bool isCrit)
+    {
+        if (nozzles[index] == null) return;
+        Vector3 dir = nozzles[index].forward;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.001f) return;
+        dir = dir.normalized;
+
+        // Damage origin starts at the nozzle's world position, height locked to gameplay plane (0.5f above player root)
+        Vector3 origin = nozzles[index].position;
+        origin.y = transform.position.y + 0.5f;
+
+        FireLineAoE(origin, dir, dmg, range, streamWidth, isCrit, knockbackForce: 0f, vfxKey: "None");
+    }
+}

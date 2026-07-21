@@ -58,6 +58,11 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 11
     fixedDuration: 0.4
+  - key: VortexFlame2
+    prefab: {fileID: 1634767862067424, guid: 148065ce663c36e49ba1109ceaa2bef1, type: 3}
+    poolSize: 30
+    designedRadius: 11
+    fixedDuration: 0.4
   - key: DashTrail
     prefab: {fileID: 5818205763518135594, guid: 395d5ec7f996d364f94e11cfb40736d3, type: 3}
     poolSize: 9
