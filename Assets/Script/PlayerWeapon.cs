@@ -93,12 +93,12 @@ public class PlayerWeapon : NetworkBehaviour
     // ── Find Nearest Enemy ────────────────────────────────────────────────
     Transform FindNearestEnemy()
     {
-        Enemy[]   enemies = FindObjectsOfType<Enemy>();
         Transform nearest = null;
         float     minDist = attackRange;
 
-        foreach (Enemy e in enemies)
+        foreach (Enemy e in Enemy.ActiveEnemies)
         {
+            if (e == null) continue;
             float dist = Vector3.Distance(transform.position, e.transform.position);
             if (dist < minDist) { minDist = dist; nearest = e.transform; }
         }

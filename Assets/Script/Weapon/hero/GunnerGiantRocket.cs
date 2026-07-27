@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
@@ -78,7 +78,7 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
         float dynamicRange  = Mathf.Clamp(toMouse.magnitude, 0.5f, maxRange);
         Vector3 direction   = toMouse.sqrMagnitude > 0.001f ? toMouse.normalized : transform.forward;
 
-        manager.SpawnGiantRocketServerRpc(spawnPos, direction, baseDmg, rocketSpeed, dynamicRange, radius);
+        SpawnGiantRocket(spawnPos, direction, baseDmg, rocketSpeed, dynamicRange, radius);
         Debug.Log($"[GiantRocket] FIRED dir={direction:F2} range={dynamicRange:F1} dmg={baseDmg:F0}");
     }
 

@@ -20,12 +20,6 @@ MonoBehaviour:
   aimMode: 0
   arcAngle: 360
   projectilePrefab: {fileID: 0}
-  hitVfxType: 11
-  fireSfx: []
-  hitSfx: []
-  fireVolume: 0.7
-  hitVolume: 0.6
-  pitchVariance: 0.05
   levels:
   - damage: 200
     cooldown: 1
@@ -36,5 +30,5 @@ MonoBehaviour:
     levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
-  weight: 100
+  weight: 200
   exclusiveCharacter: {fileID: 0}

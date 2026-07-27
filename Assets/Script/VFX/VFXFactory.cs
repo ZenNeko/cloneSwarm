@@ -27,8 +27,14 @@ public static class VFXFactory
         NetworkedVFXPool.Instance.PlayByName(key, position, scale);
     }
 
-    /// <summary>Spawn Beam จาก from → to + burst VFX ที่ปลาย (ใช้ object pool)</summary>
-    public static void PlayBeam(string key, Vector3 from, Vector3 to, float duration = 0.15f)
+    /// <summary>Spawn Beam จาก from → to + burst VFX ที่ปลาย (ใช้ default beam)</summary>
+    public static void PlayBeam(string hitVfxKey, Vector3 from, Vector3 to, float duration = 0.15f)
+    {
+        PlayBeam("Default", hitVfxKey, from, to, duration);
+    }
+
+    /// <summary>Spawn Beam โดยเลือกชนิดลำแสง (beamKey) จาก database + burst VFX (hitVfxKey) ที่ปลาย</summary>
+    public static void PlayBeam(string beamKey, string hitVfxKey, Vector3 from, Vector3 to, float duration = 0.15f)
     {
         if (NetworkedVFXPool.Instance == null)
         {
@@ -36,10 +42,10 @@ public static class VFXFactory
             return;
         }
 
-        NetworkedVFXPool.Instance.PlayBeam(from, to, duration);
+        NetworkedVFXPool.Instance.PlayBeam(beamKey, from, to, duration);
 
-        // Burst VFX ที่ปลาย beam — ใช้ key เดิมที่ส่งเข้ามา
-        if (!string.IsNullOrEmpty(key) && key != "None")
-            NetworkedVFXPool.Instance.PlayByName(key, to);
+        // Burst VFX ที่ปลาย beam
+        if (!string.IsNullOrEmpty(hitVfxKey) && hitVfxKey != "None")
+            NetworkedVFXPool.Instance.PlayByName(hitVfxKey, to);
     }
 }

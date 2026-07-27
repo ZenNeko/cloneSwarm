@@ -15,12 +15,12 @@ MonoBehaviour:
   entries:
   - key: HitEffect
     prefab: {fileID: 3077343761403282166, guid: f78aaaec3b393e24ca74cd6de8194347, type: 3}
-    poolSize: 40
+    poolSize: 200
     designedRadius: 0
     fixedDuration: 0
   - key: CritHitEffect
     prefab: {fileID: 4503612902121041701, guid: 5a936c83b1746f14f9100db745e94f04, type: 3}
-    poolSize: 80
+    poolSize: 200
     designedRadius: 0
     fixedDuration: 0
   - key: GrenadeExplosion
@@ -43,21 +43,26 @@ MonoBehaviour:
     poolSize: 30
     designedRadius: 0
     fixedDuration: 0
-  - key: LanceThrust
-    prefab: {fileID: 5545173171955001552, guid: 7ac879c2caac1ca41b6c438e77d8b25d, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
   - key: SlashHit
     prefab: {fileID: 772680919565806998, guid: f29781b8be277cb4b8e6123ab4e43161, type: 3}
     poolSize: 30
-    designedRadius: 4
+    designedRadius: 13
     fixedDuration: 0.4
-  - key: VortexSpawn
-    prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
+  - key: SlashHit2
+    prefab: {fileID: 772680919565806998, guid: 0a1cb6412931ac04e8e749d6b31db3ef, type: 3}
     poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
+    designedRadius: 13
+    fixedDuration: 0.4
+  - key: VortexFlame
+    prefab: {fileID: 1634767862067424, guid: 007c57e2df8e9b144b99f471b84f3d56, type: 3}
+    poolSize: 30
+    designedRadius: 11
+    fixedDuration: 0.4
+  - key: VortexFlame2
+    prefab: {fileID: 1634767862067424, guid: 148065ce663c36e49ba1109ceaa2bef1, type: 3}
+    poolSize: 30
+    designedRadius: 11
+    fixedDuration: 0.4
   - key: DashTrail
     prefab: {fileID: 5818205763518135594, guid: 395d5ec7f996d364f94e11cfb40736d3, type: 3}
     poolSize: 9
@@ -68,18 +73,58 @@ MonoBehaviour:
     poolSize: 40
     designedRadius: 3
     fixedDuration: 0
-  - key: WhipSlash
-    prefab: {fileID: 5545173171955001552, guid: 7ac879c2caac1ca41b6c438e77d8b25d, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
-  - key: SlashAoE360
-    prefab: {fileID: 1921079115439858272, guid: 53d781390f3d0c248b7abf3f3700d878, type: 3}
+  - key: O_AoE_RadiantAura
+    prefab: {fileID: 4748681987041982144, guid: 363ff038782d0c3478c244d3a48f75fe, type: 3}
     poolSize: 6
-    designedRadius: 2
+    designedRadius: 3
     fixedDuration: 0
   - key: PhaseShockwave
     prefab: {fileID: 1921079115439858272, guid: 691fb4749c47d834781e02b971b8e66c, type: 3}
     poolSize: 30
+    designedRadius: 3
+    fixedDuration: 0
+  - key: Beam_Laser
+    prefab: {fileID: 7289551456621117356, guid: a8dc7b0921e71d7499f8c41236f9249f, type: 3}
+    poolSize: 10
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Beam_Railgun
+    prefab: {fileID: 7289551456621117356, guid: 7e2766f9de07837489ac0b4f59866b2e, type: 3}
+    poolSize: 40
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Beam_Lightning
+    prefab: {fileID: 7289551456621117356, guid: 3b0791d568f303447bea1af1f50bf1dd, type: 3}
+    poolSize: 40
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Stormcaller_AOE
+    prefab: {fileID: 4748681987041982144, guid: be86a8ab229119d44bcf02c7ea449804, type: 3}
+    poolSize: 40
+    designedRadius: 0.9
+    fixedDuration: 0
+  - key: VFX_Lance
+    prefab: {fileID: 7606818437225425609, guid: b83adfd580e0da94c89241146c13bdc2, type: 3}
+    poolSize: 5
+    designedRadius: 0
+    fixedDuration: 0
+  - key: Beam_ThunderRail
+    prefab: {fileID: 7289551456621117356, guid: 9c719e2034dafbc4b94b77bd18f8700d, type: 3}
+    poolSize: 40
+    designedRadius: 0
+    fixedDuration: 0
+  - key: AOE_ThunderRail
+    prefab: {fileID: 4748681987041982144, guid: 64629f77884aed642a4e905a6b5ba0a0, type: 3}
+    poolSize: 40
+    designedRadius: 0.9
+    fixedDuration: 0
+  - key: BigAOEBome
+    prefab: {fileID: 4748681987041982144, guid: 1e9c209764f16b148a34080ebdbf4c15, type: 3}
+    poolSize: 5
+    designedRadius: 3
+    fixedDuration: 0
+  - key: BigAOEBome_chargeTime
+    prefab: {fileID: 4748681987041982144, guid: 31ff451a88873b9489fb3fad93871fb6, type: 3}
+    poolSize: 5
     designedRadius: 3
     fixedDuration: 0

@@ -1,1 +1,1 @@
-public enum AoEType { Circle, Line, Cross, Donut, Chase }
+public enum AoEType { Circle, Line, Cross, Donut }

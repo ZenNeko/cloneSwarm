@@ -19,10 +19,13 @@ public class PlayerStatManager : NetworkBehaviour
     /// <summary>Ability Haste bonus ชั่วคราว — บวกกับค่า permanent จาก stat cards</summary>
     [HideInInspector] public float tempAbilityHaste = 0f;
 
+    /// <summary>Damage bonus ชั่วคราว (additive %) — set โดย SupportArenaWeapon / abilities</summary>
+    [HideInInspector] public float tempDamageBonusMult = 0f;
+
     // ── Weapon Multipliers (WeaponBase อ่าน) ─────────────────────────────
     /// <summary>+10% damage per Lv — 1.0 = no bonus</summary>
     public float GetPowerMultiplier()
-        => 1f + GetTotal(StatType.Damage);
+        => 1f + GetTotal(StatType.Damage) + tempDamageBonusMult;
 
     /// <summary>Ability Haste → cooldown multiplier (Haste / (100 + Haste))
     /// รวม tempAbilityHaste จาก Gunner passive หรือ abilities อื่น</summary>
@@ -80,8 +83,19 @@ public class PlayerStatManager : NetworkBehaviour
         return result;
     }
 
-    // ── Apply ─────────────────────────────────────────────────────────────
     public void ApplyStat(StatData stat, playermove pm)
+    {
+        if (stat == null) return;
+
+        ApplyStatLocal(stat, pm);
+
+        if (IsOwner && !IsServer)
+        {
+            ApplyStatServerRpc(stat.statType);
+        }
+    }
+
+    private void ApplyStatLocal(StatData stat, playermove pm)
     {
         if (stat == null) return;
 
@@ -133,7 +147,34 @@ public class PlayerStatManager : NetworkBehaviour
         if (stat.statType == StatType.GainGold && lv + 1 >= stat.MaxLevel)
             Debug.Log("[StatManager] 💰 Full Build Bonus: +25 Gold (TODO: gold system)");
 
-        Debug.Log($"[StatManager] ✅ {stat.statName} Lv{lv + 1}  (+{val})");
+        Debug.Log($"[StatManager] {(IsServer ? "[Server]" : "[Client]")} ✅ {stat.statName} Lv{lv + 1}  (value={val})");
+    }
+
+    [ServerRpc]
+    private void ApplyStatServerRpc(StatType type)
+    {
+        var um = GetComponent<UpgradeManager>();
+        if (um == null) return;
+
+        StatData foundStat = null;
+        foreach (var s in um.allStats)
+        {
+            if (s != null && s.statType == type)
+            {
+                foundStat = s;
+                break;
+            }
+        }
+
+        if (foundStat != null)
+        {
+            var pm = GetComponent<playermove>();
+            ApplyStatLocal(foundStat, pm);
+        }
+        else
+        {
+            Debug.LogWarning($"[StatManager] Server could not find StatData for {type} in UpgradeManager.allStats");
+        }
     }
 
     // ── Internal ──────────────────────────────────────────────────────────

@@ -14,40 +14,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Lance
   description: Lance
-  icon: {fileID: 0}
+  icon: {fileID: 862182946, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 0
   prefab: {fileID: 6389398472447319881, guid: 5ca2e091993985649b28abfdd9556c6d, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 0}
-  hitVfxType: 19
   levels:
   - damage: 45
     cooldown: 1.6
     projectileCount: 1
-    range: 6
+    range: 2.8
     projectileSpeed: 0
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 58
     cooldown: 1.6
     projectileCount: 1
-    range: 2.8
+    range: 3.2
     projectileSpeed: 0
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 73
     cooldown: 1.4
     projectileCount: 1
-    range: 3.2
+    range: 3.6
     projectileSpeed: 0
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 90
     cooldown: 1.2
     projectileCount: 1
-    range: 3.6
+    range: 4
     projectileSpeed: 0
+    radius: 0
     piercing: 0
     levelUpText: 
   - damage: 110
@@ -55,12 +56,13 @@ MonoBehaviour:
     projectileCount: 1
     range: 4
     projectileSpeed: 0
+    radius: 0
     piercing: 0
     levelUpText: 
   superVersion: {fileID: 11400000, guid: 1d795b8f00ffba544893c924b31a9771, type: 2}
   superConditions:
   - conditionType: 0
-    requiredStatType: 7
+    requiredStatType: 8
     requiredLevel: 1
     requiredWeapon: {fileID: 0}
   weight: 100

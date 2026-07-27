@@ -46,10 +46,11 @@ public class WeaponLevelData
     public int    projectileCount = 1;
     public float  range           = 8f;
     public float  projectileSpeed = 12f;
+    [Tooltip("รัศมีการทำลายล้าง/พื้นที่แสดงผลพิเศษ (เช่น วงระเบิด, ออร่า)")]
+    public float  radius          = 0f;
+    [Tooltip("ระยะเวลาการคงอยู่ของอาวุธประเภทติดตั้ง (วินาที) — ตั้งค่า 0 เพื่อใช้ค่าเริ่มต้นใน Script")]
+    public float  duration        = 0f;
     public bool   piercing        = false;
-    [TextArea(1, 2)]
-    [Tooltip("ข้อความที่แสดงบน card เช่น 'ความเสียหาย +5, ยิง 2 ลูก'")]
-    public string levelUpText;
 }
 
 [CreateAssetMenu(fileName = "Weapon_New", menuName = "LoL Swarm/Weapon Data")]
@@ -70,14 +71,6 @@ public class WeaponData : ScriptableObject
     [Tooltip("AutoNearest = ล็อกศัตรูที่ใกล้ที่สุดอัตโนมัติ\n" +
              "MouseAim    = เล็งตามตำแหน่งเมาส์ของผู้เล่น")]
     public AimMode aimMode = AimMode.AutoNearest;
-
-    [Tooltip("มุม arc ของการโจมตี melee (องศา)\n360 = รอบทิศทาง | 120 = หน้ากว้าง | 60 = โคนแคบ\nใช้กับ FireArcMeleeServerRpc เท่านั้น")]
-    [Range(10f, 360f)]
-    public float arcAngle = 360f;
-
-    [Tooltip("Projectile prefab ของ weapon นี้ (มี NetworkObject + Projectile script)\n" +
-             "ปล่อยว่าง = ใช้ projectilePrefab default บน PlayerWeaponManager")]
-    public GameObject projectilePrefab;
 
     // NOTE: VFX + SFX fields ย้ายไปอยู่บน weapon prefab (WeaponBase) แล้ว
     //   VFX → weaponVfxType, secondaryVfxType

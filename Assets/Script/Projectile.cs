@@ -12,11 +12,16 @@ public class Projectile : NetworkBehaviour
     [Header("VFX")]
     [Tooltip("VFX ที่แสดงเมื่อ projectile ชน\nกำหนด prefab ใน VFXDatabase")]
     [FormerlySerializedAs("hitVFX")]
-    [VFXKey]
+    [HideInInspector]
     public string hitVFX = "HitEffect";
 
     [HideInInspector]
     public bool isCrit;   // set by weapon → ถ้า true จะแสดง CritHitEffect แทน
+
+    [HideInInspector]
+    public string weaponName = "Unknown";
+    [HideInInspector]
+    public PlayerWeaponManager ownerManager;
 
     private Transform target;
     private Vector3   moveDirection;
@@ -56,7 +61,7 @@ public class Projectile : NetworkBehaviour
             transform.position = Vector3.MoveTowards(transform.position, targetFlat, speed * Time.deltaTime);
         }
 
-        if (Vector3.Distance(startPosition, transform.position) >= maxRange)
+        if ((transform.position - startPosition).sqrMagnitude >= maxRange * maxRange)
             SafeDespawn();
     }
 
@@ -66,8 +71,16 @@ public class Projectile : NetworkBehaviour
         if (!IsServer || !NetworkObject.IsSpawned) return;
         if (!other.CompareTag("Enemy")) return;
 
-        other.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
-        ShowHitVfxClientRpc(transform.position, isCrit);
+        var enemy = other.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.EnemyTakeDamage(damage);
+            if (ownerManager != null)
+            {
+                ownerManager.RegisterWeaponDamage(weaponName, damage);
+            }
+        }
+        ShowHitVfxClientRpc(transform.position, isCrit, hitVFX);
         if (!piercing) SafeDespawn();
     }
 
@@ -78,6 +91,11 @@ public class Projectile : NetworkBehaviour
     }
 
     [ClientRpc]
-    void ShowHitVfxClientRpc(Vector3 pos, bool crit)
-        => VFXFactory.Play(crit ? "CritHitEffect" : hitVFX, pos);
+    void ShowHitVfxClientRpc(Vector3 pos, bool crit, string vfxKey)
+    {
+        // ถ้าเป็นคริติคอล หรือ hitVFX เป็นค่าเริ่มต้น (HitEffect)
+        // จะถูกแสดงผ่านระบบ Enemy.NotifyHitClientRpc โดยอัตโนมัติอยู่แล้ว เพื่อหลีกเลี่ยงการทำซ้ำ
+        if (crit || vfxKey == "HitEffect" || string.IsNullOrEmpty(vfxKey)) return;
+        VFXFactory.Play(vfxKey, pos);
+    }
 }

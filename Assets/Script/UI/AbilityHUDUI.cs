@@ -1,4 +1,1 @@
-// ── DEPRECATED ────────────────────────────────────────────────────────────
-// AbilityHUDUI ถูก merge เข้า GameHUD.cs แล้ว (qSlot / eSlot sections)
-// สามารถลบไฟล์นี้ได้อย่างปลอดภัย
-// ─────────────────────────────────────────────────────────────────────────
+// Obsolete file. Will be regenerated/removed by Unity Editor.

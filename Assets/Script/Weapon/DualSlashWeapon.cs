@@ -16,31 +16,10 @@ using System.Collections;
 /// </summary>
 public class DualSlashWeapon : WeaponBase
 {
-    // ── Slash Config ────────────────────────────────────────────────────
-    [System.Serializable]
-    public class SlashConfig
-    {
-        [Tooltip("Offset ไปข้างหน้า (คูณ radius)")]
-        [Range(-1f, 1f)]
-        public float forwardOffset = 0.6f;
-
-        [Tooltip("Offset ไปทางขวา (คูณ radius) — ค่าลบ = ซ้าย")]
-        [Range(-1f, 1f)]
-        public float rightOffset = -0.3f;
-
-        [Tooltip("หมุนรอบแกน X (ก้ม/เงย)")]
-        [Range(0f, 360f)]
-        public float rotationX = 0f;
-
-        [Tooltip("หมุนรอบแกน Y (ซ้าย/ขวา) — 90 = ขวา, 180 = หลัง, 270 = ซ้าย")]
-        [Range(0f, 360f)]
-        public float rotationY = 0f;
-
-        [Tooltip("หมุนรอบแกน Z (เอียง/หมุนตัว)")]
-        [Range(0f, 360f)]
-        public float rotationZ = 0f;
-    }
-
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("มุม arc ของการโจมตี melee (องศา)")]
+    [Range(10f, 360f)]
+    public float arcAngle = 360f;
     [Header("Slash 1")]
     public SlashConfig slash1 = new SlashConfig
     {
@@ -65,7 +44,6 @@ public class DualSlashWeapon : WeaponBase
     public bool alternatePerFire = true;
 
     // ── Internal ────────────────────────────────────────────────────────
-    Vector3 _lastMoveDir = Vector3.forward;
     bool    _swapState;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -73,32 +51,30 @@ public class DualSlashWeapon : WeaponBase
         float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = ld.range;
 
-        if (manager.statManager != null)
-            radius *= manager.statManager.GetAreaMultiplier();
-
-        Vector3 forward = GetAimDirection();
-        float   arc     = data != null ? data.arcAngle : 360f;
+        float   arc     = arcAngle;
 
         // สลับลำดับ slash ทุก fire
         SlashConfig first  = _swapState ? slash2 : slash1;
         SlashConfig second = _swapState ? slash1 : slash2;
         if (alternatePerFire) _swapState = !_swapState;
 
-        StartCoroutine(SlashSequence(forward, radius, arc, dmg, isCrit, first, second));
+        StartCoroutine(SlashSequence(radius, arc, dmg, isCrit, first, second));
     }
 
-    IEnumerator SlashSequence(Vector3 forward, float radius, float arc,
+    IEnumerator SlashSequence(float radius, float arc,
                               float dmg, bool isCrit,
                               SlashConfig first, SlashConfig second)
     {
         // ── Slash 1 ─────────────────────────────────────────────────
-        FireSlash(forward, radius, arc, dmg, isCrit, first);
+        Vector3 forward1 = GetAimDirection();
+        FireSlash(forward1, radius, arc, dmg, isCrit, first);
 
         if (slashDelay > 0f)
             yield return new WaitForSeconds(slashDelay);
 
         // ── Slash 2 ─────────────────────────────────────────────────
-        FireSlash(forward, radius, arc, dmg, isCrit, second);
+        Vector3 forward2 = GetAimDirection();
+        FireSlash(forward2, radius, arc, dmg, isCrit, second);
     }
 
     void FireSlash(Vector3 forward, float radius, float arc,
@@ -119,19 +95,23 @@ public class DualSlashWeapon : WeaponBase
         Vector3 dir = rot * Vector3.forward;
 
         // ── Damage + VFX ──────────────────────────────────────────
-        manager.FireArcMeleeServerRpc(pos, forward, radius, arc, dmg, isCrit);
-        ShowVfx(ResolveHitVfx("SlashHit"), pos, radius, isCrit,
+        FireArcMelee(pos, forward, radius, arc, dmg, isCrit);
+
+        string vfxKey = cfg.useSecondaryVfx ? ResolveSecondaryVfx("SlashHit") : ResolveHitVfx("SlashHit");
+        ShowVfx(vfxKey, pos, radius, isCrit,
                 isAttackHit: false, direction: dir, arcAngle: arc, roll: cfg.rotationZ);
     }
 
-    Vector3 GetAimDirection()
+    protected override void OnDrawGizmosSelected()
     {
-        if (manager?.playerMove != null)
-        {
-            Vector3 move = manager.playerMove.MoveDirection;
-            if (move.sqrMagnitude > 0.01f)
-                _lastMoveDir = move.normalized;
-        }
-        return _lastMoveDir;
+        base.OnDrawGizmosSelected();
+
+        if (data == null) return;
+        float radius = data.GetLevelData(currentLevel).range;
+        Vector3 center = transform.position + Vector3.up * 0.5f;
+        Vector3 forward = transform.forward;
+
+        DrawSlashGizmo(center, forward, radius, slash1, Color.green, "Slash 1");
+        DrawSlashGizmo(center, forward, radius, slash2, Color.yellow, "Slash 2");
     }
 }

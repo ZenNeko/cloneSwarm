@@ -28,32 +28,27 @@ public class TendrilStormWeapon : LanceWeapon
         float   dmg    = RollDamage(ld.damage, out bool isCrit);
         float   range  = ld.range;
 
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
-
         // Main tendril — forward (knockback applied via base class)
         DoThrust(origin, dir, dmg, range, isCrit);
 
-        // Random direction tendrils
+        // Calculate tip of the main lance
+        Vector3 lanceTip = origin + dir * range;
+
+        // Random direction tendrils starting from the tip of the main lance
         if (chainCount > 0)
-            StartCoroutine(SpawnRandomTendrils(dmg * chainDamageMult, range, isCrit));
+            StartCoroutine(SpawnRandomTendrils(lanceTip, dmg * chainDamageMult, range, isCrit));
     }
 
-    IEnumerator SpawnRandomTendrils(float dmg, float range, bool isCrit)
+    IEnumerator SpawnRandomTendrils(Vector3 lanceTip, float dmg, float range, bool isCrit)
     {
         for (int i = 0; i < chainCount; i++)
         {
             if (chainDelay > 0f) yield return new WaitForSeconds(chainDelay);
 
-            // Origin re-evaluates each tick (player may have moved)
-            Vector3 origin    = transform.position + Vector3.up * 0.5f;
             Vector2 rnd2D     = Random.insideUnitCircle.normalized;
             Vector3 randomDir = new Vector3(rnd2D.x, 0f, rnd2D.y);
 
-            DoThrust(origin, randomDir, dmg, range, isCrit);
+            DoThrust(lanceTip, randomDir, dmg, range, isCrit);
         }
     }
 }

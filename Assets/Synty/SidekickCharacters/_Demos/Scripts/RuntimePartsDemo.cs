@@ -3,6 +3,7 @@ using Synty.SidekickCharacters.Database;
 using Synty.SidekickCharacters.Database.DTO;
 using Synty.SidekickCharacters.Enums;
 using Synty.SidekickCharacters.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -30,7 +31,7 @@ namespace Synty.SidekickCharacters.Demo
         public TextMeshProUGUI _loadingText;
 
         /// <inheritdoc cref="Start"/>
-        void Start()
+        async void Start()
         {
             // Create a new instance of the database manager to access database content.
             _dbManager = new DatabaseManager();
@@ -41,8 +42,23 @@ namespace Synty.SidekickCharacters.Demo
 
             _sidekickRuntime = new SidekickRuntime(model, material, null, _dbManager);
 
-            // Populate the parts list for easy access.
-            SidekickRuntime.PopulateToolData(_sidekickRuntime);
+            // Populate the parts list for easy access. Await so initialization errors surface here instead of being
+            // swallowed on an unobserved task and showing up later as a missing-key error.
+            try
+            {
+                await SidekickRuntime.PopulateToolData(_sidekickRuntime);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to load Sidekick character data: {ex}");
+                if (_loadingText != null)
+                {
+                    _loadingText.text = "Failed to load character data. See the log for details.";
+                    _loadingText.enabled = true;
+                }
+                return;
+            }
+
             _partLibrary = _sidekickRuntime.MappedPartDictionary;
 
             // For this example we are only interested in Upper Body parts, so we filter the list of all parts to only get the ones we want.

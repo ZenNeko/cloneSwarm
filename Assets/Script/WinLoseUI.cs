@@ -47,6 +47,7 @@ public class WinLoseUI : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        IsShowing = false;
 
         canvasGroup = panelRoot?.GetComponent<CanvasGroup>();
         if (panelRoot) panelRoot.SetActive(false);

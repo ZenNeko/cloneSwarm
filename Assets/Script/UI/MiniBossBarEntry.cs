@@ -33,18 +33,18 @@ public class MiniBossBarEntry : MonoBehaviour
     Enemy _enemy;
 
     // ── Init ──────────────────────────────────────────────────────────────
-    /// <summary>เรียกจาก MiniBossHUDUI หลัง Instantiate</summary>
-    public void Initialize(MiniBossAI boss)
+    /// <summary>เรียกจาก BossHUDUI หลัง Instantiate</summary>
+    public void Initialize(BossController boss)
     {
         if (boss == null) return;
         _enemy = boss.GetComponent<Enemy>();
 
-        // ชื่อ: ใช้ MiniBossAI.bossName ก่อน → fallback gameObject.name
+        // ชื่อ: ใช้ boss.bossDisplayName ก่อน → fallback gameObject.name
         if (nameText != null)
         {
-            string n = string.IsNullOrEmpty(boss.bossName)
+            string n = string.IsNullOrEmpty(boss.bossDisplayName)
                 ? boss.gameObject.name.Replace("(Clone)", "").Trim()
-                : boss.bossName;
+                : boss.bossDisplayName;
             nameText.text = n;
         }
 

@@ -8,7 +8,7 @@ using UnityEngine;
 /// Super tier — 1 level เท่านั้น
 ///   dmg=30/tick, cd=0.5s, range=6.0
 ///
-/// Fusion: Death Field + Minefield = ExplosiveAuraWeapon
+/// Fusion: Death Field + Splitter Bomb = ExplosiveAuraWeapon
 ///
 /// **Anti-recursion:** Enemy.OnAnyEnemyDiedAt event fires synchronously ขณะ
 /// FireMeleeServerRpc กำลัง process damage → ถ้า explode ใน callback ตรงๆ
@@ -42,15 +42,14 @@ public class DeathFieldWeapon : WeaponBase
         float   radius = ld.range;
         float   dmg    = RollDamage(ld.damage, out bool isCrit);
 
-        if (manager.statManager != null)
+        FireMelee(center, radius, dmg, isCrit);
+        // Main field hit VFX (parented to player, looping)
+        string vfxKey = ResolveHitVfx("OrbiterHit");
+        if (!string.IsNullOrEmpty(vfxKey) && vfxKey != "None")
         {
-            radius *= manager.statManager.GetAreaMultiplier();
-            dmg    *= manager.statManager.GetPowerMultiplier();
+            float scale = radius > 0f ? ComputeVfxScale(vfxKey, radius) : 1f;
+            manager.BroadcastVfxParentedServerRpc(vfxKey, scale, isLoop: true);
         }
-
-        manager.FireMeleeServerRpc(center, radius, dmg);
-        // Main field hit VFX
-        ShowVfx(ResolveHitVfx("OrbiterHit"), center, radius, isCrit);
     }
 
     void OnEnemyDiedAt(Vector3 deathPos)
@@ -89,8 +88,9 @@ public class DeathFieldWeapon : WeaponBase
     void ExplodeAt(Vector3 deathPos)
     {
         Vector3 explosionCenter = deathPos + Vector3.up * 0.5f;
-        manager.FireMeleeServerRpc(explosionCenter, deathExplosionRadius, deathExplosionDamage);
+        float dmg = RollDamage(deathExplosionDamage, out bool isCrit);
+        FireMelee(explosionCenter, deathExplosionRadius, dmg, isCrit);
         // Chain explosion VFX (เมื่อ enemy ตายในฟิลด์)
-        ShowVfx(ResolveSecondaryVfx("GrenadeExplosion"), explosionCenter, deathExplosionRadius);
+        ShowVfx(ResolveSecondaryVfx("GrenadeExplosion"), explosionCenter, deathExplosionRadius, isCrit);
     }
 }

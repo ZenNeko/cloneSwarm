@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
+  m_Name: WD_Spike
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: Spike
+  description: Spike
+  icon: {fileID: 0}
+  tier: 0
+  prefab: {fileID: 80500625944189811, guid: 55e63764678885f449b5e8231abb470b, type: 3}
+  aimMode: 0
+  levels:
+  - damage: 20
+    cooldown: 2
+    projectileCount: 10
+    range: 25
+    projectileSpeed: 14
+    radius: 2.5
+    piercing: 1
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 25
+    projectileSpeed: 12
+    radius: 2.8
+    piercing: 1
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 3.1
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 3.4
+    piercing: 0
+    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 3.8
+    piercing: 0
+    levelUpText: 
+  superVersion: {fileID: 11400000, guid: 48224c55f25a979488b12f81a8bd0481, type: 2}
+  superConditions:
+  - conditionType: 0
+    requiredStatType: 4
+    requiredLevel: 1
+    requiredWeapon: {fileID: 0}
+  weight: 100
+  exclusiveCharacter: {fileID: 0}

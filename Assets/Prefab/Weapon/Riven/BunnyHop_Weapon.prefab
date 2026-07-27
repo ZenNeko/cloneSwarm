@@ -50,13 +50,17 @@ MonoBehaviour:
   aimMode: 0
   tempCooldownMult: 1
   weaponVfxType: MeteorAoE
-  secondaryVfxType: -1
-  fireSfx: []
-  hitSfx: []
-  fireVolume: 0.7
+  secondaryVfxType: None
+  fireSfx:
+  - {fileID: 8300000, guid: ba041dae0e6c5334d840591a3e1ce5fb, type: 3}
+  - {fileID: 8300000, guid: 33bc19747bc7f4340973857ff90b2782, type: 3}
+  hitSfx:
+  - {fileID: 8300000, guid: ba041dae0e6c5334d840591a3e1ce5fb, type: 3}
+  - {fileID: 8300000, guid: 33bc19747bc7f4340973857ff90b2782, type: 3}
+  fireVolume: 0.6
   hitVolume: 0.6
-  pitchVariance: 0.05
-  dashDistance: 4
+  pitchVariance: 0.2
+  dashDistance: 5
   dashDuration: 0.15
   exileProjectileRangeMult: 7
   runicMaxRange: 12

@@ -101,8 +101,68 @@ public abstract class AbilityBase : MonoBehaviour
     {
         var sm = manager?.statManager;
         if (sm != null && Random.value < sm.GetCritChance())
-        { isCrit = true; return baseDamage * 2f; }
-        isCrit = false; return baseDamage;
+        {
+            isCrit = true;
+            return baseDamage * 2f;
+        }
+        isCrit = false;
+        return baseDamage;
+    }
+
+    // ── Attack Wrappers ──────────────────────────────────────────────────
+    protected void FireMelee(Vector3 center, float radius, float damage, bool isCrit = false)
+    {
+        manager.FireMeleeServerRpc(center, radius, damage, isCrit, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void FireArcMelee(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false)
+    {
+        manager.FireArcMeleeServerRpc(center, forward, radius, arcAngle, damage, isCrit, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void FireLineAoE(Vector3 origin, Vector3 direction, float damage, float range, float width = 1.5f, bool isCrit = false, float knockbackForce = 0f, string vfxKey = "None")
+    {
+        manager.FireLineAoEServerRpc(origin, direction, damage, range, width, isCrit, knockbackForce, vfxKey, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void FireRaycast(Vector3 origin, Vector3 direction, float damage, float maxDist = 50f, string vfxKey = "None", bool isCrit = false, bool playHitVfx = true, float thickness = 0f)
+    {
+        manager.FireRaycastServerRpc(origin, direction, damage, maxDist, vfxKey, isCrit, playHitVfx, data != null ? data.abilityName : "Unknown", thickness);
+    }
+
+    protected void SpawnBoomerang(Vector3 spawnPos, Vector3 direction, float damage, float speed, float maxRange, bool isCrit = false)
+    {
+        manager.SpawnBoomerangServerRpc(spawnPos, direction, damage, speed, maxRange, isCrit, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false)
+    {
+        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void DropMine(Vector3 position, float damage, float triggerRadius)
+    {
+        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void SpawnStickyRocket(Vector3 spawnPos, Vector3 direction, float damage, float speed, float explosionRadius)
+    {
+        manager.SpawnStickyRocketServerRpc(spawnPos, direction, damage, speed, explosionRadius, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void SpawnGiantRocket(Vector3 spawnPos, Vector3 direction, float baseDamage, float speed, float maxRange, float explosionRadius)
+    {
+        manager.SpawnGiantRocketServerRpc(spawnPos, direction, baseDamage, speed, maxRange, explosionRadius, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void SpawnMissiles(Vector3[] spawnPositions, ulong[] targetNetIds, float damage, float explosionRadius)
+    {
+        manager.SpawnMissilesServerRpc(spawnPositions, targetNetIds, damage, explosionRadius, data != null ? data.abilityName : "Unknown");
+    }
+
+    protected void SpawnFunnels(Vector3 center, int count, float orbitRadius, float laserDamage, float laserCooldown, float attackRange, float lifetime, ulong ownerClientId, int beamCount = 1)
+    {
+        manager.SpawnFunnelsServerRpc(center, count, orbitRadius, laserDamage, laserCooldown, attackRange, lifetime, ownerClientId, beamCount, data != null ? data.abilityName : "Unknown");
     }
 
     // ── SFX Helpers (delegate to SoundManager) ───────────────────────────

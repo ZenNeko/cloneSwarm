@@ -14,6 +14,8 @@ public class GiantRocketProjectile : NetworkBehaviour
     [HideInInspector] public float moveSpeed;
     [HideInInspector] public float maxRange;
     [HideInInspector] public float explosionRadius;
+    [HideInInspector] public string weaponName = "Unknown";
+    [HideInInspector] public PlayerWeaponManager weaponManager;
 
     public float maxBonusMultiplier = 2f;
 
@@ -39,7 +41,7 @@ public class GiantRocketProjectile : NetworkBehaviour
         transform.position += direction * moveSpeed * Time.deltaTime;
 
         // หมดระยะ → ระเบิด AoE
-        if (Vector3.Distance(spawnPos, transform.position) >= maxRange)
+        if ((transform.position - spawnPos).sqrMagnitude >= maxRange * maxRange)
             Explode(transform.position);
     }
 
@@ -66,6 +68,10 @@ public class GiantRocketProjectile : NetworkBehaviour
             float missingFrac = Mathf.Clamp01(1f - enemy.GetHealthPercent());
             float finalDamage = baseDamage * (1f + missingFrac * maxBonusMultiplier);
             enemy.EnemyTakeDamage(finalDamage);
+            if (weaponManager != null)
+            {
+                weaponManager.RegisterWeaponDamage(weaponName, finalDamage);
+            }
         }
 
         ShowExplosionClientRpc(center, explosionRadius);
@@ -77,8 +83,11 @@ public class GiantRocketProjectile : NetworkBehaviour
     [ClientRpc]
     void ShowExplosionClientRpc(Vector3 pos, float radius)
     {
-        VFXFactory.Play("HitEffect", pos);
-        VFXFactory.Play(explosionVfxType, pos);
+        // ป้องกันคีย์ระเบิดว่าง หรือไม่พบในคลัง และถอด HitEffect ดั้งเดิมที่ซ้ำกับศัตรูออก
+        string vfxKey = (NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.HasMapping(explosionVfxType))
+            ? explosionVfxType
+            : "GrenadeExplosion";
+        VFXFactory.Play(vfxKey, pos);
     }
 
 #if UNITY_EDITOR

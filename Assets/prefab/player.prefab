@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7281612242053754947
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1221059328198784411}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1221059328198784411
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7281612242053754947}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4651476870821962754}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7353199761178665806
 GameObject:
   m_ObjectHideFlags: 0
@@ -23,6 +54,7 @@ GameObject:
   - component: {fileID: 4941737850633899768}
   - component: {fileID: 8713204962959621646}
   - component: {fileID: 7893533639906240797}
+  - component: {fileID: 6880900941574084203}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -42,7 +74,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1221059328198784411}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &9150029023067321000
@@ -60,7 +93,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7353199761178665806}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -150,7 +183,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &1746890018923511425
 MonoBehaviour:
@@ -350,7 +383,9 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   isDashing: 0
+  isKnockedBack: 0
   tempMoveSpeedBonus: 0
+  tempHealthRegenBonus: 0
 --- !u!114 &4642509835648411498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -367,10 +402,11 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   playerMove: {fileID: 0}
   statManager: {fileID: 0}
-  characterData: {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
+  characterData: {fileID: 0}
   startingWeapon: {fileID: 0}
   boomerangPrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
   grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
+  molotovPrefab: {fileID: 0}
   minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}
   stickyRocketPrefab: {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
   giantRocketPrefab: {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
@@ -399,7 +435,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 883b2b60da60d594d9633296583e81b4, type: 2}
   - {fileID: 11400000, guid: 9f931c4b300bae7478f93523e50d1e68, type: 2}
   - {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
-  - {fileID: 11400000, guid: 9e213a1d96ba1d14092c857b716056c5, type: 2}
+  - {fileID: 11400000, guid: c2280762053d4b54fa351a0211c48023, type: 2}
   - {fileID: 11400000, guid: 78c82c6cdaac98d48ae8fe1b4f7219e8, type: 2}
   - {fileID: 11400000, guid: ff3e9a3dcb66bc140a7c5cb6e0100f00, type: 2}
   - {fileID: 11400000, guid: afc0e65b3612c1647a9e3bd5f6ece9d4, type: 2}
@@ -415,8 +451,23 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 539da540417cbd04ab9b68faf03e8bee, type: 2}
   - {fileID: 11400000, guid: 1207c6eec5e8cbb4b9b68e1987c53f56, type: 2}
   - {fileID: 11400000, guid: 492887282d5f46544b1cfbafc3464cc2, type: 2}
-  - {fileID: 11400000, guid: 3bf30fb8ceee2204eb30d8151f2368fe, type: 2}
+  - {fileID: 11400000, guid: e3c8246fe3c7cc34ea3200bc35c79b54, type: 2}
   - {fileID: 11400000, guid: f2391673500fdb341b17be4751471342, type: 2}
+  - {fileID: 11400000, guid: 5ed29817e58b1954d9f28939db81ea2c, type: 2}
+  - {fileID: 11400000, guid: 1d795b8f00ffba544893c924b31a9771, type: 2}
+  - {fileID: 11400000, guid: c2f31333154558c42ae132714e0616d1, type: 2}
+  - {fileID: 11400000, guid: 35275847dcf290949a3eda079e42f56a, type: 2}
+  - {fileID: 11400000, guid: dfbd9117dfe110040a222d67b63ca77e, type: 2}
+  - {fileID: 11400000, guid: a8b80ee6c166311458d5519c805542b9, type: 2}
+  - {fileID: 11400000, guid: 2252aa68877e669439ad22fd5fcad766, type: 2}
+  - {fileID: 11400000, guid: cd9074720d50cec4f84180898cbee4a5, type: 2}
+  - {fileID: 11400000, guid: ac2b7b2b4a920dc438b4a6ff71ac02d7, type: 2}
+  - {fileID: 11400000, guid: 83c0b1e490e59d849bd328d41fcae821, type: 2}
+  - {fileID: 11400000, guid: c0def996a0a34d04796da1ebdff3d69c, type: 2}
+  - {fileID: 11400000, guid: 1c56706a9e8d0ac4692d013d4cdf1763, type: 2}
+  - {fileID: 11400000, guid: a3f5b2cc37444f340bb76a6bf9044e37, type: 2}
+  - {fileID: 11400000, guid: 2b5bf41d9968ab0488da6c39237ae1db, type: 2}
+  - {fileID: 11400000, guid: 1f7aab15c8f308b48989848016512ccd, type: 2}
   allStats:
   - {fileID: 11400000, guid: baabf1a1a51e22241bfab42bb6367df4, type: 2}
   - {fileID: 11400000, guid: ee3f6447d1cd59245bdcda73bb6ee14c, type: 2}
@@ -431,11 +482,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b05f701fbe13e904c894c707da567f93, type: 2}
   - {fileID: 11400000, guid: 1208c1e3404eff34d9a08d6928dfa45a, type: 2}
   allRecipes:
+  - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
   - {fileID: 11400000, guid: cc06f9f7f8663d74a9497b6778b35ae8, type: 2}
+  - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
   - {fileID: 11400000, guid: 13add57572c889d42a33f0bc0829598b, type: 2}
   - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
-  - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
-  - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
   cardsPerLevel: 3
 --- !u!114 &7655913753558015870
 MonoBehaviour:
@@ -529,6 +580,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatManager
   ShowTopMostFoldoutHeaderGroup: 1
   tempAbilityHaste: 0
+  tempDamageBonusMult: 0
 --- !u!114 &8713204962959621646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -554,3 +606,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b0457e71e70a754dbbb8421f49479bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAbilityManager
+--- !u!114 &6880900941574084203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e71a73f81c55fcc4faf9560ec3718b69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerVisual
+  ShowTopMostFoldoutHeaderGroup: 1
+  modelHolder: {fileID: 1221059328198784411}
+  characters:
+  - {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}
+  - {fileID: 11400000, guid: 368c82f914f7df542b886ba0f76f288e, type: 2}
+  - {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
+  moveParam: IsMoving
+  speedParam: Speed
+  deadParam: IsDead
+  attackParam: Attack
+  motionSpeedParam: MotionSpeed
+  motionSpeedValue: 1
+  movingThreshold: 0.05
+  maxSpeed: 5
+  speedSmoothTime: 0.1
+  faceMoveDirection: 1
+  rotateSpeed: 1440

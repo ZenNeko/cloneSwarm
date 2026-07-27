@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 public class ExpOrb : NetworkBehaviour
 {
+    public static readonly List<ExpOrb> ActiveOrbs = new();
+
     [Header("EXP")]
     public float expAmount = 10f;
 
@@ -20,15 +23,36 @@ public class ExpOrb : NetworkBehaviour
 
     private Transform currentTarget;
     private Vector3   startPos;
+    private bool      forceAttract = false;
 
     // ── Init (เรียกจาก Enemy หลัง Spawn) ─────────────────────────────────
     public void SetExpAmount(float amount) => expAmount = amount;
 
+    public void ForceAttractTo(Transform target)
+    {
+        if (target == null) return;
+        currentTarget = target;
+        forceAttract = true;
+        moveSpeed = 15f;
+    }
+
     public override void OnNetworkSpawn()
     {
+        if (!ActiveOrbs.Contains(this)) ActiveOrbs.Add(this);
         if (!IsServer) return;
         startPos      = transform.position;
         currentTarget = FindNearestPlayer();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ActiveOrbs.Remove(this);
+    }
+
+    public override void OnDestroy()
+    {
+        ActiveOrbs.Remove(this);
+        base.OnDestroy();
     }
 
     // ── Update: Server only ───────────────────────────────────────────────
@@ -36,7 +60,7 @@ public class ExpOrb : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        if (Time.frameCount % 90 == 0 || currentTarget == null)
+        if (!forceAttract && (Time.frameCount % 90 == 0 || currentTarget == null))
             currentTarget = FindNearestPlayer();
 
         if (currentTarget == null) return;
@@ -49,7 +73,7 @@ public class ExpOrb : NetworkBehaviour
             return;
         }
 
-        if (dist <= GetAttractRadius())
+        if (forceAttract || dist <= GetAttractRadius())
         {
             transform.position = Vector3.MoveTowards(
                 transform.position, currentTarget.position, moveSpeed * Time.deltaTime);
@@ -62,9 +86,14 @@ public class ExpOrb : NetworkBehaviour
         }
     }
 
+    private bool isCollected = false;
+
     // ── Collect ───────────────────────────────────────────────────────────
     void Collect()
     {
+        if (isCollected) return;
+        isCollected = true;
+
         float finalExp = expAmount;
         // Find nearest player stat manager
         if (currentTarget != null)
@@ -77,11 +106,14 @@ public class ExpOrb : NetworkBehaviour
         else Destroy(gameObject);
     }
 
-    // ── Fallback Trigger ─────────────────────────────────────────────────
     void OnTriggerEnter(Collider other)
     {
         if (!IsServer) return;
-        if (other.CompareTag("Player")) Collect();
+        if (other.CompareTag("Player"))
+        {
+            var pm = other.GetComponentInParent<playermove>();
+            if (pm != null) Collect();
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -93,6 +125,28 @@ public class ExpOrb : NetworkBehaviour
         var sm = currentTarget.GetComponent<PlayerStatManager>();
         float mult = sm != null ? sm.GetPickupRadiusMultiplier() : 1f;
         return attractRadius * mult;
+    }
+
+    // ── Upgrade Orb (SuperBigAoEWeapon) ──────────────────────────────────
+    private bool isUpgraded = false;
+
+    public void UpgradeOrb(float multiplier = 2f)
+    {
+        if (!IsServer || isUpgraded) return;
+        isUpgraded = true;
+        expAmount *= multiplier;
+        UpgradeOrbVisualClientRpc(multiplier);
+    }
+
+    [ClientRpc]
+    private void UpgradeOrbVisualClientRpc(float scaleMult)
+    {
+        transform.localScale *= scaleMult;
+        var mr = GetComponentInChildren<MeshRenderer>();
+        if (mr != null)
+        {
+            mr.material.color = new Color(1f, 0.85f, 0f); // Gold tint
+        }
     }
 
     Transform FindNearestPlayer()

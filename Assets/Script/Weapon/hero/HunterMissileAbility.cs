@@ -101,7 +101,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
             targetNetIds[i] = netObj != null ? netObj.NetworkObjectId : 0;
         }
 
-        manager.SpawnMissilesServerRpc(spawnPositions, targetNetIds, dmg, radius);
+        SpawnMissiles(spawnPositions, targetNetIds, dmg, radius);
         Debug.Log($"[HunterMissile] 🚀 FIRED {targets.Count} missiles dmg={dmg:F0} radius={radius:F1}");
     }
 
@@ -123,7 +123,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         var seen   = new HashSet<int>();
         foreach (var entry in sorted)
         {
-            int id = entry.go.GetInstanceID();
+            int id = entry.go.GetId();
             if (seen.Contains(id)) continue;
             seen.Add(id);
             result.Add(entry.go);

@@ -157,6 +157,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   ShowTopMostFoldoutHeaderGroup: 1
   speed: 0
+  rotationSpeed: 360
   suppressDefaultMovement: 0
   wallLayer:
     serializedVersion: 2
@@ -164,6 +165,8 @@ MonoBehaviour:
   wallCheckRadius: 0.4
   wallCheckDistance: 0.6
   useFlowField: 1
+  separationWeight: 0.3
+  separationRadius: 1.2
   contactDamage: 0
   damageCooldown: 1
   damageRadius: 1.4
@@ -204,7 +207,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 94
   m_CollisionDetection: 0
 --- !u!114 &3862272354037605889
 MonoBehaviour:

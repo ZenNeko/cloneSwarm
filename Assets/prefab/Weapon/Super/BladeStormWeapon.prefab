@@ -49,11 +49,10 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: 11
-  weaponVfxKey: SlashHit
-  secondaryVfxType: -1
-  secondaryVfxKey: None
-  fireSfx: []
+  weaponVfxType: SlashHit
+  secondaryVfxType: SlashHit2
+  fireSfx:
+  - {fileID: 8300000, guid: 48b7a3c2182504f4cb57859d9113a115, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
@@ -61,3 +60,18 @@ MonoBehaviour:
   burstCount: 3
   burstInterval: 0.12
   arcAngle: 120
+  slash1:
+    forwardOffset: 0.5
+    rightOffset: 0
+    rotationX: 180
+    rotationY: 340
+    rotationZ: 0
+    useSecondaryVfx: 0
+  slash2:
+    forwardOffset: 0.5
+    rightOffset: 0
+    rotationX: 180
+    rotationY: 340
+    rotationZ: 0
+    useSecondaryVfx: 1
+  alternatePerFire: 1

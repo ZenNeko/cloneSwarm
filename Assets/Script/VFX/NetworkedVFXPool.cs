@@ -34,12 +34,7 @@ public class NetworkedVFXPool : MonoBehaviour
     [Tooltip("VFX Database ScriptableObject")]
     public VFXDatabase vfxDatabase;
 
-    // ─── Beam Pool ───────────────────────────────────────────────────────
-    [Header("Beam Prefab (LineRenderer)")]
-    [Tooltip("Prefab ที่มี LineRenderer — ใช้โดย PlayBeam()")]
-    public GameObject beamPrefab;
-    [Min(1), Tooltip("จำนวน beam pre-allocate")]
-    public int        beamPoolSize = 8;
+
 
     // ─── Projectile Registry ────────────────────────────────────────────
     [Header("Projectile Registry")]
@@ -52,7 +47,7 @@ public class NetworkedVFXPool : MonoBehaviour
     private readonly Dictionary<string, int>            _keyToPoolId  = new();
     private readonly Dictionary<int, Queue<GameObject>> _pools        = new();
     private readonly Dictionary<GameObject, int>        _projToId     = new();
-    private Queue<GameObject>                           _beamPool;
+
 
     // ─── Lifecycle ───────────────────────────────────────────────────────
     void Awake()
@@ -94,13 +89,7 @@ public class NetworkedVFXPool : MonoBehaviour
             Debug.LogWarning("[VFXPool] VFXDatabase is null or empty!");
         }
 
-        // ── Beam pool ─────────────────────────────────────────────────
-        _beamPool = new Queue<GameObject>(beamPoolSize);
-        if (beamPrefab != null)
-        {
-            for (int j = 0; j < beamPoolSize; j++)
-                _beamPool.Enqueue(CreateInstance(beamPrefab));
-        }
+
 
         // ── Projectile registry ───────────────────────────────────────
         for (int i = 0; i < projectilePrefabs.Count; i++)
@@ -110,7 +99,6 @@ public class NetworkedVFXPool : MonoBehaviour
         int databaseCount = (vfxDatabase != null && vfxDatabase.entries != null) ? vfxDatabase.entries.Count : 0;
         Debug.Log($"[VFXPool] Built {_pools.Count} VFX pools " +
                   $"({databaseCount} type-mapped), " +
-                  $"beam pool={_beamPool.Count}, " +
                   $"{_projToId.Count} projectile entries");
     }
 
@@ -171,38 +159,73 @@ public class NetworkedVFXPool : MonoBehaviour
     /// Spawn beam (LineRenderer) จาก from → to แล้วคืน pool หลัง duration
     /// ใช้โดย VFXFactory.PlayBeam()
     /// </summary>
-    public void PlayBeam(Vector3 from, Vector3 to, float duration = 0.15f)
+    public void PlayBeam(string beamKey, Vector3 from, Vector3 to, float duration = 0.15f)
     {
-        // Fallback: ถ้าไม่มี beamPrefab assign → สร้าง runtime LineRenderer แบบเรียบง่าย
-        // จะได้ใช้ได้ทันทีโดยไม่ต้อง setup ใน Inspector
-        GameObject go;
-        if (beamPrefab != null)
+        GameObject go = null;
+        int poolId = -1;
+        bool isDatabasePool = false;
+
+        if (!string.IsNullOrEmpty(beamKey) && beamKey != "Default" && beamKey != "None")
         {
-            go = _beamPool.Count > 0 ? _beamPool.Dequeue() : CreateInstance(beamPrefab);
+            if (_keyToPoolId.TryGetValue(beamKey, out poolId))
+            {
+                if (_pools.TryGetValue(poolId, out var q))
+                {
+                    isDatabasePool = true;
+                    go = q.Count > 0 ? q.Dequeue() : CreateInstance(GetPrefabForId(poolId));
+                }
+            }
         }
-        else
+
+        if (go == null)
         {
-            go = _beamPool.Count > 0 ? _beamPool.Dequeue() : CreateFallbackBeam();
+            // Fallback: ถ้าไม่มี custom beam key หรือไม่พบ → สร้าง fallback beam
+            go = CreateFallbackBeam();
         }
 
         go.SetActive(true);
         go.transform.position = from;
         go.transform.rotation = Quaternion.identity;
 
-        var lr = go.GetComponentInChildren<LineRenderer>(includeInactive: true);
-        if (lr != null)
+        var lrs = go.GetComponentsInChildren<LineRenderer>(includeInactive: true);
+        if (lrs != null && lrs.Length > 0)
         {
-            lr.useWorldSpace = true;
-            lr.positionCount = 2;
-            lr.SetPosition(0, from);
-            lr.SetPosition(1, to);
+            foreach (var lr in lrs)
+            {
+                lr.useWorldSpace = true;
+                lr.positionCount = 2;
+                lr.SetPosition(0, from);
+                lr.SetPosition(1, to);
+            }
         }
         else
         {
-            Debug.LogWarning($"[VFXPool] beamPrefab '{beamPrefab.name}' ไม่มี LineRenderer component");
+            Debug.LogWarning($"[VFXPool] beamPrefab / custom beam '{go.name}' ไม่มี LineRenderer component");
         }
 
-        StartCoroutine(ReturnBeamToPool(go, duration));
+        if (isDatabasePool)
+        {
+            StartCoroutine(ReturnCustomBeamToPool(go, poolId, duration));
+        }
+        else
+        {
+            StartCoroutine(DestroyFallbackBeam(go, duration));
+        }
+    }
+
+    IEnumerator ReturnCustomBeamToPool(GameObject go, int poolId, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (go == null) yield break;
+        go.SetActive(false);
+        if (_pools.TryGetValue(poolId, out var q))
+        {
+            q.Enqueue(go);
+        }
+        else
+        {
+            Destroy(go);
+        }
     }
 
     /// <summary>สร้าง LineRenderer แบบ runtime — ใช้เมื่อ beamPrefab ไม่ได้ assign</summary>
@@ -229,12 +252,10 @@ public class NetworkedVFXPool : MonoBehaviour
         return go;
     }
 
-    IEnumerator ReturnBeamToPool(GameObject go, float delay)
+    IEnumerator DestroyFallbackBeam(GameObject go, float delay)
     {
         yield return new WaitForSeconds(delay);
-        if (go == null) yield break;
-        go.SetActive(false);
-        _beamPool.Enqueue(go);
+        if (go != null) Destroy(go);
     }
 
     /// <summary>Internal: 3D scale variant — ใช้โดย PlayByName3D</summary>
@@ -277,7 +298,7 @@ public class NetworkedVFXPool : MonoBehaviour
 
     void PlayFromPoolCoreImpl(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale, Queue<GameObject> q)
     {
-
+        GameObject srcPrefab = GetPrefabForId(poolId);
         GameObject go;
         if (q.Count > 0)
         {
@@ -285,7 +306,6 @@ public class NetworkedVFXPool : MonoBehaviour
         }
         else
         {
-            GameObject srcPrefab = GetPrefabForId(poolId);
             if (srcPrefab == null)
             {
                 Debug.LogWarning($"[VFXPool] Pool exhausted id={poolId} และหา prefab ไม่ได้");
@@ -297,7 +317,6 @@ public class NetworkedVFXPool : MonoBehaviour
 
         if (go == null)
         {
-            GameObject srcPrefab = GetPrefabForId(poolId);
             if (srcPrefab == null) return;
             go = CreateInstance(srcPrefab);
         }
@@ -307,10 +326,14 @@ public class NetworkedVFXPool : MonoBehaviour
         Quaternion baseRot = direction.sqrMagnitude > 0.001f
             ? Quaternion.LookRotation(direction, Vector3.up)
             : Quaternion.identity;
+        
+        Quaternion prefabRot = srcPrefab != null ? srcPrefab.transform.rotation : Quaternion.identity;
         go.transform.rotation = Mathf.Abs(roll) > 0.01f
-            ? baseRot * Quaternion.Euler(0f, 0f, roll)
-            : baseRot;
-        go.transform.localScale = scale3D;
+            ? baseRot * Quaternion.Euler(0f, 0f, roll) * prefabRot
+            : baseRot * prefabRot;
+
+        Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
+        go.transform.localScale = Vector3.Scale(scale3D, prefabScale);
         go.SetActive(true);
 
         // ── Play: VFX Graph หรือ ParticleSystem ──────────────────────────
@@ -372,13 +395,179 @@ public class NetworkedVFXPool : MonoBehaviour
         yield return new WaitForSeconds(delay);
         if (go == null) yield break;
         go.SetActive(false);
+        go.transform.SetParent(null);
         if (_pools.TryGetValue(poolId, out var q)) q.Enqueue(go);
+    }
+
+    /// <summary>
+    /// เล่น VFX และกำหนด parent (เช่น ติดกับตัวผู้เล่น)
+    /// </summary>
+    public void PlayParented(string key, Transform parent, float scale = 1f)
+    {
+        if (string.IsNullOrEmpty(key) || key == "None") return;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
+        {
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}'");
+            return;
+        }
+        PlayFromPoolParented(id, parent, scale);
+    }
+
+    void PlayFromPoolParented(int poolId, Transform parent, float scale)
+    {
+        if (poolId < 0) return;
+        if (!_pools.TryGetValue(poolId, out var q)) return;
+
+        GameObject srcPrefab = GetPrefabForId(poolId);
+        GameObject go;
+        if (q.Count > 0)
+        {
+            go = q.Dequeue();
+        }
+        else
+        {
+            if (srcPrefab == null) return;
+            go = CreateInstance(srcPrefab);
+        }
+
+        if (go == null)
+        {
+            if (srcPrefab == null) return;
+            go = CreateInstance(srcPrefab);
+        }
+
+        // กำหนด parent และ local transform
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = Vector3.up * 0.5f; // ชดเชยความสูงให้อยู่ช่วงตัวผู้เล่น
+        go.transform.localRotation = Quaternion.identity;
+
+        Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
+        go.transform.localScale = prefabScale * scale;
+        go.SetActive(true);
+
+        var vfxGraph = go.GetComponent<VisualEffect>();
+        if (vfxGraph != null)
+        {
+            vfxGraph.Stop();
+            vfxGraph.Play();
+        }
+        else
+        {
+            foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
+            {
+                ps.Clear();
+                ps.Play();
+            }
+        }
+
+        StartCoroutine(ReturnToPool(go, poolId, CalcTTL(go, poolId)));
+    }
+
+    /// <summary>
+    /// คืน prefab ที่ใช้สำหรับ key นี้
+    /// </summary>
+    public GameObject GetPrefabForKey(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return null;
+        if (_keyToPoolId.TryGetValue(key, out int id))
+        {
+            return GetPrefabForId(id);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// เล่น VFX แบบ looping และกำหนด parent (จะไม่มีการคืน pool อัตโนมัติ)
+    /// </summary>
+    public GameObject PlayParentedLoop(string key, Transform parent, float scale = 1f)
+    {
+        if (string.IsNullOrEmpty(key) || key == "None") return null;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
+        {
+            Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}'");
+            return null;
+        }
+        return PlayFromPoolParentedLoop(id, parent, scale);
+    }
+
+    GameObject PlayFromPoolParentedLoop(int poolId, Transform parent, float scale)
+    {
+        if (poolId < 0) return null;
+        if (!_pools.TryGetValue(poolId, out var q)) return null;
+
+        GameObject srcPrefab = GetPrefabForId(poolId);
+        GameObject go;
+        if (q.Count > 0)
+        {
+            go = q.Dequeue();
+        }
+        else
+        {
+            if (srcPrefab == null) return null;
+            go = CreateInstance(srcPrefab);
+        }
+
+        if (go == null)
+        {
+            if (srcPrefab == null) return null;
+            go = CreateInstance(srcPrefab);
+        }
+
+        // กำหนด parent และ local transform
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = Vector3.up * 0.5f; // ชดเชยความสูงให้อยู่ช่วงตัวผู้เล่น
+        go.transform.localRotation = Quaternion.identity;
+
+        Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
+        go.transform.localScale = prefabScale * scale;
+        go.SetActive(true);
+
+        var vfxGraph = go.GetComponent<VisualEffect>();
+        if (vfxGraph != null)
+        {
+            vfxGraph.Stop();
+            vfxGraph.Play();
+        }
+        else
+        {
+            foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
+            {
+                ps.Clear();
+                ps.Play();
+            }
+        }
+
+        return go;
+    }
+
+    /// <summary>
+    /// หยุดเล่นและดึง VFX แบบ loop กลับคืนสู่ pool
+    /// </summary>
+    public void StopParented(string key, GameObject go)
+    {
+        if (go == null || string.IsNullOrEmpty(key)) return;
+        if (!_keyToPoolId.TryGetValue(key, out int id))
+        {
+            Destroy(go);
+            return;
+        }
+        go.SetActive(false);
+        go.transform.SetParent(null);
+        if (_pools.TryGetValue(id, out var q)) q.Enqueue(go);
     }
 
     // ─── Projectile Registry API ─────────────────────────────────────────
     /// <summary>คืน ID ของ projectile prefab (-1 = ไม่อยู่ใน registry)</summary>
     public int GetProjectileId(GameObject prefab)
         => prefab != null && _projToId.TryGetValue(prefab, out int id) ? id : -1;
+
+    /// <summary>คืน Vfx prefab ดั้งเดิมจาก string key ใน database</summary>
+    public GameObject GetVfxPrefab(string key)
+    {
+        if (vfxDatabase == null || string.IsNullOrEmpty(key)) return null;
+        var entry = vfxDatabase.entries.Find(e => e.key == key);
+        return entry?.prefab;
+    }
 
     /// <summary>คืน projectile prefab จาก ID (null = ไม่พบ → ใช้ default)</summary>
     public GameObject GetProjectilePrefab(int id)

@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_VFX_Zap_Lightning_04_LUT_Add
-  m_Shader: {fileID: 4800000, guid: 9d61c5fd9d44e654ab44b278b45a363e, type: 3}
+  m_Shader: {fileID: 4800000, guid: 739a90ed99c5eba44ab73a3522877127, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []

@@ -20,15 +20,6 @@ MonoBehaviour:
   aimMode: 1
   arcAngle: 360
   projectilePrefab: {fileID: 4913074562992064063, guid: 3c556c1709c300249b70eb88824d9394, type: 3}
-  hitVfxType: 0
-  fireSfx:
-  - {fileID: 8300000, guid: 17ae0ab528219cb48b39fe1e25902259, type: 3}
-  - {fileID: 8300000, guid: aa3170ea355bec94998b98f8e120d1e0, type: 3}
-  - {fileID: 8300000, guid: fd37ca23aa221b046b59b90865eceb93, type: 3}
-  hitSfx: []
-  fireVolume: 0.7
-  hitVolume: 0.6
-  pitchVariance: 0.05
   levels:
   - damage: 35
     cooldown: 2
@@ -69,7 +60,7 @@ MonoBehaviour:
   superConditions:
   - conditionType: 0
     requiredStatType: 1
-    requiredLevel: 5
+    requiredLevel: 1
     requiredWeapon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}

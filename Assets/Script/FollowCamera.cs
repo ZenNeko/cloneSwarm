@@ -19,7 +19,7 @@ public class FollowCamera : MonoBehaviour
         // Fallback: ถ้าพลาด event (spawn ก่อน subscribe) ให้หา player เอง
         if (target == null)
         {
-            foreach (var pm in FindObjectsOfType<playermove>())
+            foreach (var pm in FindObjectsByType<playermove>(FindObjectsSortMode.None))
             {
                 if (pm.IsOwner) { target = pm.transform; break; }
             }

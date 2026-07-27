@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-public enum AimMode { AutoNearest, MouseAim }
+public enum AimMode { AutoNearest, MouseAim, PlayerMovement, Random }
 
 /// <summary>
 /// Base class สำหรับทุก weapon script
@@ -20,6 +21,9 @@ public abstract class WeaponBase : MonoBehaviour
 
     /// <summary>cooldown multiplier ชั่วคราว — 1 = ปกติ, 0.5 = เร็ว 2× (set โดย HunterUltimate)</summary>
     [HideInInspector] public float tempCooldownMult = 1f;
+
+    protected virtual GameObject GetProjectilePrefab() => null;
+    public GameObject PublicGetProjectilePrefab() => GetProjectilePrefab();
 
     [Header("VFX (Per-Weapon Prefab)")]
     [Tooltip("VFX หลักของ weapon (slash arc, explosion shape, beam ฯลฯ)\n" +
@@ -133,6 +137,8 @@ public abstract class WeaponBase : MonoBehaviour
             projectileCount  = base_ld.projectileCount + sm.GetBonusProjectileCount(),
             range            = base_ld.range * sm.GetAreaMultiplier(),
             projectileSpeed  = base_ld.projectileSpeed,
+            radius           = base_ld.radius,
+            duration         = base_ld.duration,
             piercing         = base_ld.piercing
         };
     }
@@ -149,15 +155,73 @@ public abstract class WeaponBase : MonoBehaviour
         float spreadDeg = 0f,
         bool  piercing  = false,
         float maxRange  = -1f,
-        bool  isCrit    = false)
+        bool  isCrit    = false,
+        Transform target = null)
     {
         var pool   = NetworkedVFXPool.Instance;
-        int projId = pool != null && data?.projectilePrefab != null
-            ? pool.GetProjectileId(data.projectilePrefab)
+        var prefab = GetProjectilePrefab();
+        int projId = pool != null && prefab != null
+            ? pool.GetProjectileId(prefab)
             : -1;
+
+        ulong targetId = 999999;
+        if (target != null)
+        {
+            var targetNo = target.GetComponent<Unity.Netcode.NetworkObject>();
+            if (targetNo != null) targetId = targetNo.NetworkObjectId;
+        }
+
         manager.FireProjectileServerRpc(
             pos, dir, damage, speed, count, spreadDeg,
-            piercing, projId, maxRange, isCrit);
+            piercing, projId, maxRange, isCrit, data != null ? data.weaponName : "Unknown", targetId);
+    }
+
+    protected void FireMelee(Vector3 center, float radius, float damage, bool isCrit = false, float knockbackForce = 0f, Vector3 knockbackDir = default)
+    {
+        manager.FireMeleeServerRpc(center, radius, damage, isCrit, data != null ? data.weaponName : "Unknown", knockbackForce, knockbackDir);
+    }
+
+    protected void FireArcMelee(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false, float knockbackForce = 0f, Vector3 knockbackDir = default)
+    {
+        manager.FireArcMeleeServerRpc(center, forward, radius, arcAngle, damage, isCrit, data != null ? data.weaponName : "Unknown", knockbackForce, knockbackDir);
+    }
+
+    protected void FireLineAoE(Vector3 origin, Vector3 direction, float damage, float range, float width = 1.5f, bool isCrit = false, float knockbackForce = 0f, string vfxKey = "None",
+                               float slowPercent = 1f, float slowDuration = 0f, float freezeChance = 0f, float freezeDuration = 0f)
+    {
+        manager.FireLineAoEServerRpc(origin, direction, damage, range, width, isCrit, knockbackForce, vfxKey, data != null ? data.weaponName : "Unknown",
+                                     slowPercent, slowDuration, freezeChance, freezeDuration);
+    }
+
+    protected void FireRaycast(Vector3 origin, Vector3 direction, float damage, float maxDist = 50f, string vfxKey = "None", bool isCrit = false, bool playHitVfx = true, float thickness = 0f)
+    {
+        manager.FireRaycastServerRpc(origin, direction, damage, maxDist, vfxKey, isCrit, playHitVfx, data != null ? data.weaponName : "Unknown", thickness);
+    }
+
+    protected void SpawnBoomerang(Vector3 spawnPos, Vector3 direction, float damage, float speed, float maxRange, bool isCrit = false)
+    {
+        var pool   = NetworkedVFXPool.Instance;
+        var prefab = GetProjectilePrefab();
+        int projId = pool != null && prefab != null ? pool.GetProjectileId(prefab) : -1;
+        manager.SpawnBoomerangServerRpc(spawnPos, direction, damage, speed, maxRange, isCrit, data != null ? data.weaponName : "Unknown", projId);
+    }
+
+    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false, bool isCrit = false)
+    {
+        var pool   = NetworkedVFXPool.Instance;
+        var prefab = GetProjectilePrefab();
+        int projId = pool != null && prefab != null ? pool.GetProjectileId(prefab) : -1;
+        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.weaponName : "Unknown", projId, isCrit);
+    }
+
+    protected void DropMine(Vector3 position, float damage, float triggerRadius)
+    {
+        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.weaponName : "Unknown");
+    }
+
+    protected void SpawnStickyRocket(Vector3 spawnPos, Vector3 direction, float damage, float speed, float explosionRadius)
+    {
+        manager.SpawnStickyRocketServerRpc(spawnPos, direction, damage, speed, explosionRadius, data != null ? data.weaponName : "Unknown");
     }
 
     // ── VFX Helpers — broadcast ผ่าน Pool ไปทุก client ──────────────────
@@ -191,6 +255,8 @@ public abstract class WeaponBase : MonoBehaviour
     {
         SoundManager.Instance.PlayRandomSfx(hitSfx, pos, hitVolume, pitchVariance);
     }
+
+    public void PublicPlayHitSfx(Vector3 pos) => PlayHitSfx(pos);
 
     // ── VFX Resolvers (อ่านจาก field ของ weapon prefab) ──────────────────
     /// <summary>
@@ -264,8 +330,23 @@ public abstract class WeaponBase : MonoBehaviour
     protected virtual void OnLevelUp() { }
 
     // ── Aim Direction ─────────────────────────────────────────────────────
+    protected Vector3 _lastMoveDir = Vector3.forward;
+
     protected Vector3 GetAimDirection()
     {
+        // อัปเดต _lastMoveDir เสมอหากผู้เล่นเคลื่อนที่ (ไม่ว่าจะใช้ aimMode ใดก็ตาม) เพื่อใช้เป็น fallback
+        if (manager?.playerMove != null)
+        {
+            Vector3 move = manager.playerMove.MoveDirection;
+            if (move.sqrMagnitude > 0.01f)
+                _lastMoveDir = move.normalized;
+        }
+
+        if (aimMode == AimMode.PlayerMovement)
+        {
+            return _lastMoveDir;
+        }
+
         if (aimMode == AimMode.MouseAim && Camera.main != null)
         {
             // New Input System
@@ -281,14 +362,15 @@ public abstract class WeaponBase : MonoBehaviour
                     if (dir.sqrMagnitude > 0.001f) return dir.normalized;
                 }
             }
+            return _lastMoveDir;
         }
 
-        // Fallback: Auto-Nearest
-        Transform enemy = FindNearestEnemy(data.GetLevelData(currentLevel).range);
-        if (enemy == null) return transform.forward;
+        // Fallback: Auto-Nearest / Random
+        Transform enemy = FindTargetEnemy(data.GetLevelData(currentLevel).range);
+        if (enemy == null) return _lastMoveDir;
         Vector3 d = enemy.position - transform.position;
         d.y = 0f;
-        return d.sqrMagnitude > 0.001f ? d.normalized : transform.forward;
+        return d.sqrMagnitude > 0.001f ? d.normalized : _lastMoveDir;
     }
 
     // ── Enemy Finders ─────────────────────────────────────────────────────
@@ -305,14 +387,85 @@ public abstract class WeaponBase : MonoBehaviour
         return nearest;
     }
 
+    protected Transform FindTargetEnemy(float range)
+    {
+        if (aimMode == AimMode.Random)
+        {
+            var cols = PlayerWeaponManager.OverlapEnemy(transform.position, range);
+            if (cols != null && cols.Length > 0)
+            {
+                var validCols = new List<Collider>();
+                foreach (var c in cols)
+                {
+                    if (c != null) validCols.Add(c);
+                }
+                if (validCols.Count > 0)
+                {
+                    int rIdx = Random.Range(0, validCols.Count);
+                    return validCols[rIdx].transform;
+                }
+            }
+            return null;
+        }
+        return FindNearestEnemy(range);
+    }
+
     protected Collider[] FindAllEnemiesInRange(float range)
         => PlayerWeaponManager.OverlapEnemy(transform.position, range);
 
     // ── Gizmos ────────────────────────────────────────────────────────────
-    void OnDrawGizmosSelected()
+    protected virtual void OnDrawGizmosSelected()
     {
         if (data == null) return;
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, data.GetLevelData(currentLevel).range);
     }
+
+    protected void DrawSlashGizmo(Vector3 center, Vector3 forward, float radius, SlashConfig cfg, Color color, string label)
+    {
+        if (cfg == null) return;
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+        Vector3 pos = center 
+                    + forward * (radius * cfg.forwardOffset)
+                    + right   * (radius * cfg.rightOffset);
+
+        Quaternion rot = Quaternion.LookRotation(forward, Vector3.up)
+                       * Quaternion.Euler(cfg.rotationX, cfg.rotationY, 0f);
+        Vector3 slashDir = rot * Vector3.forward;
+
+        Gizmos.color = color;
+        Gizmos.DrawWireSphere(pos, 0.15f * radius);
+        Gizmos.DrawLine(pos, pos + slashDir * (radius * 0.5f));
+
+#if UNITY_EDITOR
+        UnityEditor.Handles.Label(pos + Vector3.up * 0.2f, label);
+#endif
+    }
+}
+
+[System.Serializable]
+public class SlashConfig
+{
+    [Tooltip("Offset ไปข้างหน้า (คูณ radius)")]
+    [Range(-1f, 1f)]
+    public float forwardOffset = 0.6f;
+
+    [Tooltip("Offset ไปทางขวา (คูณ radius) — ค่าลบ = ซ้าย")]
+    [Range(-1f, 1f)]
+    public float rightOffset = -0.3f;
+
+    [Tooltip("หมุนรอบแกน X (ก้ม/เงย)")]
+    [Range(0f, 360f)]
+    public float rotationX = 0f;
+
+    [Tooltip("หมุนรอบแกน Y (ซ้าย/ขวา) — 90 = ขวา, 180 = หลัง, 270 = ซ้าย")]
+    [Range(0f, 360f)]
+    public float rotationY = 0f;
+
+    [Tooltip("หมุนรอบแกน Z (เอียง/หมุนตัว)")]
+    [Range(0f, 360f)]
+    public float rotationZ = 0f;
+
+    [Tooltip("ใช้ VFX ลำดับที่ 2 (secondaryVfxType) แทน VFX หลัก")]
+    public bool useSecondaryVfx = false;
 }

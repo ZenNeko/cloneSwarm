@@ -14,22 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: TendrilStorm
   description: TendrilStorm
-  icon: {fileID: 0}
+  icon: {fileID: -779411195, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 1
   prefab: {fileID: 8378742293110232923, guid: 45cd5e43f55ffe94f9497155fa4a9d27, type: 3}
-  aimMode: 1
+  aimMode: 0
   arcAngle: 360
   projectilePrefab: {fileID: 0}
-  hitVfxType: 0
   levels:
   - damage: 90
     cooldown: 0.4
     projectileCount: 0
-    range: 8
+    range: 12
     projectileSpeed: 0
     piercing: 0
     levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
-  weight: 100
+  weight: 150
   exclusiveCharacter: {fileID: 0}

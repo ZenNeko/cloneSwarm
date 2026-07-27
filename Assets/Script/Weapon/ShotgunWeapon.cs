@@ -16,6 +16,11 @@ using UnityEngine;
 /// </summary>
 public class ShotgunWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Tooltip("มุมกระจายทั้งหมด (องศา) เช่น 40 = กระจาย 40° รวม")]
     public float spreadAngle = 40f;
 
@@ -37,8 +42,9 @@ public class ShotgunWeapon : WeaponBase
         {
             // Blunderbuss: ยิง 1 กระสุนหนัก → ระเบิด AoE บนเป้าหมาย
             // สร้างเป็น grenade ที่บินตรง แต่ระเบิดทันทีที่ชน
+            float dmg = RollDamage(ld.damage, out bool isBlastCrit);
             var targetPos = pos + dir * ld.range;
-            manager.ThrowGrenadeServerRpc(pos, targetPos, ld.damage, explosionRadius, fuseTime: 0.05f);
+            ThrowGrenade(pos, targetPos, dmg, explosionRadius, fuseTime: 0.05f, isCrit: isBlastCrit);
         }
         else
         {

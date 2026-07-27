@@ -21,6 +21,12 @@ using UnityEngine;
 /// </summary>
 public class BunnyHopWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
+
     [Header("Dash")]
     public float dashDistance = 4f;
     public float dashDuration = 0.15f;
@@ -80,11 +86,11 @@ public class BunnyHopWeapon : WeaponBase
         bool exileActive = GetExileActive();
         if (exileActive) aoeRadius *= exileAoeMult;
 
-        // Runic Blade: ยิ่งไกลศัตรู → damage +0–15%
-        Transform nearest = FindNearestEnemy(aoeRadius * 2f);
-        if (nearest != null)
+        // Runic Blade: ยิ่งไกลศัตรู → damage +0–15% (รองรับการเล็งแบบสุ่มและใกล้สุด)
+        Transform targetEnemy = FindTargetEnemy(aoeRadius * 2f);
+        if (targetEnemy != null)
         {
-            float dist  = Vector3.Distance(transform.position, nearest.position);
+            float dist  = Vector3.Distance(transform.position, targetEnemy.position);
             float bonus = Mathf.Clamp01(dist / runicMaxRange) * 0.15f;
             damage *= (1f + bonus);
         }
@@ -95,8 +101,8 @@ public class BunnyHopWeapon : WeaponBase
         Vector3 dashDir = manager.playerMove?.MoveDirection ?? Vector3.zero;
         if (dashDir.sqrMagnitude < 0.001f)
         {
-            dashDir = nearest != null
-                ? (nearest.position - transform.position)
+            dashDir = targetEnemy != null
+                ? (targetEnemy.position - transform.position)
                 : transform.forward;
             dashDir.y = 0f;
             if (dashDir.sqrMagnitude > 0.001f) dashDir = dashDir.normalized;
@@ -116,7 +122,7 @@ public class BunnyHopWeapon : WeaponBase
         if (rb != null && pm != null)
         {
             pm.isDashing = true;
-            rb.velocity  = Vector3.zero;
+            rb.linearVelocity  = Vector3.zero;
 
             Vector3 startPos = rb.position;
             Vector3 endPos   = startPos + dir * dashDistance;
@@ -131,7 +137,7 @@ public class BunnyHopWeapon : WeaponBase
             }
 
             rb.MovePosition(endPos);
-            rb.velocity  = Vector3.zero;
+            rb.linearVelocity  = Vector3.zero;
             pm.isDashing = false;
         }
         else yield return null;
@@ -142,7 +148,7 @@ public class BunnyHopWeapon : WeaponBase
         // ── AoE radial 360° รอบตัว — ทุก cast ────────────────────────────
         // Damage เรียกตาม aoeHitCount (Super double hit) แต่ VFX แสดง 1 ครั้งพอ
         for (int i = 0; i < aoeHitCount; i++)
-            manager.FireMeleeServerRpc(center, radius, damage);
+            FireMelee(center, radius, damage, isCrit);
         // isAttackHit:false → ไม่ spawn HitEffect overlay (Enemy.EnemyTakeDamage จัดให้แล้ว)
         ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
@@ -181,7 +187,7 @@ public class BunnyHopWeapon : WeaponBase
     }
 
 #if UNITY_EDITOR
-    void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
         float baseRange = data != null ? data.GetLevelData(currentLevel).range : 3f;
         float aoeR      = baseRange;

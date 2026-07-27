@@ -57,6 +57,7 @@ Material:
     - _DotsNoiseScale: 30
     - _DotsSize: 0.8
     - _DstBlend: 1
+    - _DstBlendAlpha: 1
     - _Float: 0
     - _IntersectionDepth: 0.5
     - _MaskMultiplier: 0.54
@@ -65,6 +66,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
     - _Surface: 1
     - _ZTest: 4
     - _ZWrite: 0

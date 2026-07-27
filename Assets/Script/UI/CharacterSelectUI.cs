@@ -175,23 +175,51 @@ public class CharacterSelectUI : MonoBehaviour
         SetText(detailPassiveDesc,  selected.passiveDescription);
 
         // Weapon row
-        string wName = selected.startingWeapon != null ? selected.startingWeapon.weaponName : "—";
-        Sprite wIcon = selected.weaponIcon
-                    ?? (selected.startingWeapon != null ? selected.startingWeapon.icon : null);
+        Sprite wIcon = null;
+        string wName = "—";
+        string wDesc = "";
+
+        if (selected.startingWeapon != null)
+        {
+            wIcon = selected.startingWeapon.icon;
+            wName = selected.startingWeapon.weaponName;
+            wDesc = selected.startingWeapon.description;
+        }
         SetImage(detailWeaponIcon, wIcon);
-        SetText(detailWeaponName,  string.IsNullOrEmpty(selected.weaponAbilityName)
-                                   ? wName : selected.weaponAbilityName);
-        SetText(detailWeaponDesc,  selected.weaponAbilityDescription);
+        SetText(detailWeaponName,  wName);
+        SetText(detailWeaponDesc,  wDesc);
 
-        // Ability row
-        SetImage(detailAbilityIcon, selected.abilityIcon);
-        SetText(detailAbilityName,  selected.abilityName);
-        SetText(detailAbilityDesc,  selected.abilityDescription);
+        // Ability row (Q)
+        AbilityData qAbility = null;
+        if (selected.abilities != null)
+        {
+            qAbility = System.Array.Find(selected.abilities, a => a != null && a.slotType == AbilitySlotType.Q);
+            if (qAbility == null && selected.abilities.Length > 0) qAbility = selected.abilities[0];
+        }
 
-        // Ultimate row
-        SetImage(detailUltimateIcon, selected.ultimateIcon);
-        SetText(detailUltimateName,  selected.ultimateName);
-        SetText(detailUltimateDesc,  selected.ultimateDescription);
+        Sprite qIcon = qAbility != null ? qAbility.icon : null;
+        string qName = qAbility != null ? qAbility.abilityName : "";
+        string qDesc = qAbility != null ? qAbility.description : "";
+
+        SetImage(detailAbilityIcon, qIcon);
+        SetText(detailAbilityName,  qName);
+        SetText(detailAbilityDesc,  qDesc);
+
+        // Ultimate row (E/R)
+        AbilityData ultAbility = null;
+        if (selected.abilities != null)
+        {
+            ultAbility = System.Array.Find(selected.abilities, a => a != null && a.slotType == AbilitySlotType.E);
+            if (ultAbility == null && selected.abilities.Length > 1) ultAbility = selected.abilities[1];
+        }
+
+        Sprite ultIcon = ultAbility != null ? ultAbility.icon : null;
+        string ultName = ultAbility != null ? ultAbility.abilityName : "";
+        string ultDesc = ultAbility != null ? ultAbility.description : "";
+
+        SetImage(detailUltimateIcon, ultIcon);
+        SetText(detailUltimateName,  ultName);
+        SetText(detailUltimateDesc,  ultDesc);
     }
 
     void RefreshCardHighlights()

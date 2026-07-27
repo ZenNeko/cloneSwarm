@@ -15,6 +15,11 @@ using UnityEngine;
 /// </summary>
 public class OrbitalCannonWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Header("Orb Visual")]
     public GameObject orbPrefab;
     public float      orbSize    = 0.5f;
@@ -29,17 +34,20 @@ public class OrbitalCannonWeapon : WeaponBase
         SpawnOrbs(data.GetLevelData(currentLevel).projectileCount);
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (manager == null || !manager.IsOwner) return;
         orbitAngle += rotSpeed * Time.deltaTime;
-        float radius = data.GetLevelData(currentLevel).range;
+        float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+        float radius = data.GetLevelData(currentLevel).range * areaMult;
         for (int i = 0; i < orbs.Count; i++)
         {
             if (orbs[i] == null) continue;
             float a = orbitAngle + (360f / orbs.Count) * i;
             float r = Mathf.Deg2Rad * a;
             orbs[i].localPosition = new Vector3(Mathf.Cos(r) * radius, 0.5f, Mathf.Sin(r) * radius);
+            orbs[i].localScale = Vector3.one * (orbSize * areaMult);
         }
     }
 
@@ -54,10 +62,11 @@ public class OrbitalCannonWeapon : WeaponBase
             Vector3 orbPos = orb.position;
 
             // Melee AoE ที่ตำแหน่ง orb
-            manager.FireMeleeServerRpc(orbPos, 0.8f, meleeDmg);
+            float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+            FireMelee(orbPos, 0.8f * areaMult, meleeDmg, isCrit);
 
-            // ยิง projectile หาศัตรูใกล้สุดจาก orb
-            var enemy = FindNearestEnemy(ld.range * 2f);
+            // ยิง projectile หาศัตรูจาก orb (รองรับเล็งสุ่มและล็อกเป้าตัวใกล้สุด)
+            var enemy = FindTargetEnemy(ld.range * 2f);
             if (enemy != null)
             {
                 Vector3 dir = (enemy.position - orbPos);
@@ -71,10 +80,11 @@ public class OrbitalCannonWeapon : WeaponBase
     void SpawnOrbs(int count)
     {
         if (orbPrefab == null) return;
+        float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
         for (int i = 0; i < count; i++)
         {
             var go = Instantiate(orbPrefab, transform);
-            go.transform.localScale = Vector3.one * orbSize;
+            go.transform.localScale = Vector3.one * (orbSize * areaMult);
             orbs.Add(go.transform);
         }
     }

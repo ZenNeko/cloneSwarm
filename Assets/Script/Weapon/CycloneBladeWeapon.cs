@@ -23,18 +23,12 @@ public class CycloneBladeWeapon : WeaponBase
         float dmg    = RollDamage(ld.damage, out bool isCrit);
         float radius = ld.range;
 
-        if (manager.statManager != null)
-        {
-            dmg    *= manager.statManager.GetPowerMultiplier();
-            radius *= manager.statManager.GetAreaMultiplier();
-        }
-
         Vector3 center = transform.position + Vector3.up * 0.5f;
 
         if (cycleIndex % 2 == 0)
         {
             // 360° spin — main VFX
-            manager.FireMeleeServerRpc(center, radius, dmg);
+            FireMelee(center, radius, dmg, isCrit);
             ShowVfx(ResolveHitVfx("SlashAoE360"), center, radius, isCrit, isAttackHit: false);
         }
         else
@@ -48,26 +42,11 @@ public class CycloneBladeWeapon : WeaponBase
             {
                 float   side   = (i % 2 == 0) ? -1f : 1f;
                 Vector3 pos    = center + forward * (radius * 0.6f) + right * slashOffset * side;
-                manager.FireMeleeServerRpc(pos, radius * 0.8f, fDmg);
+                FireMelee(pos, radius * 0.8f, fDmg, isCrit);
                 ShowVfx(ResolveSecondaryVfx("SlashHit"), pos, radius * 0.8f, isCrit, isAttackHit: false, direction: forward);
             }
         }
 
         cycleIndex++;
-    }
-
-    Vector3 GetAimDirection()
-    {
-        int mask    = LayerMask.GetMask("Enemy");
-        var cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minD  = float.MaxValue;
-        Vector3 dir = transform.forward;
-        foreach (var c in cols)
-        {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minD) { minD = d; dir = (c.transform.position - transform.position).normalized; }
-        }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
     }
 }

@@ -41,36 +41,25 @@ public class FetchItem : NetworkBehaviour
         OnFetchItemDespawned?.Invoke(this);
     }
 
-    // ── Trigger ───────────────────────────────────────────────────────────
+    // ── Trigger (Server Authority) ────────────────────────────────────────
     void OnTriggerEnter(Collider other)
     {
+        if (!IsServer) return;
         if (collected) return;
         if (!other.CompareTag("Player")) return;
 
-        // เก็บโดย Owner ของ player object เท่านั้น (กัน double-fire จาก non-owner)
-        var pm = other.GetComponent<playermove>();
-        if (pm == null || !pm.IsOwner) return;
+        var pm = other.GetComponentInParent<playermove>();
+        if (pm == null) return;
 
         collected = true;
-        CollectServerRpc();
-    }
 
-    // ── Server ────────────────────────────────────────────────────────────
-    [ServerRpc(RequireOwnership = false)]
-    void CollectServerRpc(ServerRpcParams rpcParams = default)
-    {
-        if (!IsServer) return;
+        // เพิ่มจำนวน carry item ใน playermove ของผู้เล่นคนนี้
+        pm.AddCarriedQuestItem();
 
-        ulong cid = rpcParams.Receive.SenderClientId;
-        if (NetworkManager.ConnectedClients.TryGetValue(cid, out var client) &&
-            client.PlayerObject != null)
-        {
-            client.PlayerObject.GetComponent<playermove>()?.AddCarriedQuestItem();
-        }
-
-        // ClientRpc → ทุก client เล่น VFX ที่จุดเก็บ
+        // เล่น VFX บน client ทั้งหมด
         PlayCollectEffectClientRpc(transform.position);
 
+        // Despawn item บน server
         if (NetworkObject != null && NetworkObject.IsSpawned)
             NetworkObject.Despawn(true);
     }

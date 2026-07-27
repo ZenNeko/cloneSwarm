@@ -49,14 +49,15 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: 15
-  weaponVfxKey: VortexSpawn
-  secondaryVfxType: -1
-  secondaryVfxKey: None
+  weaponVfxType: VortexFlame
+  secondaryVfxType: VortexFlame
   fireSfx: []
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
   rotSpeed: 140
-  spawnRadius: 1.2
+  damageInterval: 0.15
+  streamWidth: 2
+  orbitRadius: 3.5
+  nozzles: []

@@ -11,6 +11,12 @@ using UnityEngine;
 /// </summary>
 public class TriRangWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + BoomerangProjectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
+
     [Tooltip("มุม spread รวม (องศา)")]
     public float spreadAngle = 30f;
 
@@ -20,12 +26,6 @@ public class TriRangWeapon : WeaponBase
         float range = ld.range;
         float speed = ld.projectileSpeed > 0f ? ld.projectileSpeed : 16f;
         int   count = Mathf.Max(1, ld.projectileCount);
-
-        if (manager.statManager != null)
-        {
-            dmg   *= manager.statManager.GetPowerMultiplier();
-            range *= manager.statManager.GetAreaMultiplier();
-        }
 
         Vector3 spawnPos = transform.position + Vector3.up * 0.8f;
         Vector3 dir      = GetAimDirection();
@@ -37,22 +37,7 @@ public class TriRangWeapon : WeaponBase
         {
             float   angle   = -halfSpread + i * step;
             Vector3 fireDir = Quaternion.Euler(0f, angle, 0f) * dir;
-            manager.SpawnBoomerangServerRpc(spawnPos, fireDir, dmg, speed, range, isCrit);
+            SpawnBoomerang(spawnPos, fireDir, dmg, speed, range, isCrit);
         }
-    }
-
-    Vector3 GetAimDirection()
-    {
-        int   mask    = LayerMask.GetMask("Enemy");
-        var   cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minDist = float.MaxValue;
-        Vector3 dir   = transform.forward;
-        foreach (var c in cols)
-        {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minDist) { minDist = d; dir = (c.transform.position - transform.position).normalized; }
-        }
-        dir.y = 0f;
-        return dir == Vector3.zero ? transform.forward : dir;
     }
 }

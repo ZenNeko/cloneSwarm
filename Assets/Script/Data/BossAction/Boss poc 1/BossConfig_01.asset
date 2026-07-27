@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db85f99b7c0ff8f4985fa92ae291db31, type: 3}
+  m_Name: BossConfig_01
+  m_EditorClassIdentifier: Assembly-CSharp::BossEncounterConfig
+  phases:
+  - transitionHealthPct: 0.75
+    invincibilityDuration: 1.5
+    attackInterval: 3
+    cameraShakeMagnitude: 0.4
+    actions:
+    - {fileID: 11400000, guid: e18e71993c88e9842819826c38e4e4da, type: 2}
+    - {fileID: 11400000, guid: c037964714b80454ea87062e689ce89b, type: 2}
+    - {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+    enrageTime: -1
+    enrageActions: []
+  - transitionHealthPct: 0.4
+    invincibilityDuration: 1.5
+    attackInterval: 2
+    cameraShakeMagnitude: 0.4
+    actions:
+    - {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+    - {fileID: 11400000, guid: a008a0904d44a9049a94e3a5eefc0797, type: 2}
+    - {fileID: 11400000, guid: 79d58f1818293d146b0ef7716dc0780b, type: 2}
+    - {fileID: 11400000, guid: c037964714b80454ea87062e689ce89b, type: 2}
+    - {fileID: 11400000, guid: 9f72db33f075a8f41b4f9e5585df2af3, type: 2}
+    - {fileID: 11400000, guid: e18e71993c88e9842819826c38e4e4da, type: 2}
+    - {fileID: 11400000, guid: 7c7be445df6fee24f9b961d50bc82058, type: 2}
+    enrageTime: -1
+    enrageActions: []
+  - transitionHealthPct: 0
+    invincibilityDuration: 1.5
+    attackInterval: 1
+    cameraShakeMagnitude: 0.4
+    actions:
+    - {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+    - {fileID: 11400000, guid: e18e71993c88e9842819826c38e4e4da, type: 2}
+    - {fileID: 11400000, guid: a008a0904d44a9049a94e3a5eefc0797, type: 2}
+    - {fileID: 11400000, guid: c037964714b80454ea87062e689ce89b, type: 2}
+    - {fileID: 11400000, guid: 79d58f1818293d146b0ef7716dc0780b, type: 2}
+    - {fileID: 11400000, guid: 9f72db33f075a8f41b4f9e5585df2af3, type: 2}
+    - {fileID: 11400000, guid: 7c7be445df6fee24f9b961d50bc82058, type: 2}
+    enrageTime: -1
+    enrageActions: []
+  attackInterval: 3
+  firstAttackDelay: 4
+  extraExpOrbs: 4
+  extraExpPerOrb: 5
+  dropScatterRadius: 2
+  bonusDrops: []

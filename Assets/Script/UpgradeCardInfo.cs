@@ -13,6 +13,9 @@ public enum UpgradeCardType
 public class UpgradeCardInfo
 {
     public UpgradeCardType type;
+    public bool            isRecommended;
+    public System.Collections.Generic.List<Sprite> synergyIcons = new();
+    public bool            showSynergy;
 
     // ── Weapon fields ─────────────────────────────────────────────────────
     public WeaponData weapon;
@@ -45,13 +48,6 @@ public class UpgradeCardInfo
 
             if (weapon == null) return "";
 
-            if (type is UpgradeCardType.WeaponNew or UpgradeCardType.WeaponLevelUp)
-            {
-                var ld = weapon.GetLevelData(targetLevel - 1);
-                return string.IsNullOrEmpty(ld.levelUpText)
-                    ? weapon.description
-                    : ld.levelUpText;
-            }
             return weapon.description;
         }
     }
@@ -62,7 +58,7 @@ public class UpgradeCardInfo
         UpgradeCardType.WeaponLevelUp => $"Lv {targetLevel} / {weapon?.MaxLevel}",
         UpgradeCardType.WeaponSuper   => "SUPER ★",
         UpgradeCardType.WeaponFusion  => "FUSION ★★",
-        UpgradeCardType.Stat          => $"Lv {currentStatLevel + 1} / {stat?.MaxLevel}",
+        UpgradeCardType.Stat          => currentStatLevel == 0 ? "NEW" : $"Lv {currentStatLevel + 1} / {stat?.MaxLevel}",
         _                             => ""
     };
 

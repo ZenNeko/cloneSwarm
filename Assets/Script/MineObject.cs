@@ -14,6 +14,8 @@ public class MineObject : NetworkBehaviour
 {
     [HideInInspector] public float damage;
     [HideInInspector] public float triggerRadius = 1.5f;
+    [HideInInspector] public string weaponName = "Unknown";
+    [HideInInspector] public PlayerWeaponManager weaponManager;
 
     [Header("Settings")]
     public float lifetime   = 15f;   // หมดอายุ (วินาที)
@@ -54,7 +56,17 @@ public class MineObject : NetworkBehaviour
 
         var mask = LayerMask.GetMask("Enemy");
         foreach (var c in Physics.OverlapSphere(transform.position, triggerRadius * 2f, mask))
-            c.GetComponent<Enemy>()?.EnemyTakeDamage(damage);
+        {
+            var enemy = c.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.EnemyTakeDamage(damage);
+                if (weaponManager != null)
+                {
+                    weaponManager.RegisterWeaponDamage(weaponName, damage);
+                }
+            }
+        }
 
         ExplodeClientRpc(transform.position);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);

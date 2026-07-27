@@ -18,6 +18,7 @@ public class BoomerangProjectile : NetworkBehaviour
     [HideInInspector] public float   maxRange = 8f;
     [HideInInspector] public ulong   ownerClientId;
     [HideInInspector] public bool    isCrit;
+    [HideInInspector] public string  weaponName = "Unknown";
 
     // ── State ────────────────────────────────────────────────────────────
     private enum Phase { Forward, Returning }
@@ -79,12 +80,22 @@ public class BoomerangProjectile : NetworkBehaviour
         var enemy = other.GetComponent<Enemy>();
         if (enemy == null) return;
 
-        int id = enemy.GetInstanceID();
+        int id = enemy.GetId();
         if (hitIds.Contains(id)) return;
 
         hitIds.Add(id);
         enemy.EnemyTakeDamage(damage);
-        VFXFactory.Play(isCrit ? "CritHitEffect" : "HitEffect", transform.position);
+        
+        // Register weapon damage on owner
+        Transform ownerTf = GetOwnerTransform();
+        if (ownerTf != null)
+        {
+            var pwm = ownerTf.GetComponent<PlayerWeaponManager>();
+            if (pwm != null)
+            {
+                pwm.RegisterWeaponDamage(weaponName, damage);
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -49,11 +49,10 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: -1
-  weaponVfxKey: None
-  secondaryVfxType: -1
-  secondaryVfxKey: None
-  fireSfx: []
+  weaponVfxType: VFX_Lance
+  secondaryVfxType: VFX_Lance
+  fireSfx:
+  - {fileID: 8300000, guid: d5cf797657053fe4da26d4a0ba4ceff1, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6

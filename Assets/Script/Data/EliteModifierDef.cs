@@ -14,7 +14,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "EliteMod", menuName = "Game/EliteModifierDef")]
 public class EliteModifierDef : ScriptableObject
 {
-    public enum BehaviorType { Shield, Rage, Split, Exploder }
+    public enum BehaviorType { Shield, Rage }
 
     [Header("Identity")]
     [Tooltip("unique id — ใช้สำหรับ network sync")]
@@ -27,6 +27,12 @@ public class EliteModifierDef : ScriptableObject
     public Color outlineColor = Color.yellow;
     [Tooltip("Crown prefab วางเหนือหัว — ปล่อยว่างได้ถ้าไม่ต้องการ")]
     public GameObject crownPrefab;
+
+    [Header("Visual Enhancements")]
+    [Tooltip("สเกลขนาดโมเดลของ Elite (เช่น 1.35 คือขยายร่าง 1.35 เท่า)")]
+    public float modelScale = 1.35f;
+    [Tooltip("สเกลความหนาของเส้นขอบ (เช่น 1.12 คือหนาขึ้น 12%)")]
+    public float outlineThickness = 1.12f;
 
     [Header("Stat Bonuses (multipliers)")]
     [Tooltip("HP × bonus (1 = no change, 2 = double HP)")]
@@ -47,20 +53,4 @@ public class EliteModifierDef : ScriptableObject
     public float rageHpThreshold = 0.3f;
     [Tooltip("speed multiplier ตอน rage")]
     public float rageSpeedMult   = 1.8f;
-
-    [Header("Split (BehaviorType.Split)")]
-    [Tooltip("Prefab mini copy ที่จะ spawn ตอนตาย")]
-    public GameObject splitPrefab;
-    [Tooltip("จำนวน mini copy ที่ spawn")]
-    [Range(1, 8)]
-    public int splitCount = 2;
-
-    [Header("Exploder (BehaviorType.Exploder)")]
-    [Tooltip("รัศมี AoE ตอนระเบิด")]
-    public float exploderRadius = 3f;
-    [Tooltip("ดาเมจ AoE ต่อ player")]
-    public float exploderDamage = 30f;
-    [Tooltip("VFX ตอนระเบิด — default GrenadeExplosion")]
-    [VFXKey]
-    public string exploderVfxType = "GrenadeExplosion";
 }

@@ -49,10 +49,8 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: -1
-  weaponVfxKey: None
-  secondaryVfxType: -1
-  secondaryVfxKey: None
+  weaponVfxType: None
+  secondaryVfxType: None
   fireSfx:
   - {fileID: 8300000, guid: 09f634dfafc05604580f9f42bc32ce14, type: 3}
   - {fileID: 8300000, guid: e519c4fde7ab1f84ea9f746ca19d019d, type: 3}
@@ -63,6 +61,7 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
+  projectilePrefab: {fileID: 8074367145943022193, guid: d5effb961510faa458b89651ea468b1c, type: 3}
   spreadAngle: 40
   explodeOnHit: 0
   explosionRadius: 2.5

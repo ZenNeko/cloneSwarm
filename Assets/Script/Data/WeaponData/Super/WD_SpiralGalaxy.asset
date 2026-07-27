@@ -16,19 +16,34 @@ MonoBehaviour:
   description: SpiralGalaxy
   icon: {fileID: 0}
   tier: 1
-  prefab: {fileID: 0}
+  prefab: {fileID: 3857138112386556378, guid: 950823958297c3a43b26329fea12d592, type: 3}
   aimMode: 0
-  projectilePrefab: {fileID: 0}
-  hitVfxType: 15
   levels:
-  - damage: 0
-    cooldown: 0
-    projectileCount: 0
-    range: 0
-    projectileSpeed: 0
+  - damage: 20
+    cooldown: 1
+    projectileCount: 4
+    range: 10
+    projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    duration: 0
+    piercing: 0
+  - damage: 20
+    cooldown: 1
+    projectileCount: 1
+    range: 8
+    projectileSpeed: 12
+    radius: 0
+    duration: 0
+    piercing: 0
   superVersion: {fileID: 0}
   superConditions: []
-  weight: 100
+  weight: 150
   exclusiveCharacter: {fileID: 0}

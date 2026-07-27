@@ -61,6 +61,7 @@ public class UpgradeManager : NetworkBehaviour
         hasPicked      = false;
         currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
         if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
+        RecommendCards(currentOptions);
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);
     }
 
@@ -68,8 +69,9 @@ public class UpgradeManager : NetworkBehaviour
     void OnOrbPhaseStart()
     {
         hasPicked      = false;
-        currentOptions = PickCards(1, isOrbReward: false, ownedOnly: true);
+        currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
         if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
+        RecommendCards(currentOptions);
         LevelUpUI.Instance?.Show(currentOptions, ApplyOrbCard, 0);
     }
 
@@ -82,11 +84,269 @@ public class UpgradeManager : NetworkBehaviour
         else NotifyLevelUpPicked();
     }
 
+    // ── Synergy Card Recommendation ───────────────────────────────────────
+    void RecommendCards(List<UpgradeCardInfo> options)
+    {
+        if (options == null || options.Count == 0) return;
+
+        // Reset
+        foreach (var opt in options) opt.isRecommended = false;
+
+        var equippedWeapons = weaponManager.GetEquippedWeapons();
+        float[] scores = new float[options.Count];
+
+        for (int i = 0; i < options.Count; i++)
+        {
+            var card = options[i];
+            float score = 0f;
+
+            if (card.type == UpgradeCardType.WeaponSuper || card.type == UpgradeCardType.WeaponFusion)
+            {
+                score = 20f; // แนะนำทันที
+            }
+            else if (card.weapon != null)
+            {
+                if (card.type == UpgradeCardType.WeaponLevelUp)
+                {
+                    score = 10f; // แนะนำให้อัปอาวุธที่ถืออยู่ให้ตัน
+                    
+                    if (card.weapon.tier == WeaponTier.Normal && card.targetLevel == card.weapon.MaxLevel)
+                    {
+                        score += 5f; // ใกล้ขึ้น Super
+                    }
+                }
+                else if (card.type == UpgradeCardType.WeaponNew)
+                {
+                    // เช็คคู่ฟิวชัน
+                    foreach (var recipe in allRecipes)
+                    {
+                        if (recipe == null || recipe.fusionResult == null) continue;
+                        
+                        bool isPartA = card.weapon.superVersion != null && card.weapon.superVersion == recipe.superWeaponA;
+                        bool isPartB = card.weapon.superVersion != null && card.weapon.superVersion == recipe.superWeaponB;
+
+                        if (isPartA || isPartB)
+                        {
+                            var partnerSuper = isPartA ? recipe.superWeaponB : recipe.superWeaponA;
+                            if (partnerSuper != null)
+                            {
+                                WeaponData partnerNormal = null;
+                                foreach (var wAll in allWeapons)
+                                {
+                                    if (wAll != null && wAll.superVersion == partnerSuper)
+                                    {
+                                        partnerNormal = wAll;
+                                        break;
+                                    }
+                                }
+
+                                bool hasPartner = false;
+                                foreach (var owned in equippedWeapons)
+                                {
+                                    if (owned == null) continue;
+                                    if (owned == partnerSuper || owned == partnerNormal)
+                                    {
+                                        hasPartner = true;
+                                        break;
+                                    }
+                                }
+
+                                if (hasPartner)
+                                {
+                                    score += 15f; // แนะนำอย่างยิ่ง
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (card.type == UpgradeCardType.Stat && card.stat != null)
+            {
+                // ตรวจสอบเงื่อนไข Super
+                foreach (var w in equippedWeapons)
+                {
+                    if (w == null || w.tier != WeaponTier.Normal || w.superVersion == null) continue;
+                    if (weaponManager.HasWeapon(w.superVersion)) continue; 
+
+                    if (w.superConditions != null)
+                    {
+                        foreach (var cond in w.superConditions)
+                        {
+                            if (cond.conditionType == SuperConditionType.StatAtLevel &&
+                                cond.requiredStatType == card.stat.statType)
+                            {
+                                int currentLv = statManager.GetStatLevel(cond.requiredStatType);
+                                if (currentLv < cond.requiredLevel)
+                                {
+                                    score += 12f; // แนะนำเพื่อปลดล็อค Super
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // แนะนำ Core Stat ตามประเภทตัวละคร (Synergy) ตามที่ GDD กำหนด
+                if (myCharacter != null)
+                {
+                    string charName = myCharacter.characterName.ToLower();
+                    if (charName.Contains("hunter") || charName.Contains("gunner"))
+                    {
+                        if (card.stat.statType == StatType.AbilityHaste || 
+                            card.stat.statType == StatType.ProjectileCount || 
+                            card.stat.statType == StatType.Damage)
+                        {
+                            score += 6f; // แนะนำความเร่ง/จำนวนกระสุน/พลังโจมตีสำหรับสายยิง
+                        }
+                    }
+                    else if (charName.Contains("riven") || charName.Contains("melee") || charName.Contains("warrior"))
+                    {
+                        if (card.stat.statType == StatType.MoveSpeed || 
+                            card.stat.statType == StatType.AreaSize || 
+                            card.stat.statType == StatType.Armor)
+                        {
+                            score += 6f; // แนะนำความเร็ว/ระยะฟัน/เกราะสำหรับสายฟันประชิด
+                        }
+                    }
+                }
+
+                if (score < 0.1f)
+                {
+                    score = 2f; 
+                }
+            }
+
+            scores[i] = score;
+        }
+
+        // หาคะแนนสูงสุด
+        float maxScore = 0f;
+        for (int i = 0; i < scores.Length; i++)
+        {
+            if (scores[i] > maxScore) maxScore = scores[i];
+        }
+
+        // ปักป้ายการ์ดแนะนำ (คะแนนสูงสุดและผ่านเกณฑ์ขั้นต่ำ)
+        if (maxScore > 0.1f)
+        {
+            for (int i = 0; i < scores.Length; i++)
+            {
+                if (Mathf.Abs(scores[i] - maxScore) < 0.01f)
+                {
+                    options[i].isRecommended = true;
+                }
+            }
+        }
+    }
+
+    // ── Synergy Icon Resolution Helper ────────────────────────────────────
+    public Sprite GetStatIcon(StatType type)
+    {
+        if (allStats != null)
+        {
+            foreach (var s in allStats)
+            {
+                if (s != null && s.statType == type) return s.icon;
+            }
+        }
+        return null;
+    }
+
+    private void PopulateSynergyInfo(UpgradeCardInfo card)
+    {
+        if (card == null) return;
+        card.synergyIcons.Clear();
+        card.showSynergy = false;
+
+        if (card.weapon != null)
+        {
+            // Weapon Card: Show the stat(s) required to evolve this normal weapon to Super
+            if (card.weapon.tier == WeaponTier.Normal && card.weapon.superVersion != null)
+            {
+                bool hasWeapon = weaponManager != null && weaponManager.HasWeapon(card.weapon);
+                bool hasStat = false;
+
+                if (card.weapon.superConditions != null && statManager != null)
+                {
+                    foreach (var cond in card.weapon.superConditions)
+                    {
+                        if (cond.conditionType == SuperConditionType.StatAtLevel)
+                        {
+                            if (statManager.GetStatLevel(cond.requiredStatType) > 0)
+                            {
+                                hasStat = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Show synergy badge only if player owns the weapon OR already owns the synergistic stat
+                if (hasWeapon || hasStat)
+                {
+                    if (card.weapon.superConditions != null)
+                    {
+                        foreach (var cond in card.weapon.superConditions)
+                        {
+                            if (cond.conditionType == SuperConditionType.StatAtLevel)
+                            {
+                                Sprite icon = GetStatIcon(cond.requiredStatType);
+                                if (icon != null && !card.synergyIcons.Contains(icon))
+                                {
+                                    card.synergyIcons.Add(icon);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (card.type == UpgradeCardType.Stat && card.stat != null)
+        {
+            // Stat Card: Show the weapon(s) in player's inventory that evolve with this stat
+            if (weaponManager != null)
+            {
+                var equipped = weaponManager.GetEquippedWeapons();
+                if (equipped != null)
+                {
+                    foreach (var w in equipped)
+                    {
+                        if (w == null || w.tier != WeaponTier.Normal || w.superVersion == null) continue;
+                        if (weaponManager.HasWeapon(w.superVersion) || HasProgressedPast(w)) continue;
+
+                        if (w.superConditions != null)
+                        {
+                            foreach (var cond in w.superConditions)
+                            {
+                                if (cond.conditionType == SuperConditionType.StatAtLevel &&
+                                    cond.requiredStatType == card.stat.statType)
+                                {
+                                    if (w.icon != null && !card.synergyIcons.Contains(w.icon))
+                                    {
+                                        card.synergyIcons.Add(w.icon);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Limit to 3 icons maximum
+        if (card.synergyIcons.Count > 3)
+        {
+            card.synergyIcons.RemoveRange(3, card.synergyIcons.Count - 3);
+        }
+
+        card.showSynergy = card.synergyIcons.Count > 0;
+    }
+
     // ── Card Pool ─────────────────────────────────────────────────────────
     List<UpgradeCardInfo> PickCards(int count, bool isOrbReward, bool ownedOnly = false)
     {
-        var pool = ownedOnly   ? BuildOwnedPool() :
-                   isOrbReward ? BuildOrbPool()   : BuildLevelUpPool();
+        var pool = isOrbReward ? BuildOrbPool(ownedOnly) :
+                   ownedOnly   ? BuildOwnedPool()        : BuildLevelUpPool();
         if (pool.Count == 0) return new List<UpgradeCardInfo>();
 
         var result = new List<UpgradeCardInfo>();
@@ -114,6 +374,13 @@ public class UpgradeManager : NetworkBehaviour
                 }
             }
         }
+
+        // Resolve evolution synergy info for each card in the picked result
+        foreach (var card in result)
+        {
+            PopulateSynergyInfo(card);
+        }
+
         return result;
     }
 
@@ -173,7 +440,7 @@ public class UpgradeManager : NetworkBehaviour
     }
 
     // ── Orb Pool — Super / Fusion / fallback Weapon/Stat ─────────────────
-    List<UpgradeCardInfo> BuildOrbPool()
+    List<UpgradeCardInfo> BuildOrbPool(bool ownedOnly = false)
     {
         var pool = new List<UpgradeCardInfo>();
 
@@ -181,7 +448,6 @@ public class UpgradeManager : NetworkBehaviour
         foreach (var w in weaponManager.GetEquippedWeapons())
         {
             if (w == null || w.tier != WeaponTier.Normal) continue;
-            if (!IsWeaponAvailable(w)) continue;
             if (w.superVersion == null) continue;
             int lv = weaponManager.GetWeaponLevel(w);
             if (lv < w.MaxLevel - 1) continue;                       // ยังไม่ถึง Lv5
@@ -214,9 +480,9 @@ public class UpgradeManager : NetworkBehaviour
             });
         }
 
-        // 3. Fallback — ถ้าไม่มี Super/Fusion → ใช้ pool เดียวกับ Level Up
+        // 3. Fallback — ถ้าไม่มี Super/Fusion → ใช้ของที่มีอยู่ (BuildOwnedPool) หรือ Level Up pool
         if (pool.Count == 0)
-            return BuildLevelUpPool();
+            return ownedOnly ? BuildOwnedPool() : BuildLevelUpPool();
 
         return pool;
     }
@@ -231,7 +497,6 @@ public class UpgradeManager : NetworkBehaviour
         foreach (var w in equipped)
         {
             if (w == null) continue;
-            if (!IsWeaponAvailable(w)) continue;
             int lv = weaponManager.GetWeaponLevel(w);
             if (lv + 1 >= w.MaxLevel) continue;
             pool.Add(new UpgradeCardInfo

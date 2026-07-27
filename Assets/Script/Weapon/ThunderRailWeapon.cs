@@ -1,93 +1,75 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// Thunder Rail — Fusion: Stormcaller + Railgun
-/// Railgun pierce ยิงทะลุทุก enemy + chain lightning ออกจากทุกตัวที่โดน
-///
-/// Fusion tier — 1 level
-///   dmg=150 (rail), chainDmg=60, chainTargets=3, cd=3.0s, range=50
+/// Railgun pierce ยิงทะลุกระสุนเลเซอร์แนวตรง + chain lightning และ mini lightning zone บน Server (Server Authority)
 /// </summary>
 public class ThunderRailWeapon : WeaponBase
 {
     [Tooltip("จำนวน chain targets จากแต่ละ enemy ที่โดน railgun")]
     public int   chainTargets       = 3;
-    [Tooltip("ดาเมจ chain แต่ละตัว")]
-    public float chainDamage        = 60f;
+    [Tooltip("เปอร์เซ็นต์ดาเมจ chain จากดาเมจเลเซอร์หลัก (0.4 = 40%)")]
+    [Range(0.1f, 2f)]
+    public float chainDamageRatio   = 0.4f;
     [Tooltip("รัศมีหา chain target")]
     public float chainSearchRadius  = 8f;
+
+    [Header("Lightning Zone (ทุก target ที่โดน)")]
+    [Tooltip("รัศมี mini AoE zone")]
+    public float zoneRadius = 2.5f;
+    [Tooltip("เปอร์เซ็นต์ดาเมจ zone จากดาเมจเลเซอร์หลัก (0.2 = 20%)")]
+    [Range(0.05f, 1f)]
+    public float zoneDamageRatio    = 0.2f;
+    [Tooltip("จำนวน tick ของ zone")]
+    public int   zoneTicks  = 1;
+    [Tooltip("หน่วงระหว่าง tick (วินาที)")]
+    public float zoneTickInterval = 0.3f;
+
+    [Header("Laser Config")]
+    [Tooltip("ความกว้างของ AoE (หน่วย Unity) — ยิ่งมาก ยิ่งกว้าง")]
+    public float width = 1.5f;
 
     protected override void OnFire(WeaponLevelData ld)
     {
         float dmg = RollDamage(ld.damage, out bool isCrit);
-        if (manager.statManager != null)
-            dmg *= manager.statManager.GetPowerMultiplier();
 
-        // Aim ไปหา nearest enemy
+        // คำนวณความเสียหายเป็นเปอร์เซ็นต์จากดาเมจเลเซอร์หลักหลัก (dmg ซึ่งคำนวณเลเวลอาวุธและสเตตัสผู้เล่นแล้ว)
+        float actualChainDmg = dmg * chainDamageRatio;
+        float actualZoneDmg  = dmg * zoneDamageRatio;
+
+        // คำนวณทิศทางยิงฝั่ง Client แล้วส่งขึ้น Server
         Vector3 origin = transform.position + Vector3.up * 0.8f;
         Vector3 dir    = GetAimDirection();
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.001f) dir = transform.forward;
         dir = dir.normalized;
 
-        // Raycast pierce — hit ทุก enemy ในแนว
-        int mask = LayerMask.GetMask("Enemy");
-        var hits = Physics.RaycastAll(origin, dir, ld.range, mask);
-        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        int beamCount = Mathf.Max(1, ld.projectileCount);
 
-        Vector3 endPoint = origin + dir * ld.range;
+        // ดึงคีย์ VFX จากตัวแปร weapon VFX (weaponVfxType) หรือใช้ Beam_Railgun เป็น fallback
+        string vfxKey = ResolveHitVfx("Beam_Railgun");
+        // ดึงคีย์ 2nd VFX (secondaryVfxType) หรือใช้ Stormcaller_AOE เป็น fallback
+        string zoneVfxKey = ResolveSecondaryVfx("Stormcaller_AOE");
 
-        // Railgun beam VFX
-        manager.BroadcastBeamServerRpc(origin, endPoint, "None");
-
-        foreach (var hit in hits)
-        {
-            var enemy = hit.collider.GetComponent<Enemy>();
-            if (enemy == null) continue;
-
-            // HitEffect/CritHitEffect เกิดอัตโนมัติใน Enemy.NotifyHitClientRpc
-            enemy.EnemyTakeDamage(dmg, isCrit);
-
-            // Chain lightning จาก enemy ที่โดน
-            FireChainFrom(hit.point + Vector3.up * 0.8f, enemy.GetInstanceID(), chainDamage, chainTargets, mask);
-        }
+        manager.FireRaycastChainServerRpc(
+            origin, dir, dmg, ld.range, beamCount,
+            chainTargets, actualChainDmg, chainSearchRadius,
+            isCrit, data != null ? data.weaponName : "Unknown",
+            vfxKey,
+            zoneRadius, actualZoneDmg, zoneTicks, zoneTickInterval,
+            zoneVfxKey,
+            thickness: width
+        );
     }
 
-    void FireChainFrom(Vector3 pos, int excludeId, float chainDmg, int remaining, int mask)
+
+
+    protected override void OnDrawGizmosSelected()
     {
-        if (remaining <= 0) return;
-
-        var cols   = Physics.OverlapSphere(pos, chainSearchRadius, mask);
-        Enemy best = null;
-        float minD = float.MaxValue;
-        foreach (var c in cols)
-        {
-            var e = c.GetComponent<Enemy>();
-            if (e == null || e.GetInstanceID() == excludeId) continue;
-            float d = Vector3.Distance(pos, c.transform.position);
-            if (d < minD) { minD = d; best = e; }
-        }
-        if (best == null) return;
-
-        Vector3 targetPos = best.transform.position + Vector3.up * 0.8f;
-        manager.BroadcastBeamServerRpc(pos, targetPos, "None");
-        best.EnemyTakeDamage(chainDmg);   // chain hits ไม่ crit
-
-        FireChainFrom(targetPos, best.GetInstanceID(), chainDmg * 0.7f, remaining - 1, mask);
-    }
-
-    Vector3 GetAimDirection()
-    {
-        int mask    = LayerMask.GetMask("Enemy");
-        var cols    = Physics.OverlapSphere(transform.position, 20f, mask);
-        float minD  = float.MaxValue;
-        Vector3 dir = transform.forward;
-        foreach (var c in cols)
-        {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minD) { minD = d; dir = (c.transform.position - transform.position).normalized; }
-        }
-        dir.y = 0f;
-        return dir;
+        base.OnDrawGizmosSelected();
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, zoneRadius);
     }
 }

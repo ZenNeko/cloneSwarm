@@ -15,6 +15,11 @@ using UnityEngine;
 /// </summary>
 public class PistolWeapon : WeaponBase
 {
+    [Header("Settings (Per-Weapon Prefab)")]
+    [Tooltip("Projectile prefab สำหรับ weapon นี้ (ต้องมี NetworkObject + Projectile script)")]
+    public GameObject projectilePrefab;
+
+    protected override GameObject GetProjectilePrefab() => projectilePrefab;
     [Header("Burst")]
     [Tooltip("หน่วงเวลาระหว่าง burst แต่ละนัด (วินาที)")]
     public float burstInterval = 0.33f;
@@ -32,24 +37,28 @@ public class PistolWeapon : WeaponBase
         if (rocketMode == null)
             rocketMode = manager.GetComponentInChildren<GunnerRocketMode>();
 
-        Vector3 pos = transform.position + Vector3.up * 0.5f;
-        Vector3 dir = GetAimDirection();
-        float   dmg = RollDamage(ld.damage, out bool isCrit);
+        float dmg      = RollDamage(ld.damage, out bool isCrit);
+        bool  isRocket = rocketMode != null && rocketMode.IsRocketModeActive;
 
-        if (rocketMode != null && rocketMode.IsRocketModeActive)
-            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: true, isCrit));
-        else
-            StartCoroutine(BurstFire(pos, dir, dmg, ld.projectileSpeed, ld.projectileCount, rocketMode: false, isCrit));
+        StartCoroutine(BurstFire(dmg, ld.projectileSpeed, ld.projectileCount, isRocket, isCrit));
     }
 
-    IEnumerator BurstFire(Vector3 spawnPos, Vector3 dir, float dmg, float speed, int count, bool rocketMode, bool isCrit)
+    IEnumerator BurstFire(float dmg, float speed, int count, bool rocketMode, bool isCrit)
     {
         for (int i = 0; i < count; i++)
         {
+            Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
+            Vector3 dir      = GetAimDirection();
+
             if (rocketMode)
-                manager.SpawnStickyRocketServerRpc(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius);
+            {
+                float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
+                SpawnStickyRocket(spawnPos, dir, dmg, stickySpeed, stickyExplosionRadius * areaMult);
+            }
             else
+            {
                 FireProjectile(spawnPos, dir, dmg, speed, isCrit: isCrit);
+            }
 
             if (i < count - 1)
                 yield return new WaitForSeconds(burstInterval);

@@ -44,85 +44,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fee76bb652ebd074b96c3e94f1012730, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkedVFXPool
-  vfxTypeMappings:
-  - type: 0
-    prefab: {fileID: 3077343761403282166, guid: f78aaaec3b393e24ca74cd6de8194347, type: 3}
-    poolSize: 40
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 1
-    prefab: {fileID: 4503612902121041701, guid: 5a936c83b1746f14f9100db745e94f04, type: 3}
-    poolSize: 80
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 3
-    prefab: {fileID: 5162910912013668194, guid: cf82839c411151342a7b2337bda9fb34, type: 3}
-    poolSize: 20
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 5
-    prefab: {fileID: 9080140021571130472, guid: 82066d902ed0dd6488ddfd32eb994801, type: 3}
-    poolSize: 20
-    designedRadius: 3
-    fixedDuration: 0
-  - type: 6
-    prefab: {fileID: 1193953125369175018, guid: 7d39067bead4bc14aa0b451564aa5198, type: 3}
-    poolSize: 6
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 7
-    prefab: {fileID: 6441873369525384307, guid: 0f3d407feb92ebb49b98d0157de5008a, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 10
-    prefab: {fileID: 5545173171955001552, guid: 7ac879c2caac1ca41b6c438e77d8b25d, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 11
-    prefab: {fileID: 772680919565806998, guid: f29781b8be277cb4b8e6123ab4e43161, type: 3}
-    poolSize: 30
-    designedRadius: 4
-    fixedDuration: 0.4
-  - type: 15
-    prefab: {fileID: 7966731087305637596, guid: 460babe280fe4aa41adc3fefd46f0c0b, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 16
-    prefab: {fileID: 5818205763518135594, guid: 395d5ec7f996d364f94e11cfb40736d3, type: 3}
-    poolSize: 9
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 17
-    prefab: {fileID: 7957833072274404953, guid: 37eb70a72cb0a094cb3a88aa02fd2234, type: 3}
-    poolSize: 40
-    designedRadius: 3
-    fixedDuration: 0
-  - type: 19
-    prefab: {fileID: 5545173171955001552, guid: 7ac879c2caac1ca41b6c438e77d8b25d, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
-  - type: 18
-    prefab: {fileID: 1921079115439858272, guid: 53d781390f3d0c248b7abf3f3700d878, type: 3}
-    poolSize: 30
-    designedRadius: 0
-    fixedDuration: 0
-  beamPrefab: {fileID: 7289551456621117356, guid: a8dc7b0921e71d7499f8c41236f9249f, type: 3}
-  beamPoolSize: 8
+  vfxDatabase: {fileID: 11400000, guid: fd903c4b739f5b2498d19ec9cac5a7b2, type: 2}
   projectilePrefabs:
   - {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   - {fileID: 3992335139775719314, guid: 20419f2d0e1b52740a613cfa170a4c4c, type: 3}
-  - {fileID: 131468, guid: 345e53b3b1d238c4b9cb80b7b76301e2, type: 3}
   - {fileID: 7429786886557274775, guid: 1ad26bf81717cee4586a61ca0f036a48, type: 3}
-  - {fileID: 4913074562992064063, guid: 3c556c1709c300249b70eb88824d9394, type: 3}
+  - {fileID: 1367524025346344, guid: 889c3fa9eb2f70045baf4c6542969991, type: 3}
   - {fileID: 1942644075807370077, guid: 63dad2987e922444099544f206147b50, type: 3}
   - {fileID: 9165026677116411631, guid: 015a9d8893b22174f82d11e1b08179e1, type: 3}
   - {fileID: 8074367145943022193, guid: d5effb961510faa458b89651ea468b1c, type: 3}
   - {fileID: 7957833072274404953, guid: 37eb70a72cb0a094cb3a88aa02fd2234, type: 3}
-  - {fileID: 4932088507883938021, guid: 53a576e3fe3a9ef4d825edf0dc38c8da, type: 3}
   - {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
   - {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
   - {fileID: 6266392510070060659, guid: 6d4a5b6b1a623044e9a4057d037cc4ed, type: 3}
+  - {fileID: 4250853822560015088, guid: 3a0acbf383517ad44b13a6d966f35b1c, type: 3}
+  - {fileID: 6729598477372940667, guid: c2c937b9cb34f2c4087cccda0901f502, type: 3}

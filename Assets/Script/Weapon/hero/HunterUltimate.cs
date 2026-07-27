@@ -87,7 +87,7 @@ public class HunterUltimate : AbilityBase, IHUDAbility
         // beamCount: base 1 + bonus จาก ProjectileCount stat (เหมือน LaserWeapon)
         int   beamCount   = 1 + (manager.statManager != null ? manager.statManager.GetBonusProjectileCount() : 0);
 
-        manager.SpawnFunnelsServerRpc(
+        SpawnFunnels(
             transform.position, funnelCount, funnelOrbitRadius,
             funnelDmg, funnelLaserCooldown, attackRange, duration, manager.OwnerClientId,
             beamCount);
@@ -119,5 +119,15 @@ public class HunterUltimate : AbilityBase, IHUDAbility
         if (cachedLaser != null) return cachedLaser;
         cachedLaser = manager.GetComponentInChildren<LaserWeapon>();
         return cachedLaser;
+    }
+
+    void OnDestroy()
+    {
+        if (IsActive)
+        {
+            var laser = GetLaser();
+            if (laser != null) laser.tempCooldownMult = 1f;
+            IsActive = false;
+        }
     }
 }

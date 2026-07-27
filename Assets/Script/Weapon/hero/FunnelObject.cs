@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -9,6 +10,8 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkObject))]
 public class FunnelObject : NetworkBehaviour
 {
+    public static readonly List<FunnelObject> ActiveFunnels = new();
+
     // ── Init Values ───────────────────────────────────────────────────────
     private Vector3 orbitCenter;
     private float   orbitRadius;
@@ -17,6 +20,8 @@ public class FunnelObject : NetworkBehaviour
     private float   attackRange;
     private float   lifetime;
     private ulong   ownerClientId;
+    private PlayerWeaponManager weaponManager;
+    private string weaponName = "Unknown";
 
     // ── Inspector Config ──────────────────────────────────────────────────
     [Header("Movement")]
@@ -67,6 +72,8 @@ public class FunnelObject : NetworkBehaviour
         float   damage, float cooldown,
         float   range,  float life,
         ulong   clientId,
+        PlayerWeaponManager manager,
+        string  wepName,
         int     beams = 1)
     {
         orbitCenter   = center;
@@ -76,7 +83,25 @@ public class FunnelObject : NetworkBehaviour
         attackRange   = range;
         lifetime      = life;
         ownerClientId = clientId;
+        weaponManager = manager;
+        weaponName    = wepName;
         beamCount     = Mathf.Max(1, beams);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!ActiveFunnels.Contains(this)) ActiveFunnels.Add(this);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ActiveFunnels.Remove(this);
+    }
+
+    public override void OnDestroy()
+    {
+        ActiveFunnels.Remove(this);
+        base.OnDestroy();
     }
 
     // ── Update (Server only) ──────────────────────────────────────────────
@@ -200,6 +225,81 @@ public class FunnelObject : NetworkBehaviour
         if (baseDir.sqrMagnitude < 0.001f) return;
         baseDir = baseDir.normalized;
 
+        // เช็คอาวุธของผู้เล่นเพื่อปรับแต่งรูปแบบการโจมตี
+        bool hasThunderRail = false;
+        bool hasPlasmaWhip  = false;
+        bool hasRailgun     = false;
+
+        if (weaponManager != null)
+        {
+            var equipped = weaponManager.GetEquippedWeapons();
+            foreach (var wep in equipped)
+            {
+                if (wep == null) continue;
+                string wepName = wep.weaponName.ToLower();
+                if (wepName.Contains("thunder") && wepName.Contains("rail"))
+                {
+                    hasThunderRail = true;
+                    break; // ThunderRail เป็นร่างสูงสุด (Fusion) มีสิทธิ์สูงสุด
+                }
+                else if (wepName.Contains("plasma") && wepName.Contains("whip"))
+                {
+                    hasPlasmaWhip = true;
+                }
+                else if (wepName.Contains("railgun"))
+                {
+                    hasRailgun = true;
+                }
+            }
+        }
+
+        if (hasThunderRail)
+        {
+            // โหมดสายฟ้าชิ่ง (Thunder Rail) - ยิงสายฟ้าเจาะทะลุ ชิ่งศัตรูรอบข้าง และสร้างโซนสายฟ้าช็อตลงพื้น
+            float actualChainDmg = laserDamage * 0.4f;
+            float actualZoneDmg  = laserDamage * 0.2f;
+            int finalBeams = Mathf.Max(1, beamCount / 2);
+
+            weaponManager.FireRaycastChainServerRpc(
+                origin, baseDir, laserDamage, attackRange, finalBeams,
+                3, actualChainDmg, 8f, false, "Funnel Thunder Rail",
+                "Beam_Railgun", 2.5f, actualZoneDmg, 1, 0.3f, "Stormcaller_AOE",
+                1.5f
+            );
+            return;
+        }
+        else if (hasPlasmaWhip)
+        {
+            // โหมดแส้พลาสม่า (Plasma Whip) - ยิงเลเซอร์พลาสม่าทำความเสียหายเพิ่มขึ้น 1.5 เท่า
+            int finalBeams = Mathf.Max(1, beamCount / 2);
+            float angleStep = 360f / finalBeams;
+            for (int i = 0; i < finalBeams; i++)
+            {
+                Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * baseDir;
+                weaponManager.FireRaycastServerRpc(
+                    origin, beamDir, laserDamage * 1.5f, attackRange, "Beam_Railgun",
+                    false, true, "Funnel Plasma Whip"
+                );
+            }
+            return;
+        }
+        else if (hasRailgun)
+        {
+            // โหมดเรลกัน (Railgun) - ยิงเรลกันลำแสงกว้างทำความเสียหายเพิ่มขึ้น 1.5 เท่า
+            int finalBeams = Mathf.Max(1, beamCount / 2);
+            float angleStep = 360f / finalBeams;
+            for (int i = 0; i < finalBeams; i++)
+            {
+                Vector3 beamDir = Quaternion.Euler(0f, i * angleStep, 0f) * baseDir;
+                weaponManager.FireRaycastServerRpc(
+                    origin, beamDir, laserDamage * 1.5f, attackRange, "Beam_Railgun",
+                    false, true, "Funnel Railgun", 1.5f
+                );
+            }
+            return;
+        }
+
+        // โหมดเลเซอร์ปกติ (Normal Laser) - ยิงเลเซอร์เดี่ยวทะลวงตรงแบบเดิม
         int   mask       = LayerMask.GetMask("Enemy");
         float startAngle = -(beamCount - 1) * beamSpreadDeg * 0.5f;
 
@@ -210,7 +310,14 @@ public class FunnelObject : NetworkBehaviour
 
             // beam กลาง (angle≈0) รับประกัน hit target โดยตรง
             if (i == (beamCount - 1) / 2)
-                target.GetComponent<Enemy>()?.EnemyTakeDamage(laserDamage);
+            {
+                var enemy = target.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    enemy.EnemyTakeDamage(laserDamage);
+                    weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
+                }
+            }
 
             // RaycastAll ทะลุ enemy ในแนว beam นี้
             if (mask != 0)
@@ -219,7 +326,12 @@ public class FunnelObject : NetworkBehaviour
                 foreach (var h in hits)
                 {
                     if (h.transform == target && i == (beamCount - 1) / 2) continue;
-                    h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(laserDamage);
+                    var enemy = h.collider.GetComponent<Enemy>();
+                    if (enemy != null)
+                    {
+                        enemy.EnemyTakeDamage(laserDamage);
+                        weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
+                    }
                 }
             }
             else
@@ -229,7 +341,14 @@ public class FunnelObject : NetworkBehaviour
                 {
                     if (h.transform == target && i == (beamCount - 1) / 2) continue;
                     if (h.collider.CompareTag("Enemy"))
-                        h.collider.GetComponent<Enemy>()?.EnemyTakeDamage(laserDamage);
+                    {
+                        var enemy = h.collider.GetComponent<Enemy>();
+                        if (enemy != null)
+                        {
+                            enemy.EnemyTakeDamage(laserDamage);
+                            weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
+                        }
+                    }
                 }
             }
 
@@ -251,13 +370,18 @@ public class FunnelObject : NetworkBehaviour
 
     Transform FindNearestEnemy()
     {
-        var cols      = PlayerWeaponManager.OverlapEnemy(transform.position, attackRange);
         Transform nearest = null;
-        float     minDist = float.MaxValue;
-        foreach (var c in cols)
+        float     minDist = attackRange;
+
+        foreach (var enemy in Enemy.ActiveEnemies)
         {
-            float d = Vector3.Distance(transform.position, c.transform.position);
-            if (d < minDist) { minDist = d; nearest = c.transform; }
+            if (enemy == null) continue;
+            float d = Vector3.Distance(transform.position, enemy.transform.position);
+            if (d < minDist)
+            {
+                minDist = d;
+                nearest = enemy.transform;
+            }
         }
         return nearest;
     }
@@ -273,8 +397,6 @@ public class FunnelObject : NetworkBehaviour
         if (expCheckTimer < 0.2f) return;  // check ทุก 0.2s ไม่ต้องทุก frame
         expCheckTimer = 0f;
 
-        var cols = Physics.OverlapSphere(transform.position, expCollectRadius);
-
         // หา owner PlayerStatManager สำหรับ ExpMultiplier
         PlayerStatManager ownerSM = null;
         if (NetworkManager.Singleton != null &&
@@ -283,25 +405,28 @@ public class FunnelObject : NetworkBehaviour
             ownerSM = client.PlayerObject?.GetComponent<PlayerStatManager>();
         }
 
-        foreach (var c in cols)
+        for (int i = ExpOrb.ActiveOrbs.Count - 1; i >= 0; i--)
         {
-            var orb = c.GetComponent<ExpOrb>();
+            var orb = ExpOrb.ActiveOrbs[i];
             if (orb == null || !orb.IsSpawned) continue;
 
-            float finalExp = orb.expAmount * (ownerSM != null ? ownerSM.GetExpMultiplier() : 1f);
-            SharedExperienceManager.Instance?.AddExp(finalExp);
-            orb.NetworkObject.Despawn(true);
+            float dist = Vector3.Distance(transform.position, orb.transform.position);
+            if (dist <= expCollectRadius)
+            {
+                float finalExp = orb.expAmount * (ownerSM != null ? ownerSM.GetExpMultiplier() : 1f);
+                SharedExperienceManager.Instance?.AddExp(finalExp);
+                orb.NetworkObject.Despawn(true);
+            }
         }
     }
 
     void SeparateFromOtherFunnels()
     {
-        var all  = FindObjectsByType<FunnelObject>(FindObjectsSortMode.None);
         var push = Vector3.zero;
 
-        foreach (var other in all)
+        foreach (var other in ActiveFunnels)
         {
-            if (other == this) continue;
+            if (other == null || other == this) continue;
             Vector3 diff = transform.position - other.transform.position;
             float   dist = diff.magnitude;
             if (dist < funnelSeparation && dist > 0.001f)
@@ -332,6 +457,6 @@ public class FunnelObject : NetworkBehaviour
     [ClientRpc]
     void ShowLaserVfxClientRpc(Vector3 from, Vector3 to)
     {
-        VFXFactory.PlayBeam("None", from, to, duration: 0.08f);
+        VFXFactory.PlayBeam("Beam_Laser", "None", from, to, duration: 0.08f);
     }
 }

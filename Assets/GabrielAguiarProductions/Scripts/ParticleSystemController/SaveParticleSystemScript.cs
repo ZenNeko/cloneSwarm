@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
@@ -16,6 +16,11 @@ namespace GAP_ParticleSystemController
 #else
              var prefabFolderPath = GetPrefabFolder (prefabVFX);
 #endif
+
+			if (prefabFolderPath == null) {
+				Debug.LogWarning ("Cannot save VFX: Prefab folder path is null");
+				return;
+			}
 
 #if UNITY_EDITOR
 			if (!Directory.Exists (prefabFolderPath + "/OriginalSettings")) {
@@ -43,7 +48,7 @@ namespace GAP_ParticleSystemController
             var prefabFolderPath = GetPrefabFolder(prefabVFX);
 #endif
 
-            if (File.Exists (prefabFolderPath + "/OriginalSettings/" + prefabVFX.name + ".dat")) {
+            if (prefabFolderPath != null && File.Exists (prefabFolderPath + "/OriginalSettings/" + prefabVFX.name + ".dat")) {
 				BinaryFormatter bf = new BinaryFormatter ();
 				FileStream stream = new FileStream (prefabFolderPath + "/OriginalSettings/" + prefabVFX.name + ".dat", FileMode.Open);
 
@@ -88,9 +93,31 @@ namespace GAP_ParticleSystemController
         static string GetPrefabFolder2018_3 (GameObject prefabVFX)
         {
 #if UNITY_EDITOR
-			string prefabPath = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(prefabVFX).prefabAssetPath;
-			string prefabFolderPath = Path.GetDirectoryName (prefabPath);
-			return prefabFolderPath;
+			var prefabStage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(prefabVFX);
+			if (prefabStage != null)
+			{
+				string prefabPath = prefabStage.assetPath;
+				string prefabFolderPath = Path.GetDirectoryName (prefabPath);
+				return prefabFolderPath;
+			}
+			else
+			{
+				string prefabPath = UnityEditor.AssetDatabase.GetAssetPath (prefabVFX);
+				if (!string.IsNullOrEmpty(prefabPath))
+				{
+					return Path.GetDirectoryName (prefabPath);
+				}
+				GameObject prefabParent = UnityEditor.PrefabUtility.GetCorrespondingObjectFromSource(prefabVFX);
+				if (prefabParent != null)
+				{
+					prefabPath = UnityEditor.AssetDatabase.GetAssetPath(prefabParent);
+					if (!string.IsNullOrEmpty(prefabPath))
+					{
+						return Path.GetDirectoryName(prefabPath);
+					}
+				}
+			}
+			return null;
 #else
             return null;
 #endif
@@ -102,7 +129,10 @@ namespace GAP_ParticleSystemController
         {
 #if UNITY_EDITOR
             var prefabStage = UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(prefab);
-            UnityEditor.PrefabUtility.SaveAsPrefabAsset(prefabStage.prefabContentsRoot, prefabStage.prefabAssetPath);
+            if (prefabStage != null)
+            {
+                UnityEditor.PrefabUtility.SaveAsPrefabAsset(prefabStage.prefabContentsRoot, prefabStage.assetPath);
+            }
 #endif
         }
 #endif

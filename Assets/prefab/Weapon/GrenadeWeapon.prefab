@@ -49,11 +49,11 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: 3
-  weaponVfxKey: GrenadeExplosion
-  secondaryVfxType: -1
-  secondaryVfxKey: None
-  fireSfx: []
+  weaponVfxType: GrenadeExplosion
+  secondaryVfxType: None
+  fireSfx:
+  - {fileID: 8300000, guid: ba041dae0e6c5334d840591a3e1ce5fb, type: 3}
+  - {fileID: 8300000, guid: 33bc19747bc7f4340973857ff90b2782, type: 3}
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
