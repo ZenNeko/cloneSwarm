@@ -324,8 +324,10 @@ public class playermove : NetworkBehaviour
     [ServerRpc]   // RequireOwnership = true (default) — only owner calls
     void SyncBaseStatsServerRpc(float hp)
     {
-        maxHealth          = hp;
-        netHealth.Value    = hp;
-        netMaxHealth.Value = hp;
+        // Guard against client-side HP spoofing / god mode hacks
+        float safeHp = Mathf.Clamp(hp, 10f, 1000f);
+        maxHealth          = safeHp;
+        netHealth.Value    = safeHp;
+        netMaxHealth.Value = safeHp;
     }
 }

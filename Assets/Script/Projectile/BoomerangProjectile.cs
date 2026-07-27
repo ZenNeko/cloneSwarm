@@ -80,7 +80,7 @@ public class BoomerangProjectile : NetworkBehaviour
         var enemy = other.GetComponent<Enemy>();
         if (enemy == null) return;
 
-        int id = enemy.GetInstanceID();
+        int id = enemy.GetId();
         if (hitIds.Contains(id)) return;
 
         hitIds.Add(id);

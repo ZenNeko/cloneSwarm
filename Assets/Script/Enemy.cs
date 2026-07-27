@@ -403,7 +403,7 @@ public class Enemy : NetworkBehaviour
         while (Time.time < activeBurnEndTime)
         {
             yield return new WaitForSeconds(tickInterval);
-            if (netHealth.Value <= 0f) break;
+            if (!NetworkObject.IsSpawned || netHealth.Value <= 0f) break;
 
             EnemyTakeDamage(damagePerTick, isCrit);
             if (manager != null)
@@ -517,8 +517,8 @@ public class Enemy : NetworkBehaviour
         }
         else
         {
-            // Fallback: ให้ EXP ตรงกับ player ที่ใกล้ที่สุด
-            currentTarget?.GetComponent<ExperienceManager>()?.AddExp(expReward);
+            // Fallback: ให้ EXP ตรงกับ SharedExperienceManager
+            SharedExperienceManager.Instance?.AddExp(expReward);
         }
     }
 

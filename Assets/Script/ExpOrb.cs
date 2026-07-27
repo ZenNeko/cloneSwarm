@@ -86,9 +86,14 @@ public class ExpOrb : NetworkBehaviour
         }
     }
 
+    private bool isCollected = false;
+
     // ── Collect ───────────────────────────────────────────────────────────
     void Collect()
     {
+        if (isCollected) return;
+        isCollected = true;
+
         float finalExp = expAmount;
         // Find nearest player stat manager
         if (currentTarget != null)

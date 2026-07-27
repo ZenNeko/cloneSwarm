@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -123,7 +123,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         var seen   = new HashSet<int>();
         foreach (var entry in sorted)
         {
-            int id = entry.go.GetInstanceID();
+            int id = entry.go.GetId();
             if (seen.Contains(id)) continue;
             seen.Add(id);
             result.Add(entry.go);

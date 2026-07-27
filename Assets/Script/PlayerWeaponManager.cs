@@ -880,7 +880,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         var seen = new System.Collections.Generic.HashSet<int>();
         foreach (var c in cols)
         {
-            int id = c.gameObject.GetInstanceID();
+            int id = c.gameObject.GetId();
             if (!seen.Add(id)) continue;
             // Enemy.NotifyHitClientRpc spawn HitEffect/CritHitEffect ที่ตัว enemy เอง
             var enemy = c.GetComponent<Enemy>();
@@ -1347,7 +1347,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             BroadcastBeamClientRpc(prevPos, targetPos, beamVfx, hitVfx);
 
             hitPositions.Add(current.transform.position);
-            hitSet.Add(current.GetInstanceID());
+            hitSet.Add(current.GetId());
             prevPos = targetPos;
             curDmg *= chainDamageMult;
 
@@ -1434,7 +1434,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         int chainTargets, float chainDamage, float chainRadius, string weaponName, string weaponVfx)
     {
         var hitSet = new HashSet<int>();
-        hitSet.Add(firstEnemy.GetInstanceID());
+        hitSet.Add(firstEnemy.GetId());
 
         Vector3 prevPos = startPos;
         Enemy current = firstEnemy;
@@ -1452,7 +1452,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             next.EnemyTakeDamage(curDmg);
             RegisterWeaponDamage(weaponName, curDmg);
             hitPositions.Add(next.transform.position);
-            hitSet.Add(next.GetInstanceID());
+            hitSet.Add(next.GetId());
 
             current = next;
             prevPos = targetPos;
@@ -1468,7 +1468,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         foreach (var c in cols)
         {
             var e = c.GetComponent<Enemy>();
-            if (e == null || exclude.Contains(e.GetInstanceID())) continue;
+            if (e == null || exclude.Contains(e.GetId())) continue;
             float d = Vector3.Distance(center, c.transform.position);
             if (d < minD) { minD = d; best = e; }
         }
@@ -1483,7 +1483,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         foreach (var c in cols)
         {
             var e = c.GetComponent<Enemy>();
-            if (e == null || exclude.Contains(e.GetInstanceID())) continue;
+            if (e == null || exclude.Contains(e.GetId())) continue;
             if (e.netHealth.Value > bestHP) { bestHP = e.netHealth.Value; best = e; }
         }
         return best;

@@ -128,8 +128,9 @@ public class SharedExperienceManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void ApplyExpMultiplierServerRpc(float newMultiplier)
     {
-        expMultiplier.Value = newMultiplier;
-        Debug.Log($"[SharedEXP] ExpMultiplier → {newMultiplier:F2}x");
+        // Guard against client-side EXP multiplier injection (1.0x to 5.0x max)
+        expMultiplier.Value = Mathf.Clamp(newMultiplier, 1f, 5f);
+        Debug.Log($"[SharedEXP] ExpMultiplier → {expMultiplier.Value:F2}x");
     }
 
     /// <summary>UpgradeManager เรียกหลังเลือก card เสร็จ — ส่ง Server รู้ว่า player นี้พร้อมแล้ว</summary>

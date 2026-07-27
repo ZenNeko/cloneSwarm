@@ -644,6 +644,15 @@
             Whether the current version of Odin is an enterprise version.
             </summary>
         </member>
+        <member name="M:Sirenix.OdinInspector.Editor.OdinInspectorVersion.GetOnDiskVersion">
+            <summary>
+            Gets the Odin Inspector version as written in the "Version.txt" file inside the Odin Inspector directory.
+            Note that this is the version on disk, which is not necessarily the same as the runtime version determined from the loaded assembly.
+            </summary>
+            <returns>
+            The version read from Version.txt, or null if the file is missing or its contents can't be parsed.
+            </returns>
+        </member>
         <member name="T:Sirenix.OdinInspector.Editor.TypeDrawerPair">
             <summary>
             <para>Contains information about an editor type which is assigned to draw a certain type in the inspector.</para>

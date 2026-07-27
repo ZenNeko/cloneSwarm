@@ -131,8 +131,8 @@ public class StormBunnyWeapon : BunnyHopWeapon
         foreach (var c in cols)
         {
             var e = c.GetComponent<Enemy>();
-            if (e == null || hitSet.Contains(e.GetInstanceID())) continue;
-            hitSet.Add(e.GetInstanceID());
+            if (e == null || hitSet.Contains(e.GetId())) continue;
+            hitSet.Add(e.GetId());
 
             Vector3 prevPos = e.transform.position + Vector3.up * 0.5f;
 

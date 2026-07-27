@@ -191,7 +191,7 @@ public class OrbiterWeapon : WeaponBase
             var e = c.GetComponent<Enemy>();
             if (e == null) continue;
 
-            int id = e.GetInstanceID();
+            int id = e.GetId();
             if (_hitCooldowns.TryGetValue(id, out float nextHitAt) && now < nextHitAt) continue;
             _hitCooldowns[id] = now + perEnemyHitCooldown;
 
