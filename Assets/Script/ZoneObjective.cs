@@ -28,6 +28,9 @@ public class ZoneObjective : NetworkBehaviour
     public float zoneRadius      = 3f;
     [Tooltip("วินาทีก่อน timeout ของ Phase 1 Activation (0 = ไม่มี)")]
     public float timeoutDuration = 60f;
+    [Tooltip("เพดานเวลาของ quest Survive (วินาที) — 0 = ใช้ surviveTime × 2 อัตโนมัติ\n" +
+             "จำเป็นเพราะ surviveTime เดินเฉพาะตอนมีคนอยู่ในโซน ถ้าทุกคนออกถาวรจะไม่มีวันจบ")]
+    public float surviveQuestTimeLimit = 0f;
 
     [Header("Phase 1: Activation")]
     [Tooltip("วินาทีที่ต้องยืนใน zone ก่อน quest จะเริ่ม")]
@@ -168,8 +171,10 @@ public class ZoneObjective : NetworkBehaviour
                 yield return StartCoroutine(QuestFetchAndDeliver(fetchDeadline));
                 break;
             case QuestType.Survive:
-                // Survive ใช้ surviveTime เป็นทั้ง completion target และ timeout — ไม่ต้อง deadline แยก
-                yield return StartCoroutine(QuestSurvive(float.MaxValue));
+                // surviveTime เดินเฉพาะตอนมีคนอยู่ในโซน → ต้องมี deadline แยกจริงๆ
+                float surviveLimit    = surviveQuestTimeLimit > 0f ? surviveQuestTimeLimit : surviveTime * 2f;
+                float surviveDeadline = Time.time + surviveLimit;
+                yield return StartCoroutine(QuestSurvive(surviveDeadline));
                 break;
             default:
                 Debug.LogError($"[ZoneObjective] Unimplemented QuestType: {chosen}");

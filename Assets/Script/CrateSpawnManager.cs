@@ -99,5 +99,9 @@ public class CrateSpawnManager : NetworkBehaviour
         {
             netObj.Spawn(true);
         }
+        else
+        {
+            Debug.LogError($"[CrateSpawnManager] '{crate.name}' ไม่มี NetworkObject — spawn เฉพาะฝั่ง server client จะไม่เห็น");
+        }
     }
 }

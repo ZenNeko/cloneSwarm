@@ -74,7 +74,7 @@ public class Projectile : NetworkBehaviour
         var enemy = other.GetComponent<Enemy>();
         if (enemy != null)
         {
-            enemy.EnemyTakeDamage(damage);
+            enemy.EnemyTakeDamage(damage, isCrit);
             if (ownerManager != null)
             {
                 ownerManager.RegisterWeaponDamage(weaponName, damage);

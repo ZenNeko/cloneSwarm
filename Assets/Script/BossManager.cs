@@ -33,6 +33,9 @@ public class BossManager : NetworkBehaviour
     // ── State ─────────────────────────────────────────────────────────────
     private Enemy        activeMainBossEnemy;
 
+    // กัน onDeath ยิงซ้ำ — EnemyTakeDamage ไม่มีธง "ตายแล้ว" 2 นัดในเฟรมเดียวเข้าได้ทั้งคู่
+    bool _mainBossDeathHandled;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
     {
@@ -121,7 +124,10 @@ public class BossManager : NetworkBehaviour
 
         activeMainBossEnemy = go.GetComponent<Enemy>();
         if (activeMainBossEnemy != null)
+        {
+            _mainBossDeathHandled = false;
             activeMainBossEnemy.onDeath.AddListener(OnMainBossKilled);
+        }
 
         MainBossSpawnedClientRpc();
         Debug.Log($"[BossManager] 🔴 MAIN BOSS spawned at {pos}");
@@ -130,6 +136,9 @@ public class BossManager : NetworkBehaviour
     // ── Boss Death ────────────────────────────────────────────────────────
     void OnMainBossKilled()
     {
+        if (_mainBossDeathHandled) return;
+        _mainBossDeathHandled = true;
+
         Debug.Log("[BossManager] ✅ Main Boss killed!");
 
         onMainBossKilled.Invoke();

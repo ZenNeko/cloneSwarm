@@ -28,6 +28,8 @@ public class UpgradeManager : NetworkBehaviour
     // ── State ─────────────────────────────────────────────────────────────
     private List<UpgradeCardInfo> currentOptions = new();
     private bool                  hasPicked;
+    // phase ไหนกำลังเปิดอยู่ — auto-pick ต้องแจ้งกลับคนละ ServerRpc
+    private bool                  _isOrbPhase;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -58,6 +60,7 @@ public class UpgradeManager : NetworkBehaviour
     // ── Level Up (3 cards) ────────────────────────────────────────────────
     void OnLevelUpPhaseStart(int newLevel)
     {
+        _isOrbPhase    = false;
         hasPicked      = false;
         currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
         if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
@@ -68,6 +71,7 @@ public class UpgradeManager : NetworkBehaviour
     // ── Orb Reward — ทุกคนได้ 1 card จาก weapon/stat ที่ตัวเองมีอยู่แล้ว ──
     void OnOrbPhaseStart()
     {
+        _isOrbPhase    = true;
         hasPicked      = false;
         currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
         if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
@@ -80,8 +84,16 @@ public class UpgradeManager : NetworkBehaviour
     void OnForceAutoPick()
     {
         if (hasPicked) return;
-        if (currentOptions.Count > 0) ApplyCard(currentOptions[0]);
-        else NotifyLevelUpPicked();
+        if (currentOptions.Count > 0)
+        {
+            if (_isOrbPhase) ApplyOrbCard(currentOptions[0]);
+            else             ApplyCard(currentOptions[0]);
+        }
+        else
+        {
+            if (_isOrbPhase) NotifyOrbPicked();
+            else             NotifyLevelUpPicked();
+        }
     }
 
     // ── Synergy Card Recommendation ───────────────────────────────────────

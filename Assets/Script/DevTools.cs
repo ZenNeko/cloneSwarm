@@ -115,6 +115,8 @@ public class DevTools : MonoBehaviour
 
     void OnKillAllEnemies()
     {
+        if (!RequireServer()) return;
+
         // คัดลอกลิสต์เพื่อป้องกันปัญหาแก้คอลเลกชันขณะกำลังวนซ้ำ
         var enemies = new List<Enemy>(Enemy.ActiveEnemies);
         int count = 0;

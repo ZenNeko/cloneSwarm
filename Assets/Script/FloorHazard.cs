@@ -245,6 +245,7 @@ public class FloorHazard : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        base.OnNetworkDespawn();
         DestroyVisuals();
     }
 

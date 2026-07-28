@@ -84,7 +84,7 @@ public class BoomerangProjectile : NetworkBehaviour
         if (hitIds.Contains(id)) return;
 
         hitIds.Add(id);
-        enemy.EnemyTakeDamage(damage);
+        enemy.EnemyTakeDamage(damage, isCrit);
         
         // Register weapon damage on owner
         Transform ownerTf = GetOwnerTransform();

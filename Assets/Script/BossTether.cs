@@ -317,6 +317,7 @@ public class BossTether : NetworkBehaviour
     // ── Cleanup ───────────────────────────────────────────────────────────
     public override void OnNetworkDespawn()
     {
+        base.OnNetworkDespawn();
         if (pillarVisual) Destroy(pillarVisual);
         pillarVisual = null;
     }
