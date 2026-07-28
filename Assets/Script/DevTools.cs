@@ -24,6 +24,7 @@ public class DevTools : MonoBehaviour
     // ── Auto-build state ──────────────────────────────────────────────────
     private bool       builtUI;
     private TextMeshProUGUI infoText;
+    private TextMeshProUGUI vfxText;
 
     // ─────────────────────────────────────────────────────────────────────
     void Update()
@@ -67,6 +68,29 @@ public class DevTools : MonoBehaviour
             upgradeManagerLine = $"Weapons: <b>{um.allWeapons.Count}</b>  Stats: <b>{um.allStats.Count}</b>";
 
         infoText.text = $"{expLine}\n{waveLine}\n{timeLine}\n{upgradeManagerLine}";
+
+        if (vfxText != null)
+        {
+            var pool = NetworkedVFXPool.Instance;
+            vfxText.text = pool != null
+                ? pool.BuildShortReport(5)
+                : "NetworkedVFXPool — ไม่พบใน scene";
+        }
+    }
+
+    // ── VFX Pool ──────────────────────────────────────────────────────────
+    void OnLogVfxReport()
+    {
+        var pool = NetworkedVFXPool.Instance;
+        if (pool == null) { Debug.LogWarning("[DevTools] NetworkedVFXPool ไม่พบ"); return; }
+        pool.LogReport();
+    }
+
+    void OnResetVfxStats()
+    {
+        var pool = NetworkedVFXPool.Instance;
+        if (pool == null) { Debug.LogWarning("[DevTools] NetworkedVFXPool ไม่พบ"); return; }
+        pool.ResetStats();
     }
 
     // ── Button Callbacks ──────────────────────────────────────────────────
@@ -216,6 +240,14 @@ public class DevTools : MonoBehaviour
         AddButton(panelRoot, "Spawn Mini Boss",  new Color(1f, 0.85f, 0.2f), OnSpawnMiniBoss);
         AddButton(panelRoot, "Spawn Main Boss",  new Color(1f, 0.25f, 0.25f), OnSpawnMainBoss);
         AddButton(panelRoot, "Spawn Objective",  new Color(0.3f, 1f, 0.6f), OnSpawnObjective);
+
+        // ── VFX Pool ──
+        AddLabel(panelRoot, "── VFX Pool (ตัวที่ตั้งน้อยเกิน) ──", 11, new Color(0.7f,0.7f,0.7f));
+        vfxText = AddLabel(panelRoot, "...", 10, Color.white);
+        vfxText.textWrappingMode = TextWrappingModes.Normal;
+        vfxText.GetComponent<LayoutElement>().preferredHeight = 78;
+        AddButton(panelRoot, "Log VFX Report",  new Color(0.8f,0.5f,1f), OnLogVfxReport);
+        AddButton(panelRoot, "Reset VFX Stats", new Color(0.5f,0.5f,0.6f), OnResetVfxStats);
 
         AddLabel(panelRoot, "── Time Scale ──", 11, new Color(0.7f,0.7f,0.7f));
 
