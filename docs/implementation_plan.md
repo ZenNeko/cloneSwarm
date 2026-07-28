@@ -36,7 +36,7 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
 
 ## Tasks
 
-- [ ] T1: `playermove` เลิก `GetComponent` ทุกเฟรม
+- [x] T1: `playermove` เลิก `GetComponent` ทุกเฟรม
   - File: `Assets/Script/playermove.cs` (MODIFY)
   - `:118` `GetComponent<PlayerStatManager>()?.GetDurationMultiplier()` และ
     `:154` `IsOwner ? GetComponent<PlayerStatManager>() : null` — **เรียกทุกเฟรมทั้งคู่**
@@ -48,7 +48,7 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - **ห้ามเปลี่ยนเงื่อนไข `IsOwner` ที่ `:154`** — เก็บ logic เดิมไว้ เปลี่ยนแค่ที่มาของ reference
   - Expected: ไม่มี `GetComponent<PlayerStatManager>()` เหลือใน `Update()` หรือเมธอดที่ถูกเรียกทุกเฟรม
 
-- [ ] T2: `FloorHazard` เลิก `GetComponent` + `.material` ทุกเฟรม
+- [x] T2: `FloorHazard` เลิก `GetComponent` + `.material` ทุกเฟรม
   - File: `Assets/Script/FloorHazard.cs` (MODIFY)
   - `:137-139` ในลูปทุกเฟรม:
     ```csharp
@@ -62,7 +62,7 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - Expected: ไม่มี `GetComponent` และไม่มี `.material` ในโค้ดที่รันทุกเฟรมของไฟล์นี้
   - Why: `.material` clone material ใหม่ต่อ renderer และ `FloorHazard` ถูก spawn ซ้ำทุกครั้งที่บอสออกท่า
 
-- [ ] T3: `FloorHazard` ตอน setup ใช้ `sharedMaterial`
+- [x] T3: `FloorHazard` ตอน setup ใช้ `sharedMaterial`
   - File: `Assets/Script/FloorHazard.cs` (MODIFY) — ไฟล์เดียวกับ T2 แต่คนละจุด
   - `:160` `dangerVisual.GetComponent<Renderer>().material = mat;`
   - `:180` `safe.GetComponent<Renderer>().material = safeMat;`
@@ -70,14 +70,14 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - **ถ้าเปลี่ยนแล้วพบว่ามีการแก้สีของ material ตัวนั้นทีหลัง (ซึ่งจะไปโดน asset ต้นฉบับ)
     — หยุด เขียนใต้ `## Questions`** อย่าเดา
 
-- [ ] T4: `BossTether` เลิก clone material
+- [x] T4: `BossTether` เลิก clone material
   - File: `Assets/Script/BossTether.cs` (MODIFY)
   - `:246` `lineRenderer.material = mat;` · `:268` `rend.material = mat;` → `sharedMaterial`
   - `:272` `rend.material.color = pillarColor;` → ใช้ `MaterialPropertyBlock` แบบ T2
   - Expected: ไม่มี `.material` เหลือในไฟล์นี้
   - Why: tether ถูก spawn ทุกครั้งที่บอสออกท่า Tether — leak สะสมตลอดการต่อสู้
 
-- [ ] T5: `Enemy` เลิก clone material ตอน freeze
+- [x] T5: `Enemy` เลิก clone material ตอน freeze
   - File: `Assets/Script/Enemy.cs` (MODIFY)
   - `NotifyFreezeClientRpc` (`:495-510`) เรียก `GetComponentInChildren<MeshRenderer>()`
     แล้ว `mr.material.color = ...` **ทุกครั้งที่ freeze/unfreeze**
@@ -86,19 +86,19 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - Expected: ไม่มี `.material` และไม่มี `GetComponentInChildren` ใน `NotifyFreezeClientRpc`
   - Why: `Enemy` เป็น object ที่มีจำนวนมากที่สุดในเกม — หลักร้อยตัว × 1 material clone ต่อตัว
 
-- [ ] T6: `BillboardFaceCamera` cache กล้อง
+- [x] T6: `BillboardFaceCamera` cache กล้อง
   - File: `Assets/Script/VFX/BillboardFaceCamera.cs` (MODIFY)
   - `LateUpdate()` เรียก `Camera.main` **ทุกเฟรม** — เพิ่ม field cache
     แล้วใช้รูปเดียวกับ `WorldHPBar:102`: `if (_cam == null) _cam = Camera.main;`
   - Expected: `Camera.main` ถูกเรียกเฉพาะตอน `_cam` เป็น null
   - Why: `Camera.main` ค้นหาด้วย tag · script นี้ติดอยู่บน world-space canvas ทุกตัวในฉาก
 
-- [ ] T7: `FloatingBuffUI` cache กล้อง
+- [x] T7: `FloatingBuffUI` cache กล้อง
   - File: `Assets/Script/UI/FloatingBuffUI.cs` (MODIFY)
   - `:92` และ `:94` เรียก `Camera.main` **สองครั้งต่อเฟรม** — cache แบบเดียวกับ T6
   - **ห้ามเปลี่ยน `transform.rotation = cam.transform.rotation;`** — เก็บพฤติกรรม billboard เดิม
 
-- [ ] T8: `MineObject` เลิกจัดสรร array ทุกเฟรม
+- [x] T8: `MineObject` เลิกจัดสรร array ทุกเฟรม
   - File: `Assets/Script/MineObject.cs` (MODIFY)
   - `:48` `var hits = Physics.OverlapSphere(...)` **ในลูปทุกเฟรม** — คืน array ใหม่ทุกครั้ง
   - `:58` `foreach (var c in Physics.OverlapSphere(...))` เช่นกัน
@@ -108,7 +108,7 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
     ต้องวนแค่ `0..count-1` **ห้ามวนทั้ง buffer**
   - Expected: ไม่มี `Physics.OverlapSphere(` เหลือในไฟล์นี้
 
-- [ ] T9: `DevTools` canvas ซ้อนทุกครั้งที่โหลดฉากใหม่
+- [x] T9: `DevTools` canvas ซ้อนทุกครั้งที่โหลดฉากใหม่
   - File: `Assets/Script/DevTools.cs` (MODIFY)
   - `:274` `DontDestroyOnLoad(canvasGO);` แต่ตัว `DevTools` เป็น scene object
     → โหลดฉากใหม่ = `DevTools` ตัวใหม่สร้าง canvas ใหม่ ส่วนตัวเก่าค้างอยู่ **สะสมไปเรื่อยๆ**
@@ -117,7 +117,7 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - **เลือกทางที่แก้น้อยที่สุด** และเขียนเหตุผลไว้ใน `## Changed Files`
   - Expected: โหลดฉากซ้ำแล้วมี DevTools canvas เพียงตัวเดียว
 
-- [ ] T10: `OrbVisual` เลิก clone material  ← **ปริมาณสูงสุดในเกม**
+- [x] T10: `OrbVisual` เลิก clone material  ← **ปริมาณสูงสุดในเกม**
   - File: `Assets/Script/VFX/OrbVisual.cs` (MODIFY)
   - `:47` `rend.material.color = orbColor;` · `:50` `rend.material.EnableKeyword("_EMISSION");` ·
     `:51` `rend.material.SetColor("_EmissionColor", orbColor * 0.6f);` — **แตะ `.material` 3 ครั้ง**
@@ -128,13 +128,13 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - Why: orb ถูก spawn **ทุกครั้งที่ศัตรูตาย** — เป็น object ที่เกิดถี่ที่สุดในเกม
     หนึ่ง clone ต่อ orb คือ leak ที่โตเร็วที่สุดในบรรดาทั้งหมดในแผนนี้
 
-- [ ] T11: `HealingOrb` + `MagnetOrb` เลิก clone material
+- [x] T11: `HealingOrb` + `MagnetOrb` เลิก clone material
   - File: `Assets/Script/HealingOrb.cs` (MODIFY) — `:40` `rend.material.color = Color.green;`
   - File: `Assets/Script/MagnetOrb.cs` (MODIFY) — `:35` `rend.material.color = Color.magenta;`
   - ใช้ MPB แบบเดียวกับ T10 · **ห้ามเปลี่ยนสี** (เขียว / ม่วงแดง ต้องเท่าเดิม)
   - **ห้ามแตะส่วน `isCollected` guard** ที่ Round 1 ใส่ไว้
 
-- [ ] T12: `WeaponBase` cache กล้องในเส้นทางเล็ง
+- [x] T12: `WeaponBase` cache กล้องในเส้นทางเล็ง
   - File: `Assets/Script/Weapon/WeaponBase.cs` (MODIFY)
   - `:350` `if (aimMode == AimMode.MouseAim && Camera.main != null)` และ
     `:357` `var ray = Camera.main.ScreenPointToRay(...)` — อยู่ในเส้นทางที่เรียก**ทุกนัดที่ยิง**
@@ -142,14 +142,14 @@ backlog เดิมจาก audit **ถูกเก็บไปเกือบ
   - **ห้ามเปลี่ยน logic ของ `AimMode`** — เปลี่ยนแค่ที่มาของ reference กล้อง
   - Why: bullet-heaven ยิงหลายนัดต่อวินาที × ผู้เล่นทุกคน
 
-- [ ] T13: `ClusterBombWeapon` + `GunnerGiantRocket` cache กล้อง
+- [x] T13: `ClusterBombWeapon` + `GunnerGiantRocket` cache กล้อง
   - File: `Assets/Script/Weapon/ClusterBombWeapon.cs` (MODIFY) — `:154` `:156`
   - File: `Assets/Script/Weapon/hero/GunnerGiantRocket.cs` (MODIFY) — `:90` `:92`
   - ทั้งคู่เรียก `Camera.main` **สองครั้งต่อการยิงหนึ่งนัด** — cache แบบเดียวกับ T12
   - **`ClusterBombWeapon` ห้ามแตะ distance gate ที่ `OnEnemyKilled`** — Round 1 ใส่ไว้
   - **`GunnerGiantRocket` ห้ามแตะ `RollDamage(..., out bool _)` ที่ `:68`** — จงใจเว้นไว้ให้ Stage 1
 
-- [ ] T14: ตรวจปิดงาน — **ไม่แก้ไฟล์**
+- [x] T14: ตรวจปิดงาน — **ไม่แก้ไฟล์**
   - grep `\.material\b` (ไม่นับ `sharedMaterial`) — ต้องไม่เหลือใน `FloorHazard.cs` ·
     `BossTether.cs` · `Enemy.cs` · `VFX/OrbVisual.cs` · `HealingOrb.cs` · `MagnetOrb.cs`
   - grep `Camera\.main` — ใน `BillboardFaceCamera.cs` · `FloatingBuffUI.cs` · `WeaponBase.cs` ·
@@ -207,6 +207,22 @@ Round 4 **คอมไพล์ไม่ผ่าน** และเป็นค�
    (ก่อนแก้: `MineObject` + `playermove` + `Camera.main` จัดสรรทุกเฟรม)
 3. **Memory** — เล่นสู้บอสยาวๆ แล้วดู Memory Profiler ว่า **Material count ไม่โตขึ้นเรื่อยๆ**
 4. **โหลดฉากซ้ำ** — เข้าเกม → Quit to menu → เข้าใหม่ → กด F1 → **ต้องมีแผง DevTools แผงเดียว**
+
+## Changed Files
+- [Assets/Script/playermove.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/playermove.cs): Cache `PlayerStatManager` reference ใน `OnNetworkSpawn()` แทนการเรียก `GetComponent<PlayerStatManager>()` ทุกเฟรมใน `Update()` และ `FixedUpdate()`
+- [Assets/Script/FloorHazard.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/FloorHazard.cs): Cache danger `Renderer` ใน `CreateVisuals()`, สลับจาก `.material` เป็น `.sharedMaterial`, และใช้ `MaterialPropertyBlock` ใน `LateUpdate()` เพื่อเปลี่ยนสีโซนอันตราย
+- [Assets/Script/BossTether.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/BossTether.cs): เปลี่ยน `.material` เป็น `sharedMaterial` ใน `SetupLineRenderer()` และ `SetupPillarVisual()` พร้อมใช้ `MaterialPropertyBlock` กำหนดสี pillar
+- [Assets/Script/Enemy.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/Enemy.cs): Cache `MeshRenderer` ใน `OnNetworkSpawn()` และเปลี่ยนสีสถานะ freeze ผ่าน `MaterialPropertyBlock` ใน `NotifyFreezeClientRpc()` แทนการแตะ `.material` และ `GetComponentInChildren`
+- [Assets/Script/VFX/BillboardFaceCamera.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/VFX/BillboardFaceCamera.cs): Cache `Camera.main` ใน `_cam` field
+- [Assets/Script/UI/FloatingBuffUI.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/UI/FloatingBuffUI.cs): Cache `Camera.main` ใน `_cam` field
+- [Assets/Script/MineObject.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/MineObject.cs): เปลี่ยน `Physics.OverlapSphere` เป็น `Physics.OverlapSphereNonAlloc` พร้อม `_overlapBuffer` static array
+- [Assets/Script/DevTools.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/DevTools.cs): ลบ `DontDestroyOnLoad(canvasGO)` ออก เพื่อให้ lifecycle ของ Canvas สอดคล้องกับ DevTools Scene GameObject ป้องกัน Canvas ซ้อนกันเมื่อโหลดฉากซ้ำ
+- [Assets/Script/VFX/OrbVisual.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/VFX/OrbVisual.cs): ใช้ `MaterialPropertyBlock` กำหนดสีและ emission ให้กับ orb renderer แทนการสร้าง material instance ใหม่
+- [Assets/Script/HealingOrb.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/HealingOrb.cs): ใช้ `MaterialPropertyBlock` กำหนดสีเขียวแทนการเรียก `rend.material.color`
+- [Assets/Script/MagnetOrb.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/MagnetOrb.cs): ใช้ `MaterialPropertyBlock` กำหนดสีม่วงแดงแทนการเรียก `rend.material.color`
+- [Assets/Script/Weapon/WeaponBase.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/Weapon/WeaponBase.cs): Cache `Camera.main` ใน `_mainCamCache` field ภายใน `GetAimDirection()`
+- [Assets/Script/Weapon/ClusterBombWeapon.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/Weapon/ClusterBombWeapon.cs): Cache `Camera.main` ใน `_cam` field ภายใน `GetMouseWorldPosition()`
+- [Assets/Script/Weapon/hero/GunnerGiantRocket.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/Weapon/hero/GunnerGiantRocket.cs): Cache `Camera.main` ใน `_cam` field ภายใน `GetMouseOnGround()`
 
 ## ของที่เหลือหลังรอบนี้ — และทำไมไม่อยู่ในแผน
 
