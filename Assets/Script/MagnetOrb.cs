@@ -32,7 +32,15 @@ public class MagnetOrb : NetworkBehaviour
             }
             if (visual.TryGetComponent<Renderer>(out Renderer rend))
             {
-                rend.material.color = Color.magenta;
+                var mpb = new MaterialPropertyBlock();
+                rend.GetPropertyBlock(mpb);
+                var sharedMat = rend.sharedMaterial;
+                if (sharedMat != null)
+                {
+                    if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", Color.magenta);
+                    if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     Color.magenta);
+                }
+                rend.SetPropertyBlock(mpb);
             }
         }
     }

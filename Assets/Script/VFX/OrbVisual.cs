@@ -42,13 +42,19 @@ public class OrbVisual : MonoBehaviour
         rend = GetComponentInChildren<Renderer>();
         if (rend != null)
         {
-            // สร้าง material instance เพื่อไม่ shared กับ prefab
-            rend.material = new Material(rend.sharedMaterial ?? new Material(Shader.Find("Standard")));
-            rend.material.color = orbColor;
-
-            // Emission เพื่อให้ดูเรืองแสง
-            rend.material.EnableKeyword("_EMISSION");
-            rend.material.SetColor("_EmissionColor", orbColor * 0.6f);
+            var mpb = new MaterialPropertyBlock();
+            rend.GetPropertyBlock(mpb);
+            var sharedMat = rend.sharedMaterial;
+            if (sharedMat != null)
+            {
+                if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", orbColor);
+                if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     orbColor);
+                // _EMISSION keyword เปิดผ่าน MaterialPropertyBlock ไม่ได้ และ **ห้ามเปิดบน
+                // sharedMaterial** เพราะนั่นคือการเขียนทับ asset ต้นฉบับตอน runtime
+                // → ต้องติ๊ก Emission บน material ของ orb ใน Inspector ครั้งเดียว แล้วบรรทัดล่างจะทำงาน
+                if (sharedMat.HasProperty("_EmissionColor")) mpb.SetColor("_EmissionColor", orbColor * 0.6f);
+            }
+            rend.SetPropertyBlock(mpb);
         }
 
         // Ambient light
