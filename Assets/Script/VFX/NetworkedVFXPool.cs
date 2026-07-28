@@ -337,17 +337,23 @@ public class NetworkedVFXPool : MonoBehaviour
         go.SetActive(true);
 
         // ── Play: VFX Graph หรือ ParticleSystem ──────────────────────────
-        var vfxGraph = go.GetComponent<VisualEffect>();
-        if (vfxGraph != null)
+        // ต้องค้นลง child ด้วย ไม่ใช่ GetComponent เฉพาะ root — VFX Graph บาง prefab
+        // วาง VisualEffect ไว้บนลูก (เช่น PS_Piercing_Generic → VEG_Piercing_Generic)
+        // ถ้าหาแค่ root จะได้ null แล้วตกไป branch ParticleSystem ซึ่งไม่มี → เงียบ ไม่มี VFX
+        var vfxGraphs = go.GetComponentsInChildren<VisualEffect>(true);
+        if (vfxGraphs.Length > 0)
         {
-            // maxAngle = เป้าหมาย sweep (VFX Graph animate จาก 0 → maxAngle)
-            if (vfxGraph.HasFloat("maxAngle"))
-                vfxGraph.SetFloat("maxAngle", arcAngle);
-            // fallback สำหรับ VFX Graph ที่ set ArcAngle ตรงๆ (ไม่มี animation)
-            else if (vfxGraph.HasFloat("ArcAngle"))
-                vfxGraph.SetFloat("ArcAngle", arcAngle);
-            vfxGraph.Stop();
-            vfxGraph.Play();
+            foreach (var vfxGraph in vfxGraphs)
+            {
+                // maxAngle = เป้าหมาย sweep (VFX Graph animate จาก 0 → maxAngle)
+                if (vfxGraph.HasFloat("maxAngle"))
+                    vfxGraph.SetFloat("maxAngle", arcAngle);
+                // fallback สำหรับ VFX Graph ที่ set ArcAngle ตรงๆ (ไม่มี animation)
+                else if (vfxGraph.HasFloat("ArcAngle"))
+                    vfxGraph.SetFloat("ArcAngle", arcAngle);
+                vfxGraph.Stop();
+                vfxGraph.Play();
+            }
         }
         else
         {
@@ -378,7 +384,8 @@ public class NetworkedVFXPool : MonoBehaviour
         }
 
         // VFX Graph ไม่มี fixedDuration → ใช้ค่า default
-        if (go.GetComponent<VisualEffect>() != null) return 2f;
+        // ค้นลง child ด้วยเหตุผลเดียวกับใน PlayFromPool (VisualEffect อาจไม่ได้อยู่บน root)
+        if (go.GetComponentInChildren<VisualEffect>(true) != null) return 2f;
 
         // ParticleSystem — คำนวณจาก duration + lifetime
         float maxTTL = 0f;
