@@ -92,7 +92,7 @@ public class EliteController : NetworkBehaviour
             // Add Shield HP directly to Max Health
             if (def.behaviorType == EliteModifierDef.BehaviorType.Shield)
             {
-                _enemy.maxHealth += def.shieldHP;
+                _enemy.ServerSetMaxHealth(_enemy.maxHealth + def.shieldHP);
                 _enemy.netHealth.Value = _enemy.maxHealth;
             }
         }

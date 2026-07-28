@@ -111,7 +111,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
             searchHighestHP: false,
             weaponName: data != null ? data.weaponName : "Unknown",
             beamVfx: "Default",
-            hitVfx: "HitEffect",
+            hitVfx: "None",
             isCrit: isCrit
         );
     }
@@ -142,7 +142,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
                 searchHighestHP: false,
                 weaponName: data != null ? data.weaponName : "Unknown",
                 beamVfx: "Default",
-                hitVfx: "HitEffect",
+                hitVfx: "None",
                 isCrit: isCrit
             );
         }

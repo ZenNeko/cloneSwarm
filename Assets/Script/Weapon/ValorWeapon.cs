@@ -135,8 +135,6 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         else yield return null;
 
         FireMelee(transform.position, radius, damage, isCrit);
-        string baseHit = isCrit ? "CritHitEffect" : "HitEffect";
-        manager.BroadcastVfxTypeServerRpc(transform.position, baseHit);
 
         // Wind Slash — เฉพาะตอน Blade of Exile active
         if (chargeManager != null && chargeManager.IsExileActive)

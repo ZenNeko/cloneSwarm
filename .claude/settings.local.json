@@ -39,7 +39,8 @@
       "Bash(python -c ':*)",
       "PowerShell(notepad \"$env:USERPROFILE\\\\.claude.json\")",
       "Bash(sed -n '130,145p' Assets/Script/Weapon/StormBunnyWeapon.cs)",
-      "Bash(sed -n '170,182p' Assets/Script/Weapon/StormBunnyWeapon.cs)"
+      "Bash(sed -n '170,182p' Assets/Script/Weapon/StormBunnyWeapon.cs)",
+      "Skill(unity-loop)"
     ]
   }
 }

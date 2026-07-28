@@ -34,7 +34,22 @@ public class NetworkedVFXPool : MonoBehaviour
     [Tooltip("VFX Database ScriptableObject")]
     public VFXDatabase vfxDatabase;
 
+    // ─── Pool sizing (ปรับได้โดยไม่ต้องแก้ VFXDatabase asset) ─────────────
+    [Header("Pool Sizing")]
+    [Min(0.25f)]
+    [Tooltip("คูณ poolSize ของทุก entry ตอน pre-allocate\n" +
+             "1 = ใช้ค่าใน VFXDatabase ตรงๆ\n" +
+             "ตัวนี้เป็นแค่การเดาจนกว่าจะเล่นจบรอบแล้วดู report (F1 → Log VFX Report)\n" +
+             "ค่าที่ถูกต้องคือเอา peak จาก report ไปใส่ VFXDatabase ทีละ key")]
+    public float poolSizeMultiplier = 1.5f;
 
+    [Min(1)]
+    [Tooltip("พื้นขั้นต่ำต่อ pool — กัน entry ที่ตั้งไว้ 5 แล้วหมดทันทีที่มีศัตรูสองสามตัว")]
+    public int minPoolSize = 8;
+
+    [Tooltip("เตือนใน Console ครั้งแรกที่แต่ละ key ต้องโตเกิน pool\n" +
+             "ปิดได้ถ้ารำคาญ — ตัวเลขยังถูกเก็บใน report อยู่ดี")]
+    public bool warnOnFirstGrow = true;
 
     // ─── Projectile Registry ────────────────────────────────────────────
     [Header("Projectile Registry")]
@@ -47,6 +62,27 @@ public class NetworkedVFXPool : MonoBehaviour
     private readonly Dictionary<string, int>            _keyToPoolId  = new();
     private readonly Dictionary<int, Queue<GameObject>> _pools        = new();
     private readonly Dictionary<GameObject, int>        _projToId     = new();
+
+    // ─── Diagnostics ─────────────────────────────────────────────────────
+    /// <summary>สถิติต่อ pool — ใช้ตอบว่า "key ไหนตั้งไว้น้อยเกิน" หลังเล่นจบรอบ</summary>
+    public class PoolStats
+    {
+        public string key;
+        public int    configured;   // poolSize หลังคูณ multiplier แล้ว (ที่ pre-allocate จริง)
+        public int    authored;     // poolSize ดิบใน VFXDatabase asset
+        public int    live;         // instance ที่มีอยู่จริงตอนนี้ = configured + ที่โตเพิ่ม
+        public int    inUse;        // กำลังเล่นอยู่ตอนนี้
+        public int    peakInUse;    // สูงสุดที่เคยใช้พร้อมกัน  ← ตัวเลขที่ต้องเอาไปตั้ง
+        public int    grows;        // จำนวนครั้งที่ต้อง Instantiate เพิ่มเพราะ pool หมด
+        public bool   warned;
+
+        /// <summary>ค่าที่ควรตั้งใน VFXDatabase — peak บวก headroom 25%</summary>
+        public int Recommended => Mathf.Max(1, Mathf.CeilToInt(peakInUse * 1.25f));
+        /// <summary>true = ตั้งไว้น้อยกว่าที่ใช้จริง</summary>
+        public bool IsUndersized => peakInUse > authored;
+    }
+
+    private readonly Dictionary<int, PoolStats> _stats = new();
 
 
     // ─── Lifecycle ───────────────────────────────────────────────────────
@@ -67,6 +103,7 @@ public class NetworkedVFXPool : MonoBehaviour
         _keyToPoolId.Clear();
         _pools.Clear();
         _projToId.Clear();
+        _stats.Clear();
 
         // ── VFXDatabase entries pools ────────────────────────────────────────
         if (vfxDatabase != null && vfxDatabase.entries != null)
@@ -78,10 +115,20 @@ public class NetworkedVFXPool : MonoBehaviour
 
                 _keyToPoolId[m.key] = i;
 
-                var q = new Queue<GameObject>(m.poolSize);
-                for (int j = 0; j < m.poolSize; j++)
+                int size = Mathf.Max(minPoolSize, Mathf.CeilToInt(m.poolSize * poolSizeMultiplier));
+
+                var q = new Queue<GameObject>(size);
+                for (int j = 0; j < size; j++)
                     q.Enqueue(CreateInstance(m.prefab));
                 _pools[i] = q;
+
+                _stats[i] = new PoolStats
+                {
+                    key        = m.key,
+                    authored   = m.poolSize,
+                    configured = size,
+                    live       = size,
+                };
             }
         }
         else
@@ -107,6 +154,67 @@ public class NetworkedVFXPool : MonoBehaviour
         var go = Instantiate(prefab);
         go.SetActive(false);
         return go;
+    }
+
+    // ─── Rent / Release ──────────────────────────────────────────────────
+    // ทางเข้า-ออก pool ทางเดียว — เดิม logic "dequeue ไม่ได้ก็สร้างใหม่" ถูกก๊อปไว้ 4 ที่
+    // (PlayFromPoolCoreImpl · PlayFromPoolParented · PlayFromPoolParentedLoop · PlayBeam)
+    // ทำให้สถิติเก็บไม่ครบถ้าเพิ่มจุดที่ 5 แล้วลืม
+
+    /// <summary>ดึง instance จาก pool — ถ้าหมดจะสร้างเพิ่มและนับไว้ใน stats</summary>
+    GameObject Rent(int poolId, Queue<GameObject> q)
+    {
+        _stats.TryGetValue(poolId, out var st);
+
+        GameObject go = q.Count > 0 ? q.Dequeue() : null;
+
+        // instance ที่ถูก Destroy ไปแล้ว (scene unload) จะเป็น null ทั้งที่ยังอยู่ในคิว
+        if (go == null)
+        {
+            var srcPrefab = GetPrefabForId(poolId);
+            if (srcPrefab == null)
+            {
+                Debug.LogWarning($"[VFXPool] pool id={poolId} หมด และหา prefab ไม่ได้");
+                return null;
+            }
+            go = CreateInstance(srcPrefab);
+            if (st != null)
+            {
+                st.live++;
+                st.grows++;
+                WarnGrowOnce(st);
+            }
+        }
+
+        if (st != null)
+        {
+            st.inUse++;
+            if (st.inUse > st.peakInUse) st.peakInUse = st.inUse;
+        }
+        return go;
+    }
+
+    /// <summary>คืน instance เข้า pool</summary>
+    void Release(int poolId, GameObject go)
+    {
+        if (go == null) return;
+        go.SetActive(false);
+        go.transform.SetParent(transform, false);
+        if (_pools.TryGetValue(poolId, out var q)) q.Enqueue(go);
+        else { Destroy(go); if (_stats.TryGetValue(poolId, out var s)) s.live--; }
+
+        if (_stats.TryGetValue(poolId, out var st) && st.inUse > 0) st.inUse--;
+    }
+
+    void WarnGrowOnce(PoolStats st)
+    {
+        if (st.warned) return;
+        st.warned = true;
+        if (!warnOnFirstGrow) return;
+        Debug.LogWarning(
+            $"[VFXPool] '{st.key}' pool หมด (pre-allocate {st.configured} จาก asset {st.authored}) — " +
+            $"โตอัตโนมัติแล้ว ไม่ใช่ error · จะไม่เตือนซ้ำสำหรับ key นี้อีก\n" +
+            $"ดูตัวเลขที่ควรตั้งจริงได้ที่ DevTools (F1) → ปุ่ม Log VFX Report");
     }
 
     // ─── VFX API ─────────────────────────────────────────────────────────
@@ -171,8 +279,8 @@ public class NetworkedVFXPool : MonoBehaviour
             {
                 if (_pools.TryGetValue(poolId, out var q))
                 {
-                    isDatabasePool = true;
-                    go = q.Count > 0 ? q.Dequeue() : CreateInstance(GetPrefabForId(poolId));
+                    go = Rent(poolId, q);
+                    isDatabasePool = go != null;
                 }
             }
         }
@@ -216,16 +324,7 @@ public class NetworkedVFXPool : MonoBehaviour
     IEnumerator ReturnCustomBeamToPool(GameObject go, int poolId, float delay)
     {
         yield return new WaitForSeconds(delay);
-        if (go == null) yield break;
-        go.SetActive(false);
-        if (_pools.TryGetValue(poolId, out var q))
-        {
-            q.Enqueue(go);
-        }
-        else
-        {
-            Destroy(go);
-        }
+        Release(poolId, go);
     }
 
     /// <summary>สร้าง LineRenderer แบบ runtime — ใช้เมื่อ beamPrefab ไม่ได้ assign</summary>
@@ -299,27 +398,8 @@ public class NetworkedVFXPool : MonoBehaviour
     void PlayFromPoolCoreImpl(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale, Queue<GameObject> q)
     {
         GameObject srcPrefab = GetPrefabForId(poolId);
-        GameObject go;
-        if (q.Count > 0)
-        {
-            go = q.Dequeue();
-        }
-        else
-        {
-            if (srcPrefab == null)
-            {
-                Debug.LogWarning($"[VFXPool] Pool exhausted id={poolId} และหา prefab ไม่ได้");
-                return;
-            }
-            go = CreateInstance(srcPrefab);
-            Debug.LogWarning($"[VFXPool] Pool exhausted id={poolId} ('{srcPrefab.name}'), growing");
-        }
-
-        if (go == null)
-        {
-            if (srcPrefab == null) return;
-            go = CreateInstance(srcPrefab);
-        }
+        GameObject go = Rent(poolId, q);
+        if (go == null) return;
 
         // ── Position + Rotation ──────────────────────────────────────────
         go.transform.position   = pos;
@@ -337,17 +417,23 @@ public class NetworkedVFXPool : MonoBehaviour
         go.SetActive(true);
 
         // ── Play: VFX Graph หรือ ParticleSystem ──────────────────────────
-        var vfxGraph = go.GetComponent<VisualEffect>();
-        if (vfxGraph != null)
+        // ต้องค้นลง child ด้วย ไม่ใช่ GetComponent เฉพาะ root — VFX Graph บาง prefab
+        // วาง VisualEffect ไว้บนลูก (เช่น PS_Piercing_Generic → VEG_Piercing_Generic)
+        // ถ้าหาแค่ root จะได้ null แล้วตกไป branch ParticleSystem ซึ่งไม่มี → เงียบ ไม่มี VFX
+        var vfxGraphs = go.GetComponentsInChildren<VisualEffect>(true);
+        if (vfxGraphs.Length > 0)
         {
-            // maxAngle = เป้าหมาย sweep (VFX Graph animate จาก 0 → maxAngle)
-            if (vfxGraph.HasFloat("maxAngle"))
-                vfxGraph.SetFloat("maxAngle", arcAngle);
-            // fallback สำหรับ VFX Graph ที่ set ArcAngle ตรงๆ (ไม่มี animation)
-            else if (vfxGraph.HasFloat("ArcAngle"))
-                vfxGraph.SetFloat("ArcAngle", arcAngle);
-            vfxGraph.Stop();
-            vfxGraph.Play();
+            foreach (var vfxGraph in vfxGraphs)
+            {
+                // maxAngle = เป้าหมาย sweep (VFX Graph animate จาก 0 → maxAngle)
+                if (vfxGraph.HasFloat("maxAngle"))
+                    vfxGraph.SetFloat("maxAngle", arcAngle);
+                // fallback สำหรับ VFX Graph ที่ set ArcAngle ตรงๆ (ไม่มี animation)
+                else if (vfxGraph.HasFloat("ArcAngle"))
+                    vfxGraph.SetFloat("ArcAngle", arcAngle);
+                vfxGraph.Stop();
+                vfxGraph.Play();
+            }
         }
         else
         {
@@ -378,7 +464,8 @@ public class NetworkedVFXPool : MonoBehaviour
         }
 
         // VFX Graph ไม่มี fixedDuration → ใช้ค่า default
-        if (go.GetComponent<VisualEffect>() != null) return 2f;
+        // ค้นลง child ด้วยเหตุผลเดียวกับใน PlayFromPool (VisualEffect อาจไม่ได้อยู่บน root)
+        if (go.GetComponentInChildren<VisualEffect>(true) != null) return 2f;
 
         // ParticleSystem — คำนวณจาก duration + lifetime
         float maxTTL = 0f;
@@ -393,10 +480,7 @@ public class NetworkedVFXPool : MonoBehaviour
     IEnumerator ReturnToPool(GameObject go, int poolId, float delay)
     {
         yield return new WaitForSeconds(delay);
-        if (go == null) yield break;
-        go.SetActive(false);
-        go.transform.SetParent(null);
-        if (_pools.TryGetValue(poolId, out var q)) q.Enqueue(go);
+        Release(poolId, go);
     }
 
     /// <summary>
@@ -419,22 +503,8 @@ public class NetworkedVFXPool : MonoBehaviour
         if (!_pools.TryGetValue(poolId, out var q)) return;
 
         GameObject srcPrefab = GetPrefabForId(poolId);
-        GameObject go;
-        if (q.Count > 0)
-        {
-            go = q.Dequeue();
-        }
-        else
-        {
-            if (srcPrefab == null) return;
-            go = CreateInstance(srcPrefab);
-        }
-
-        if (go == null)
-        {
-            if (srcPrefab == null) return;
-            go = CreateInstance(srcPrefab);
-        }
+        GameObject go = Rent(poolId, q);
+        if (go == null) return;
 
         // กำหนด parent และ local transform
         go.transform.SetParent(parent, false);
@@ -496,22 +566,8 @@ public class NetworkedVFXPool : MonoBehaviour
         if (!_pools.TryGetValue(poolId, out var q)) return null;
 
         GameObject srcPrefab = GetPrefabForId(poolId);
-        GameObject go;
-        if (q.Count > 0)
-        {
-            go = q.Dequeue();
-        }
-        else
-        {
-            if (srcPrefab == null) return null;
-            go = CreateInstance(srcPrefab);
-        }
-
-        if (go == null)
-        {
-            if (srcPrefab == null) return null;
-            go = CreateInstance(srcPrefab);
-        }
+        GameObject go = Rent(poolId, q);
+        if (go == null) return null;
 
         // กำหนด parent และ local transform
         go.transform.SetParent(parent, false);
@@ -551,9 +607,7 @@ public class NetworkedVFXPool : MonoBehaviour
             Destroy(go);
             return;
         }
-        go.SetActive(false);
-        go.transform.SetParent(null);
-        if (_pools.TryGetValue(id, out var q)) q.Enqueue(go);
+        Release(id, go);
     }
 
     // ─── Projectile Registry API ─────────────────────────────────────────
@@ -572,4 +626,77 @@ public class NetworkedVFXPool : MonoBehaviour
     /// <summary>คืน projectile prefab จาก ID (null = ไม่พบ → ใช้ default)</summary>
     public GameObject GetProjectilePrefab(int id)
         => id >= 0 && id < projectilePrefabs.Count ? projectilePrefabs[id] : null;
+
+    // ─── Diagnostics API ─────────────────────────────────────────────────
+
+    /// <summary>สถิติทุก pool เรียงจากตัวที่ตั้งไว้ขาดมากสุดก่อน</summary>
+    public List<PoolStats> GetStatsSorted()
+    {
+        var list = new List<PoolStats>(_stats.Values);
+        list.Sort((a, b) =>
+        {
+            int over = (b.peakInUse - b.authored).CompareTo(a.peakInUse - a.authored);
+            return over != 0 ? over : b.peakInUse.CompareTo(a.peakInUse);
+        });
+        return list;
+    }
+
+    /// <summary>สรุปสั้นสำหรับ overlay — เฉพาะตัวที่ตั้งไว้น้อยเกิน</summary>
+    public string BuildShortReport(int topN = 5)
+    {
+        var list = GetStatsSorted();
+        var sb = new System.Text.StringBuilder();
+        int shown = 0;
+
+        for (int i = 0; i < list.Count && shown < topN; i++)
+        {
+            var s = list[i];
+            if (!s.IsUndersized) continue;
+            sb.AppendLine($"<color=#ff8080>{s.key}</color> peak {s.peakInUse} / ตั้ง {s.authored} → <b>{s.Recommended}</b>");
+            shown++;
+        }
+
+        if (shown == 0) sb.AppendLine("<color=#80ff80>ทุก pool พอ</color> — ไม่มีตัวไหนโตเกินที่ตั้งไว้");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// ตารางเต็มลง Console — เรียกจาก DevTools ตอนจบรอบ
+    /// เอาคอลัมน์ "ควรตั้ง" ไปใส่ poolSize ใน VFXDatabase asset ได้ตรงๆ
+    /// </summary>
+    public void LogReport()
+    {
+        var list = GetStatsSorted();
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"[VFXPool] report — {list.Count} pools · multiplier ×{poolSizeMultiplier} · floor {minPoolSize}");
+        sb.AppendLine($"{"key",-26} {"ตั้งไว้",7} {"prealloc",9} {"peak",6} {"live",6} {"โต",5}  ควรตั้ง");
+
+        int undersized = 0;
+        foreach (var s in list)
+        {
+            bool bad = s.IsUndersized;
+            if (bad) undersized++;
+            sb.AppendLine($"{s.key,-26} {s.authored,7} {s.configured,9} {s.peakInUse,6} {s.live,6} {s.grows,5}  " +
+                          $"{s.Recommended}{(bad ? "   ← ตั้งน้อยเกิน" : "")}");
+        }
+
+        sb.AppendLine(undersized == 0
+            ? "ทุก pool พอ — ไม่ต้องแก้ VFXDatabase"
+            : $"{undersized} pool ตั้งไว้น้อยกว่าที่ใช้จริง — เอาคอลัมน์ 'ควรตั้ง' ไปใส่ poolSize ใน VFXDatabase");
+        sb.AppendLine("หมายเหตุ: peak เป็นค่าของรอบนี้เท่านั้น · solo กับ 4 คนใช้ไม่เท่ากัน");
+
+        Debug.Log(sb.ToString());
+    }
+
+    /// <summary>ล้างสถิติ — ใช้เมื่ออยากวัดเฉพาะช่วง (เช่น เริ่มนับตอนบอสโผล่)</summary>
+    public void ResetStats()
+    {
+        foreach (var s in _stats.Values)
+        {
+            s.peakInUse = s.inUse;
+            s.grows     = 0;
+            s.warned    = false;
+        }
+        Debug.Log("[VFXPool] เคลียร์สถิติแล้ว — เริ่มนับ peak ใหม่");
+    }
 }

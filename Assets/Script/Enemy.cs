@@ -17,7 +17,7 @@ public class Enemy : NetworkBehaviour
     public static event System.Action<Enemy, Vector3> OnEnemyDiedServer;
 
     /// <summary>ลิสต์เก็บรายชื่อศัตรูทั้งหมดที่ยังแอ็คทีฟอยู่ในแผนที่ เพื่อใช้แทน FindObjectsOfType</summary>
-    public static readonly List<Enemy> ActiveEnemies = new List<Enemy>();
+    public static readonly HashSet<Enemy> ActiveEnemies = new HashSet<Enemy>();
 
     [Header("Movement")]
     public float speed = 3f;
@@ -64,6 +64,11 @@ public class Enemy : NetworkBehaviour
     public NetworkVariable<float> netHealth = new NetworkVariable<float>(
         30f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    /// <summary>maxHealth ที่ replicate แล้ว — client ต้องอ่านตัวนี้ ห้ามอ่าน field maxHealth
+    /// เพราะ ApplyWaveScaling / Elite แก้ field เฉพาะฝั่ง server</summary>
+    public NetworkVariable<float> netMaxHealth = new NetworkVariable<float>(
+        30f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     private Transform  currentTarget;
     private playermove targetPlayerMove;  // cached — avoid GetComponent allocation per damage tick
     private float      damageTimer;
@@ -81,10 +86,7 @@ public class Enemy : NetworkBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
-        if (!ActiveEnemies.Contains(this))
-        {
-            ActiveEnemies.Add(this);
-        }
+        ActiveEnemies.Add(this);
 
         rb = GetComponent<Rigidbody>();
         if (rb != null)
@@ -98,7 +100,8 @@ public class Enemy : NetworkBehaviour
         }
 
         if (!IsServer) return;
-        netHealth.Value = maxHealth;
+        netMaxHealth.Value = maxHealth;
+        netHealth.Value    = maxHealth;
         currentTarget   = FindNearestPlayer();
         _nextPathUpdateTime = Time.time + Random.Range(0f, PATH_UPDATE_INTERVAL);
     }
@@ -552,10 +555,19 @@ public class Enemy : NetworkBehaviour
     public void ApplyWaveScaling(float healthMult, float speedMult, float expMult = 1f)
     {
         if (!IsServer) return;
-        maxHealth       = maxHealth * healthMult;
+        ServerSetMaxHealth(maxHealth * healthMult);
         netHealth.Value = maxHealth;
         speed           = speed * speedMult;
         expReward       = expReward * expMult;
+    }
+
+    /// <summary>ตั้ง maxHealth ฝั่ง server พร้อม replicate — ใช้ตัวนี้เสมอ ห้ามเขียน maxHealth ตรงๆ
+    /// จากภายนอก ไม่งั้น client จะได้ค่าเก่า</summary>
+    public void ServerSetMaxHealth(float value)
+    {
+        if (!IsServer) return;
+        maxHealth          = value;
+        netMaxHealth.Value = value;
     }
 
     [ClientRpc]
@@ -574,6 +586,6 @@ public class Enemy : NetworkBehaviour
         NetworkedVFXPool.Instance?.PlayByName("EnemyDeath", deathPos);
     }
 
-    public float GetHealthPercent() => netHealth.Value / maxHealth;
+    public float GetHealthPercent() => netMaxHealth.Value > 0f ? netHealth.Value / netMaxHealth.Value : 0f;
     public float GetCurrentHealth() => netHealth.Value;
 }

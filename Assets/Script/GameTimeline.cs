@@ -58,6 +58,7 @@ public class GameTimeline : NetworkBehaviour
     private float nextMiniBossAt;
     private bool  mainBossSpawned;
     private bool  gameEnded;
+    private float _loseCheckTimer;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -110,8 +111,16 @@ public class GameTimeline : NetworkBehaviour
         }
 
         // Lose Check (all PlayerObjects null = all dead) — ทุก 2 วิ
-        if (Mathf.FloorToInt(t) % 2 == 0 && t > 3f)
-            CheckLoseCondition();
+        // เดิมใช้ FloorToInt(t) % 2 == 0 ซึ่งเป็นจริงทุกเฟรมตลอดวินาทีคู่ → รัน ~60-120 ครั้งแทนที่จะเป็น 1
+        if (t > 3f)
+        {
+            _loseCheckTimer += Time.deltaTime;
+            if (_loseCheckTimer >= 2f)
+            {
+                _loseCheckTimer = 0f;
+                CheckLoseCondition();
+            }
+        }
     }
 
     // ── Public API ────────────────────────────────────────────────────────

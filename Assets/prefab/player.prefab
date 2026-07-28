@@ -49,7 +49,6 @@ GameObject:
   - component: {fileID: 4250323636796052472}
   - component: {fileID: 4642509835648411498}
   - component: {fileID: 8264601110927716481}
-  - component: {fileID: 7655913753558015870}
   - component: {fileID: 1258628423518312534}
   - component: {fileID: 4941737850633899768}
   - component: {fileID: 8713204962959621646}
@@ -325,6 +324,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  <InScenePlaced>k__BackingField: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -488,38 +488,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 13add57572c889d42a33f0bc0829598b, type: 2}
   - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
   cardsPerLevel: 3
---- !u!114 &7655913753558015870
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7353199761178665806}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9aa3f860f74f3c84fbc0a5e610061aa2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ExperienceManager
-  ShowTopMostFoldoutHeaderGroup: 1
-  maxLevel: 30
-  baseExpToLevel: 100
-  expGrowthRate: 1.25
-  expMultiplier: 1
-  netCurrentExp:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 0
-  netCurrentLevel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 1
-  netExpToNext:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
 --- !u!114 &1258628423518312534
 MonoBehaviour:
   m_ObjectHideFlags: 0

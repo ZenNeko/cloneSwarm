@@ -91,3 +91,6 @@ crashlytics-build.properties
 Assets/_Recovery/
 GeneratedAssets/
 
+
+# Multi-agent loop scratch output (unity-check.ps1)
+/scratch/

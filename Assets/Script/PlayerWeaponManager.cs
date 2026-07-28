@@ -271,7 +271,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         if (cd != null)
         {
             if (playerMove != null)
-                playerMove.SetBaseStats(cd.baseHealth, cd.baseMoveSpeed);
+                playerMove.SetBaseStats(cd);
 
             // Starting weapon (ปกติ — นับ weapon slot)
             var startWep = cd.startingWeapon ?? startingWeapon;
