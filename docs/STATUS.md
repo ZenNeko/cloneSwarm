@@ -24,12 +24,13 @@ Round 1 แก้บั๊กหลอดเลือดบอสที่ **โ
 
 ที่เหลือดูที่ `## Manual Steps` ท้าย [implementation_plan.md](implementation_plan.md)
 
-### 2. วาง Round 3 ใน Antigravity
+### 2. วาง Round 4 ใน Antigravity
 
 ก๊อปจาก [handoff.md](handoff.md) → วางใน Antigravity → รอมันบอก "เสร็จ" → กลับมาบอกผม
 
-**ค้างเทสต์สะสม 2 รอบแล้ว** — Round 1 (หลอดเลือด client) และ Round 2 (ESC softlock · FlowField)
-compile ผ่านทั้งคู่แต่ยังไม่มีใครเห็นด้วยตา ยิ่งกองยิ่งหาต้นตอยากถ้าพัง
+**ค้างเทสต์สะสม 3 รอบ** — คุณเลือกเองว่าจะสะสมถึง Round 5-6 แล้วค่อยเข้า Editor รอบเดียว
+ข้อแลกเปลี่ยนที่ต้องรู้: ถ้าเจออาการแปลก จะแยกไม่ออกว่ามาจากรอบไหน ต้องไล่ทีละ commit
+รอบที่เสี่ยงสุดคือ Round 2 (`GamePause` แตะทุกจอ) และ Round 4 (`BossController` แตะทุกท่าบอส)
 
 ### 3. `NetworkAnimator` บนบอส — เลื่อนไว้เอง
 
@@ -76,8 +77,9 @@ Assets/Script/Data/WeaponData/WD_Spike.asset
 |---|---|---|
 | **1** | หลอดเลือดบอสผิดบน client · orb เก็บซ้ำ · HitEffect ซ้อน · ClusterBomb ระเบิดทั่วแมพ | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เทสต์ client** |
 | **2** | `Time.timeScale` softlock (กด ESC แล้วเกมค้าง) · FlowField bake บนทุก client | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
-| **3** | P1+P3 ที่ค้าง — crit flag · win ยิงซ้ำ · Survive quest ไม่มีวันจบ · orb auto-pick · ฯลฯ | 📋 แผนพร้อม รอวางใน Antigravity |
-| 4+ | ยังไม่เขียน | — |
+| **3** | P1+P3 ที่ค้าง — crit flag · win ยิงซ้ำ · Survive quest ไม่มีวันจบ · orb auto-pick · ฯลฯ | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
+| **4** | กลไกบอสยังระเบิดหลังบอสตาย + P3 ที่ verify แล้ว | 📋 แผนพร้อม รอวางใน Antigravity |
+| 5+ | ยังไม่เขียน | — |
 
 Round 3 **ตั้งใจให้ใหญ่กว่าเดิม** (10 tasks/12 ไฟล์ เทียบกับ 6/10 และ 7/6) เพื่อวัดเพดานของ Antigravity
 
