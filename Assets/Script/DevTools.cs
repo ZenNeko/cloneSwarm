@@ -271,7 +271,6 @@ public class DevTools : MonoBehaviour
         AddLabel(panelRoot, "กด F1 ปิด/เปิด", 10, new Color(0.5f,0.5f,0.5f));
 
         panelRoot.SetActive(false);
-        DontDestroyOnLoad(canvasGO);
     }
 
     // ── UI Helpers ────────────────────────────────────────────────────────

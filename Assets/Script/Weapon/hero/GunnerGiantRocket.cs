@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
@@ -84,12 +84,15 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
 
     // ── หาจุดบนพื้น Y=groundY ที่เมาส์ชี้ ────────────────────────────────
     // ใช้ Plane แนวนอนที่ Y=groundY — ไม่พึ่งมุมหรือทิศกล้อง
+    private Camera _cam;
+
     Vector3 GetMouseOnGround(float groundY)
     {
         var mouse = Mouse.current;
-        if (mouse != null && Camera.main != null)
+        if (_cam == null) _cam = Camera.main;
+        if (mouse != null && _cam != null)
         {
-            Ray ray   = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
+            Ray ray   = _cam.ScreenPointToRay(mouse.position.ReadValue());
             var plane = new Plane(Vector3.up, new Vector3(0f, groundY, 0f));
             if (plane.Raycast(ray, out float dist))
                 return ray.GetPoint(dist);

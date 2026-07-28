@@ -28,6 +28,7 @@ public class MineObject : NetworkBehaviour
     private float lifeTimer;
     private float checkTimer;
     private bool  exploded;
+    private static readonly Collider[] _overlapBuffer = new Collider[64];
 
     void Update()
     {
@@ -45,8 +46,8 @@ public class MineObject : NetworkBehaviour
         checkTimer = 0f;
 
         var mask = LayerMask.GetMask("Enemy");
-        var hits = Physics.OverlapSphere(transform.position, triggerRadius, mask);
-        if (hits.Length > 0) Detonate();
+        int count = Physics.OverlapSphereNonAlloc(transform.position, triggerRadius, _overlapBuffer, mask);
+        if (count > 0) Detonate();
     }
 
     void Detonate()
@@ -55,8 +56,11 @@ public class MineObject : NetworkBehaviour
         exploded = true;
 
         var mask = LayerMask.GetMask("Enemy");
-        foreach (var c in Physics.OverlapSphere(transform.position, triggerRadius * 2f, mask))
+        int count = Physics.OverlapSphereNonAlloc(transform.position, triggerRadius * 2f, _overlapBuffer, mask);
+        for (int i = 0; i < count; i++)
         {
+            var c = _overlapBuffer[i];
+            if (c == null) continue;
             var enemy = c.GetComponent<Enemy>();
             if (enemy != null)
             {

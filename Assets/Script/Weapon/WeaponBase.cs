@@ -331,6 +331,7 @@ public abstract class WeaponBase : MonoBehaviour
 
     // ── Aim Direction ─────────────────────────────────────────────────────
     protected Vector3 _lastMoveDir = Vector3.forward;
+    private Camera _mainCamCache;
 
     protected Vector3 GetAimDirection()
     {
@@ -347,14 +348,15 @@ public abstract class WeaponBase : MonoBehaviour
             return _lastMoveDir;
         }
 
-        if (aimMode == AimMode.MouseAim && Camera.main != null)
+        if (_mainCamCache == null) _mainCamCache = Camera.main;
+        if (aimMode == AimMode.MouseAim && _mainCamCache != null)
         {
             // New Input System
             var mouse = Mouse.current;
             if (mouse != null)
             {
                 var plane = new Plane(Vector3.up, transform.position);
-                var ray   = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
+                var ray   = _mainCamCache.ScreenPointToRay(mouse.position.ReadValue());
                 if (plane.Raycast(ray, out float dist))
                 {
                     Vector3 dir = ray.GetPoint(dist) - transform.position;

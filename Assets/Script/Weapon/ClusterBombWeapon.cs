@@ -149,11 +149,14 @@ public class ClusterBombWeapon : WeaponBase
         }
     }
 
+    private Camera _cam;
+
     Vector3 GetMouseWorldPosition()
     {
-        if (Camera.main == null) return transform.position + transform.forward * 5f;
+        if (_cam == null) _cam = Camera.main;
+        if (_cam == null) return transform.position + transform.forward * 5f;
         var plane = new Plane(Vector3.up, transform.position);
-        var ray   = Camera.main.ScreenPointToRay(
+        var ray   = _cam.ScreenPointToRay(
             UnityEngine.InputSystem.Mouse.current?.position.ReadValue()
             ?? new UnityEngine.Vector2(Screen.width / 2f, Screen.height / 2f));
         if (plane.Raycast(ray, out float d)) return ray.GetPoint(d);
