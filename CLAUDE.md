@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Swarm Survivors** (working title "Clone Swarm") — Unity 6 (`6000.3.6f1`) top-down 1–4-player co-op bullet-heaven survival roguelike. Inspired by LoL Swarm / Vampire Survivors / Brotato. Built on **Netcode for GameObjects (NGO)**. Win condition: kill the Main Boss that spawns at the 15-minute mark.
+**Swarm Survivors** (working title "Clone Swarm") — Unity 6 (`6000.7.0a2`) top-down 1–4-player co-op bullet-heaven survival roguelike. Inspired by LoL Swarm / Vampire Survivors / Brotato. Built on **Netcode for GameObjects (NGO)**. Win condition: kill the Main Boss that spawns at the 15-minute mark.
 
 Full design reference in `GDD.md` at repo root.
 
@@ -12,7 +12,7 @@ Full design reference in `GDD.md` at repo root.
 
 This is a Unity project — **all builds, plays, and tests run from the Unity Editor**, not the CLI. There are no build scripts, lint configs, or CLI test runners in this repo.
 
-- **Open project**: Unity Hub → add `E:/Zenity Why not/cloneSwarm` → open with Unity `6000.3.6f1`
+- **Open project**: Unity Hub → add `E:/Zenity Why not/cloneSwarm` → open with Unity `6000.7.0a2`
 - **Scenes**: `Assets/Scenes/MenuScene.unity` (lobby/character select) → `Assets/Scenes/SampleScene.unity` (gameplay)
 - **Play multiplayer locally**: use ParrelSync or Unity's Multiplayer Play Mode to spin up multiple client instances
 - **No automated tests** are wired up — verify gameplay changes in-Editor by playing

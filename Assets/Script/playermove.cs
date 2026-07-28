@@ -297,7 +297,12 @@ public class playermove : NetworkBehaviour
     /// <summary>Temporary HP regen bonus (additive HP/s) — จาก SupportArenaWeapon</summary>
     [HideInInspector] public float tempHealthRegenBonus = 0f;
 
-    public float GetHealthPercent() => netHealth.Value / maxHealth;
+    /// <summary>
+    /// หารด้วย netMaxHealth ไม่ใช่ field maxHealth — maxHealth ถูกเซ็ตเฉพาะบน owner
+    /// สำเนาของผู้เล่นคนอื่นบนเครื่องเราจะค้างที่ค่า default ของ prefab ทำให้หลอดยาวเกินจริง
+    /// </summary>
+    public float GetHealthPercent()
+        => netMaxHealth.Value > 0f ? netHealth.Value / netMaxHealth.Value : 0f;
     public float GetCurrentHealth() => netHealth.Value;
 
     /// <summary>
