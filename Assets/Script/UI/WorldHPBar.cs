@@ -119,8 +119,8 @@ public class WorldHPBar : MonoBehaviour
     {
         if (_enemy == null) return;
 
-        float pct = _enemy.maxHealth > 0f
-            ? Mathf.Clamp01(_enemy.netHealth.Value / _enemy.maxHealth)
+        float pct = _enemy.netMaxHealth.Value > 0f
+            ? Mathf.Clamp01(_enemy.netHealth.Value / _enemy.netMaxHealth.Value)
             : 0f;
 
         if (hpFill != null)
@@ -133,7 +133,7 @@ public class WorldHPBar : MonoBehaviour
 
         if (hpNumberText != null)
             hpNumberText.text =
-                $"{Mathf.CeilToInt(_enemy.netHealth.Value)} / {Mathf.CeilToInt(_enemy.maxHealth)}";
+                $"{Mathf.CeilToInt(_enemy.netHealth.Value)} / {Mathf.CeilToInt(_enemy.netMaxHealth.Value)}";
     }
 
     // ── Phase Markers ─────────────────────────────────────────────────────
