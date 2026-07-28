@@ -47,6 +47,7 @@ static event pairing ถูกหมด · card pool ของ `UpgradeManager` 
 
 | ไฟล์ | คืออะไร |
 |---|---|
+| [STATUS.md](STATUS.md) | **เขียนให้ผู้ใช้อ่าน ไม่ใช่ agent** — ถึงไหนแล้ว + อะไรค้างที่ตัวเขา · อัปเดตทุกครั้งที่จบ Round |
 | [plan-server-state-and-reconnect.md](plan-server-state-and-reconnect.md) | **แผนหลัก** Stage 0-4 · งานถัดไปทั้งหมดอยู่ในนี้ |
 | [audit-status.md](audit-status.md) | ผล audit ใหม่ + ลำดับความสำคัญ + สิ่งที่สแกนแล้วไม่มีปัญหา |
 | [multi-ai-workflow.md](multi-ai-workflow.md) | วิธีทำงาน Claude วางแผน → Antigravity เขียน → unity-check ตรวจ |
