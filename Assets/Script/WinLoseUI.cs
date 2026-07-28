@@ -118,14 +118,14 @@ public class WinLoseUI : MonoBehaviour
         }
 
         // หยุดเกมหลัง fade in เสร็จ (ไม่ให้ enemy ยังวิ่ง)
-        Time.timeScale = 0f;
+        GamePause.Add(PauseReason.GameOver);
     }
 
     // ── Return to Menu ────────────────────────────────────────────────────
     void ReturnToMenu()
     {
         IsShowing = false;
-        Time.timeScale = 1f;
+        GamePause.ResetAll();
 
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (nm != null && nm.IsListening)

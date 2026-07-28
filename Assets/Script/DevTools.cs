@@ -145,7 +145,7 @@ public class DevTools : MonoBehaviour
 
     void OnSetTimeScale(float scale)
     {
-        Time.timeScale = scale;
+        GamePause.ResumeScale = scale;
         Debug.Log($"[DevTools] TimeScale → {scale}");
     }
 

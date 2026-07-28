@@ -222,7 +222,7 @@ public class SharedExperienceManager : NetworkBehaviour
     [ClientRpc]
     void BeginUpgradePhaseClientRpc(int level, int totalPlayers)
     {
-        Time.timeScale = 0f;
+        GamePause.Add(PauseReason.PhaseSelect);
         OnPickedCountChanged?.Invoke(0, totalPlayers);
         OnUpgradePhaseStart?.Invoke(level);
         Debug.Log($"[SharedEXP] Upgrade Phase เริ่ม — Level {level} | รอ {totalPlayers} ผู้เล่น");
@@ -231,7 +231,7 @@ public class SharedExperienceManager : NetworkBehaviour
     [ClientRpc]
     void EndUpgradePhaseClientRpc()
     {
-        Time.timeScale = 1f;
+        GamePause.Remove(PauseReason.PhaseSelect);
         OnUpgradePhaseEnd?.Invoke();
         Debug.Log("[SharedEXP] Upgrade Phase สิ้นสุด — เกมกลับมา");
     }
@@ -288,7 +288,7 @@ public class SharedExperienceManager : NetworkBehaviour
     [ClientRpc]
     void BeginOrbPhaseClientRpc(int totalPlayers)
     {
-        Time.timeScale = 0f;
+        GamePause.Add(PauseReason.PhaseSelect);
         OnPickedCountChanged?.Invoke(0, totalPlayers);
         OnOrbPhaseStart?.Invoke();
     }

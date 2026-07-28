@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// In-game Pause Menu — ใช้ Inspector references ทั้งหมด (designer-built Canvas)
 ///
 /// Features:
-///   • กด ESC → toggle pause (Time.timeScale = 0 / 1)
+///   • กด ESC → toggle pause (ผ่าน GamePause — ห้ามเขียน Time.timeScale ตรง)
 ///   • Slider Master / Music / SFX → ขับ SoundManager
 ///   • Reset Defaults / Resume / Quit to Main Menu
 ///
@@ -50,8 +50,7 @@ public class PauseMenuUI : MonoBehaviour
     // หมายเหตุ: ค่า Default ใช้จาก SoundManager (Default Master/Music/Sfx) — ไม่ต้องตั้งซ้ำ
 
     // ── Internal state ────────────────────────────────────────────────────
-    bool  isPaused;
-    float prevTimeScale = 1f;
+    bool isPaused;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Start()
@@ -82,7 +81,7 @@ public class PauseMenuUI : MonoBehaviour
         if (resetDefaultsButton) resetDefaultsButton.onClick.RemoveListener(OnResetDefaults);
 
         // กัน scene unload ทิ้ง timeScale = 0 → restore
-        if (isPaused) Time.timeScale = prevTimeScale;
+        if (isPaused) GamePause.Remove(PauseReason.PauseMenu);
     }
 
     void Update()
@@ -98,9 +97,8 @@ public class PauseMenuUI : MonoBehaviour
     public void Pause()
     {
         if (isPaused) return;
-        isPaused       = true;
-        prevTimeScale  = Time.timeScale;
-        Time.timeScale = 0f;
+        isPaused = true;
+        GamePause.Add(PauseReason.PauseMenu);
         SyncFromSoundManager();
         if (panelRoot != null) panelRoot.SetActive(true);
     }
@@ -108,15 +106,15 @@ public class PauseMenuUI : MonoBehaviour
     public void Resume()
     {
         if (!isPaused) return;
-        isPaused       = false;
-        Time.timeScale = prevTimeScale;
+        isPaused = false;
+        GamePause.Remove(PauseReason.PauseMenu);
         if (panelRoot != null) panelRoot.SetActive(false);
     }
 
     void OnQuitClicked()
     {
         // คืน timeScale ก่อน load MenuScene (กัน menu freeze)
-        Time.timeScale = 1f;
+        GamePause.ResetAll();
         isPaused = false;
 
         // Shutdown network ก่อนกลับ menu
