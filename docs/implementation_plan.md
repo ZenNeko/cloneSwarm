@@ -38,19 +38,19 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
 
 ## Tasks
 
-- [ ] T1: `Projectile` ส่ง crit flag ต่อ
+- [x] T1: `Projectile` ส่ง crit flag ต่อ
   - File: `Assets/Script/Projectile/Projectile.cs` (MODIFY)
   - `:77` `enemy.EnemyTakeDamage(damage);` → `enemy.EnemyTakeDamage(damage, isCrit);`
   - Expected: ไฟล์นี้ใช้ `isCrit` ทั้งที่ `:77` และ `:83`
   - Why: field `isCrit` (`:19`) ถูกเซ็ตโดย `PlayerWeaponManager:566` และใช้แสดง VFX ที่ `:83` อยู่แล้ว
     → ดาเมจคูณถูก แต่ **VFX crit ไม่ขึ้น** เพราะ `Enemy` ไม่รู้ว่าเป็น crit
 
-- [ ] T2: `BoomerangProjectile` ส่ง crit flag ต่อ
+- [x] T2: `BoomerangProjectile` ส่ง crit flag ต่อ
   - File: `Assets/Script/Projectile/BoomerangProjectile.cs` (MODIFY)
   - `:87` `enemy.EnemyTakeDamage(damage);` → `enemy.EnemyTakeDamage(damage, isCrit);`
   - Expected: เหมือน T1 · field อยู่ที่ `:20` เซ็ตโดย `PlayerWeaponManager:499`
 
-- [ ] T3: `BossManager` กัน win ยิงซ้ำ
+- [x] T3: `BossManager` กัน win ยิงซ้ำ
   - File: `Assets/Script/BossManager.cs` (MODIFY)
   - `OnMainBossKilled()` (`:131`) เดิมไม่มี guard เลย เพิ่มบรรทัดแรก:
     ```csharp
@@ -71,7 +71,7 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
     **ข้อนี้ห้ามลืม** ไม่งั้น DevTools spawn บอสรอบสองจะชนะไม่ได้
   - Expected: `TriggerWin()` และ `MainBossKilledClientRpc()` ยิงได้ครั้งเดียวต่อบอสหนึ่งตัว
 
-- [ ] T4: quest Survive ต้องมีวันจบ
+- [x] T4: quest Survive ต้องมีวันจบ
   - File: `Assets/Script/ZoneObjective.cs` (MODIFY)
   - **เพิ่ม field** ใกล้ `timeoutDuration` (`:30`):
     ```csharp
@@ -98,7 +98,7 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
     → ทุกคนออกจากโซนถาวร = coroutine หมุนตลอดกาล · **spawn boost ค้างทั้งเกม** · objective ไม่ despawn
     · กินสล็อตถาวร · คอมเมนต์เดิมที่เขียนว่า "surviveTime เป็น timeout ในตัว" **ผิด**
 
-- [ ] T5: auto-pick ตอน Orb Phase ต้องแจ้งช่องทางที่ถูก
+- [x] T5: auto-pick ตอน Orb Phase ต้องแจ้งช่องทางที่ถูก
   - File: `Assets/Script/UpgradeManager.cs` (MODIFY)
   - **เพิ่ม field** ใกล้ `hasPicked`:
     ```csharp
@@ -133,7 +133,7 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
   - Why: เดิมใช้เส้น level-up เสมอ → `PlayerUpgradePickedServerRpc` มี `if (!isUpgradePhase) return;`
     → **no-op เงียบๆ ตอน orb timeout** → ตัวนับ "รอผู้เล่น" ขาดไปหนึ่งคนทุกครั้ง
 
-- [ ] T6: บอกด้วยเมื่อ prefab ลืมใส่ NetworkObject
+- [x] T6: บอกด้วยเมื่อ prefab ลืมใส่ NetworkObject
   - File: `Assets/Script/CrateSpawnManager.cs` (MODIFY) — `:97-98`
   - File: `Assets/Script/OrbDropManager.cs` (MODIFY) — `:71-72`
   - ทั้งสองไฟล์เป็นรูป `if (netObj != null) { ... Spawn(); }` **ไม่มี else**
@@ -147,22 +147,35 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
   - Why: prefab ที่ลืมใส่ `NetworkObject` จะโผล่เฉพาะบน host **โดยไม่มีอะไรบอกว่าทำไม**
     เป็นอาการเดียวกับที่เสียเวลาไล่มาแล้วหลายรอบในโปรเจกต์นี้
 
-- [ ] T7: `DevTools` Kill All ต้องเป็น server เท่านั้น
+- [x] T7: `DevTools` Kill All ต้องเป็น server เท่านั้น
   - File: `Assets/Script/DevTools.cs` (MODIFY)
   - `OnKillAllEnemies()` (`:116`) เพิ่มบรรทัดแรก: `if (!RequireServer()) return;`
   - Expected: handler นี้มี guard เหมือน `OnSpawnMiniBoss` / `OnSpawnMainBoss` / `OnSpawnObjective`
   - Why: เป็น handler เดียวในไฟล์ที่ไม่เช็ค — client กดแล้วเรียก `EnemyTakeDamage` ตรงๆ
     ซึ่งเป็นเมธอด server-only · `RequireServer()` มีอยู่แล้วที่ `:180`
 
-- [ ] T8: เรียก `base.OnNetworkDespawn()` ให้ครบ
+- [x] T8: เรียก `base.OnNetworkDespawn()` ให้ครบ
   - File: `Assets/Script/Weapon/BossTether.cs` หรือที่ไหนก็ตามที่ `BossTether.cs` อยู่ (MODIFY)
   - File: `FloorHazard.cs` (MODIFY)
   - ทั้งสองไฟล์ override `OnNetworkDespawn()` แต่**ไม่เรียก `base.OnNetworkDespawn();`**
     เพิ่มเป็นบรรทัดแรกของ override
   - Expected: ทั้งสองไฟล์เรียก base
-  - Why: `NetworkBehaviour.OnNetworkDespawn` ของ NGO ทำ cleanup ภายใน ไม่เรียกคือปล่อยงานค้าง
+  - Why: ความสม่ำเสมอ **ไม่ใช่การแก้บั๊ก**
 
-- [ ] T9: ลบ stub ที่ตายแล้ว
+  > 🔧 **แก้คำอธิบายเดิม (Claude เขียนผิดตอนวางแผน)** — ผมเขียนไว้ว่า "NGO ทำ cleanup ภายใน
+  > ไม่เรียกคือปล่อยงานค้าง" **ผิด** ตรวจ package แล้ว
+  > `NetworkBehaviour.cs:748` คือ `public virtual void OnNetworkDespawn() { }` — **บอดี้ว่าง**
+  > cleanup จริงอยู่ใน `InternalOnNetworkDespawn()` (`:900`) ที่ NGO เรียกเอง แล้วค่อยเรียก virtual ตัวนี้ต่อ
+  >
+  > → subclass ตรงของ `NetworkBehaviour` ไม่เรียก `base` **ไม่พังอะไรเลย** เป็นเรื่องสไตล์ล้วน
+  > จะเป็นบั๊กจริงเฉพาะเมื่อมี**คลาสกลาง**ที่ override แบบมีเนื้อ
+  >
+  > ในโปรเจกต์นี้มีสายเดียวคือ `BossController` (`:65-74` ยิง `OnAnyBossDespawned` + ถอด listener)
+  > และ `MainBoss` / `MiniBossAI` **เรียก `base` ครบทั้งคู่แล้ว** → ไม่มีบั๊กจากเรื่องนี้ในโปรเจกต์
+  >
+  > **มีอีก 13 ไฟล์ที่ไม่เรียก `base` — อย่าไปไล่แก้** ทั้งหมดเป็น subclass ตรง base ว่าง ได้ศูนย์
+
+- [x] T9: ลบ stub ที่ตายแล้ว
   - **DELETE** `Assets/Script/Weapon/MinefieldWeapon.cs` + `.meta`
   - **DELETE** `Assets/Script/Weapon/PlasmaWhipWeapon.cs` + `.meta`
   - ทั้งคู่เป็นไฟล์ **1 บรรทัด** และ **ไม่มีไฟล์ไหนในโปรเจกต์อ้างถึงเลย** (ตรวจทั้ง `Assets/Script` และ `Assets/Prefab`)
@@ -170,7 +183,7 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
     เขียนไว้ใต้ `## Questions`**
   - Expected: คอมไพล์ผ่านหลังลบ
 
-- [ ] T10: ตรวจปิดงาน — **ไม่แก้ไฟล์**
+- [x] T10: ตรวจปิดงาน — **ไม่แก้ไฟล์**
   - grep `EnemyTakeDamage(` ทั้ง `Assets/Script/Projectile/` — ตัวที่มี field `isCrit` ต้องส่งครบทุกตัว
   - grep `float.MaxValue` ใน `ZoneObjective.cs` — เหลือได้เฉพาะเส้น FetchAndDeliver (`:167`)
   - grep `Time.timeScale` — ยังต้องเจอเฉพาะใน `GamePause.cs` (Round 2 ทำไว้ อย่าให้หลุด)
@@ -210,3 +223,17 @@ audit เขียนว่า "crit flag หาย 4 จุด" ตรวจจ
 4. **เทสต์ T5** — ตอน Orb Phase ปล่อยให้ timer หมดโดยไม่เลือกการ์ด →
    เกมต้อง**เดินต่อได้ตามปกติ** ไม่ค้างรอผู้เล่นที่เลือกไปแล้ว
 5. **เทสต์ T1/T2** — ยิงจนคริต → ต้องเห็น **CritHitEffect** (คนละตัวกับ HitEffect ปกติ)
+
+## Changed Files
+- [Assets/Script/Projectile.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/Projectile.cs): ส่ง `isCrit` ไปยัง `enemy.EnemyTakeDamage(damage, isCrit)`
+- [Assets/Script/Projectile/BoomerangProjectile.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/Projectile/BoomerangProjectile.cs): ส่ง `isCrit` ไปยัง `enemy.EnemyTakeDamage(damage, isCrit)`
+- [Assets/Script/BossManager.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/BossManager.cs): เพิ่ม `_mainBossDeathHandled` guard ป้องกันการ trigger win ซ้ำซ้อนเมื่อบอสถูกทำดาเมจตายพร้อมกัน 2 นัด และรีเซ็ต flag เป็น false เมื่อ spawn บอสตัวใหม่
+- [Assets/Script/ZoneObjective.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/ZoneObjective.cs): เพิ่ม field `surviveQuestTimeLimit` และส่ง deadline จริง (`surviveTime * 2f` หรือ limit ที่ตั้งไว้) ให้กับ `QuestSurvive` แทนการส่ง `float.MaxValue`
+- [Assets/Script/UpgradeManager.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/UpgradeManager.cs): เพิ่ม `_isOrbPhase` flag เพื่อแยกเส้นทาง `ApplyOrbCard` / `NotifyOrbPicked` เมื่อเกิด `OnForceAutoPick` ตอน Orb Phase หมดเวลา
+- [Assets/Script/CrateSpawnManager.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/CrateSpawnManager.cs): เพิ่ม else block แจ้ง `Debug.LogError` เมื่อ crate prefab ลืมใส่ `NetworkObject`
+- [Assets/Script/OrbDropManager.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/OrbDropManager.cs): เพิ่ม else block แจ้ง `Debug.LogError` เมื่อ orb prefab ลืมใส่ `NetworkObject`
+- [Assets/Script/DevTools.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/DevTools.cs): เพิ่ม guard `if (!RequireServer()) return;` ใน `OnKillAllEnemies`
+- [Assets/Script/BossTether.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/BossTether.cs): เพิ่มการเรียก `base.OnNetworkDespawn()` ใน `OnNetworkDespawn()`
+- [Assets/Script/FloorHazard.cs](file:///e:/Zenity%20Why%20not/cloneSwarm/Assets/Script/FloorHazard.cs): เพิ่มการเรียก `base.OnNetworkDespawn()` ใน `OnNetworkDespawn()`
+- `Assets/Script/Weapon/MinefieldWeapon.cs` (DELETED): ลบ 1-line obsolete stub file
+- `Assets/Script/Weapon/PlasmaWhipWeapon.cs` (DELETED): ลบ 1-line temporary stub file
