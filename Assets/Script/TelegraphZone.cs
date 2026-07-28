@@ -48,6 +48,8 @@ public class TelegraphZone : NetworkBehaviour
     private float          totalWarning;
     private float          elapsed;
     private bool           initialized;
+    private static Material cachedFallbackMaterial;
+    private MaterialPropertyBlock mpb;
 
     // ── Server-side params (set before Spawn, read via InitClientRpc) ─────
     [HideInInspector] public AoEType aoeType         = AoEType.Circle;
@@ -239,21 +241,26 @@ public class TelegraphZone : NetworkBehaviour
 
     void CollectRenderersAndApplyShaderParams(GameObject root)
     {
+        mpb ??= new MaterialPropertyBlock();
+
         var rends = root.GetComponentsInChildren<Renderer>();
         foreach (var r in rends)
         {
             if (r == null) continue;
             visualRenderers.Add(r);
 
-            var mat = r.material;
+            var sharedMat = r.sharedMaterial;
+            if (sharedMat == null) continue;
+
+            r.GetPropertyBlock(mpb);
 
             // Chase: override สีเป็น magenta เพื่อแยกจาก AoE ปกติ
             if (isChasing)
             {
-                if (mat.HasProperty("_WarningColor"))
-                    mat.SetColor("_WarningColor", new Color(1f, 0.2f, 1f, 1f));
-                if (mat.HasProperty("_DangerColor"))
-                    mat.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
+                if (sharedMat.HasProperty("_WarningColor"))
+                    mpb.SetColor("_WarningColor", new Color(1f, 0.2f, 1f, 1f));
+                if (sharedMat.HasProperty("_DangerColor"))
+                    mpb.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
             }
             
             // Color Match: override สีตาม Client ID
@@ -266,12 +273,14 @@ public class TelegraphZone : NetworkBehaviour
                     2 => Color.green,
                     _ => Color.yellow,
                 };
-                if (mat.HasProperty("_WarningColor")) mat.SetColor("_WarningColor", c);
-                if (mat.HasProperty("_DangerColor")) mat.SetColor("_DangerColor", c * 0.8f);
+                if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", c);
+                if (sharedMat.HasProperty("_DangerColor")) mpb.SetColor("_DangerColor", c * 0.8f);
             }
 
             // เริ่ม fill ที่ 0 (กันค่าค้างจาก material asset)
-            if (mat.HasProperty("_FillProgress")) mat.SetFloat("_FillProgress", 0f);
+            if (sharedMat.HasProperty("_FillProgress")) mpb.SetFloat("_FillProgress", 0f);
+
+            r.SetPropertyBlock(mpb);
         }
     }
 
@@ -610,8 +619,7 @@ public class TelegraphZone : NetworkBehaviour
         var r = go.GetComponent<Renderer>();
         if (r)
         {
-            r.material       = GetWarningMaterial();
-            r.material.color = new Color(0.1f, 0.8f, 0.9f, 0.3f);   // teal — safe zone
+            r.sharedMaterial = GetWarningMaterial();
             safeZoneRenderers.Add(r);
         }
     }
@@ -625,7 +633,7 @@ public class TelegraphZone : NetworkBehaviour
         go.transform.localScale    = new Vector3(diameter, 0.02f, diameter);
         Destroy(go.GetComponent<Collider>());
         var r = go.GetComponent<Renderer>();
-        if (r) { r.material = GetWarningMaterial(); visualRenderers.Add(r); }
+        if (r) { r.sharedMaterial = GetWarningMaterial(); visualRenderers.Add(r); }
     }
 
     void CreateLinePrimitive(Transform parent, Vector3 localPos, Quaternion localRot, float width, float length)
@@ -637,7 +645,7 @@ public class TelegraphZone : NetworkBehaviour
         go.transform.localScale    = new Vector3(width, 0.02f, length);
         Destroy(go.GetComponent<Collider>());
         var r = go.GetComponent<Renderer>();
-        if (r) { r.material = GetWarningMaterial(); visualRenderers.Add(r); }
+        if (r) { r.sharedMaterial = GetWarningMaterial(); visualRenderers.Add(r); }
     }
 
     void Update()
@@ -671,45 +679,54 @@ public class TelegraphZone : NetworkBehaviour
     /// • Shader Graph (TelegraphUniversal) → drive _FillProgress, ปล่อยให้ shader lerp _WarningColor→_DangerColor เอง
     /// • Standard/URP fallback              → set _BaseColor/_Color จากค่า fallbackColor ที่ C# คำนวณ
     /// </summary>
-    static void ApplyTelegraphState(Renderer r, float progress, Color fallbackColor)
+    void ApplyTelegraphState(Renderer r, float progress, Color fallbackColor)
     {
-        var mat = r.material;
+        var sharedMat = r.sharedMaterial;
+        if (sharedMat == null) return;
+
+        mpb ??= new MaterialPropertyBlock();
+        r.GetPropertyBlock(mpb);
 
         // Path 1 — Shader Graph มี _FillProgress: ใช้ shader-side warning→danger lerp
-        if (mat.HasProperty("_FillProgress"))
+        if (sharedMat.HasProperty("_FillProgress"))
         {
-            mat.SetFloat("_FillProgress", progress);
+            mpb.SetFloat("_FillProgress", progress);
+            r.SetPropertyBlock(mpb);
             return;
         }
 
         // Path 2 — Fallback: เซ็ตสีตรงๆ ให้ shader ทั่วไป
-        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", fallbackColor);
-        if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     fallbackColor);
-        if (mat.HasProperty("_TintColor")) mat.SetColor("_TintColor", fallbackColor);
-        if (mat.HasProperty("_EmissionColor"))
+        if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", fallbackColor);
+        if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     fallbackColor);
+        if (sharedMat.HasProperty("_TintColor")) mpb.SetColor("_TintColor", fallbackColor);
+        if (sharedMat.HasProperty("_EmissionColor"))
         {
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", new Color(fallbackColor.r, fallbackColor.g, fallbackColor.b) * 1.5f);
+            mpb.SetColor("_EmissionColor", new Color(fallbackColor.r, fallbackColor.g, fallbackColor.b) * 1.5f);
         }
+
+        r.SetPropertyBlock(mpb);
     }
 
     Material GetWarningMaterial()
     {
         if (warningMaterial != null) return warningMaterial;
 
-        var shader = Shader.Find("Universal Render Pipeline/Lit")
-                  ?? Shader.Find("Standard");
-        var mat = new Material(shader);
+        if (cachedFallbackMaterial == null)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit")
+                      ?? Shader.Find("Standard");
+            cachedFallbackMaterial = new Material(shader);
 
-        mat.SetFloat("_Surface", 1f);
-        mat.SetFloat("_Blend",   0f);
-        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        mat.renderQueue = 3000;
+            cachedFallbackMaterial.SetFloat("_Surface", 1f);
+            cachedFallbackMaterial.SetFloat("_Blend",   0f);
+            cachedFallbackMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            cachedFallbackMaterial.renderQueue = 3000;
 
-        mat.SetFloat("_Mode", 3f);
-        mat.EnableKeyword("_ALPHABLEND_ON");
+            cachedFallbackMaterial.SetFloat("_Mode", 3f);
+            cachedFallbackMaterial.EnableKeyword("_ALPHABLEND_ON");
 
-        mat.color = new Color(1f, 0.8f, 0f, 0.4f);
-        return mat;
+            cachedFallbackMaterial.color = new Color(1f, 0.8f, 0f, 0.4f);
+        }
+        return cachedFallbackMaterial;
     }
 }
