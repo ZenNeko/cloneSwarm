@@ -160,6 +160,70 @@ projectile 3 ตัวไม่เช็ค `IsSpawned` ต่างจากพ
 
 ---
 
+---
+
+# 🔧 รอบสาม — ชั้น config (`.prefab` / `.asset` / scene) 2026-07-29
+
+audit สองรอบแรกอ่าน **โค้ดล้วน** แต่บั๊กสองตัวที่เจอจากการเล่นจริงวันนี้
+(`NetworkAnimator` NRE ท่วม 590 อัน · VFX pool spam) **ไม่มีตัวไหนอยู่ในโค้ดเลย**
+รอบนี้เลยไล่ชั้นที่ไม่เคยมีใครแตะ
+
+## 🔴 พบ
+
+### C1 `NetworkAnimator` บน `Purple 1.prefab` ไม่ได้ assign Animator
+`m_Animator: {fileID: 0}` ทั้งที่มี `Animator` (พร้อม controller + avatar) อยู่บน GameObject เดียวกัน
+→ `CheckParametersChanged()` deref null ทุก `NetworkUpdate` tick = **1 error/เฟรม ตลอดที่บอสมีชีวิต**
+`ParameterEntries: []` ว่าง และ **ไม่มีสคริปต์บอสตัวไหนแตะ Animator เลย** → component นี้ไม่ได้ sync อะไร
+**ผู้ใช้เลื่อนไว้ก่อน** (ยังเป็น mock-up art) — ทางแก้: ถอด component ทิ้ง หรือ assign + ตั้ง ParameterEntries
+
+### C2 `CLAUDE.md` ระบุ path ของ scene ผิด → **แก้แล้ว**
+เขียนว่า `Assets/Scenes/` ซึ่ง**ไม่มีโฟลเดอร์นั้นอยู่จริง** ของจริงคือ `Assets/GameScenes/`
+เป็นเอกสารที่ agent อ่านเป็นอันดับแรก — ผิดตรงนี้คือพา agent ไปหาไฟล์ผิดที่ทุกเซสชัน
+
+## 🟠 พบ — ยังไม่แก้
+
+### C3 build ใส่ scene ที่ไม่ใช่ของจริงไป 3 จาก 5
+`EditorBuildSettings` เปิดไว้ 5 scene:
+
+| scene | ขนาด | มีอะไร |
+|---|---|---|
+| `MenuScene.unity` | — | ของจริง |
+| `SampleScene.unity` | 1.8M | **ของจริง** — GameTimeline · WaveManager · SharedExp · NetworkedVFXPool |
+| `SampleScene black.unity` | 164K | stub เกือบว่าง มีแค่ EnemySpawner **ไม่มี NetworkedVFXPool** |
+| `Scene 2.unity` | 164K | stub เกือบว่าง เหมือนกัน |
+| `WeaponTestScene.unity` | 648K | dev harness |
+
+ไม่กระทบ runtime เพราะโปรเจกต์โหลด scene **ด้วยชื่อ** ไม่ใช่ index (`WinLoseUI:134` · `PauseMenuUI.menuSceneName`)
+→ index เลื่อนไม่พัง แต่เป็นขยะที่ติดไปกับ build
+
+### C4 `DefaultNetworkPrefabs.asset` มี entry ตายค้าง 1 ตัว
+guid `e651dbb3fbac04af2b8f5abf007ddc23` ไม่ตรงกับ `.prefab` ไหนในโปรเจกต์ (51/52 resolve)
+→ NGO เตือนตอน startup · ไม่ทำให้พัง
+
+## 🟡 ข้อมูลค้าง ไม่ใช่บั๊กที่ทำงานผิดตอนนี้
+
+`weaponVfxType: -1` และ `secondaryVfxType: -1` บน `OrbitalCannonWeapon.prefab` · `StormBunnyWeapon.prefab`
+เป็นค่า **int ค้างจากยุคที่ field เคยเป็น enum** ตอนนี้ field เป็น `string` (`WeaponBase.cs:36,43`)
+→ deserialize ไม่ลง กลายเป็นค่าว่าง → `ResolveHitVfx()` ตกไปใช้ fallback
+**ตรวจแล้วไม่พัง**: `OrbitalCannonWeapon.cs` ไม่เรียก VFX เลย · `StormBunnyWeapon.cs:68` fallback เป็น
+`"MeteorAoE"` ซึ่งมีจริงใน database — แต่เป็น data rot ที่ควรล้าง
+
+## ✅ ชั้น config ที่ตรวจแล้วสะอาด
+
+- **NetworkObject prefab ครบทะเบียนทั้ง 47 ตัว** — ไม่มีตัวไหนตกจาก `DefaultNetworkPrefabs.asset`
+  (กฎข้อ 7 ของ `CLAUDE.md` ที่ว่าลืมแล้ว NGO ไม่ยอม spawn)
+- **ไม่มี missing script** (`m_Script: {fileID: 0}`) ใน `Assets/Prefab/` และ scene ทั้งหมด
+- **`VFXDatabase` ไม่มี key ซ้ำ และไม่มี entry ไหน prefab เป็น null** — สองเคสนี้ `BuildPools` จะ skip เงียบๆ
+- VFX key ที่โค้ดอ้างแต่ไม่มีใน database มี 4 ตัว (`LanceThrust` · `SlashAoE360` · `VortexSpawn` · `Default`)
+  **ยืนยันแล้วว่าเป็น fallback ที่ไม่มีใครไปถึง** ตรงกับที่รอบก่อนบันทึกไว้
+
+> ⚠️ **บทเรียนวิธีทำงาน**: ระหว่างไล่รอบนี้ผมได้ตัวเลขผิด 2 ครั้งจาก path ที่มีช่องว่าง
+> (`Assets/Prefab/Art Asset/...`) ทำ `xargs` และ field splitting ของ `awk` เพี้ยน
+> รอบหนึ่งได้ "16 entry ตาย" ซึ่งของจริงคือ **1**
+> **เช็คของโปรเจกต์นี้ต้อง null-delimited หรือ tab-delimited เสมอ**
+
+---
+
 ## P0 เดิม (จากรอบ grep) — ยังใช้อยู่
 
 ### P0.1 buff ชั่วคราวไม่มีผลกับ client  `playermove.cs`
