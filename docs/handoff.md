@@ -1,4 +1,4 @@
-# Handoff → Antigravity  (Round 4)
+# Handoff → Antigravity  (Round 5)
 
 ก๊อปข้อความข้างล่างนี้ไปวางใน Antigravity:
 
@@ -6,42 +6,43 @@
 อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นลงมือทำทุก Task ที่ยังเป็น [ ] แก้เฉพาะไฟล์ที่แผนระบุ ห้ามรัน build หรือ unity-check เสร็จแต่ละ task ให้ติ๊ก [x] และสรุปไฟล์ที่แก้ไว้ท้ายไฟล์แผนใต้ ## Changed Files
 ---
 
-รอบนี้ **9 tasks · 8 ไฟล์** — ไม่ได้ใหญ่กว่า Round 3 แต่**ยากกว่า**
-T1-T5 เป็นการเพิ่ม API บนคลาสฐานแล้วเดินสายไป call site 4 จุด ไม่ใช่แก้จุดต่อจุด
+รอบนี้ **10 tasks · 8 ไฟล์** — เป็น **hot-path sweep ของใหม่** ไม่ใช่ backlog เดิม
+(backlog จาก audit ถูกเก็บไปเกือบหมดแล้วใน Round 1-4)
 
-- T1 `BossController.cs` — เพิ่มทะเบียนกลไก + `RegisterMechanic()` + `CleanupMechanics()`
-- T2 `Data/SpawnAoEActionBase.cs:87` — แจ้งทะเบียนหลัง spawn
-- T3 `Data/ColorMatchAoEAction.cs:63` — เหมือน T2
-- T4 `Data/KeepMovingAction.cs:106` — เหมือน T2
-- T5 `Data/TetherAction.cs:56` — เหมือน T2
-- T6 `Projectile/MissileProjectile.cs` — เพิ่ม `IsSpawned` guard (เป็นตัวเดียวใน 10 ตัวที่ไม่มี)
-- T7 `Projectile/BouncingSpikeProjectile.cs` — hit-dedup (ลอกจาก `Boomerang`)
-- T8 `Weapon/hero/BunnyHopWeapon.cs` — เช็คตายระหว่าง dash
-- T9 grep ตรวจปิดงาน (**ไม่แก้ไฟล์**)
+- T1 `playermove.cs:118,154` — `GetComponent<PlayerStatManager>()` ทุกเฟรม → cache
+- T2 `FloorHazard.cs:137-139` — `GetComponent` + `.material` ทุกเฟรม → cache + `MaterialPropertyBlock`
+- T3 `FloorHazard.cs:160,180` — `.material` ตอน setup → `sharedMaterial`
+- T4 `BossTether.cs:246,268,272` — `.material` → `sharedMaterial` + MPB
+- T5 `Enemy.cs:495-510` — `.material` ตอน freeze → MPB (ศัตรูหลักร้อยตัว = clone หลักร้อยชิ้น)
+- T6 `VFX/BillboardFaceCamera.cs` — `Camera.main` ทุกเฟรม → cache
+- T7 `UI/FloatingBuffUI.cs:92,94` — `Camera.main` สองครั้งต่อเฟรม → cache
+- T8 `MineObject.cs:48,58` — `OverlapSphere` ทุกเฟรม → `OverlapSphereNonAlloc`
+- T9 `DevTools.cs:274` — canvas ซ้อนทุกครั้งที่โหลดฉากใหม่
+- T10 grep ตรวจปิดงาน (**ไม่แก้ไฟล์**)
 
-## บั๊กหลักคืออะไร
+## กฎที่สำคัญที่สุดของรอบนี้
 
-ฆ่าบอสตอนวงเตือน AoE กำลังนับถอยหลัง → **วงยังระเบิดและกินดาเมจ** เพราะ telegraph/tether
-เป็น NetworkObject อิสระที่ไม่มี back-reference กลับหาบอส และ `OnDeath()` หยุดแค่ coroutine ของตัวเอง
+> **ห้ามเปลี่ยนสิ่งที่ผู้เล่นเห็น** — สี ขนาด ความเร็ว จังหวะ ต้องเหมือนเดิมเป๊ะทุกจุด
+> รอบนี้เปลี่ยน**วิธีทำ** ไม่ใช่**ผลลัพธ์** ถ้าแก้แล้วภาพเปลี่ยน แปลว่าแก้ผิด
 
 ## ข้อควรระวัง
 
-**Round 3 มี scope creep — รอบนี้ห้ามซ้ำ**
-Round 3 เปลี่ยน `private Enemy activeMainBossEnemy;` เป็น `public ... { get; private set; }`
-เองโดยไม่มีในแผน และไม่มีใครใช้นอกไฟล์นั้นเลย ต้องย้อนกลับ
-→ **รอบนี้ห้ามเปลี่ยน access modifier หรือ signature ของสมาชิกที่มีอยู่แล้ว เพิ่มของใหม่ได้อย่างเดียว**
+**Round 3 และ Round 4 มี scope creep อย่างละครั้ง — รอบนี้ห้ามซ้ำ**
+ทั้งสองครั้งเป็นรูปแบบเดียวกันคือ **เติมโค้ด "กันไว้ก่อน" ที่ไม่มีใครขอ**
+(Round 3 เปลี่ยน private field เป็น property · Round 4 เติม `else Destroy(gameObject)`)
+→ **ห้ามเพิ่ม `else` สำรอง ห้ามเพิ่ม null-check เกิน ห้ามเพิ่ม fallback ที่แผนไม่ได้สั่ง**
 
-**T1 ห้าม over-engineer** — ของที่ despawn ตัวเองไปแล้วจะค้างเป็น entry ใน list ซึ่ง**ไม่เป็นไร**
-`CleanupMechanics` เช็ค `!= null && IsSpawned` อยู่แล้ว **ห้ามเพิ่ม coroutine มาไล่ prune**
+**ต้นแบบมีอยู่แล้วในโปรเจกต์ ใช้ลอก ห้ามแก้**
+`TelegraphZone.cs` (`:52` `:244` `:684-687`) = รูปแบบ `sharedMaterial` + `MaterialPropertyBlock` ·
+`WorldHPBar.cs:102` = รูปแบบ cache `Camera.main` · `Enemy.cs:261` = รูปแบบ `OverlapSphereNonAlloc`
 
-**ห้ามแตะ `TelegraphZone.cs` / `BossTether.cs` / `FloorHazard.cs`** — จัดการตัวเองถูกอยู่แล้ว
-**ห้ามแตะ `BoomerangProjectile.cs`** — ต้นแบบของ T7
-**ห้ามแตะ `MainBoss.cs`** — `GenerateLegacyConfig` รันทุก client ดูเหมือนบั๊ก แต่ client อ่าน
-phase threshold จาก `config` อยู่ **ยังวิเคราะห์ไม่ครบ จงใจเว้น**
+**T8 ระวังกับดักของ NonAlloc** — มันคืน**จำนวนที่เจอ** และ buffer มีของเก่าค้างเกินจำนวนนั้น
+ต้องวนแค่ `0..count-1` **ห้ามวนทั้ง buffer** ไม่งั้นจะไปโดนของจากเฟรมก่อน
 
-**T7 ถ้าพบว่า spike ตั้งใจให้ตีซ้ำได้ตอนเด้งกลับ — หยุด อย่าเดา** เขียนใต้ `## Questions`
-เพราะการใส่ dedup จะเปลี่ยนสมดุลเกม
+**T3 ถ้าพบว่ามีการแก้สีของ material ตัวนั้นทีหลัง — หยุด** เพราะ `sharedMaterial` จะไปแก้ asset ต้นฉบับ
+เขียนใต้ `## Questions` อย่าเดา
 
-ถ้าติดจน signature ต้องเปลี่ยน **อย่าเปลี่ยนเอง** เขียนใต้ `## Questions` แล้วข้ามไป task ถัดไป
+**ห้ามแตะ `.material` ในไฟล์อื่น** — `HealingOrb` `MagnetOrb` `OrbVisual` `FenceWeapon` `BigAoEWeapon`
+`OrbitalStrikeWeapon` `SupportArenaWeapon` `NetworkedVFXPool` ยังไม่ได้ตรวจว่าอยู่ในเส้นทางร้อนไหม **จงใจเว้น**
 
 เสร็จแล้วกลับมาบอกว่า "เสร็จ"
