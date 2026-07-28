@@ -230,9 +230,8 @@ public class FlowFieldPathfinder : MonoBehaviour
         if (useCrowdDensity && _densityMap != null)
         {
             System.Array.Clear(_densityMap, 0, _densityMap.Length);
-            for (int i = 0; i < Enemy.ActiveEnemies.Count; i++)
+            foreach (var enemy in Enemy.ActiveEnemies)
             {
-                Enemy enemy = Enemy.ActiveEnemies[i];
                 if (enemy == null) continue;
                 WorldToGrid(enemy.transform.position, out int egx, out int egy);
                 if (egx >= 0 && egx < gridSize.x && egy >= 0 && egy < gridSize.y)

@@ -17,7 +17,7 @@ public class Enemy : NetworkBehaviour
     public static event System.Action<Enemy, Vector3> OnEnemyDiedServer;
 
     /// <summary>ลิสต์เก็บรายชื่อศัตรูทั้งหมดที่ยังแอ็คทีฟอยู่ในแผนที่ เพื่อใช้แทน FindObjectsOfType</summary>
-    public static readonly List<Enemy> ActiveEnemies = new List<Enemy>();
+    public static readonly HashSet<Enemy> ActiveEnemies = new HashSet<Enemy>();
 
     [Header("Movement")]
     public float speed = 3f;
@@ -81,10 +81,7 @@ public class Enemy : NetworkBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
-        if (!ActiveEnemies.Contains(this))
-        {
-            ActiveEnemies.Add(this);
-        }
+        ActiveEnemies.Add(this);
 
         rb = GetComponent<Rigidbody>();
         if (rb != null)

@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -30,6 +31,7 @@ public class EnemySpawner : NetworkBehaviour
     private float      currentSpeedMult  = 1f;
     private float      currentExpMult    = 1f;
     private WaveConfig currentConfig;
+    private Coroutine  _spawnLoop;
 
     public override void OnNetworkSpawn()
     {
@@ -38,7 +40,7 @@ public class EnemySpawner : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        CancelInvoke(nameof(SpawnEnemy));
+        StopSpawning();
     }
 
     // ── API สำหรับ WaveManager ─────────────────────────────────────────────
@@ -50,15 +52,28 @@ public class EnemySpawner : NetworkBehaviour
         currentExpMult    = expMult;
         currentConfig     = config;
 
-        CancelInvoke(nameof(SpawnEnemy));
-        InvokeRepeating(nameof(SpawnEnemy), 0.5f, spawnRate);
+        if (_spawnLoop != null) StopCoroutine(_spawnLoop);
+        _spawnLoop = StartCoroutine(SpawnLoop(spawnRate));
         Debug.Log($"[EnemySpawner] Spawning started — rate:{spawnRate:F2}s HP×{healthMult:F2} SPD×{speedMult:F2} EXP×{expMult:F2}");
     }
 
     public void StopSpawning()
     {
-        CancelInvoke(nameof(SpawnEnemy));
+        if (_spawnLoop != null) { StopCoroutine(_spawnLoop); _spawnLoop = null; }
         Debug.Log("[EnemySpawner] Spawning stopped");
+    }
+
+    /// <summary>แทน InvokeRepeating — ยิงครั้งแรกหลัง 0.5s แล้วทุก rate วินาที (timing เดิมเป๊ะ)</summary>
+    IEnumerator SpawnLoop(float rate)
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        var wait = new WaitForSeconds(rate);   // cache กัน GC alloc ทุกรอบ
+        while (true)
+        {
+            SpawnEnemy();
+            yield return wait;
+        }
     }
 
     // ── Spawn boost API (ใช้โดย ZoneObjective Survive quest ฯลฯ) ─────────

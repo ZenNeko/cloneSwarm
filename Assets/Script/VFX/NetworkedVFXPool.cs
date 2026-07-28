@@ -395,7 +395,7 @@ public class NetworkedVFXPool : MonoBehaviour
         yield return new WaitForSeconds(delay);
         if (go == null) yield break;
         go.SetActive(false);
-        go.transform.SetParent(null);
+        go.transform.SetParent(transform, false);
         if (_pools.TryGetValue(poolId, out var q)) q.Enqueue(go);
     }
 
@@ -552,7 +552,7 @@ public class NetworkedVFXPool : MonoBehaviour
             return;
         }
         go.SetActive(false);
-        go.transform.SetParent(null);
+        go.transform.SetParent(transform, false);
         if (_pools.TryGetValue(id, out var q)) q.Enqueue(go);
     }
 

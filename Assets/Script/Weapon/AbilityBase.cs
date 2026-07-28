@@ -58,7 +58,12 @@ public abstract class AbilityBase : MonoBehaviour
     }
 
     void OnActiveSceneChanged(UnityEngine.SceneManagement.Scene _, UnityEngine.SceneManagement.Scene __)
-        => ApplySceneGate();
+    {
+        // component ถูก destroy ไปแล้วแต่ delegate ยังค้างอยู่ (ลำดับ destroy vs event ไม่การันตี)
+        // Unity overload == ให้คืน true เมื่อ object ถูกทำลาย → เช็คแบบนี้ได้
+        if (this == null) return;
+        ApplySceneGate();
+    }
 
     void ApplySceneGate()
     {
