@@ -13,7 +13,7 @@ Full design reference in `GDD.md` at repo root.
 This is a Unity project — **all builds, plays, and tests run from the Unity Editor**, not the CLI. There are no build scripts, lint configs, or CLI test runners in this repo.
 
 - **Open project**: Unity Hub → add `E:/Zenity Why not/cloneSwarm` → open with Unity `6000.7.0a2`
-- **Scenes**: `Assets/Scenes/MenuScene.unity` (lobby/character select) → `Assets/Scenes/SampleScene.unity` (gameplay)
+- **Scenes**: `Assets/GameScenes/MenuScene.unity` (lobby/character select) → `Assets/GameScenes/SampleScene.unity` (gameplay). There is no `Assets/Scenes/` directory. `SampleScene.unity` is the only real gameplay scene — `SampleScene black.unity` and `Scene 2.unity` are near-empty stubs and `WeaponTestScene.unity` is a dev harness, all three still enabled in Build Settings
 - **Play multiplayer locally**: use ParrelSync or Unity's Multiplayer Play Mode to spin up multiple client instances
 - **No automated tests** are wired up — verify gameplay changes in-Editor by playing
 
