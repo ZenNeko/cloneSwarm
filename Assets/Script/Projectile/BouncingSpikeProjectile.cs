@@ -31,12 +31,14 @@ public class BouncingSpikeProjectile : NetworkBehaviour
     private Vector3 moveDirection;
     private Vector3 startPosition;
     private int     bounceCount;
+    private System.Collections.Generic.HashSet<int> hitIds = new System.Collections.Generic.HashSet<int>();
 
     public void Init(Vector3 direction)
     {
         moveDirection = direction.normalized;
         startPosition = transform.position;
         bounceCount   = 0;
+        hitIds.Clear();
         
         // หมุนตัวให้ชี้ไปตามทิศทางเคลื่อนที่
         if (moveDirection != Vector3.zero)
@@ -137,6 +139,10 @@ public class BouncingSpikeProjectile : NetworkBehaviour
         var enemy = other.GetComponent<Enemy>();
         if (enemy != null)
         {
+            int id = enemy.GetId();
+            if (hitIds.Contains(id)) return;
+
+            hitIds.Add(id);
             enemy.EnemyTakeDamage(damage, isCrit);
             if (ownerManager != null)
             {

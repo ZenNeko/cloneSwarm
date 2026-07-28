@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -32,6 +33,10 @@ public class BossController : NetworkBehaviour
     protected int mechanicIndex = 0;
     protected bool deathHandled = false;
     protected float currentPhaseStartTime = 0f;
+
+    // NetworkObject ที่ action ยิงออกไป (telegraph / tether) — ไม่มี back-reference กลับหาบอส
+    // จึงต้องให้บอสถือทะเบียนเอง ไม่งั้นบอสตายแล้วของพวกนี้ยังระเบิดต่อ
+    readonly List<NetworkObject> _activeMechanics = new();
     
     protected Coroutine attackLoopCoroutine;
     protected Coroutine phaseTransitionCoroutine;
@@ -65,6 +70,7 @@ public class BossController : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
+        CleanupMechanics();
         OnAnyBossDespawned?.Invoke(this);
         if (enemy != null)
         {
@@ -195,7 +201,26 @@ public class BossController : NetworkBehaviour
         if (attackLoopCoroutine != null) StopCoroutine(attackLoopCoroutine);
         if (phaseTransitionCoroutine != null) StopCoroutine(phaseTransitionCoroutine);
         
+        CleanupMechanics();
         SpawnExtraDrops();
+    }
+
+    /// <summary>ให้ BossAction แจ้งว่ายิงกลไกอะไรออกไป — บอสจะเก็บกวาดให้ตอนตาย</summary>
+    public void RegisterMechanic(NetworkObject no)
+    {
+        if (!IsServer || no == null) return;
+        _activeMechanics.Add(no);
+    }
+
+    /// <summary>ลบกลไกที่ยังค้างอยู่ — เรียกตอนบอสตายหรือถูก despawn</summary>
+    void CleanupMechanics()
+    {
+        for (int i = _activeMechanics.Count - 1; i >= 0; i--)
+        {
+            var no = _activeMechanics[i];
+            if (no != null && no.IsSpawned) no.Despawn(true);
+        }
+        _activeMechanics.Clear();
     }
 
     protected void SpawnExtraDrops()

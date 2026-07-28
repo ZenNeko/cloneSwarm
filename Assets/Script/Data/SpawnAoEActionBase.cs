@@ -85,6 +85,7 @@ public abstract class SpawnAoEActionBase : BossAction
                 ConfigureTelegraphZone(zone);
 
                 no.Spawn(true);
+                (runner as BossController)?.RegisterMechanic(no);
                 zone.BroadcastInit();
             }
             else

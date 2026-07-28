@@ -61,6 +61,7 @@ public class ColorMatchAoEAction : BossAction
             zone.requiredClientId.Value = clientId;
 
             no.Spawn(true);
+            (runner as BossController)?.RegisterMechanic(no);
             zone.BroadcastInit();
 
             // แจ้งผู้เล่นว่าต้องเข้าวงสีอะไร

@@ -54,6 +54,7 @@ public class TetherAction : BossAction
         tether.failDamage = tetherFailDamage;
 
         no.Spawn(true);
+        bossController.RegisterMechanic(no);
 
         if (clients.Count == 1)
         {

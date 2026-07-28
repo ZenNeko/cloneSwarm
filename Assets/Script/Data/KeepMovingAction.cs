@@ -104,6 +104,7 @@ public class KeepMovingAction : BossAction
             zone.damage = damage;
 
             no.Spawn(true);
+            (runner as BossController)?.RegisterMechanic(no);
             zone.BroadcastInit();
         }
         else
