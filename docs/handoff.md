@@ -6,19 +6,17 @@
 อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นลงมือทำทุก Task ที่ยังเป็น [ ] แก้เฉพาะไฟล์ที่แผนระบุ ห้ามรัน build หรือ unity-check เสร็จแต่ละ task ให้ติ๊ก [x] และสรุปไฟล์ที่แก้ไว้ท้ายไฟล์แผนใต้ ## Changed Files
 ---
 
-รอบนี้ให้ทำ: Phase 3 performance + บั๊ก AbilityBase
-6 tasks · 6 ไฟล์
+รอบนี้ให้ทำ: Party HUD ชั่วคราว (แสดง host + ผู้เล่นที่จอยมา พร้อม HP)
+1 task · **สร้างไฟล์ใหม่ไฟล์เดียว** `Assets/Script/UI/TempPartyHUD.cs`
 
-- T1  `AbilityBase.cs` — null guard ใน `OnActiveSceneChanged` (แก้ MissingReferenceException)
-- T2a `Enemy.cs` — `List<Enemy> ActiveEnemies` → `HashSet<Enemy>`
-- T2b `FlowFieldPathfinder.cs` — `for (i)` → `foreach` (HashSet ไม่มี indexer)
-- T3  `EnemySpawner.cs` — `InvokeRepeating` → `IEnumerator SpawnLoop()`
-- T4  `GameTimeline.cs` — `% 2 == 0` → timer accumulator
-- T5  `NetworkedVFXPool.cs` — `SetParent(null)` → `SetParent(transform, false)` **2 จุด**
+ข้อกำหนดที่สำคัญกว่าฟีเจอร์ — งานนี้เป็น placeholder ที่ตั้งใจจะรื้อทิ้ง:
 
-ข้อควรระวัง:
-- T2a กับ T2b **ต้องทำคู่กัน** ไม่งั้นคอมไพล์ไม่ผ่าน
-- T1 ห้ามย้ายไป OnEnable/OnDisable — อ่านเหตุผลในแผน
-- งานนี้คือ optimize ล้วน behavior ที่ผู้เล่นเห็นต้องเหมือนเดิมทุกอย่าง
+- **ห้ามแก้ไฟล์เดิมแม้แต่ไฟล์เดียว** ถ้าคิดว่าจำเป็นต้องแก้ ให้หยุดแล้วเขียนใต้ ## Questions
+- ห้ามสร้าง prefab / ห้ามแก้ scene / ห้ามให้คนต้องลาก reference ใน Inspector
+- สร้าง Canvas + UI ทั้งหมดด้วยโค้ดตอน runtime
+- bootstrap ตัวเองด้วย [RuntimeInitializeOnLoadMethod] → ลบไฟล์ทิ้งแล้วต้องไม่เหลือ Missing Script ค้าง
+- ห้ามให้ระบบอื่นอ้างอิงถึงคลาสนี้
+
+เกณฑ์ตัดสิน: `git status` ต้องขึ้นไฟล์ใหม่ไฟล์เดียว ไม่มีไฟล์เดิมถูกแตะ
 
 เสร็จแล้วกลับมาบอกว่า "เสร็จ"
