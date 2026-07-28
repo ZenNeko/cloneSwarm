@@ -40,11 +40,11 @@ public class ColorMatchAoEAction : BossAction
             Vector2 randCircle = Random.insideUnitCircle.normalized * spawnRadius;
             Vector3 spawnPos = runner.transform.position + new Vector3(randCircle.x, 0.1f, randCircle.y);
 
-            SpawnColoredZone(spawnPos, telegraphPrefab, pId);
+            SpawnColoredZone(spawnPos, telegraphPrefab, pId, runner as BossController);
         }
     }
 
-    private void SpawnColoredZone(Vector3 position, GameObject telegraphPrefab, ulong clientId)
+    private void SpawnColoredZone(Vector3 position, GameObject telegraphPrefab, ulong clientId, BossController boss)
     {
         var go = Instantiate(telegraphPrefab, position, Quaternion.identity);
         var zone = go.GetComponent<TelegraphZone>();
@@ -61,7 +61,7 @@ public class ColorMatchAoEAction : BossAction
             zone.requiredClientId.Value = clientId;
 
             no.Spawn(true);
-            (runner as BossController)?.RegisterMechanic(no);
+            boss?.RegisterMechanic(no);
             zone.BroadcastInit();
 
             // แจ้งผู้เล่นว่าต้องเข้าวงสีอะไร
