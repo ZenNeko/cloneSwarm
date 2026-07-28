@@ -25,7 +25,7 @@ public class LightningChainWeapon : WeaponBase
             searchHighestHP: true,
             weaponName: data != null ? data.weaponName : "Unknown",
             beamVfx: beamVfx,
-            hitVfx: "HitEffect",
+            hitVfx: "None",
             isCrit: isCrit
         );
     }
