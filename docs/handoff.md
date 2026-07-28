@@ -6,17 +6,19 @@
 อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นลงมือทำทุก Task ที่ยังเป็น [ ] แก้เฉพาะไฟล์ที่แผนระบุ ห้ามรัน build หรือ unity-check เสร็จแต่ละ task ให้ติ๊ก [x] และสรุปไฟล์ที่แก้ไว้ท้ายไฟล์แผนใต้ ## Changed Files
 ---
 
-รอบนี้ให้ทำ: Party HUD ชั่วคราว (แสดง host + ผู้เล่นที่จอยมา พร้อม HP)
-1 task · **สร้างไฟล์ใหม่ไฟล์เดียว** `Assets/Script/UI/TempPartyHUD.cs`
+รอบนี้ให้ทำ: P0 จาก audit รอบสอง — 6 tasks · 9 ไฟล์
 
-ข้อกำหนดที่สำคัญกว่าฟีเจอร์ — งานนี้เป็น placeholder ที่ตั้งใจจะรื้อทิ้ง:
+- T1 `Enemy.cs` — เพิ่ม `netMaxHealth` + `ServerSetMaxHealth()` + แก้ `GetHealthPercent`
+- T2 `Elite/EliteController.cs` — ใช้ setter แทนเขียน field ตรง
+- T3 `UI/WorldHPBar.cs` — อ่าน `netMaxHealth.Value` แทน `maxHealth`
+- T4 `HealingOrb.cs` + `MagnetOrb.cs` — เพิ่ม `isCollected` guard (ลอกจาก `ExpOrb.cs:89-95`)
+- T5 `ValorWeapon.cs` ลบ 2 บรรทัด · `LightningChainWeapon.cs` + `StormBunnyWeapon.cs` เปลี่ยน `hitVfx` เป็น `"None"`
+- T6 `ClusterBombWeapon.cs` — เพิ่ม distance gate (ลอกจาก `DeathFieldWeapon.cs:60-68`)
 
-- **ห้ามแก้ไฟล์เดิมแม้แต่ไฟล์เดียว** ถ้าคิดว่าจำเป็นต้องแก้ ให้หยุดแล้วเขียนใต้ ## Questions
-- ห้ามสร้าง prefab / ห้ามแก้ scene / ห้ามให้คนต้องลาก reference ใน Inspector
-- สร้าง Canvas + UI ทั้งหมดด้วยโค้ดตอน runtime
-- bootstrap ตัวเองด้วย [RuntimeInitializeOnLoadMethod] → ลบไฟล์ทิ้งแล้วต้องไม่เหลือ Missing Script ค้าง
-- ห้ามให้ระบบอื่นอ้างอิงถึงคลาสนี้
-
-เกณฑ์ตัดสิน: `git status` ต้องขึ้นไฟล์ใหม่ไฟล์เดียว ไม่มีไฟล์เดิมถูกแตะ
+ข้อควรระวัง:
+- **3 ไฟล์ที่ห้ามแตะ** — `ExpOrb.cs` · `DeathFieldWeapon.cs` · `StormcallerWeapon.cs`
+  เป็นต้นแบบที่ถูกอยู่แล้ว **ใช้ลอกเท่านั้น**
+- T1 ต้องเป็น **setter** ไม่ใช่เซ็ตค่าตรงทีละจุด — เพื่อกันไม่ให้คนเพิ่มจุดใหม่แล้วลืมอีก
+- ห้ามเปลี่ยนค่าสมดุลเกม T6 คือคืนพฤติกรรมที่ตั้งใจไว้ ไม่ใช่ปรับบาลานซ์
 
 เสร็จแล้วกลับมาบอกว่า "เสร็จ"
