@@ -47,9 +47,14 @@
 | 2.1 Burn DOT race | `Enemy.cs` | ✅ แก้แล้ว | [Enemy.cs:406](../Assets/Script/Enemy.cs:406) `if (!NetworkObject.IsSpawned \|\| netHealth.Value <= 0f) break;` |
 | 2.2 dead ExperienceManager | `Enemy.cs` / `ExperienceManager.cs` | ⚠️ ครึ่งเดียว | fallback ชี้ไป `SharedExperienceManager` แล้วที่ [Enemy.cs:521](../Assets/Script/Enemy.cs:521) แต่ [ExperienceManager.cs](../Assets/Script/ExperienceManager.cs) ยังไม่ถูกลบ |
 | 2.3 static event leak | `SharedExperienceManager.cs` | ✅ แก้แล้ว | [:83-95](../Assets/Script/SharedExperienceManager.cs:83) ใช้ method reference + unsubscribe ครบ |
-| 2.5 Material leak | `TelegraphZone.cs` | ❌ ยังค้าง | ใช้ `r.material` 6 จุด: 248, 613, 614, 628, 640, 676 |
+| 2.4 temp stat bonuses ไม่ sync | `playermove.cs` | ❌ **ยังค้าง** | [:295](../Assets/Script/playermove.cs:295) `tempMoveSpeedBonus` และ [:298](../Assets/Script/playermove.cs:298) `tempHealthRegenBonus` ยังเป็น `[HideInInspector] public float` ธรรมดา · ถูกใช้ในการคำนวณความเร็วที่ [:155](../Assets/Script/playermove.cs:155) แต่ set โดย weapon ฝั่ง owner → **server อาจไม่เคยเห็นค่า buff เลย** |
+| 2.5 Material leak | `TelegraphZone.cs` | ✅ **แก้แล้ว** (ลูป 1) | เปลี่ยนเป็น `sharedMaterial` + `MaterialPropertyBlock` ครบทั้ง 6 จุด |
+| 2.6 crit/damage คำนวณฝั่ง client | `WeaponBase.cs` | ❌ **ยังค้าง — ช่องโหว่ใหญ่สุดที่เหลือ** | `damage` และ `isCrit` ถูกคำนวณบน client แล้วส่งเป็น **parameter** เข้า `FireProjectileServerRpc` ([:174](../Assets/Script/Weapon/WeaponBase.cs:174)), `FireMeleeServerRpc` ([:181](../Assets/Script/Weapon/WeaponBase.cs:181)), `FireArcMeleeServerRpc` ([:186](../Assets/Script/Weapon/WeaponBase.cs:186)), `FireLineAoE` ([:189](../Assets/Script/Weapon/WeaponBase.cs:189)) → **client ส่งค่า damage เท่าไหร่ก็ได้** |
 
-Phase 2 เหลือของจริง **1.5 ข้อ** ไม่ใช่ 6 ข้อตามแผนเดิม
+> **2.6 ร้ายแรงกว่า 1.1 ที่เพิ่งแก้ไป** — 1.1 ทำได้แค่ปลอม HP ของตัวเอง แต่ 2.6 ให้ client
+> กำหนด damage ที่ส่งเข้า server ได้อิสระ ไม่มี clamp ไม่มีการตรวจสอบใดๆ
+> วิธีแก้ที่ถูกคือย้ายการคำนวณ damage + crit roll ไปฝั่ง server ทั้งหมด แล้วให้ RPC ส่งแค่
+> "ยิงอาวุธอะไร ทิศไหน" — ซึ่งต้องให้ server รู้ weapon level + stat ของผู้เล่น = **ผูกกับ 1.4 เหมือนกัน**
 
 ---
 
