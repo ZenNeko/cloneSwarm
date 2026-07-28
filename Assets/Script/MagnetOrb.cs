@@ -74,8 +74,12 @@ public class MagnetOrb : NetworkBehaviour
         }
     }
 
+    private bool isCollected = false;
+
     void Collect()
     {
+        if (isCollected) return;
+        isCollected = true;
         if (currentTarget != null)
         {
             // ดึงดูด ExpOrb ทั้งหมดบนแผนที่เข้าหาตัวผู้เล่นคนนี้

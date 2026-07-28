@@ -87,8 +87,12 @@ public class HealingOrb : NetworkBehaviour
         }
     }
 
+    private bool isCollected = false;
+
     void Collect()
     {
+        if (isCollected) return;
+        isCollected = true;
         if (currentTarget != null)
         {
             var pm = currentTarget.GetComponent<playermove>();
