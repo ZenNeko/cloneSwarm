@@ -108,18 +108,17 @@ public class FlowFieldPathfinder : MonoBehaviour
         {
             _precalcDist[dx + 2, dy + 2] = Mathf.Sqrt(dx * dx + dy * dy);
         }
-
-        BakeWalkable();
     }
 
     void Update()
     {
-        if (!_baked) return;
-
         // Compute เฉพาะ server (client ไม่ได้ใช้ flow field — เห็น enemy transform ผ่าน NGO sync เท่านั้น)
         // ถ้าไม่มี NetworkManager (offline test) → ทำงานปกติ
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (nm != null && nm.IsListening && !nm.IsServer) return;
+
+        // bake ครั้งแรกที่ผ่าน gate — ไม่ทำใน Start() เพราะตอนนั้นยังไม่รู้ว่าเป็น server หรือ client
+        if (!_baked) BakeWalkable();
 
         if (Time.time < _nextUpdateAt) return;
         _nextUpdateAt = Time.time + updateInterval;
