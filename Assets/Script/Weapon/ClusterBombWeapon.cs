@@ -96,6 +96,14 @@ public class ClusterBombWeapon : WeaponBase
     {
         if (manager == null || !manager.IsOwner) return;
 
+        var ld = data != null ? data.GetLevelData(currentLevel) : null;
+        if (ld == null) return;
+
+        // ระเบิดเฉพาะ enemy ที่ตายในระยะของอาวุธเรา — ไม่ใช่ทั้งแมพ
+        float triggerRadius = ld.range * (manager.statManager != null
+            ? manager.statManager.GetAreaMultiplier() : 1f);
+        if (Vector3.Distance(transform.position, deathPos) > triggerRadius) return;
+
         // Defer — กัน recursive call ทำ stack overflow ตอน chain kill หลายตัว
         _pendingKillExplosions.Add(deathPos);
     }
