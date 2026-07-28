@@ -24,7 +24,7 @@ Round 1 แก้บั๊กหลอดเลือดบอสที่ **โ
 
 ที่เหลือดูที่ `## Manual Steps` ท้าย [implementation_plan.md](implementation_plan.md)
 
-### 2. วาง Round 5 ใน Antigravity
+### 2. วาง Round 5+6 ใน Antigravity
 
 ก๊อปจาก [handoff.md](handoff.md) → วางใน Antigravity → รอมันบอก "เสร็จ" → กลับมาบอกผม
 
@@ -78,8 +78,8 @@ Assets/Script/Data/WeaponData/WD_Spike.asset
 | **1** | หลอดเลือดบอสผิดบน client · orb เก็บซ้ำ · HitEffect ซ้อน · ClusterBomb ระเบิดทั่วแมพ | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เทสต์ client** |
 | **2** | `Time.timeScale` softlock (กด ESC แล้วเกมค้าง) · FlowField bake บนทุก client | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
 | **3** | P1+P3 ที่ค้าง — crit flag · win ยิงซ้ำ · Survive quest ไม่มีวันจบ · orb auto-pick · ฯลฯ | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
-| **4** | กลไกบอสยังระเบิดหลังบอสตาย + P3 ที่ verify แล้ว | ✅ โค้ดเสร็จ · **compile ยังไม่มีผลกลับมา** |
-| **5** | hot-path sweep — จัดสรรทุกเฟรม · material leak · `Camera.main` ไม่ cache | 📋 แผนพร้อม รอวางใน Antigravity |
+| **4** | กลไกบอสยังระเบิดหลังบอสตาย + P3 ที่ verify แล้ว | ⚠️ **compile ไม่ผ่านรอบแรก** — แผนผิดเอง แก้แล้ว compile ผ่าน |
+| **5+6** | hot-path sweep — 14 tasks · 14 ไฟล์ (รอบใหญ่ที่สุด) | 📋 แผนพร้อม รอวางใน Antigravity |
 | 6+ | ยังไม่เขียน | — |
 
 **การทดลองวัดเพดาน Antigravity** — 6/10 → 7/6 → 10/12 → 9/8 (ยากขึ้น) → 10/8
