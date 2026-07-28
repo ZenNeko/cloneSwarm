@@ -96,6 +96,25 @@ public class PlayerVisual : NetworkBehaviour
 
     float _speedSyncTimer;   // throttle update rate (10Hz)
 
+    /// <summary>index ตัวละครที่ server validate แล้ว (-1 = ยังไม่ถูกเซ็ต)</summary>
+    public int CharacterIndex => _charIndex.Value;
+
+    /// <summary>อ่าน CharacterData แบบ bounds-checked — คืน null ถ้า index ไม่ถูกต้อง</summary>
+    public CharacterData GetCharacterData(int idx)
+    {
+        if (characters == null || idx < 0 || idx >= characters.Length) return null;
+        return characters[idx];
+    }
+
+    /// <summary>หา index ของ CharacterData ใน characters[] — คืน -1 ถ้าไม่เจอ</summary>
+    public int IndexOfCharacter(CharacterData cd)
+    {
+        if (cd == null || characters == null) return -1;
+        for (int i = 0; i < characters.Length; i++)
+            if (characters[i] == cd) return i;
+        return -1;
+    }
+
     // ── Local cache ───────────────────────────────────────────────────────
     GameObject _spawnedModel;
     Animator   _animator;

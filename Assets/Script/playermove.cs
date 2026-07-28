@@ -300,34 +300,61 @@ public class playermove : NetworkBehaviour
     public float GetHealthPercent() => netHealth.Value / maxHealth;
     public float GetCurrentHealth() => netHealth.Value;
 
-    /// <summary>ตั้งค่า base stats จาก CharacterData — เรียกจาก PlayerWeaponManager.OnNetworkSpawn</summary>
-    public void SetBaseStats(float hp, float speed)
+    /// <summary>
+    /// ตั้งค่า base stats จาก CharacterData — เรียกจาก PlayerWeaponManager.OnNetworkSpawn
+    /// Client ส่งแค่ index ให้ server ไปอ่านค่าเอง (กัน HP spoofing)
+    /// </summary>
+    public void SetBaseStats(CharacterData cd)
     {
-        maxHealth = hp;
-        moveSpeed = speed;
+        if (cd == null) return;
+
+        // Local prediction — ค่าจริงบน server มาจาก CharacterData เดียวกันอยู่แล้ว
+        maxHealth = cd.baseHealth;
+        moveSpeed = cd.baseMoveSpeed;
 
         if (IsServer)
         {
             // Host: update NetworkVariables โดยตรง
-            netHealth.Value    = hp;
-            netMaxHealth.Value = hp;
+            netHealth.Value    = cd.baseHealth;
+            netMaxHealth.Value = cd.baseHealth;
         }
         else if (IsSpawned)
         {
-            // Non-host Client: บอก Server ให้ update NetworkVariables
-            // (Server ตั้งค่า default จาก prefab ไว้ใน OnNetworkSpawn ยังไม่รู้ว่า character คือตัวไหน)
-            SyncBaseStatsServerRpc(hp);
+            // Non-host Client: ส่งแค่ index — server อ่าน baseHealth จาก asset เอง
+            var visual = GetComponent<PlayerVisual>();
+            int idx    = visual != null ? visual.IndexOfCharacter(cd) : -1;
+            SyncBaseStatsServerRpc(idx);
         }
     }
 
-    /// <summary>Client บอก Server ค่า HP จริงของตัวละครที่เลือก</summary>
+    /// <summary>
+    /// Client บอก Server แค่ว่าเลือก "ตัวละครไหน" (index) — ไม่ใช่ค่า HP
+    /// Server อ่าน baseHealth/baseMoveSpeed จาก CharacterData เอง → client spoof ค่าไม่ได้
+    /// </summary>
     [ServerRpc]   // RequireOwnership = true (default) — only owner calls
-    void SyncBaseStatsServerRpc(float hp)
+    void SyncBaseStatsServerRpc(int charIndex)
     {
-        // Guard against client-side HP spoofing / god mode hacks
-        float safeHp = Mathf.Clamp(hp, 10f, 1000f);
-        maxHealth          = safeHp;
-        netHealth.Value    = safeHp;
-        netMaxHealth.Value = safeHp;
+        var visual = GetComponent<PlayerVisual>();
+        if (visual == null)
+        {
+            Debug.LogWarning("[playermove] ไม่มี PlayerVisual — ข้าม base stat sync");
+            return;
+        }
+
+        // ถ้า server validate index ไว้แล้ว (ผ่าน PlayerVisual.SetCharacterServerRpc) ใช้ค่านั้นก่อน
+        // ไม่งั้นค่อยใช้ index ที่ client ส่งมา (ยังปลอดภัย เพราะ GetCharacterData bounds-check ให้)
+        int idx = visual.CharacterIndex >= 0 ? visual.CharacterIndex : charIndex;
+
+        var cd = visual.GetCharacterData(idx);
+        if (cd == null)
+        {
+            Debug.LogWarning($"[playermove] charIndex {idx} ไม่ถูกต้อง — ข้าม base stat sync");
+            return;
+        }
+
+        maxHealth          = cd.baseHealth;
+        moveSpeed          = cd.baseMoveSpeed;
+        netHealth.Value    = cd.baseHealth;
+        netMaxHealth.Value = cd.baseHealth;
     }
 }
