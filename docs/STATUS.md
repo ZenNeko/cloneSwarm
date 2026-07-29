@@ -24,17 +24,20 @@ Round 1 แก้บั๊กหลอดเลือดบอสที่ **โ
 
 ที่เหลือดูที่ `## Manual Steps` ท้าย [implementation_plan.md](implementation_plan.md)
 
-### 2. เข้า Editor เล่นเทสต์  ← **ถึงจุดที่คุณตั้งใจไว้แล้ว**
+### 2. เทสต์ไปแล้วส่วนใหญ่ — เหลือ 4 บั๊กเปิดอยู่
 
-คุณบอกว่าจะสะสมถึง Round 5-6 แล้วค่อยเข้า Editor รอบเดียว — **ตอนนี้ครบแล้ว 5 รอบ
-ไม่มี Round ไหนรอวางใน Antigravity อีก**
+รายละเอียดครบใน [playtest-checklist.md](playtest-checklist.md) · **ของที่ผ่านแล้วเยอะ**:
+Round 4 (กลไกบอสหายตอนบอสตาย) · Round 2 ESC softlock · Round 2 FlowField ·
+Round 5+6 สีทั้งหมด · Round 1 หลอดเลือดบน client
 
-ค้างเทสต์สะสม **5 รอบ** ข้อแลกเปลี่ยนที่ต้องรู้: ถ้าเจออาการแปลก จะแยกไม่ออกว่ามาจากรอบไหน
-ต้องไล่ทีละ commit · รอบที่เสี่ยงสุดเรียงตามลำดับ:
+**บั๊กที่ยังเปิด**
 
-1. **Round 5+6** — แตะ material ของ orb/ศัตรู/บอส **ทุกอย่างที่มีสี** ถ้าสีเพี้ยนหรือไม่เรืองแสง มาจากรอบนี้
-2. **Round 2** — `GamePause` แตะทุกจอที่หยุดเกม
-3. **Round 4** — `BossController` แตะทุกท่าบอส
+| | อาการ | ต้องการอะไร |
+|---|---|---|
+| P1 | host กด ESC → ศัตรูหยุดทั้งเกม | **คุณเลือกทางแก้** (ไม่ใช่ regression — host คือ server) |
+| P2 | client ไม่เห็น Crate แต่ host เห็น | Console ฝั่ง client |
+| P3 | DevTools ปุ่ม TimeScale ไม่ทำงาน | กด ×3 แล้วดูว่ามี log ไหม |
+| P4 | Console 151 errors / 429 warnings | ข้อความ error ที่ซ้ำเยอะสุด 2-3 แบบ |
 
 ### 3. `NetworkAnimator` บนบอส — เลื่อนไว้เอง
 
@@ -43,14 +46,9 @@ Round 1 แก้บั๊กหลอดเลือดบอสที่ **โ
 
 พอ art นิ่งแล้วเลือก: ถอด component ทิ้ง (มันไม่ได้ sync อะไรอยู่แล้ว) หรือ assign + ตั้ง `ParameterEntries`
 
-### 4. ติ๊ก Emission บน material ของ orb  ← ใหม่จาก Round 5+6
+### 4. ~~ติ๊ก Emission บน material ของ orb~~  ✅ **ไม่ต้องทำแล้ว**
 
-Round 5+6 เลิก clone material แล้วใช้ `MaterialPropertyBlock` แทน แต่ **`_EMISSION` เป็น
-shader keyword ที่ property block เปิดให้ไม่ได้** และการเปิดบน `sharedMaterial` = เขียนทับ asset
-ตอน runtime ซึ่งโปรเจกต์นี้ไม่เคยทำเลย ผมเลยไม่ทำ
-
-→ ถ้าเข้าเกมแล้ว **orb ไม่เรืองแสง** (สีถูกแต่ไม่ glow) ให้ติ๊ก **Emission** บน material ของ orb
-ใน Inspector **ครั้งเดียว** แล้วมันจะกลับมาปกติ · ถ้า orb ยังเรืองแสงอยู่แปลว่าติ๊กไว้แล้ว ไม่ต้องทำอะไร
+เทสต์แล้ว orb ยังเรืองแสงปกติ — material มี Emission ติ๊กไว้อยู่แล้ว ปิดเรื่องนี้ได้
 
 ### 5. เทสต์ VFX pool report
 
@@ -88,11 +86,11 @@ Assets/Script/Data/WeaponData/WD_Spike.asset
 
 | Round | ทำอะไร | สถานะ |
 |---|---|---|
-| **1** | หลอดเลือดบอสผิดบน client · orb เก็บซ้ำ · HitEffect ซ้อน · ClusterBomb ระเบิดทั่วแมพ | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เทสต์ client** |
-| **2** | `Time.timeScale` softlock (กด ESC แล้วเกมค้าง) · FlowField bake บนทุก client | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
-| **3** | P1+P3 ที่ค้าง — crit flag · win ยิงซ้ำ · Survive quest ไม่มีวันจบ · orb auto-pick · ฯลฯ | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
-| **4** | กลไกบอสยังระเบิดหลังบอสตาย + P3 ที่ verify แล้ว | ⚠️ **compile ไม่ผ่านรอบแรก** — แผนผิดเอง แก้แล้ว compile ผ่าน |
-| **5+6** | hot-path sweep — 14 tasks · 14 ไฟล์ (รอบใหญ่ที่สุด) | ✅ เสร็จ · compile ผ่าน · **ยังไม่ได้เล่นเทสต์** |
+| **1** | หลอดเลือดบอสผิดบน client · orb เก็บซ้ำ · HitEffect ซ้อน · ClusterBomb ระเบิดทั่วแมพ | ✅ เทสต์ผ่านแล้ว (เหลือ crit VFX · ClusterBomb) |
+| **2** | `Time.timeScale` softlock (กด ESC แล้วเกมค้าง) · FlowField bake บนทุก client | ✅ **เทสต์ผ่าน** ทั้ง softlock และ FlowField |
+| **3** | P1+P3 ที่ค้าง — crit flag · win ยิงซ้ำ · Survive quest ไม่มีวันจบ · orb auto-pick · ฯลฯ | ✅ Survive quest + orb timeout ผ่าน · crit ยังไม่ได้ดู |
+| **4** | กลไกบอสยังระเบิดหลังบอสตาย + P3 ที่ verify แล้ว | ✅ **เทสต์ผ่าน** — บั๊กหลักหายจริง (compile พังรอบแรก แผนผิดเอง) |
+| **5+6** | hot-path sweep — 14 tasks · 14 ไฟล์ (รอบใหญ่ที่สุด) | ✅ **สีผ่านหมด ไม่มี regression** · perf ยังไม่ได้วัด |
 | 7+ | ยังไม่เขียน | — |
 
 ### ผลการทดลองวัดเพดาน Antigravity
