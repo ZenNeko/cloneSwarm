@@ -266,6 +266,21 @@ guid `e651dbb3fbac04af2b8f5abf007ddc23` ไม่ตรงกับ `.prefab` �
   spawn boost ถูกคืนครบทุกเส้นทางรวมถึง `ExpireAndDespawn` (`:367`)
 - **NetworkBehaviour อื่นทั้งหมด** subscribe/unsubscribe ระหว่าง `OnNetworkSpawn`/`OnNetworkDespawn` สมดุลหมด
 
+## ✅ `MainBoss.GenerateLegacyConfig` — ปิดเคส **ไม่ใช่บั๊ก ห้ามแก้**
+
+เลื่อนมา 2 รอบเพราะ "ดูเหมือน N6 แต่ยังวิเคราะห์ไม่ครบ" ตอนนี้ครบแล้ว
+
+`OnNetworkSpawn` เรียก `GenerateLegacyConfig()` **โดยไม่มี `IsServer` gate** ซึ่งดูเหมือนบั๊ก
+แบบเดียวกับ FlowField แต่**ต้องเป็นแบบนั้น** — `BossController.OnPhaseChangedClient(int)`
+([:133-135](../Assets/Script/BossController.cs:133)) อ่าน `config.phases[phaseIndex]`
+และรันฝั่ง client
+
+→ gate เป็น server-only = client ได้ `config == null` → return ตั้งแต่ `:133`
+→ **เสียเอฟเฟกต์ตอนบอสเปลี่ยน phase บนจอ client**
+
+`phase2Threshold`/`phase3Threshold` มี fallback ไป `legacyPhase*` อยู่แล้วก็จริง
+แต่ `OnPhaseChangedClient` **ไม่มี fallback** — นั่นคือส่วนที่ทำให้แก้ไม่ได้
+
 ## ⚠️ สิ่งที่ grep ทำไม่ได้ — ต้องใช้เครื่องมืออื่น
 
 กวาดหา "`Instantiate` prefab ที่มี `NetworkObject` แต่ไม่มีใครเรียก `Spawn()`" **ทำด้วย grep ไม่ได้**
