@@ -2624,6 +2624,29 @@
             The change is setting the value of a key in the collection. Key, Value and SelectionIndex will be set.
             </summary>
         </member>
+        <member name="T:Sirenix.OdinInspector.Editor.IOverridesUnityPropertyNames">
+            <summary>
+            A property resolver can implement this interface to override the Unity property names for all child indices.
+            This can be necessary when the Odin path and the Unity property path are different by some necessity or other.
+            </summary>
+        </member>
+        <member name="T:Sirenix.OdinInspector.Editor.UnityDictionaryPropertyResolver`3">
+            <summary>
+            <para>
+            This resolver has the unenviable job of handling Unity's dictionary serialization and translating it into Odin terms.
+            Unity decided that dictionaries are secretly serialized as arrays, with a secret ordering that is invisible to the outside
+            and only stored inside of Unity's serialization systems.
+            </para>
+            <para>
+            This means Odin must query Unity's SerializedObject/SerializedProperties to determine the true indices of all keys in the 
+            dictionary, which is necessary to, for example, correctly map prefab modification paths. 
+            </para>
+            <para>
+            This resolver also prefers to always modify the dictionary directly through Unity SerializedProperty and then applying, 
+            rather than directly editing the live C# dictionary object.
+            </para>
+            </summary>
+        </member>
         <member name="T:Sirenix.OdinInspector.Editor.SerializationBackend">
             <summary>
             Class that describes the different possible serialization backends that a property can have,

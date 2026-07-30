@@ -42,7 +42,7 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
 
 ### เลขดาเมจลอย (T1-T5)
 
-- [ ] T1: สร้าง `FloatingDamageText` — ตัวเลขลอยขึ้นแล้วจาง
+- [x] T1: สร้าง `FloatingDamageText` — ตัวเลขลอยขึ้นแล้วจาง
   - File: `Assets/Script/VFX/FloatingDamageText.cs` (**NEW**)
   - MonoBehaviour ล้วน **ห้ามเป็น NetworkBehaviour** — ทุก client สร้างของตัวเองจาก RPC ที่มีอยู่
   - ต้องมี: `TextMeshPro` (world space **ไม่ใช่** `TextMeshProUGUI`) · หันหน้าหากล้อง ·
@@ -52,7 +52,7 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
   - ใช้ `Time.deltaTime` ธรรมดา (ต้องหยุดตอนเกม pause)
   - Expected: คอมไพล์ผ่าน ยังไม่มีใครเรียก
 
-- [ ] T2: `Enemy.NotifyHitClientRpc` ส่งค่าดาเมจมาด้วย
+- [x] T2: `Enemy.NotifyHitClientRpc` ส่งค่าดาเมจมาด้วย
   - File: `Assets/Script/Enemy.cs` (MODIFY)
   - `NotifyHitClientRpc(Vector3 pos, bool isCrit)` → เพิ่มพารามิเตอร์ `float damage`
   - แก้จุดที่เรียกใน `EnemyTakeDamage` ให้ส่งค่าดาเมจจริงที่หักไปแล้วเข้าไป
@@ -60,7 +60,7 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
   - **ห้ามแตะ logic ของ `HitEffect`/`CritHitEffect` ที่ยิงอยู่ใน RPC นี้** — มันถูกอยู่แล้ว
   - Expected: RPC รับ 3 พารามิเตอร์ · ไม่มี RPC ตัวใหม่เกิดขึ้น
 
-- [ ] T3: pool ของ `FloatingDamageText`
+- [x] T3: pool ของ `FloatingDamageText`
   - File: `Assets/Script/VFX/FloatingDamageTextPool.cs` (**NEW** — หรือรวมเข้า T1 ถ้าสั้นกว่า)
   - **ห้ามใช้ `NetworkedVFXPool`** — pool นั้น key ด้วย prefab และตั้งค่าใน `VFXDatabase`
     ซึ่งแก้ `.asset` ไม่ได้ในรอบนี้ · ตัวเลขต้องตั้งข้อความต่างกันทุกใบ MPB ทำไม่ได้
@@ -69,20 +69,20 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
   - Why 200: รายงานจริงบอกว่า `HitEffect` peak 559 ตอน solo — แต่ตัวเลขอยู่บนจอสั้นกว่า VFX มาก
     เริ่มที่ 200 แล้วดู log ว่าต้องโตไหม **ห้ามตั้ง 559 ตั้งแต่แรก**
 
-- [ ] T4: ต่อ RPC เข้ากับตัวเลข
+- [x] T4: ต่อ RPC เข้ากับตัวเลข
   - File: `Assets/Script/Enemy.cs` (MODIFY — ไฟล์เดียวกับ T2)
   - ใน `NotifyHitClientRpc` หลังจากส่วน VFX เดิม เรียก pool ให้แสดงเลขที่ `pos`
   - **crit ต้องดูต่างจากปกติ** — ตัวใหญ่กว่าและคนละสี **ห้ามเปลี่ยนสีของ `CritHitEffect` เดิม**
   - Expected: ตีศัตรูแล้วเห็นเลข · คริตเห็นต่างชัด
 
-- [ ] T5: กระจายตำแหน่งไม่ให้เลขทับกัน
+- [x] T5: กระจายตำแหน่งไม่ให้เลขทับกัน
   - File: `Assets/Script/VFX/FloatingDamageText.cs` (MODIFY)
   - สุ่ม offset เล็กน้อยรอบ `pos` (เช่น ±0.3 หน่วยแนวนอน) ไม่งั้นตีรัวๆ เลขจะซ้อนกันจนอ่านไม่ออก
   - **ห้ามสุ่มแนวตั้ง** — ทิศลอยขึ้นต้องเหมือนกันทุกใบ
 
 ### countdown ตอนเล่นคนเดียว (T6)
 
-- [ ] T6: เล่นคนเดียวไม่ต้องนับถอยหลังตอนเลือกการ์ด
+- [x] T6: เล่นคนเดียวไม่ต้องนับถอยหลังตอนเลือกการ์ด
   - File: `Assets/Script/SharedExperienceManager.cs` (MODIFY)
   - timer ของ upgrade phase (`:207-212` `while (remaining > 0f)`) เดินตลอดแม้เล่นคนเดียว
     → กด ESC ดูของแล้วกลับมา การ์ดหายไปแล้ว
@@ -95,13 +95,13 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
 
 ### เก็บกวาด (T7-T9)
 
-- [ ] T7: log ตอน Survive quest คืน spawn rate
+- [x] T7: log ตอน Survive quest คืน spawn rate
   - File: `Assets/Script/ZoneObjective.cs` (MODIFY)
   - `ClearSpawnBoostIfActive()` (`:272`) — เพิ่ม `Debug.Log` บอกว่าคืน spawn rate แล้ว
     พร้อมค่าที่คืนกลับไป (ผู้ใช้เทสต์แล้วดูไม่ออกว่ามันคืนจริงไหม)
   - **ห้ามแตะ logic** — เพิ่ม log อย่างเดียว
 
-- [ ] T8: ล้าง VFX key ที่ไม่มีอยู่จริง
+- [x] T8: ล้าง VFX key ที่ไม่มีอยู่จริง
   - Files: ไฟล์ที่ใช้ fallback key ตายเหล่านี้ (grep หาเอง) —
     `"LanceThrust"` · `"SlashAoE360"` · `"VortexSpawn"` · `"OrbiterHit"`
   - ทั้งสี่ตัว**ไม่มีใน `VFXDatabase`** (ยกเว้น `OrbiterHit` ที่มี entry แต่ไม่มี prefab ไหนชี้มา)
@@ -110,14 +110,14 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
   - **ห้ามลบ entry ออกจาก `VFXDatabase`** — เป็นไฟล์ `.asset` กฎห้ามแตะ
   - Expected: ไม่มี string ทั้งสี่เหลือใน `Assets/Script/`
 
-- [ ] T9: ตรวจปิดงาน — **ไม่แก้ไฟล์**
+- [x] T9: ตรวจปิดงาน — **ไม่แก้ไฟล์**
   - grep `ClientRpc` ใน `Enemy.cs` — ต้อง**ไม่มี RPC ตัวใหม่** มีแต่ตัวเดิมที่เพิ่มพารามิเตอร์
   - grep `Camera.main` ใน `FloatingDamageText.cs` — ต้องอยู่หลังเงื่อนไข null เท่านั้น
   - grep `Time.timeScale` — ยังต้องเจอเฉพาะใน `GamePause.cs`
   - grep `sharedMaterial.` — ต้องไม่มี `EnableKeyword`/`SetColor` ที่เขียนทับ asset
   - เจออะไรไม่ตรงเขียนใต้ `## Questions` **ห้ามแก้เอง**
 
-- [ ] T10: อัปเดตคอมเมนต์หัวไฟล์ `Enemy.cs`
+- [x] T10: อัปเดตคอมเมนต์หัวไฟล์ `Enemy.cs`
   - File: `Assets/Script/Enemy.cs` (MODIFY — ไฟล์เดียวกับ T2/T4)
   - ถ้าหัวไฟล์หรือคอมเมนต์เหนือ `NotifyHitClientRpc` อธิบายว่ามันส่งอะไร ให้แก้ให้ตรงกับ 3 พารามิเตอร์
   - **ถ้าไม่มีคอมเมนต์อยู่แล้ว ให้ข้าม ไม่ต้องเขียนใหม่**
@@ -151,3 +151,16 @@ VFX pool ยืนยันแล้วว่า solo คนเดียวม�
 4. **เทสต์ solo countdown** — เลเวลอัพคนเดียว → การ์ดต้องรอจนกว่าจะเลือก ไม่หายไปเอง
 5. **เทสต์ 2 คน** — เลเวลอัพ → **ยังต้องนับถอยหลังเหมือนเดิม** ไม่งั้นคน AFK จะค้างทั้งห้อง
 6. **ดู Console** — ถ้าขึ้น `pool หมด` ของเลขดาเมจ แปลว่า 200 น้อยไป บอกผมแล้วจะปรับ
+
+## Changed Files
+
+- `Assets/Script/VFX/FloatingDamageText.cs` (NEW): World-space text damage numbers with billboarding, camera caching, upward motion, fade-out, crit styling, and horizontal offset.
+- `Assets/Script/VFX/FloatingDamageTextPool.cs` (NEW): Dedicated pool (200 pre-allocated) for FloatingDamageText with warning on grow.
+- `Assets/Script/Enemy.cs`: Updated `NotifyHitClientRpc` signature to pass `float damage` to client and display floating damage text.
+- `Assets/Script/SharedExperienceManager.cs`: Skipped upgrade/orb phase countdown timers when playing solo (`ConnectedClients.Count <= 1`).
+- `Assets/Script/ZoneObjective.cs`: Added log in `ClearSpawnBoostIfActive()` when spawn boost is removed, and replaced dead key `"VortexSpawn"` with `"None"`.
+- `Assets/Script/Weapon/LanceWeapon.cs`: Replaced dead VFX key `"LanceThrust"` with `"None"`.
+- `Assets/Script/Weapon/CycloneBladeWeapon.cs`: Replaced dead VFX key `"SlashAoE360"` with `"None"`.
+- `Assets/Script/Weapon/VortexWeapon.cs`: Replaced dead VFX key `"VortexSpawn"` with `"None"`.
+- `Assets/Script/Weapon/DeathFieldWeapon.cs`: Replaced dead VFX key `"OrbiterHit"` with `"None"`.
+

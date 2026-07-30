@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -77,6 +78,12 @@ public class NetworkedVFXPool : MonoBehaviour
         public int    grows;        // จำนวนครั้งที่ต้อง Instantiate เพิ่มเพราะ pool หมด
         public bool   warned;
 
+        /// <summary>prefab นี้มี NetworkObject ติดมาด้วย → ห้าม SetParent ตอนคืน pool
+        /// NGO โยน "NetworkObject can only be re-parented after being spawned!" ทุกครั้ง
+        /// (VFX ในโปรเจกต์นี้เป็น local ล้วน — prefab ที่มี NetworkObject คือ config ที่ผิด
+        /// แต่โค้ดต้องไม่พังเพราะมัน)</summary>
+        public bool   skipReparent;
+
         /// <summary>ค่าที่ควรตั้งใน VFXDatabase — peak บวก headroom 25%</summary>
         public int Recommended => Mathf.Max(1, Mathf.CeilToInt(peakInUse * 1.25f));
         /// <summary>true = ตั้งไว้น้อยกว่าที่ใช้จริง</summary>
@@ -125,10 +132,11 @@ public class NetworkedVFXPool : MonoBehaviour
 
                 _stats[i] = new PoolStats
                 {
-                    key        = m.key,
-                    authored   = m.poolSize,
-                    configured = size,
-                    live       = size,
+                    key          = m.key,
+                    authored     = m.poolSize,
+                    configured   = size,
+                    live         = size,
+                    skipReparent = m.prefab.GetComponentInChildren<NetworkObject>(true) != null,
                 };
             }
         }
@@ -200,7 +208,12 @@ public class NetworkedVFXPool : MonoBehaviour
     {
         if (go == null) return;
         go.SetActive(false);
-        go.transform.SetParent(transform, false);
+
+        // prefab ที่มี NetworkObject ห้าม reparent — NGO โยน error ทุกครั้ง
+        // ตัดสินไว้ตั้งแต่ BuildPools แล้ว ไม่ GetComponent ซ้ำใน hot path
+        _stats.TryGetValue(poolId, out var st0);
+        if (st0 == null || !st0.skipReparent) go.transform.SetParent(transform, false);
+
         if (_pools.TryGetValue(poolId, out var q)) q.Enqueue(go);
         else { Destroy(go); if (_stats.TryGetValue(poolId, out var s)) s.live--; }
 
