@@ -178,7 +178,10 @@ public class SharedExperienceManager : NetworkBehaviour
         BeginUpgradePhaseClientRpc(level, total);
 
         if (timerCoroutine != null) StopCoroutine(timerCoroutine);
-        timerCoroutine = StartCoroutine(UpgradeTimerCoroutine());
+        if (total > 1)
+        {
+            timerCoroutine = StartCoroutine(UpgradeTimerCoroutine());
+        }
     }
 
     void CompleteUpgradePhase()
@@ -281,7 +284,10 @@ public class SharedExperienceManager : NetworkBehaviour
         BeginOrbPhaseClientRpc(total);   // broadcast ทุกคน
 
         if (timerCoroutine != null) StopCoroutine(timerCoroutine);
-        timerCoroutine = StartCoroutine(OrbTimerCoroutine());
+        if (total > 1)
+        {
+            timerCoroutine = StartCoroutine(OrbTimerCoroutine());
+        }
         Debug.Log($"[OrbPhase] Client {collectorClientId} เริ่ม Orb Phase — ทุกคนได้ card");
     }
 
