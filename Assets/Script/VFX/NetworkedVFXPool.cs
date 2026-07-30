@@ -666,11 +666,11 @@ public class NetworkedVFXPool : MonoBehaviour
         {
             var s = list[i];
             if (!s.IsUndersized) continue;
-            sb.AppendLine($"<color=#ff8080>{s.key}</color> peak {s.peakInUse} / ตั้ง {s.authored} → <b>{s.Recommended}</b>");
+            sb.AppendLine($"<color=#ff8080>{s.key}</color> peak {s.peakInUse} / set {s.authored} → <b>{s.Recommended}</b>");
             shown++;
         }
 
-        if (shown == 0) sb.AppendLine("<color=#80ff80>ทุก pool พอ</color> — ไม่มีตัวไหนโตเกินที่ตั้งไว้");
+        if (shown == 0) sb.AppendLine("<color=#80ff80>all pools OK</color> - none exceeded");
         return sb.ToString();
     }
 
