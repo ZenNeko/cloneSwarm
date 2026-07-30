@@ -38,10 +38,11 @@ public class NetworkedVFXPool : MonoBehaviour
     [Header("Pool Sizing")]
     [Min(0.25f)]
     [Tooltip("คูณ poolSize ของทุก entry ตอน pre-allocate\n" +
-             "1 = ใช้ค่าใน VFXDatabase ตรงๆ\n" +
-             "ตัวนี้เป็นแค่การเดาจนกว่าจะเล่นจบรอบแล้วดู report (F1 → Log VFX Report)\n" +
-             "ค่าที่ถูกต้องคือเอา peak จาก report ไปใส่ VFXDatabase ทีละ key")]
-    public float poolSizeMultiplier = 1.5f;
+             "1 = ใช้ค่าใน VFXDatabase ตรงๆ ← ค่าที่ควรใช้ตอนนี้\n\n" +
+             "เคยตั้ง 1.5 ไว้ชั่วคราวตอนยังไม่รู้ peak จริง · 2026-07-29 เอา peak จาก\n" +
+             "Log VFX Report ไป bake ลง VFXDatabase แล้ว จึงกลับมาเป็น 1\n" +
+             "ถ้าจะตั้งเกิน 1 อีก ให้รู้ตัวว่ามันคูณทับค่าใน asset")]
+    public float poolSizeMultiplier = 1f;
 
     [Min(1)]
     [Tooltip("พื้นขั้นต่ำต่อ pool — กัน entry ที่ตั้งไว้ 5 แล้วหมดทันทีที่มีศัตรูสองสามตัว")]
