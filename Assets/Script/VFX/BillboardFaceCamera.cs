@@ -6,11 +6,13 @@ using UnityEngine;
 /// </summary>
 public class BillboardFaceCamera : MonoBehaviour
 {
+    private Camera _cam;
+
     void LateUpdate()
     {
-        var cam = Camera.main;
-        if (cam == null) return;
+        if (_cam == null) _cam = Camera.main;
+        if (_cam == null) return;
         transform.rotation = Quaternion.LookRotation(
-            transform.position - cam.transform.position);
+            transform.position - _cam.transform.position);
     }
 }

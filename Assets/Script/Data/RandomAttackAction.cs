@@ -16,6 +16,21 @@ public class RandomAttackAction : BossAction
     [Tooltip("วินาทีที่หน่วงเล็กน้อยระหว่างแต่ละท่าที่สุ่มได้ (เพื่อไม่ให้ปล่อยพร้อมกันสนิท)")]
     public float delayBetweenPicks = 0.4f;
 
+    public override float GetEditorDuration()
+    {
+        if (s_editorDurationDepth > 8) return actionDelay;
+        s_editorDurationDepth++;
+        try
+        {
+            float longest = 1f;
+            if (attackPool != null)
+                foreach (var a in attackPool)
+                    if (a != null) longest = Mathf.Max(longest, a.GetEditorDuration());
+            return actionDelay + Mathf.Max(0, attackCount - 1) * delayBetweenPicks + longest;
+        }
+        finally { s_editorDurationDepth--; }
+    }
+
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
         if (actionDelay > 0f)

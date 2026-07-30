@@ -17,6 +17,21 @@ public class ComboAction : BossAction
     [Header("Combo Choreography")]
     public List<SubActionEntry> subActions;
 
+    public override float GetEditorDuration()
+    {
+        if (s_editorDurationDepth > 8) return actionDelay;
+        s_editorDurationDepth++;
+        try
+        {
+            float end = 0f;
+            if (subActions != null)
+                foreach (var e in subActions)
+                    if (e.action != null) end = Mathf.Max(end, e.delayOffset + e.action.GetEditorDuration());
+            return actionDelay + end;
+        }
+        finally { s_editorDurationDepth--; }
+    }
+
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
         if (actionDelay > 0f)

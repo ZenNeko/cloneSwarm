@@ -31,6 +31,9 @@ public abstract class SpawnAoEActionBase : BossAction
     protected abstract AoEType GetAoEType();
     protected abstract void ConfigureTelegraphZone(TelegraphZone zone);
 
+    // warning + ช่วง resolve สั้นๆ หลัง telegraph ระเบิด
+    public override float GetEditorDuration() => actionDelay + warningDuration + 0.5f;
+
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
         if (actionDelay > 0f)
@@ -85,6 +88,7 @@ public abstract class SpawnAoEActionBase : BossAction
                 ConfigureTelegraphZone(zone);
 
                 no.Spawn(true);
+                (runner as BossController)?.RegisterMechanic(no);
                 zone.BroadcastInit();
             }
             else

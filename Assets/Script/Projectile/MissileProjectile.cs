@@ -125,7 +125,7 @@ public class MissileProjectile : NetworkBehaviour
         }
 
         ShowExplosionClientRpc(center);
-        GetComponent<NetworkObject>()?.Despawn(true);
+        if (NetworkObject != null && NetworkObject.IsSpawned) NetworkObject.Despawn(true);
     }
 
     [ClientRpc]

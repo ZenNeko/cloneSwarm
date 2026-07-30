@@ -78,8 +78,8 @@ public class VortexWeapon : WeaponBase
         {
             if (nozzles[i] == null) continue;
 
-            string key = IsIceStream(i) ? ResolveSecondaryVfx("None") : ResolveHitVfx("VortexSpawn");
-            if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("VortexSpawn");
+            string key = IsIceStream(i) ? ResolveSecondaryVfx("None") : ResolveHitVfx("None");
+            if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("None");
 
             GameObject vfxPrefab = null;
             if (NetworkedVFXPool.Instance != null && key != "None")
@@ -184,8 +184,8 @@ public class VortexWeapon : WeaponBase
             nozzles.Add(newNozzleGo.transform);
 
             int currentIdx = nozzles.Count - 1;
-            string key = IsIceStream(currentIdx) ? ResolveSecondaryVfx("None") : ResolveHitVfx("VortexSpawn");
-            if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("VortexSpawn");
+            string key = IsIceStream(currentIdx) ? ResolveSecondaryVfx("None") : ResolveHitVfx("None");
+            if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("None");
 
             GameObject vfxPrefab = null;
             if (NetworkedVFXPool.Instance != null && key != "None")
@@ -261,8 +261,8 @@ public class VortexWeapon : WeaponBase
         {
             if (vfxInstances[i] != null)
             {
-                string key = IsIceStream(i) ? ResolveSecondaryVfx("None") : ResolveHitVfx("VortexSpawn");
-                if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("VortexSpawn");
+                string key = IsIceStream(i) ? ResolveSecondaryVfx("None") : ResolveHitVfx("None");
+                if (key == "None" || string.IsNullOrEmpty(key)) key = ResolveHitVfx("None");
 
                 float designed = NetworkedVFXPool.Instance.GetDesignedRadius(key);
                 float scaleVal = designed > 0f ? (range / designed) : range;

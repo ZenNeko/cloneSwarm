@@ -130,6 +130,7 @@ public class BunnyHopWeapon : WeaponBase
 
             while (elapsed < dashDuration)
             {
+                if (manager.playerMove != null && manager.playerMove.isDead.Value) yield break;
                 elapsed += Time.deltaTime;
                 float t  = Mathf.SmoothStep(0f, 1f, elapsed / dashDuration);
                 rb.MovePosition(Vector3.Lerp(startPos, endPos, t));

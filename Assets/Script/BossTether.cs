@@ -243,7 +243,7 @@ public class BossTether : NetworkBehaviour
         {
             var mat = new Material(shader);
             mat.color = tetherColor;
-            lineRenderer.material = mat;
+            lineRenderer.sharedMaterial = mat;
         }
     }
 
@@ -265,11 +265,19 @@ public class BossTether : NetworkBehaviour
         {
             var mat = new Material(shader);
             mat.color = pillarColor;
-            rend.material = mat;
+            rend.sharedMaterial = mat;
         }
-        else
+        else if (rend != null)
         {
-            rend.material.color = pillarColor;
+            var mpb = new MaterialPropertyBlock();
+            rend.GetPropertyBlock(mpb);
+            var sharedMat = rend.sharedMaterial;
+            if (sharedMat != null)
+            {
+                if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", pillarColor);
+                if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     pillarColor);
+            }
+            rend.SetPropertyBlock(mpb);
         }
         rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
@@ -317,6 +325,7 @@ public class BossTether : NetworkBehaviour
     // ── Cleanup ───────────────────────────────────────────────────────────
     public override void OnNetworkDespawn()
     {
+        base.OnNetworkDespawn();
         if (pillarVisual) Destroy(pillarVisual);
         pillarVisual = null;
     }

@@ -224,6 +224,74 @@ guid `e651dbb3fbac04af2b8f5abf007ddc23` ไม่ตรงกับ `.prefab` �
 
 ---
 
+# 🔍 รอบสี่ — NetworkObject lifecycle 2026-07-29
+
+ไล่หลังเจอบั๊กจากการเล่นจริง: **client ไม่เห็น Crate แต่ host เห็น**
+
+## 🔴 L1 `CrateSpawnManager` spawn ใน `OnNetworkSpawn` — client ไม่เคยได้รับ
+
+`CrateSpawnManager.OnNetworkSpawn()` ([:34-45](../Assets/Script/CrateSpawnManager.cs:34))
+วน `spawnPoints` แล้ว spawn กล่องทุกจุด **ทันทีที่ manager network-spawn บน server**
+
+**หลักฐาน — เป็น outlier ตัวเดียวในโปรเจกต์**
+
+| ตัว spawn | spawn ตอนไหน | client เห็นไหม |
+|---|---|---|
+| **`CrateSpawnManager`** | **ใน `OnNetworkSpawn`** | ❌ **ไม่เห็น** |
+| `OrbDropManager:74` | ตอนศัตรูตาย | ✅ เห็น |
+| `ObjectiveManager:82` | ตาม timer | ✅ เห็น |
+| `BossManager:81,123` | ตาม timeline | ✅ เห็น |
+| `EnemySpawner` | รอ `WaveManager` เรียก | ✅ เห็น |
+
+ทั้งหมดใช้ `Spawn(true)` **เหมือนกันเป๊ะ** ต่างกันแค่**จังหวะ** และตัวที่ต่างคือตัวที่พัง
+
+`EnemySpawner.cs:38` มีคอมเมนต์เขียนไว้เองว่า *"WaveManager เรียก `StartSpawning()` เอง — ไม่ spawn ทันที"*
+เหมือนเคยมีคนเจอปัญหานี้มาก่อนแล้วเลี่ยงไว้ แต่ไม่ได้เขียนบันทึกว่าทำไม
+
+**คำอธิบายที่น่าจะเป็น** (ยังไม่พิสูจน์ในระดับ NGO internals): การ spawn ระหว่างที่
+`NetworkManager` ยังทำ spawn pass ของตัวเองไม่จบ ทำให้ object ไม่ติดไปกับ payload
+ที่ sync ให้ client — host เห็นเพราะ instantiate ในเครื่องตัวเอง
+
+**ทางแก้ที่เสนอ**: เลื่อน initial spawn ออกจาก `OnNetworkSpawn` — คลาสนี้มี `Update()`
+ที่ gate `IsServer` อยู่แล้ว ใส่ธง `_initialSpawnPending` แล้วทำใน `Update()` เฟรมแรกแทน
+**ไม่ต้องเพิ่ม coroutine ไม่ต้องแตะ NGO event**
+
+**เทสต์**: 2 instance → client ต้องเห็นกล่องตั้งแต่เข้าเกม
+
+## ✅ ตรวจแล้วไม่ใช่บั๊ก — อย่าเสียเวลาอีก
+
+- **`ZoneObjective` ไม่มี `OnNetworkDespawn` เลย** และ subscribe `OnValueChanged` 3 ตัว
+  (`:118-120`) โดยตัวหนึ่งเป็น lambda ที่ถอนไม่ได้ — **ไม่ใช่บั๊ก**
+  NetworkVariable ตายพร้อม object · `UpdateShader` มี null guard (`:519`) ·
+  spawn boost ถูกคืนครบทุกเส้นทางรวมถึง `ExpireAndDespawn` (`:367`)
+- **NetworkBehaviour อื่นทั้งหมด** subscribe/unsubscribe ระหว่าง `OnNetworkSpawn`/`OnNetworkDespawn` สมดุลหมด
+
+## ✅ `MainBoss.GenerateLegacyConfig` — ปิดเคส **ไม่ใช่บั๊ก ห้ามแก้**
+
+เลื่อนมา 2 รอบเพราะ "ดูเหมือน N6 แต่ยังวิเคราะห์ไม่ครบ" ตอนนี้ครบแล้ว
+
+`OnNetworkSpawn` เรียก `GenerateLegacyConfig()` **โดยไม่มี `IsServer` gate** ซึ่งดูเหมือนบั๊ก
+แบบเดียวกับ FlowField แต่**ต้องเป็นแบบนั้น** — `BossController.OnPhaseChangedClient(int)`
+([:133-135](../Assets/Script/BossController.cs:133)) อ่าน `config.phases[phaseIndex]`
+และรันฝั่ง client
+
+→ gate เป็น server-only = client ได้ `config == null` → return ตั้งแต่ `:133`
+→ **เสียเอฟเฟกต์ตอนบอสเปลี่ยน phase บนจอ client**
+
+`phase2Threshold`/`phase3Threshold` มี fallback ไป `legacyPhase*` อยู่แล้วก็จริง
+แต่ `OnPhaseChangedClient` **ไม่มี fallback** — นั่นคือส่วนที่ทำให้แก้ไม่ได้
+
+## ⚠️ สิ่งที่ grep ทำไม่ได้ — ต้องใช้เครื่องมืออื่น
+
+กวาดหา "`Instantiate` prefab ที่มี `NetworkObject` แต่ไม่มีใครเรียก `Spawn()`" **ทำด้วย grep ไม่ได้**
+เพราะต้อง resolve ว่าตัวแปรนั้นชี้ไป prefab ไหน (อยู่ใน Inspector) และระยะห่างระหว่าง
+`Instantiate` กับ `Spawn` ไม่คงที่ (`ObjectiveManager` ห่างกัน 23 บรรทัด)
+
+→ ถ้าอยากปิดช่องนี้จริงต้องเขียน **Editor script** ที่เดินดู serialized field ทุกตัว
+แล้วเช็คว่า prefab ปลายทางมี `NetworkObject` หรือไม่ · ยังไม่ได้ทำ
+
+---
+
 ## P0 เดิม (จากรอบ grep) — ยังใช้อยู่
 
 ### P0.1 buff ชั่วคราวไม่มีผลกับ client  `playermove.cs`

@@ -37,7 +37,15 @@ public class HealingOrb : NetworkBehaviour
             }
             if (visual.TryGetComponent<Renderer>(out Renderer rend))
             {
-                rend.material.color = Color.green;
+                var mpb = new MaterialPropertyBlock();
+                rend.GetPropertyBlock(mpb);
+                var sharedMat = rend.sharedMaterial;
+                if (sharedMat != null)
+                {
+                    if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", Color.green);
+                    if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     Color.green);
+                }
+                rend.SetPropertyBlock(mpb);
             }
         }
     }

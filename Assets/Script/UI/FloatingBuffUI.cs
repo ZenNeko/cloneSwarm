@@ -79,6 +79,8 @@ public class FloatingBuffUI : MonoBehaviour
         remainingDuration = Mathf.Max(remainingDuration, duration);
     }
 
+    private Camera _cam;
+
     void Update()
     {
         remainingDuration -= Time.deltaTime;
@@ -89,9 +91,10 @@ public class FloatingBuffUI : MonoBehaviour
         }
 
         // หมุนหันหน้าเข้าหาหน้ากล้องหลักตลอดเวลา (Billboard Effect)
-        if (Camera.main != null)
+        if (_cam == null) _cam = Camera.main;
+        if (_cam != null)
         {
-            transform.rotation = Camera.main.transform.rotation;
+            transform.rotation = _cam.transform.rotation;
         }
 
         // อัปเดตเวลาถอยหลัง

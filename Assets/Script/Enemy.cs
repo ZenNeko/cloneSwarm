@@ -73,6 +73,8 @@ public class Enemy : NetworkBehaviour
     private playermove targetPlayerMove;  // cached — avoid GetComponent allocation per damage tick
     private float      damageTimer;
     private Rigidbody  rb;
+    private MeshRenderer _meshRenderer;
+    private MaterialPropertyBlock _mpb;
 
     // ── Pathfinding Waypoints (Waypoint Interpolation) ──────────────────
     private List<Vector3> _pathWaypoints = new List<Vector3>();
@@ -89,6 +91,7 @@ public class Enemy : NetworkBehaviour
         ActiveEnemies.Add(this);
 
         rb = GetComponent<Rigidbody>();
+        _meshRenderer = GetComponentInChildren<MeshRenderer>();
         if (rb != null)
         {
             // non-kinematic + Discrete — ถูกกว่า ContinuousDynamic ~4× สำหรับ enemy เดินช้า
@@ -369,7 +372,7 @@ public class Enemy : NetworkBehaviour
         if (serverInvincible) return;   // skip damage ระหว่าง phase transition
 
         netHealth.Value = Mathf.Max(0f, netHealth.Value - amount);
-        NotifyHitClientRpc(transform.position, isCrit);
+        NotifyHitClientRpc(transform.position, isCrit, amount);
         if (netHealth.Value > 0f) return;
 
         onDeath.Invoke();
@@ -495,17 +498,19 @@ public class Enemy : NetworkBehaviour
     void NotifyFreezeClientRpc(bool frozen)
     {
         // Visual feedback: เปลี่ยนสี / material ชั่วคราว (optional — designer implement ทีหลัง)
-        var mr = GetComponentInChildren<MeshRenderer>();
-        if (mr != null)
+        if (_meshRenderer == null) _meshRenderer = GetComponentInChildren<MeshRenderer>();
+        if (_meshRenderer != null)
         {
-            if (frozen)
+            _mpb ??= new MaterialPropertyBlock();
+            _meshRenderer.GetPropertyBlock(_mpb);
+            Color freezeColor = frozen ? new Color(0.5f, 0.8f, 1f, 1f) : Color.white;
+            var sharedMat = _meshRenderer.sharedMaterial;
+            if (sharedMat != null)
             {
-                mr.material.color = new Color(0.5f, 0.8f, 1f, 1f); // ice-blue
+                if (sharedMat.HasProperty("_BaseColor")) _mpb.SetColor("_BaseColor", freezeColor);
+                if (sharedMat.HasProperty("_Color"))     _mpb.SetColor("_Color",     freezeColor);
             }
-            else
-            {
-                mr.material.color = Color.white;
-            }
+            _meshRenderer.SetPropertyBlock(_mpb);
         }
     }
 
@@ -571,11 +576,12 @@ public class Enemy : NetworkBehaviour
     }
 
     [ClientRpc]
-    void NotifyHitClientRpc(Vector3 pos, bool isCrit)
+    void NotifyHitClientRpc(Vector3 pos, bool isCrit, float damage)
     {
         OnAnyEnemyHit?.Invoke();
         string hitType = isCrit ? "CritHitEffect" : "HitEffect";
         NetworkedVFXPool.Instance?.PlayByName(hitType, pos);
+        NetworkedVFXPool.Instance?.PlayDamageNumber(pos, damage, isCrit);
     }
 
     [ClientRpc]

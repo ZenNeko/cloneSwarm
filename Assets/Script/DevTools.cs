@@ -48,11 +48,11 @@ public class DevTools : MonoBehaviour
 
         string expLine   = sem != null
             ? $"EXP: <b>{sem.sharedExp.Value:F0}</b> / {sem.sharedExpToNext.Value:F0}   Level: <b>{sem.sharedLevel.Value}</b>"
-            : "SharedExperienceManager — ไม่พบ";
+            : "SharedExperienceManager - not found";
 
         string waveLine  = wm != null
             ? $"Wave: <b>{wm.GetCurrentWave()}</b>   HPx{wm.CurrentHealthMultiplier:F2}"
-            : "WaveManager — ไม่พบ";
+            : "WaveManager - not found";
 
         string timeLine  = "";
         var gt = FindFirstObjectByType<GameTimeline>();
@@ -74,7 +74,7 @@ public class DevTools : MonoBehaviour
             var pool = NetworkedVFXPool.Instance;
             vfxText.text = pool != null
                 ? pool.BuildShortReport(5)
-                : "NetworkedVFXPool — ไม่พบใน scene";
+                : "NetworkedVFXPool - not in scene";
         }
     }
 
@@ -115,6 +115,8 @@ public class DevTools : MonoBehaviour
 
     void OnKillAllEnemies()
     {
+        if (!RequireServer()) return;
+
         // คัดลอกลิสต์เพื่อป้องกันปัญหาแก้คอลเลกชันขณะกำลังวนซ้ำ
         var enemies = new List<Enemy>(Enemy.ActiveEnemies);
         int count = 0;
@@ -220,7 +222,7 @@ public class DevTools : MonoBehaviour
         layout.childControlHeight     = true;
 
         // ── Title ──
-        AddLabel(panelRoot, "⚙ DEV TOOLS  (F1)", 16, Color.cyan);
+        AddLabel(panelRoot, "DEV TOOLS  (F1)", 16, Color.cyan);
 
         // ── Info block ──
         infoText = AddLabel(panelRoot, "...", 12, Color.white);
@@ -236,20 +238,20 @@ public class DevTools : MonoBehaviour
         AddButton(panelRoot, "Auto-fill Upgrades", new Color(0.4f,0.8f,1f), OnAutoFillUpgrades);
 
         // ── Spawning ──
-        AddLabel(panelRoot, "── Spawn ──", 11, new Color(0.7f,0.7f,0.7f));
+        AddLabel(panelRoot, "-- Spawn --", 11, new Color(0.7f,0.7f,0.7f));
         AddButton(panelRoot, "Spawn Mini Boss",  new Color(1f, 0.85f, 0.2f), OnSpawnMiniBoss);
         AddButton(panelRoot, "Spawn Main Boss",  new Color(1f, 0.25f, 0.25f), OnSpawnMainBoss);
         AddButton(panelRoot, "Spawn Objective",  new Color(0.3f, 1f, 0.6f), OnSpawnObjective);
 
         // ── VFX Pool ──
-        AddLabel(panelRoot, "── VFX Pool (ตัวที่ตั้งน้อยเกิน) ──", 11, new Color(0.7f,0.7f,0.7f));
+        AddLabel(panelRoot, "-- VFX Pool (undersized) --", 11, new Color(0.7f,0.7f,0.7f));
         vfxText = AddLabel(panelRoot, "...", 10, Color.white);
         vfxText.textWrappingMode = TextWrappingModes.Normal;
         vfxText.GetComponent<LayoutElement>().preferredHeight = 78;
         AddButton(panelRoot, "Log VFX Report",  new Color(0.8f,0.5f,1f), OnLogVfxReport);
         AddButton(panelRoot, "Reset VFX Stats", new Color(0.5f,0.5f,0.6f), OnResetVfxStats);
 
-        AddLabel(panelRoot, "── Time Scale ──", 11, new Color(0.7f,0.7f,0.7f));
+        AddLabel(panelRoot, "-- Time Scale --", 11, new Color(0.7f,0.7f,0.7f));
 
         var row = new GameObject("TimeScaleRow");
         row.transform.SetParent(panelRoot.transform, false);
@@ -266,10 +268,9 @@ public class DevTools : MonoBehaviour
         AddSmallButton(row, "×1",    Color.white,  () => OnSetTimeScale(1f));
         AddSmallButton(row, "×3",    Color.cyan,   () => OnSetTimeScale(3f));
 
-        AddLabel(panelRoot, "กด F1 ปิด/เปิด", 10, new Color(0.5f,0.5f,0.5f));
+        AddLabel(panelRoot, "F1 to toggle", 10, new Color(0.5f,0.5f,0.5f));
 
         panelRoot.SetActive(false);
-        DontDestroyOnLoad(canvasGO);
     }
 
     // ── UI Helpers ────────────────────────────────────────────────────────
@@ -328,6 +329,13 @@ public class DevTools : MonoBehaviour
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
         btn.onClick.AddListener(action);
+
+        // ต้องมี LayoutElement เหมือน AddButton — HorizontalLayoutGroup ของแถวตั้ง
+        // childControlHeight = true ลูกที่ไม่บอก preferred height จะยุบเหลือสูงศูนย์
+        // ตัวอักษรยังวาดเห็นเพราะ anchor เต็มพื้นที่ แต่ Image ไม่มีพื้นที่รับคลิก = กดไม่ได้
+        var le = go.AddComponent<LayoutElement>();
+        le.preferredHeight = 26;
+        le.flexibleWidth   = 1;
 
         var txt = new GameObject("Text");
         txt.transform.SetParent(go.transform, false);

@@ -21,6 +21,9 @@ public class CrateSpawnManager : NetworkBehaviour
     private Dictionary<Transform, GameObject> activeCrates = new Dictionary<Transform, GameObject>();
     private float timer;
 
+    // spawn ชุดแรกต้องรอให้พ้น OnNetworkSpawn ก่อน — ดูเหตุผลที่ OnNetworkSpawn()
+    private bool initialSpawnPending;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -35,21 +38,33 @@ public class CrateSpawnManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        // เมื่อเริ่มเกม ให้สปอว์นกล่องไม้ขึ้นมาที่จุดเกิดทุกจุดที่ระบุไว้ทันที
-        foreach (var point in spawnPoints)
-        {
-            if (point != null)
-            {
-                SpawnCrateAtPoint(point);
-            }
-        }
-
+        // ⚠️ ห้าม spawn ตรงนี้ — client จะไม่เห็นกล่องเลย
+        //
+        // เดิมโค้ดวน spawnPoints แล้ว Spawn() ทันทีในเมธอดนี้ ผลคือ host เห็นกล่อง
+        // (instantiate ในเครื่องตัวเอง) แต่ client ไม่เห็น เพราะ object ที่ spawn ระหว่างที่
+        // NetworkManager ยังทำ spawn pass ของตัวเองไม่จบ ไม่ติดไปกับ payload ที่ sync ให้ client
+        //
+        // ตัว spawn อื่นทุกตัวในโปรเจกต์ (OrbDropManager · ObjectiveManager · BossManager ·
+        // EnemySpawner) spawn จาก timer/event ทีหลัง จึงไม่โดน — CrateSpawnManager เป็น
+        // ตัวเดียวที่ spawn ในนี้ และเป็นตัวเดียวที่พัง
+        //
+        // เลื่อนไปทำใน Update() เฟรมแรกแทน — Update() มี IsServer gate อยู่แล้ว
+        initialSpawnPending = true;
         timer = 0f;
     }
 
     private void Update()
     {
         if (!IsServer) return;
+
+        if (initialSpawnPending)
+        {
+            initialSpawnPending = false;
+            foreach (var point in spawnPoints)
+            {
+                if (point != null) SpawnCrateAtPoint(point);
+            }
+        }
 
         timer += Time.deltaTime;
         if (timer >= spawnInterval)
@@ -98,6 +113,10 @@ public class CrateSpawnManager : NetworkBehaviour
         if (netObj != null)
         {
             netObj.Spawn(true);
+        }
+        else
+        {
+            Debug.LogError($"[CrateSpawnManager] '{crate.name}' ไม่มี NetworkObject — spawn เฉพาะฝั่ง server client จะไม่เห็น");
         }
     }
 }

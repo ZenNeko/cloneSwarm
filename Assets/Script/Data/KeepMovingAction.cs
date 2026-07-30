@@ -78,7 +78,7 @@ public class KeepMovingAction : BossAction
                             if (idleTimers[cid] >= allowedIdleTime)
                             {
                                 idleTimers[cid] = 0f; // รีเซ็ตเพื่อไม่ให้สปอว์นซ้ำรัวๆ
-                                SpawnPunishment(currentPos, telegraphPrefab);
+                                SpawnPunishment(currentPos, telegraphPrefab, runner as BossController);
                             }
                         }
                     }
@@ -90,7 +90,7 @@ public class KeepMovingAction : BossAction
         }
     }
 
-    private void SpawnPunishment(Vector3 position, GameObject telegraphPrefab)
+    private void SpawnPunishment(Vector3 position, GameObject telegraphPrefab, BossController boss)
     {
         var go = Instantiate(telegraphPrefab, position, Quaternion.identity);
         var zone = go.GetComponent<TelegraphZone>();
@@ -104,6 +104,7 @@ public class KeepMovingAction : BossAction
             zone.damage = damage;
 
             no.Spawn(true);
+            boss?.RegisterMechanic(no);
             zone.BroadcastInit();
         }
         else

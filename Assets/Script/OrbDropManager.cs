@@ -73,5 +73,9 @@ public class OrbDropManager : MonoBehaviour
         {
             netObj.Spawn(true);
         }
+        else
+        {
+            Debug.LogError($"[OrbDropManager] '{orb.name}' ไม่มี NetworkObject — spawn เฉพาะฝั่ง server client จะไม่เห็น");
+        }
     }
 }

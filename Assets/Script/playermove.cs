@@ -42,8 +42,9 @@ public class playermove : NetworkBehaviour
     /// <summary>ยิง event เมื่อ local player spawn → FollowCamera subscribe ที่นี่</summary>
     public static event System.Action<Transform> OnLocalPlayerSpawned;
 
-    private Vector2    moveInput;
-    private Rigidbody  rb;
+    private Vector2           moveInput;
+    private Rigidbody         rb;
+    private PlayerStatManager _statManager;
 
     /// <summary>ทิศที่ผู้เล่นกด input อยู่ (world space XZ, normalized)
     /// Vector3.zero ถ้าไม่ได้กด — ใช้โดย dash weapons</summary>
@@ -52,7 +53,8 @@ public class playermove : NetworkBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
     {
-        rb = GetComponent<Rigidbody>();
+        rb           = GetComponent<Rigidbody>();
+        _statManager = GetComponent<PlayerStatManager>();
 
         if (IsServer)
         {
@@ -115,7 +117,7 @@ public class playermove : NetworkBehaviour
         // Shield decay — depletes to 0 over shieldDuration * Duration stat (Server only)
         if (IsServer && netShieldHP.Value > 0f)
         {
-            float durationMult      = GetComponent<PlayerStatManager>()?.GetDurationMultiplier() ?? 1f;
+            float durationMult      = _statManager?.GetDurationMultiplier() ?? 1f;
             float effectiveDuration = shieldDuration * durationMult;
             float elapsed           = Time.time - shieldAddTime;
             netShieldHP.Value = elapsed >= effectiveDuration ? 0f
@@ -147,11 +149,11 @@ public class playermove : NetworkBehaviour
 
     void FixedUpdate()
     {
-        if (!IsOwner || rb == null || isDead.Value) return;
+        if (!IsOwner || rb == null || isDead.Value || GamePause.LocalInputSuspended) return;
         if (isDashing || isKnockedBack) return;   // ปล่อยให้ dash หรือ knockback ควบคุม position เอง
 
         Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y);
-        var   sm            = IsOwner ? GetComponent<PlayerStatManager>() : null;
+        var   sm            = IsOwner ? _statManager : null;
         float effectiveSpeed = moveSpeed * (sm != null ? sm.GetMoveSpeedMultiplier() : 1f) * (1f + tempMoveSpeedBonus);
         rb.linearVelocity = new Vector3(movement.x * effectiveSpeed, rb.linearVelocity.y, movement.z * effectiveSpeed);
     }

@@ -33,6 +33,8 @@ public class FloorHazard : NetworkBehaviour
     // ── Client-side visual ────────────────────────────────────────────────
     private GameObject   dangerVisual;
     private GameObject[] safeVisuals;
+    private Renderer     dangerRend;
+    private MaterialPropertyBlock mpb;
     private Vector3[]    clientSafeZones;
     private float        clientSafeZoneRadius;
     private float        clientWarnDuration;
@@ -134,9 +136,19 @@ public class FloorHazard : NetworkBehaviour
                 Mathf.Sin(Time.time * 12f) * 0.5f + 0.5f)
             : new Color(1f, 0f, 0f, 0.35f);
 
-        var dangerRend = dangerVisual.GetComponent<Renderer>();
         if (dangerRend != null)
-            dangerRend.material.color = dangerCol;
+        {
+            mpb ??= new MaterialPropertyBlock();
+            dangerRend.GetPropertyBlock(mpb);
+            var sharedMat = dangerRend.sharedMaterial;
+            if (sharedMat != null)
+            {
+                if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", dangerCol);
+                if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     dangerCol);
+                if (sharedMat.HasProperty("_TintColor")) mpb.SetColor("_TintColor", dangerCol);
+            }
+            dangerRend.SetPropertyBlock(mpb);
+        }
     }
 
     // ── Visuals ───────────────────────────────────────────────────────────
@@ -152,14 +164,15 @@ public class FloorHazard : NetworkBehaviour
         dangerVisual.transform.localScale = new Vector3(arenaR * 2f, 0.04f, arenaR * 2f);
         Destroy(dangerVisual.GetComponent<Collider>());
 
+        dangerRend = dangerVisual.GetComponent<Renderer>();
         if (shader != null)
         {
             var mat = new Material(shader);
             mat.color = new Color(1f, 0f, 0f, 0.35f);
             ApplyTransparency(mat);
-            dangerVisual.GetComponent<Renderer>().material = mat;
+            dangerRend.sharedMaterial = mat;
         }
-        dangerVisual.GetComponent<Renderer>().shadowCastingMode =
+        dangerRend.shadowCastingMode =
             UnityEngine.Rendering.ShadowCastingMode.Off;
 
         // ── Safe zones (small green flat cylinders) ──
@@ -172,14 +185,15 @@ public class FloorHazard : NetworkBehaviour
             safe.transform.localScale = new Vector3(safeR * 2f, 0.05f, safeR * 2f);
             Destroy(safe.GetComponent<Collider>());
 
+            var safeRend = safe.GetComponent<Renderer>();
             if (shader != null)
             {
                 var safeMat = new Material(shader);
                 safeMat.color = new Color(0f, 0.9f, 0.2f, 0.55f);
                 ApplyTransparency(safeMat);
-                safe.GetComponent<Renderer>().material = safeMat;
+                safeRend.sharedMaterial = safeMat;
             }
-            safe.GetComponent<Renderer>().shadowCastingMode =
+            safeRend.shadowCastingMode =
                 UnityEngine.Rendering.ShadowCastingMode.Off;
             safeVisuals[i] = safe;
         }
@@ -245,6 +259,7 @@ public class FloorHazard : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        base.OnNetworkDespawn();
         DestroyVisuals();
     }
 

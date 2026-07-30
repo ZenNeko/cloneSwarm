@@ -19,14 +19,14 @@ MonoBehaviour:
   prefab: {fileID: 2993357391548470966, guid: 6baeb5b1a3c104342b354c7442f9f629, type: 3}
   aimMode: 0
   levels:
-  - damage: 120
-    cooldown: 2
-    projectileCount: 6
-    range: 14
-    projectileSpeed: 16
-    radius: 0
+  - damage: 60
+    cooldown: 1.5
+    projectileCount: 24
+    range: 30
+    projectileSpeed: 12
+    radius: 3.8
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 150

@@ -44,7 +44,7 @@ public class DeathFieldWeapon : WeaponBase
 
         FireMelee(center, radius, dmg, isCrit);
         // Main field hit VFX (parented to player, looping)
-        string vfxKey = ResolveHitVfx("OrbiterHit");
+        string vfxKey = ResolveHitVfx("None");
         if (!string.IsNullOrEmpty(vfxKey) && vfxKey != "None")
         {
             float scale = radius > 0f ? ComputeVfxScale(vfxKey, radius) : 1f;

@@ -271,7 +271,11 @@ public class ObjectiveIndicatorUI : MonoBehaviour
                     countPart = e.zone.ActiveQuestType switch
                     {
                         ZoneObjective.QuestType.FetchAndDeliver => $"★ {e.delivered}/{e.required}",
-                        ZoneObjective.QuestType.Survive          => $"⏱ {e.delivered}/{e.required}s",
+                        // ห้ามใส่ ⏱ (U+23F1) กลับมา — LiberationSans SDF ไม่มี glyph นี้
+                        // ป้ายนี้อัปเดตทุกวินาที = TMP warning วินาทีละครั้งตลอด quest
+                        // (★ U+2605 บรรทัดบนใช้ได้ เพราะฟอนต์มี) ถ้าอยากได้ไอคอนจริง
+                        // ต้องตั้ง fallback font หรือ TMP sprite asset ก่อน
+                        ZoneObjective.QuestType.Survive          => $"{e.delivered}/{e.required}s",
                         _                                         => "",
                     };
                 }

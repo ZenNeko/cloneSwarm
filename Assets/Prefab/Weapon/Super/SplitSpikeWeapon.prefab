@@ -56,4 +56,4 @@ MonoBehaviour:
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
-  projectilePrefab: {fileID: 0}
+  projectilePrefab: {fileID: 6729598477372940667, guid: c2c937b9cb34f2c4087cccda0901f502, type: 3}

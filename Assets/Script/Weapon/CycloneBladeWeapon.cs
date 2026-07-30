@@ -29,7 +29,7 @@ public class CycloneBladeWeapon : WeaponBase
         {
             // 360° spin — main VFX
             FireMelee(center, radius, dmg, isCrit);
-            ShowVfx(ResolveHitVfx("SlashAoE360"), center, radius, isCrit, isAttackHit: false);
+            ShowVfx(ResolveHitVfx("None"), center, radius, isCrit, isAttackHit: false);
         }
         else
         {

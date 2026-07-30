@@ -59,6 +59,7 @@ public class GunnerRocketMode : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || IsRocketModeActive) return;
+        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
         var kb = Keyboard.current;
         if (kb == null) return;
