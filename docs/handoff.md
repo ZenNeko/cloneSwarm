@@ -1,4 +1,4 @@
-# Handoff → Antigravity  (Round 7)
+# Handoff → Antigravity  (Round 8)
 
 ก๊อปข้อความข้างล่างนี้ไปวางใน Antigravity:
 
@@ -6,51 +6,47 @@
 อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นลงมือทำทุก Task ที่ยังเป็น [ ] แก้เฉพาะไฟล์ที่แผนระบุ ห้ามรัน build หรือ unity-check เสร็จแต่ละ task ให้ติ๊ก [x] และสรุปไฟล์ที่แก้ไว้ท้ายไฟล์แผนใต้ ## Changed Files
 ---
 
-รอบนี้ **10 tasks · 8 ไฟล์ (ใหม่ 2)** — เป็น**รอบฟีเจอร์** ไม่ใช่แก้บั๊ก
-(backlog จาก audit เก็บไปเกือบหมดแล้วใน Round 1-6)
+รอบนี้ **11 tasks · 7 ไฟล์** — มาจากผลเทสต์จริงและการตัดสินใจของผู้ใช้ ไม่ใช่จาก audit
 
-**ของหลัก: เลขดาเมจลอยขึ้นตอนตี**
-- T1 `VFX/FloatingDamageText.cs` **ใหม่** — ตัวเลขลอย+จาง หันหน้าหากล้อง
-- T2 `Enemy.cs` — เพิ่ม `float damage` เข้า `NotifyHitClientRpc` ที่มีอยู่
-- T3 `VFX/FloatingDamageTextPool.cs` **ใหม่** — pool 200 ใบ
-- T4 `Enemy.cs` — ต่อ RPC เข้ากับ pool · crit ต้องดูต่างชัด
-- T5 กระจายตำแหน่งไม่ให้เลขทับกัน
+**ก้อนที่ 1 — host กด ESC ไม่ให้หยุดทั้งห้อง (T1-T5)**
+- T1 `GamePause.cs` — เพิ่ม `LocalInputSuspended` (ระงับ input **ห้ามแตะ `timeScale`**)
+- T2 `UI/PauseMenuUI.cs` — solo หยุดโลกเหมือนเดิม · multiplayer ระงับแค่ input
+- T3 `playermove.cs:152` — เพิ่มเงื่อนไขในบรรทัด gate ที่มีอยู่
+- T4 `Weapon/WeaponBase.cs:92-96` — เพิ่ม gate ชั้นที่ 4 (ทุกอาวุธผ่านจุดนี้หมด)
+- T5 ability — **grep หาเอง** ถ้ากระจายเกิน 3 ไฟล์ให้หยุดถาม
 
-**อื่นๆ**
-- T6 `SharedExperienceManager.cs` — เล่นคนเดียวไม่ต้องนับถอยหลังตอนเลือกการ์ด
-- T7 `ZoneObjective.cs` — log ตอนคืน spawn rate
-- T8 ล้าง VFX key ตาย (`LanceThrust` `SlashAoE360` `VortexSpawn` `OrbiterHit`) → `"None"`
-- T9 grep ตรวจปิดงาน (**ไม่แก้ไฟล์**) · T10 แก้คอมเมนต์ที่ล้าสมัย
+**ก้อนที่ 2 — เลขดาเมจปรับได้จาก Inspector (T6-T8)**
+- ยกค่าที่ฝังในโค้ดขึ้นมาเป็น field: อายุ · ความเร็วลอย · ขนาด · สี · สีคริต · ระยะสุ่ม
+
+**ก้อนที่ 3 — ย้าย pool (T9-T10)**
+- `FloatingDamageTextPool` เลิกสร้าง GameObject เอง ให้ผู้ใช้แปะบน `NetworkedVFXPool` แทน
+
+- T11 grep ตรวจปิดงาน (**ไม่แก้ไฟล์**)
 
 ## กฎที่สำคัญที่สุดของรอบนี้
 
-> **ห้ามสร้าง ClientRpc/ServerRpc ตัวใหม่ในเส้นทาง damage เด็ดขาด**
-> `NotifyHitClientRpc` ยิงทุกครั้งที่ศัตรูโดนตี และ audit ระบุว่าเป็นต้นทุน network
-> ที่ใหญ่ที่สุดในเกม (รายงานจริง: solo คนเดียวมี `HitEffect` ทำงานพร้อมกัน **559 ชิ้น**)
-> เลขดาเมจต้องอาศัย RPC ตัวเดิม **เพิ่มพารามิเตอร์ ไม่ใช่เพิ่มข้อความ**
-
-**T2 เป็นข้อเดียวในรอบนี้ที่อนุญาตให้เปลี่ยน signature** ข้ออื่นห้ามทั้งหมด
+> **`LocalInputSuspended` ห้ามแตะ `Time.timeScale` เด็ดขาด**
+> นั่นคือบั๊กที่กำลังแก้อยู่พอดี — host คือ server พอ `timeScale = 0` ศัตรูหยุดทั้งห้อง
+> ตัวนี้ระงับแค่ input ของเครื่องตัวเอง **โลกต้องเดินต่อ**
 
 ## ข้อควรระวัง
 
-**Round 3, 4, 5+6 มี scope creep รอบละครั้ง — สามครั้งติด**
-รูปแบบ: Round 3 เปลี่ยน private field เป็น property · Round 4 เติม `else Destroy()` ·
-Round 5+6 เปิด shader keyword บน `sharedMaterial` (= เขียนทับ asset ตอน runtime)
-→ **ห้ามเพิ่ม `else` สำรอง ห้ามเพิ่ม fallback ห้ามเขียนทับ asset**
-ครั้งที่สามอันตรายที่สุดเพราะเป็นการ**เลี่ยงข้อจำกัดด้วยวิธีที่แผนห้ามไว้ตรงๆ**
+**อย่าลืมคืนค่า** — `GamePause.ResetAll()` ต้องเคลียร์ `LocalInputSuspended` ด้วย
+และ `PauseMenuUI` ต้องคืนทั้งใน `Resume()` · `OnDisable()` · `OnQuitClicked()`
+ไม่งั้นเปลี่ยนฉากแล้วขยับไม่ได้ **นี่คือรูปแบบเดียวกับบั๊ก `prevTimeScale` ที่ Round 2 แก้ไป**
+
+**T3 ห้ามแตะ regen/สถานะฝั่ง server ใน `playermove`** — แก้เฉพาะบรรทัด gate ของการเคลื่อนที่
+`:112` regen รันฝั่ง server ต้องเดินต่อ
+
+**T4 ห้ามแตะ `PlayerWeaponManager.WeaponsEnabledInScene`** — มันแปลว่า "อยู่ในฉากเกม"
+คนละความหมายกับ pause ให้เพิ่ม gate ใหม่ต่อจากมัน
+
+**T9 ห้ามลบ guard ที่ใช้ `_instance` ตรงๆ ใน `Awake`/`OnDestroy`** — มันกัน stack overflow
+ที่ getter เรียกตัวเองไม่รู้จบ (เจอมาแล้วใน Round 7) **อ่านคอมเมนต์ในไฟล์ก่อนแก้**
+
+**T6 ห้ามเปลี่ยนค่า default** — ย้ายที่มาของค่าขึ้นมา Inspector เฉยๆ หน้าตาต้องเหมือนที่เทสต์ไปแล้ว
+
+**Round 3-7 มี scope creep ทุกรอบ** รูปแบบ: เติมโค้ดกันไว้ก่อนที่ไม่มีใครขอ
 ถ้าติดจนทำตามแผนไม่ได้ **หยุดแล้วเขียนใต้ `## Questions`** อย่าหาทางอ้อม
-
-**T1 ห้ามเรียก `Camera.main` ทุกเฟรม** — Round 5+6 เพิ่งไล่แก้เรื่องนี้ทั้งโปรเจกต์
-ใช้รูปเดียวกับ `WorldHPBar.cs:102` · `FloatingDamageText` **ห้ามเป็น NetworkBehaviour**
-
-**T3 ห้ามใช้ `NetworkedVFXPool`** — pool นั้น key ด้วย prefab และตั้งค่าใน `VFXDatabase` (`.asset` ห้ามแตะ)
-และตัวเลขต้องตั้งข้อความต่างกันทุกใบ ซึ่ง MaterialPropertyBlock ทำไม่ได้
-
-**T6 ห้ามลบ `ForceAutoPick`** — multiplayer ยังต้องใช้ ไม่งั้นคน AFK ค้างทั้งห้อง
-
-**ห้ามแตะ 3 อย่างนี้**
-- `MainBoss.GenerateLegacyConfig` — ต้องรันบน client จริงๆ (`OnPhaseChangedClient` อ่าน `config.phases`) **ไม่ใช่บั๊ก**
-- `CrateSpawnManager` — เพิ่งแก้ รอเทสต์
-- `PauseMenuUI` / `GamePause` — บั๊ก host กด ESC รอผู้ใช้ตัดสินใจ
 
 เสร็จแล้วกลับมาบอกว่า "เสร็จ"
