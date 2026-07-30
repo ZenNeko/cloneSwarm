@@ -372,7 +372,7 @@ public class Enemy : NetworkBehaviour
         if (serverInvincible) return;   // skip damage ระหว่าง phase transition
 
         netHealth.Value = Mathf.Max(0f, netHealth.Value - amount);
-        NotifyHitClientRpc(transform.position, isCrit);
+        NotifyHitClientRpc(transform.position, isCrit, amount);
         if (netHealth.Value > 0f) return;
 
         onDeath.Invoke();
@@ -576,11 +576,12 @@ public class Enemy : NetworkBehaviour
     }
 
     [ClientRpc]
-    void NotifyHitClientRpc(Vector3 pos, bool isCrit)
+    void NotifyHitClientRpc(Vector3 pos, bool isCrit, float damage)
     {
         OnAnyEnemyHit?.Invoke();
         string hitType = isCrit ? "CritHitEffect" : "HitEffect";
         NetworkedVFXPool.Instance?.PlayByName(hitType, pos);
+        FloatingDamageTextPool.Instance?.Play(pos, damage, isCrit);
     }
 
     [ClientRpc]
