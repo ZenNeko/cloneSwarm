@@ -581,7 +581,7 @@ public class Enemy : NetworkBehaviour
         OnAnyEnemyHit?.Invoke();
         string hitType = isCrit ? "CritHitEffect" : "HitEffect";
         NetworkedVFXPool.Instance?.PlayByName(hitType, pos);
-        FloatingDamageTextPool.Instance?.Play(pos, damage, isCrit);
+        NetworkedVFXPool.Instance?.PlayDamageNumber(pos, damage, isCrit);
     }
 
     [ClientRpc]

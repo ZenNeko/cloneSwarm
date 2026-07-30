@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.VFX;
@@ -99,6 +100,7 @@ public class NetworkedVFXPool : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         BuildPools();
+        PreallocateDamageText();
     }
 
     void OnDestroy()
@@ -641,6 +643,104 @@ public class NetworkedVFXPool : MonoBehaviour
     public GameObject GetProjectilePrefab(int id)
         => id >= 0 && id < projectilePrefabs.Count ? projectilePrefabs[id] : null;
 
+    // ─── Floating Damage Text ────────────────────────────────────────────
+    // รวมมาจาก FloatingDamageTextPool (Round 8) — pool นี้อยู่ในทุก gameplay scene อยู่แล้ว
+    // จึง pre-allocate ตอนโหลดฉากได้ฟรี ไม่ต้องให้ผู้ใช้ลาก component เพิ่ม
+    // FloatingDamageText อยู่ท้ายไฟล์นี้ — ถูก AddComponent ตอน runtime เท่านั้น
+    // (คลาสที่ชื่อไม่ตรงไฟล์แปะใน Inspector ไม่ได้ แต่ AddComponent ได้ปกติ)
+
+    [Header("Floating Damage Text")]
+    [Tooltip("Prefab ของตัวเลขดาเมจ (optional) — เว้นว่างจะสร้าง TextMeshPro เปล่าให้\n" +
+             "ใส่ prefab ที่มี TextMeshPro เพื่อคุม font/material เอง")]
+    public GameObject damageTextPrefab;
+
+    [Min(1)]
+    [Tooltip("จำนวน pre-allocate ตอนโหลดฉาก — solo วัดจริง HitEffect peak 559 แต่ตัวเลข\n" +
+             "อยู่บนจอสั้นกว่า VFX มาก · โตเองได้ถ้าหมด (เตือนครั้งเดียว)")]
+    public int damageTextCapacity = 200;
+
+    [Tooltip("อายุตัวเลข (วินาที) ก่อนจางหาย")]
+    public float damageTextDuration = 0.8f;
+    [Tooltip("ความเร็วลอยขึ้น")]
+    public float damageTextFloatSpeed = 1.2f;
+    [Tooltip("ขนาดตัวอักษรปกติ")]
+    public float damageTextNormalSize = 4f;
+    [Tooltip("ขนาดตัวอักษรตอนคริต")]
+    public float damageTextCritSize = 6f;
+    [Tooltip("สีปกติ")]
+    public Color damageTextNormalColor = Color.white;
+    [Tooltip("สีตอนคริต")]
+    public Color damageTextCritColor = new Color(1f, 0.85f, 0.1f, 1f);
+    [Tooltip("ระยะสุ่มแนวนอน (±X, ±Z) กันตัวเลขซ้อนกันตอนตีรัว")]
+    public float damageTextRandomOffset = 0.3f;
+
+    private readonly Queue<FloatingDamageText> _dmgTextPool = new();
+    private bool _dmgTextWarnedGrow;
+    private int  _dmgTextCreated;
+
+    void PreallocateDamageText()
+    {
+        for (int i = 0; i < damageTextCapacity; i++)
+        {
+            var item = CreateDamageTextItem();
+            item.gameObject.SetActive(false);
+            _dmgTextPool.Enqueue(item);
+        }
+    }
+
+    FloatingDamageText CreateDamageTextItem()
+    {
+        _dmgTextCreated++;
+        GameObject go;
+        if (damageTextPrefab != null)
+        {
+            go = Instantiate(damageTextPrefab, transform);
+        }
+        else
+        {
+            go = new GameObject($"FloatingDamageText_{_dmgTextCreated}");
+            go.transform.SetParent(transform, false);
+        }
+
+        var fdt = go.GetComponent<FloatingDamageText>();
+        if (fdt == null) fdt = go.AddComponent<FloatingDamageText>();
+        return fdt;
+    }
+
+    /// <summary>แสดงเลขดาเมจลอยที่ตำแหน่ง — เรียกจาก Enemy.NotifyHitClientRpc บนทุก client</summary>
+    public void PlayDamageNumber(Vector3 position, float damage, bool isCrit)
+    {
+        FloatingDamageText item;
+        if (_dmgTextPool.Count > 0)
+        {
+            item = _dmgTextPool.Dequeue();
+            if (item == null)   // ค้างในคิวหลัง scene unload
+            {
+                PlayDamageNumber(position, damage, isCrit);
+                return;
+            }
+        }
+        else
+        {
+            if (!_dmgTextWarnedGrow)
+            {
+                Debug.LogWarning($"[VFXPool] damage-text pool หมด ({damageTextCapacity}) — โตอัตโนมัติ ไม่ใช่ error · เตือนครั้งเดียว");
+                _dmgTextWarnedGrow = true;
+            }
+            item = CreateDamageTextItem();
+        }
+
+        item.Init(damage, isCrit, position, this);
+    }
+
+    /// <summary>FloatingDamageText คืนตัวเองเมื่อหมดอายุ</summary>
+    public void ReturnDamageText(FloatingDamageText item)
+    {
+        if (item == null) return;
+        item.gameObject.SetActive(false);
+        _dmgTextPool.Enqueue(item);
+    }
+
     // ─── Diagnostics API ─────────────────────────────────────────────────
 
     /// <summary>สถิติทุก pool เรียงจากตัวที่ตั้งไว้ขาดมากสุดก่อน</summary>
@@ -712,5 +812,96 @@ public class NetworkedVFXPool : MonoBehaviour
             s.warned    = false;
         }
         Debug.Log("[VFXPool] เคลียร์สถิติแล้ว — เริ่มนับ peak ใหม่");
+    }
+}
+
+/// <summary>
+/// ตัวเลขดาเมจลอยขึ้นแล้วจาง — สร้างโดย NetworkedVFXPool.PlayDamageNumber เท่านั้น
+///
+/// อยู่ไฟล์เดียวกับ pool ตามการตัดสินใจ Round 8: คลาสที่ชื่อไม่ตรงชื่อไฟล์
+/// แปะใน Inspector/prefab ไม่ได้ แต่ AddComponent ตอน runtime ได้ปกติ ซึ่งคือ
+/// ทางเดียวที่คลาสนี้ถูกสร้างอยู่แล้ว · ค่าปรับแต่งทั้งหมดอ่านจาก pool
+/// (แก้ใน Inspector ของ NetworkedVFXPool แล้วมีผลกับตัวเลขใบถัดไปทันที)
+/// </summary>
+public class FloatingDamageText : MonoBehaviour
+{
+    private TextMeshPro textMesh;
+    private float   _duration = 0.8f;
+    private float   _floatSpeed = 1.2f;
+    private float   _elapsedTime;
+    private Vector3 _startPos;
+    private Camera  _cam;
+    private NetworkedVFXPool _pool;
+    private Color   _activeColor;
+
+    void EnsureTextMesh()
+    {
+        if (textMesh == null)
+        {
+            textMesh = GetComponent<TextMeshPro>();
+            if (textMesh == null)
+            {
+                textMesh = gameObject.AddComponent<TextMeshPro>();
+                textMesh.alignment = TextAlignmentOptions.Center;
+                textMesh.rectTransform.sizeDelta = new Vector2(3f, 1f);
+            }
+        }
+    }
+
+    public void Init(float damage, bool isCrit, Vector3 basePos, NetworkedVFXPool pool)
+    {
+        _pool        = pool;
+        _elapsedTime = 0f;
+        _duration    = pool.damageTextDuration;
+        _floatSpeed  = pool.damageTextFloatSpeed;
+
+        EnsureTextMesh();
+
+        // สุ่มเฉพาะแนวนอน — ทิศลอยขึ้นต้องเหมือนกันทุกใบ
+        Vector3 offset = new Vector3(
+            Random.Range(-pool.damageTextRandomOffset, pool.damageTextRandomOffset),
+            0f,
+            Random.Range(-pool.damageTextRandomOffset, pool.damageTextRandomOffset)
+        );
+        _startPos = basePos + offset;
+        transform.position = _startPos;
+
+        textMesh.text      = Mathf.RoundToInt(damage).ToString();
+        textMesh.fontSize  = isCrit ? pool.damageTextCritSize  : pool.damageTextNormalSize;
+        textMesh.fontStyle = isCrit ? FontStyles.Bold : FontStyles.Normal;
+        _activeColor       = isCrit ? pool.damageTextCritColor : pool.damageTextNormalColor;
+        textMesh.color     = _activeColor;
+
+        gameObject.SetActive(true);
+    }
+
+    void Update()
+    {
+        _elapsedTime += Time.deltaTime;
+        if (_elapsedTime >= _duration)
+        {
+            if (_pool != null) _pool.ReturnDamageText(this);
+            else               gameObject.SetActive(false);
+            return;
+        }
+
+        // ลอยขึ้น + จางหาย
+        transform.position = _startPos + Vector3.up * (_floatSpeed * (_elapsedTime / _duration));
+        float alpha = Mathf.Clamp01(1f - (_elapsedTime / _duration));
+        Color c = _activeColor;
+        c.a = alpha;
+        textMesh.color = c;
+    }
+
+    void LateUpdate()
+    {
+        // cache Camera.main — รูปแบบเดียวกับ WorldHPBar
+        if (_cam == null) _cam = Camera.main;
+        if (_cam == null) return;
+
+        transform.LookAt(
+            transform.position + _cam.transform.rotation * Vector3.forward,
+            _cam.transform.rotation * Vector3.up
+        );
     }
 }
