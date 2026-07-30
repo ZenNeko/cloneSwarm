@@ -13,6 +13,8 @@ public class TetherAction : BossAction
     [Tooltip("ระยะห่างเสาจากผู้เล่นในกรณีเล่นคนเดียว")]
     public float tetherSoloSpawnOffset = 10f;
 
+    public override float GetEditorDuration() => actionDelay + tetherDuration;
+
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
         if (actionDelay > 0f) yield return new WaitForSeconds(actionDelay);

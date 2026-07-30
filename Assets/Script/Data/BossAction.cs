@@ -20,6 +20,16 @@ public abstract class BossAction : ScriptableObject
     /// <param name="telegraphPrefab">TelegraphZone prefab</param>
     public abstract IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab);
 
+    // ── Editor Support (Boss Designer) ────────────────────────────────────
+    /// <summary>กันการเรียกซ้อนไม่รู้จบ กรณี action อ้างอิงกันเป็นวงกลม (Combo/Timeline ซ้อนตัวเอง)</summary>
+    protected static int s_editorDurationDepth;
+
+    /// <summary>
+    /// ประมาณความยาวรวมของท่านี้เป็นวินาที (รวม actionDelay) — ใช้วาดความยาวคลิปใน Boss Designer
+    /// ไม่มีผลต่อ gameplay
+    /// </summary>
+    public virtual float GetEditorDuration() => actionDelay + 1f;
+
     // Helper: ค้นหาผู้เล่นที่อยู่ใกล้ที่สุด
     protected Transform FindNearestPlayer(Vector3 origin)
     {
