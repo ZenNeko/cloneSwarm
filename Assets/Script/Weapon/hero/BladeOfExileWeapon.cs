@@ -72,6 +72,7 @@ public class BladeOfExileWeapon : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || IsExileActive) return;
+        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
         var kb = Keyboard.current;
         if (kb == null) return;

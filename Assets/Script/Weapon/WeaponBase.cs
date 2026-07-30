@@ -94,6 +94,7 @@ public abstract class WeaponBase : MonoBehaviour
         // Block weapon firing while still in MenuScene (Online Session lobby) —
         // player prefab อาจ spawn ใน lobby ก่อนเริ่มเกมจริง
         if (!PlayerWeaponManager.WeaponsEnabledInScene) return;
+        if (GamePause.LocalInputSuspended) return;
         if (!UsesCooldownTimer) return;
 
         attackTimer += Time.deltaTime;

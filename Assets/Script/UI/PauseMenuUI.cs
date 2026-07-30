@@ -20,7 +20,7 @@ using UnityEngine.UI;
 ///   4. กำหนด menuSceneName = "MenuScene"
 ///
 /// หมายเหตุ:
-///   • Time.timeScale หยุด local-only — multiplayer คนอื่นยังเล่นต่อ
+///   • Solo: Time.timeScale หยุด / Multiplayer: LocalInputSuspended ระงับ input ของเครื่องตัวเอง
 ///   • Quit = NetworkManager.Shutdown + load MenuScene
 /// </summary>
 public class PauseMenuUI : MonoBehaviour
@@ -80,8 +80,12 @@ public class PauseMenuUI : MonoBehaviour
         if (quitButton)          quitButton.onClick.RemoveListener(OnQuitClicked);
         if (resetDefaultsButton) resetDefaultsButton.onClick.RemoveListener(OnResetDefaults);
 
-        // กัน scene unload ทิ้ง timeScale = 0 → restore
-        if (isPaused) GamePause.Remove(PauseReason.PauseMenu);
+        // กัน scene unload ทิ้ง pause state → restore
+        if (isPaused)
+        {
+            GamePause.Remove(PauseReason.PauseMenu);
+            GamePause.SuspendLocalInput(false);
+        }
     }
 
     void Update()
@@ -98,7 +102,20 @@ public class PauseMenuUI : MonoBehaviour
     {
         if (isPaused) return;
         isPaused = true;
-        GamePause.Add(PauseReason.PauseMenu);
+
+        bool isMultiplayer = NetworkManager.Singleton != null &&
+                             NetworkManager.Singleton.IsListening &&
+                             NetworkManager.Singleton.ConnectedClients.Count > 1;
+
+        if (isMultiplayer)
+        {
+            GamePause.SuspendLocalInput(true);
+        }
+        else
+        {
+            GamePause.Add(PauseReason.PauseMenu);
+        }
+
         SyncFromSoundManager();
         if (panelRoot != null) panelRoot.SetActive(true);
     }
@@ -108,6 +125,7 @@ public class PauseMenuUI : MonoBehaviour
         if (!isPaused) return;
         isPaused = false;
         GamePause.Remove(PauseReason.PauseMenu);
+        GamePause.SuspendLocalInput(false);
         if (panelRoot != null) panelRoot.SetActive(false);
     }
 

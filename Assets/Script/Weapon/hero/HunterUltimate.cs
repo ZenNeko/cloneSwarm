@@ -61,6 +61,7 @@ public class HunterUltimate : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || IsActive) return;
+        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
         if (Keyboard.current != null && Keyboard.current[activateKey].wasPressedThisFrame)
             Activate();

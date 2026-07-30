@@ -32,6 +32,13 @@ public static class GamePause
         set { _resumeScale = Mathf.Max(0.01f, value); Apply(); }
     }
 
+    /// <summary>true = เครื่องนี้ไม่รับ input ของผู้เล่น แต่ **โลกยังเดินต่อ**
+    /// ใช้ตอน host เปิดเมนู pause ใน multiplayer — หยุด timeScale ไม่ได้เพราะ
+    /// host คือ server ศัตรูทุกตัวจะหยุดตามไปทั้งห้อง</summary>
+    public static bool LocalInputSuspended { get; private set; }
+
+    public static void SuspendLocalInput(bool on) => LocalInputSuspended = on;
+
     public static bool IsPaused => _active.Count > 0;
 
     /// <summary>สถานะปัจจุบัน = เหตุผลที่ priority สูงสุด</summary>
@@ -52,7 +59,7 @@ public static class GamePause
     public static void Remove(PauseReason reason) { _active.Remove(reason); Apply(); }
 
     /// <summary>เคลียร์ทุกเหตุผล — เรียกอัตโนมัติตอนโหลดฉากใหม่</summary>
-    public static void ResetAll() { _active.Clear(); _resumeScale = 1f; Apply(); }
+    public static void ResetAll() { _active.Clear(); _resumeScale = 1f; LocalInputSuspended = false; Apply(); }
 
     static void Apply() => Time.timeScale = _active.Count > 0 ? 0f : _resumeScale;
 
@@ -62,6 +69,7 @@ public static class GamePause
     {
         _active.Clear();
         _resumeScale = 1f;
+        LocalInputSuspended = false;
         Time.timeScale = 1f;
         SceneManager.sceneLoaded -= OnSceneLoaded;
         SceneManager.sceneLoaded += OnSceneLoaded;

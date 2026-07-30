@@ -149,7 +149,7 @@ public class playermove : NetworkBehaviour
 
     void FixedUpdate()
     {
-        if (!IsOwner || rb == null || isDead.Value) return;
+        if (!IsOwner || rb == null || isDead.Value || GamePause.LocalInputSuspended) return;
         if (isDashing || isKnockedBack) return;   // ปล่อยให้ dash หรือ knockback ควบคุม position เอง
 
         Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y);
