@@ -54,7 +54,7 @@ public class LanceWeapon : WeaponBase
         FireLineAoE(origin, dir, dmg, range, pierceWidth, isCrit, kb);
 
         Vector3 vfxPos = origin + dir * (range * 0.5f);
-        ShowVfx(ResolveHitVfx("LanceThrust"), vfxPos, isCrit: isCrit, isAttackHit: false, direction: dir);
+        ShowVfx(ResolveHitVfx("None"), vfxPos, isCrit: isCrit, isAttackHit: false, direction: dir);
     }
 
     System.Collections.IEnumerator MultiThrust(Vector3 origin, Vector3 dir, float dmg, float range, bool isCrit)

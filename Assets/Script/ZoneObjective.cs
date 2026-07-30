@@ -274,6 +274,7 @@ public class ZoneObjective : NetworkBehaviour
         if (!spawnBoostActive) return;
         cachedSpawner?.ClearSpawnBoost();
         spawnBoostActive = false;
+        Debug.Log($"[ZoneObjective] Spawn rate restored (removed boost of +{surviveExtraSpawnsPerTick} spawns/tick)");
     }
 
     // ── Server: Spawn FetchItems ──────────────────────────────────────────
@@ -419,7 +420,7 @@ public class ZoneObjective : NetworkBehaviour
     {
         SetDiscColor(COL_COMPLETE);
         if (discMat != null) discMat.SetFloat(ID_Progress, 1f);
-        VFXFactory.Play("VortexSpawn", transform.position);
+        VFXFactory.Play("None", transform.position);
         AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  ★ORB", Color.green);
     }
 
