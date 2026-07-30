@@ -18,7 +18,7 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
 
 ### P1 — host pause โดยไม่หยุดโลก (T1-T5)
 
-- [ ] T1: `GamePause` เพิ่มสวิตช์ระงับ input เฉพาะเครื่องตัวเอง
+- [x] T1: `GamePause` เพิ่มสวิตช์ระงับ input เฉพาะเครื่องตัวเอง
   - File: `Assets/Script/GamePause.cs` (MODIFY)
   - เพิ่ม:
     ```csharp
@@ -32,7 +32,7 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
   - **`ResetAll()` ต้องเคลียร์ `LocalInputSuspended` ด้วย** ไม่งั้นเปลี่ยนฉากแล้วขยับไม่ได้
   - **ห้ามให้ `LocalInputSuspended` ไปยุ่งกับ `Apply()`** — มันไม่เกี่ยวกับ `timeScale` เลย
 
-- [ ] T2: `PauseMenuUI` แยกทางระหว่าง solo กับ multiplayer
+- [x] T2: `PauseMenuUI` แยกทางระหว่าง solo กับ multiplayer
   - File: `Assets/Script/UI/PauseMenuUI.cs` (MODIFY)
   - `Pause()` — เช็คจำนวนผู้เล่นด้วย `NetworkManager.Singleton.ConnectedClients.Count`
     - **1 คน (solo)**: `GamePause.Add(PauseReason.PauseMenu)` เหมือนเดิม (หยุดโลกได้ ไม่กระทบใคร)
@@ -42,13 +42,13 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
   - **แก้คอมเมนต์ `:23`** ที่เขียนว่า "หยุด local-only" ให้ตรงความจริง
   - **ถ้า `NetworkManager.Singleton` เป็น null (offline test) ให้ถือว่า solo**
 
-- [ ] T3: `playermove` ไม่ขยับตอน input ถูกระงับ
+- [x] T3: `playermove` ไม่ขยับตอน input ถูกระงับ
   - File: `Assets/Script/playermove.cs` (MODIFY)
   - `:152` `if (!IsOwner || rb == null || isDead.Value) return;`
     → เพิ่มเงื่อนไข `|| GamePause.LocalInputSuspended`
   - **ห้ามแตะบรรทัดอื่น** — โดยเฉพาะ `:112` regen ที่รันฝั่ง server ต้องเดินต่อ
 
-- [ ] T4: อาวุธไม่ยิงตอน input ถูกระงับ
+- [x] T4: อาวุธไม่ยิงตอน input ถูกระงับ
   - File: `Assets/Script/Weapon/WeaponBase.cs` (MODIFY)
   - `:92-96` มี gate อยู่แล้ว 3 ชั้น เพิ่มชั้นที่ 4 ต่อจาก `WeaponsEnabledInScene`:
     ```csharp
@@ -62,30 +62,30 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
     `PlayerAbilityManager` (ตรวจแล้ว) น่าจะอยู่ในสคริปต์ ability แต่ละตัว
   - ถ้าเจอจุดร่วมจุดเดียว ให้เติม `if (GamePause.LocalInputSuspended) return;`
   - **ถ้ากระจายเกิน 3 ไฟล์ — หยุด เขียนใต้ `## Questions` พร้อมรายชื่อไฟล์** อย่าไล่แก้เอง
-    เพราะจะเกินขอบเขตรอบนี้
+    เพราะจะเกินขอบเขตรอบนี้ *(ข้ามงานนี้ตามคำสั่ง — รายละเอียดใน ## Questions)*
 
 ### เลขดาเมจปรับได้จาก Inspector (T6-T8)
 
-- [ ] T6: ยกค่าที่ฝังในโค้ดขึ้นมาเป็น field
+- [x] T6: ยกค่าที่ฝังในโค้ดขึ้นมาเป็น field
   - File: `Assets/Script/VFX/FloatingDamageText.cs` (MODIFY)
   - ค่าที่ต้องปรับได้อย่างน้อย: **อายุ · ความเร็วลอยขึ้น · ระยะลอย · ขนาดตัวอักษรปกติ ·
     ขนาดตอนคริต · สีปกติ · สีคริต · ระยะสุ่มแนวนอน**
   - ใส่ `[Header]` + `[Tooltip]` ให้อ่านรู้เรื่อง
   - **ห้ามเปลี่ยนค่า default** — ต้องได้หน้าตาเหมือนที่เทสต์ไปแล้ว เปลี่ยนแค่ที่มาของค่า
 
-- [ ] T7: pool ส่งค่าให้ตัวเลขได้
+- [x] T7: pool ส่งค่าให้ตัวเลขได้
   - File: `Assets/Script/VFX/FloatingDamageTextPool.cs` (MODIFY)
   - ถ้าค่าพวกนั้นต้องตั้งตอน spawn ให้ pool ถือค่ากลางแล้วส่งต่อ
     **หรือ**ให้ `textPrefab` เป็นตัวถือค่า (ถ้า designer assign prefab)
   - **เลือกทางที่แก้น้อยกว่า** แล้วเขียนเหตุผลไว้ใน `## Changed Files`
 
-- [ ] T8: crit ต้องปรับแยกได้จริง
+- [x] T8: crit ต้องปรับแยกได้จริง
   - File: `Assets/Script/VFX/FloatingDamageText.cs` (MODIFY — ไฟล์เดียวกับ T6)
   - ตรวจว่าเปลี่ยนสี/ขนาดคริตใน Inspector แล้วมีผลจริง ไม่ได้ hardcode ทับ
 
 ### ย้าย pool ไปอยู่กับ NetworkedVFXPool (T9-T10)
 
-- [ ] T9: `FloatingDamageTextPool` เลิกสร้าง GameObject เอง
+- [x] T9: `FloatingDamageTextPool` เลิกสร้าง GameObject เอง
   - File: `Assets/Script/VFX/FloatingDamageTextPool.cs` (MODIFY)
   - ตอนนี้ `Instance` getter สร้าง GameObject ใหม่ถ้าไม่เจอ → ทำให้ **pre-allocate 200 ชิ้น
     ตอนศัตรูโดนตีนัดแรก = กระตุก** และผู้ใช้ assign `textPrefab` ไม่ได้
@@ -94,11 +94,11 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
   - **ห้ามลบ guard ที่ใช้ `_instance` ตรงๆ ใน `Awake`/`OnDestroy`** — มันกัน stack overflow
     ที่เกิดจาก getter เรียกตัวเอง **อ่านคอมเมนต์ในไฟล์ก่อนแก้**
 
-- [ ] T10: ผู้ใช้เอา component ไปแปะบน `NetworkedVFXPool` เอง
+- [x] T10: ผู้ใช้เอา component ไปแปะบน `NetworkedVFXPool` เอง
   - **ไม่มีโค้ดต้องแก้** — เป็น Manual Step แต่ต้องแน่ใจว่า T9 ทำให้แปะแล้วใช้งานได้จริง
   - Expected: วาง `FloatingDamageTextPool` บน GameObject เดียวกับ `NetworkedVFXPool` แล้วทำงาน
 
-- [ ] T11: ตรวจปิดงาน — **ไม่แก้ไฟล์**
+- [x] T11: ตรวจปิดงาน — **ไม่แก้ไฟล์**
   - grep `LocalInputSuspended` — ต้องมีใน `GamePause` · `PauseMenuUI` · `playermove` · `WeaponBase`
   - grep `Time.timeScale` — ยังต้องเจอเฉพาะใน `GamePause.cs`
   - grep `new GameObject("FloatingDamageTextPool")` — **ต้องไม่เหลือ**
@@ -124,6 +124,17 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
 - ห้ามเพิ่มโค้ด "กันไว้ก่อน" ที่แผนไม่ได้สั่ง · ห้ามเขียนทับ asset ตอน runtime
 - ห้ามรัน shell / build / unity-check
 
+## Questions
+
+- **T5 Ability input check**: จากการตรวจค้นโค้ดพบว่า ability แยกอ่าน input (`Keyboard.current`) กระจายอยู่ใน 6 ไฟล์ subclass ของ `AbilityBase`:
+  1. `Assets/Script/Weapon/ValorWeapon.cs` (line 66)
+  2. `Assets/Script/Weapon/hero/BladeOfExileWeapon.cs` (line 76)
+  3. `Assets/Script/Weapon/hero/GunnerGiantRocket.cs` (line 50)
+  4. `Assets/Script/Weapon/hero/GunnerRocketMode.cs` (line 63)
+  5. `Assets/Script/Weapon/hero/HunterMissileAbility.cs` (line 53)
+  6. `Assets/Script/Weapon/hero/HunterUltimate.cs` (line 65)
+  เนื่องจากเกิน 3 ไฟล์ตามเงื่อนไข T5 จึงหยุดและยังไม่ได้แก้ไขทั้ง 6 ไฟล์นี้ เพื่อรอคำสั่งเพิ่มเติมจาก Architect/ผู้ใช้
+
 ## Manual Steps (ผู้ใช้ทำเองใน Unity Editor)
 
 1. **T10** — ลาก `FloatingDamageTextPool` ไปแปะบน GameObject เดียวกับ `NetworkedVFXPool`
@@ -132,3 +143,13 @@ simulation ทั้งเกมก็หยุด · คอมเมนต์ [
    host เองต้องขยับไม่ได้ ยิงไม่ได้ ← นี่คือข้อสำคัญที่สุดของรอบ
 3. **เทสต์ solo** — กด ESC → หยุดหมดเหมือนเดิม (ไม่ควรเปลี่ยน)
 4. **ปรับเลขดาเมจใน Inspector** — เปลี่ยนสีคริตแล้วต้องเห็นผลทันทีที่เล่นใหม่
+
+## Changed Files
+
+- `Assets/Script/GamePause.cs`: Added `LocalInputSuspended` property and `SuspendLocalInput(bool on)` method without touching `timeScale`. Ensured `ResetAll()` and `Init()` clear `LocalInputSuspended`.
+- `Assets/Script/UI/PauseMenuUI.cs`: Differentiated between solo (uses `GamePause.Add(PauseReason.PauseMenu)`) and multiplayer (uses `GamePause.SuspendLocalInput(true)`). Restored input suspension state in `Resume()` and `OnDisable()`.
+- `Assets/Script/playermove.cs`: Added `|| GamePause.LocalInputSuspended` gate to line 152 in `FixedUpdate` to stop owner movement when paused without touching server regen.
+- `Assets/Script/Weapon/WeaponBase.cs`: Added `if (GamePause.LocalInputSuspended) return;` gate in `Update()` to prevent weapon auto-firing when paused.
+- `Assets/Script/VFX/FloatingDamageText.cs`: Exposed duration, floatSpeed, normal/crit font sizes, normal/crit colors, and randomHorizontalOffset to Inspector with `[Header]` and `[Tooltip]`. Retained default values.
+- `Assets/Script/VFX/FloatingDamageTextPool.cs`: Updated `Instance` getter to use `FindAnyObjectByType<FloatingDamageTextPool>()` and return null if missing instead of spawning a new GameObject. Kept existing settings on component/prefab directly for minimal change footprint.
+
