@@ -107,3 +107,33 @@ When invoked:
 - ❌ Don't update on non-owner clients — base class handles `IsOwner` check but custom Update must too
 - ✅ Always call `PlayFireSfx()` / `PlayHitSfx(pos)` for audio (centralized via SoundManager)
 - ✅ Use `RollDamage(dmg, out isCrit)` overload when you need crit flag for VFX
+
+### Hard rules earned the expensive way
+
+**Never add a ServerRpc that takes `damage` as a parameter.** ~25 already exist and every one is
+scheduled for demolition when the server takes ownership of progression. If a value must cross,
+send the **weapon name + level** and let the server look it up. Adding a new one today is work
+someone has to undo.
+
+**Never discard the crit flag.** `RollDamage(ld.damage, out bool _)` multiplies the damage and
+throws away the fact that it crit, so the player sees a normal hit for a critical. Pass `isCrit`
+all the way to `EnemyTakeDamage(damage, isCrit)`. Four sites did this; two were one-line fixes and
+two needed the flag plumbed through a projectile that had no field for it.
+
+**Never fire `HitEffect` / `CritHitEffect` yourself.** `Enemy.NotifyHitClientRpc` already does, on
+every client. A weapon that also fires one draws two layers — and `ValorWeapon` fired it at the
+*player's* position, so a dash that hit nothing still flashed. When calling a chain/beam RPC, pass
+`hitVfx: "None"`.
+
+**Every VFX key string must exist in `VFXDatabase`.** Four fallbacks (`LanceThrust`,
+`SlashAoE360`, `VortexSpawn`, `OrbiterHit`) named keys that were never in the asset: a prefab that
+left `weaponVfxType` unset logged a lookup warning and drew nothing. `"None"` is the correct
+"draw nothing" value — the pool returns from it silently.
+
+**Gate on `GamePause.LocalInputSuspended`** if the weapon reads input itself. `WeaponBase`'s
+auto-fire loop already checks it, so a normal weapon inherits it for free; an ability subclass
+that reads `Keyboard.current` in its own `Update` needs the check added next to its
+`IsOnCooldown` guard. Without it the host keeps firing while its pause menu is open.
+
+**A `NetworkObject` on a VFX prefab is a bug.** VFX here is local and pooled. An unspawned
+`NetworkObject` makes NGO log an error every time the pool re-parents the object on return.
