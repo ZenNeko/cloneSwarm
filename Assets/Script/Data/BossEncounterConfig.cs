@@ -31,6 +31,14 @@ public class BonusDrop
 [CreateAssetMenu(fileName = "BossEncounterConfig", menuName = "Game/BossEncounterConfig")]
 public class BossEncounterConfig : ScriptableObject
 {
+    [Header("Arena")]
+    [Tooltip("สนามของ encounter นี้ — ว่าง = ใช้ค่า default")]
+    public ArenaDefinition arena;
+
+    [Header("Roll Definitions")]
+    [Tooltip("ค่าสุ่มที่ตั้งชื่อไว้ — คลิปอ้างด้วย rollName")]
+    public RollDefinition[] rolls;
+
     [Header("Phases Configuration")]
     [Tooltip("ใส่ Phase ตามลำดับ (Mini Boss ใส่ 1 อัน, Main Boss ใส่ตามต้องการ)")]
     public List<BossPhase> phases = new List<BossPhase>();

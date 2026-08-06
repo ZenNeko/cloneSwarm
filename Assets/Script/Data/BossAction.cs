@@ -10,6 +10,11 @@ public abstract class BossAction : ScriptableObject
     [Header("Modular Action Settings")]
     [Tooltip("วินาทีที่หน่วงก่อนจะเริ่มทำท่านี้")]
     public float actionDelay = 0f;
+    [Header("Cast bar")]
+    [Tooltip("ชื่อท่าที่โชว์บน cast bar — ว่าง = ไม่โชว์ cast bar")]
+    public string castName = "";
+    [Tooltip("วินาทีที่ cast bar วิ่ง — 0 = ไม่โชว์")]
+    public float castTime = 0f;
     [Tooltip("วินาทีที่เป็น Cooldown ล็อคการกระทำถัดไปหลังทำท่านี้เสร็จ")]
     public float cooldownAfter = 0f;
 
@@ -25,10 +30,10 @@ public abstract class BossAction : ScriptableObject
     protected static int s_editorDurationDepth;
 
     /// <summary>
-    /// ประมาณความยาวรวมของท่านี้เป็นวินาที (รวม actionDelay) — ใช้วาดความยาวคลิปใน Boss Designer
+    /// ประมาณความยาวรวมของท่านี้เป็นวินาที (รวม actionDelay และ castTime) — ใช้วาดความยาวคลิปใน Boss Designer
     /// ไม่มีผลต่อ gameplay
     /// </summary>
-    public virtual float GetEditorDuration() => actionDelay + 1f;
+    public virtual float GetEditorDuration() => actionDelay + castTime + 1f;
 
     // Helper: ค้นหาผู้เล่นที่อยู่ใกล้ที่สุด
     protected Transform FindNearestPlayer(Vector3 origin)
