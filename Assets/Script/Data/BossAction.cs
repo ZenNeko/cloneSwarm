@@ -16,7 +16,7 @@ public abstract class BossAction : ScriptableObject
     /// <summary>
     /// ทำการรัน Action แบบ Coroutine บน Server
     /// </summary>
-    /// <param name="runner">ตัวเรียกใช้งาน (เช่น MiniBossAI หรือ MainBoss)</param>
+    /// <param name="runner">ตัวเรียกใช้งาน (BossController บน prefab บอส)</param>
     /// <param name="telegraphPrefab">TelegraphZone prefab</param>
     public abstract IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab);
 

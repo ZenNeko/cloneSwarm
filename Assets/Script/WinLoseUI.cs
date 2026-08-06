@@ -31,6 +31,10 @@ public class WinLoseUI : MonoBehaviour
     public TextMeshProUGUI levelLabel;     // "Level: 8"
     public TextMeshProUGUI waveLabel;      // "Wave:  12"
 
+    [Header("Meta Reward")]
+    public TextMeshProUGUI goldEarnedLabel;  // "+ 1,240 G"
+    public TextMeshProUGUI goldTotalLabel;   // "รวม 8,430 G"
+
     [Header("Button")]
     public Button returnButton;
 
@@ -59,12 +63,35 @@ public class WinLoseUI : MonoBehaviour
     {
         GameTimeline.OnGameWon  += OnWin;
         GameTimeline.OnGameLost += OnLose;
+        CloneSwarm.Meta.RunRewardTracker.OnRewardGranted += OnRewardGranted;
     }
 
     void OnDisable()
     {
         GameTimeline.OnGameWon  -= OnWin;
         GameTimeline.OnGameLost -= OnLose;
+        CloneSwarm.Meta.RunRewardTracker.OnRewardGranted -= OnRewardGranted;
+    }
+
+    /// <summary>
+    /// RunRewardTracker จ่ายทองมาแล้ว — อาจมาถึงก่อนหรือหลัง panel แสดง
+    /// จึงเก็บค่าไว้แล้วเขียนทับทั้งสองทาง
+    /// </summary>
+    void OnRewardGranted(int goldEarned, int goldTotal)
+    {
+        pendingGoldEarned = goldEarned;
+        pendingGoldTotal  = goldTotal;
+        RefreshGoldLabels();
+    }
+
+    int pendingGoldEarned = -1;
+    int pendingGoldTotal;
+
+    void RefreshGoldLabels()
+    {
+        if (pendingGoldEarned < 0) return;
+        if (goldEarnedLabel) goldEarnedLabel.text = $"+ {pendingGoldEarned:N0} G";
+        if (goldTotalLabel)  goldTotalLabel.text  = $"รวม {pendingGoldTotal:N0} G";
     }
 
     // ── Event Handlers ────────────────────────────────────────────────────
@@ -100,6 +127,10 @@ public class WinLoseUI : MonoBehaviour
         if (timeLabel)  timeLabel.text  = $"Time    {time}";
         if (levelLabel) levelLabel.text = $"Level   {level}";
         if (waveLabel)  waveLabel.text  = $"Wave    {wave}";
+
+        // รางวัลอาจมาถึงก่อน panel แสดง — เขียนค่าที่ค้างไว้ตรงนี้
+        if (goldEarnedLabel && pendingGoldEarned < 0) goldEarnedLabel.text = "...";
+        RefreshGoldLabels();
 
         // Fade in
         if (panelRoot) panelRoot.SetActive(true);

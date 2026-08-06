@@ -11,10 +11,10 @@ public class BossManager : NetworkBehaviour
     public static BossManager Instance { get; private set; }
 
     [Header("Prefabs")]
-    [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + MainBoss.cs (attacks)")]
+    [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + BossController.cs (attacks)")]
     public GameObject mainBossPrefab;
     [Tooltip("Mini Boss prefabs — สุ่มเลือก 1 ตัวต่อครั้งที่ spawn\n" +
-             "ใส่ได้หลายตัว (แต่ละตัวต้องมี MiniBossAI.cs + MiniBossConfig)")]
+             "ใส่ได้หลายตัว (แต่ละตัวต้องมี BossController.cs + BossEncounterConfig)")]
     public GameObject[] miniBossPrefabs = new GameObject[0];
 
     [Header("Mini Boss Scaling")]

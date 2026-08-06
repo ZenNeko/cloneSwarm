@@ -25,7 +25,13 @@ public class ObjectiveManager : NetworkBehaviour
     [Tooltip("ไม่ spawn delivery zone ที่ใกล้ผู้เล่นน้อยกว่านี้")]
     public float minSpawnDistance = 10f;
 
-    [Tooltip("FetchAndDeliver: item ต้องห่างจาก delivery zone อย่างน้อยเท่านี้")]
+    [Header("Fetch Item Placement")]
+    [Tooltip("ปิด (แนะนำ) = ZoneObjective สุ่มตำแหน่ง item สดรอบโซนเองทุกครั้ง\n" +
+             "เปิด = ล็อกให้ item ไปโผล่เฉพาะจุดใน ZoneObjectiveLocation ด้านบน\n" +
+             "(จุดในซีนมีจำกัด → ตำแหน่งซ้ำทุกรอบ และรองรับ item ได้ไม่กี่ชิ้น)")]
+    public bool useFixedItemLocations = false;
+
+    [Tooltip("ใช้เฉพาะตอนเปิด useFixedItemLocations — item ต้องห่างจาก delivery zone อย่างน้อยเท่านี้")]
     public float minItemDistanceFromZone = 8f;
 
     public override void OnNetworkSpawn()
@@ -65,17 +71,22 @@ public class ObjectiveManager : NetworkBehaviour
             return;
         }
 
-        // ── Step 3: ถ้ามี FetchAndDeliver ใน availableQuests → pick item locations ──
-        // (Zone จะใช้แค่ตอน quest นั้นถูกสุ่มเลือกใน Phase 2; pick ไว้ก่อนกัน race)
+        // ── Step 3: item locations ───────────────────────────────────────
+        // ปกติปล่อยว่าง → ZoneObjective สุ่มตำแหน่งสดตอน quest เริ่มจริง
+        // เติมให้เฉพาะตอนสั่ง lock ไว้ที่จุดในซีน
         bool mayNeedItems = zone.availableQuests != null
                          && zone.availableQuests.Contains(ZoneObjective.QuestType.FetchAndDeliver);
-        if (mayNeedItems)
+        if (useFixedItemLocations && mayNeedItems)
         {
             var itemPositions = PickItemLocations(deliveryPos, zone.requiredDeliveryCount);
             zone.itemSpawnPositions = itemPositions;
 
             if (itemPositions.Count < zone.requiredDeliveryCount)
                 Debug.LogWarning($"[ObjectiveManager] เลือก item locations ได้แค่ {itemPositions.Count}/{zone.requiredDeliveryCount}");
+        }
+        else
+        {
+            zone.itemSpawnPositions.Clear();
         }
 
         // ── Step 4: Spawn (NetworkObject) → OnNetworkSpawn ของ zone ทำงาน ──

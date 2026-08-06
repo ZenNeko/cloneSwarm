@@ -19,12 +19,45 @@ MonoBehaviour:
   prefab: {fileID: 5574001284699110152, guid: 4762c04d449741a48a89fd65620d6aaf, type: 3}
   aimMode: 3
   levels:
-  - damage: 20
-    cooldown: 1
-    projectileCount: 3
+  - damage: 40
+    cooldown: 3
+    projectileCount: 2
     range: 20
     projectileSpeed: 12
     radius: 2
+    duration: 0
+    piercing: 0
+  - damage: 55
+    cooldown: 2.8
+    projectileCount: 3
+    range: 20
+    projectileSpeed: 12
+    radius: 2.2
+    duration: 0
+    piercing: 0
+  - damage: 70
+    cooldown: 2.6
+    projectileCount: 3
+    range: 20
+    projectileSpeed: 12
+    radius: 2.4
+    duration: 0
+    piercing: 0
+  - damage: 85
+    cooldown: 2.4
+    projectileCount: 4
+    range: 20
+    projectileSpeed: 12
+    radius: 2.6
+    duration: 0
+    piercing: 0
+  - damage: 100
+    cooldown: 2.4
+    projectileCount: 4
+    range: 20
+    projectileSpeed: 12
+    radius: 2.8
+    duration: 0
     piercing: 0
   superVersion: {fileID: 11400000, guid: a3f5b2cc37444f340bb76a6bf9044e37, type: 2}
   superConditions:

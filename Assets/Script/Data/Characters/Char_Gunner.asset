@@ -18,6 +18,8 @@ MonoBehaviour:
   icon: {fileID: 0}
   baseHealth: 100
   baseMoveSpeed: 5
+  unlockedByDefault: 0
+  unlockCost: 100
   characterModelPrefab: {fileID: 3794016916180676343, guid: 2dd75623f577fd7469000d418cb7bf2d, type: 3}
   startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
   passiveWeapons:
@@ -27,6 +29,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4f14fe56702ce994c921a1edabb31c36, type: 2}
   passiveIcon: {fileID: 0}
   passiveName: 
-  passiveDescription: "\u0E17\u0E38\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E06\u0E48\u0E32\u0E04\u0E23\u0E1A
-    30 enemy \u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A MOVE SPPED 50% \u0E41\u0E25\u0E30
-    AbilityHaste 50 \u0E40\u0E1B\u0E47\u0E19\u0E40\u0E27\u0E25\u0E32 10 \u0E27\u0E34"
+  passiveDescription: "\u0E17\u0E38\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E06\u0E48\u0E32\u0E04\u0E23\u0E1A 30 enemy \u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A MOVE SPPED 50% \u0E41\u0E25\u0E30 AbilityHaste 50 \u0E40\u0E1B\u0E47\u0E19\u0E40\u0E27\u0E25\u0E32 10 \u0E27\u0E34"

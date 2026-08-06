@@ -190,6 +190,17 @@ public class playermove : NetworkBehaviour
 
     void Die()
     {
+        // ── Second Chance (Talent ถาวร) — ชุบชีวิตทันที 1 ครั้งต่อเกม ─────
+        var talents = GetComponent<CloneSwarm.Meta.PlayerTalentApplier>();
+        if (talents != null && talents.SecondChanceAvailable)
+        {
+            talents.ConsumeSecondChance();
+            netHealth.Value = maxHealth * 0.3f;
+            SecondChanceClientRpc();
+            Debug.Log($"[Player] 💫 Second Chance! ชุบชีวิตที่ HP={netHealth.Value:F0}");
+            return;
+        }
+
         isDead.Value           = true;
         respawnCountdown.Value = 0f;
 
@@ -205,6 +216,20 @@ public class playermove : NetworkBehaviour
         if (anyoneAlive)
             StartCoroutine(RespawnCoroutine());
         // ถ้าไม่มีใครรอด → GameTimeline.CheckLoseCondition จะจัดการ
+    }
+
+    /// <summary>ยิงบนทุก client เมื่อผู้เล่นคนนี้ใช้ Second Chance — UI/VFX subscribe ได้</summary>
+    public static event System.Action<playermove> OnSecondChanceUsed;
+
+    [ClientRpc]
+    void SecondChanceClientRpc()
+    {
+        OnSecondChanceUsed?.Invoke(this);
+        if (IsOwner)
+        {
+            DamageFeedbackUI.Instance?.ShowFlash(1f);
+            CameraShake.Instance?.Shake(0.4f, 0.5f);
+        }
     }
 
     IEnumerator RespawnCoroutine()

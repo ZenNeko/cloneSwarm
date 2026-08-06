@@ -20,9 +20,18 @@ public class CharacterCardUI : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI weaponText;
 
+    [Header("Lock Overlay (auto-find: child ชื่อ LockOverlay / LockCostText)")]
+    [Tooltip("แผ่นทึบ + ไอคอนกุญแจ ที่คลุมการ์ดตอนยังไม่ปลดล็อก")]
+    public GameObject      lockOverlay;
+    [Tooltip("ข้อความราคาบน overlay เช่น \"1,000 G\"")]
+    public TextMeshProUGUI lockCostText;
+    [Tooltip("สีไอคอนตอนล็อก — ทำให้เป็นเงาดำ")]
+    public Color           lockedIconTint = new Color(0.12f, 0.12f, 0.14f, 1f);
+
     private Color selectedColor = new Color(0.3f, 0.7f, 1f);
     private Color normalColor   = new Color(0.2f, 0.2f, 0.25f, 1f);
     private bool  isSelected;
+    private bool  isLocked;
 
     // ── Init ──────────────────────────────────────────────────────────────
     void Awake()
@@ -32,6 +41,10 @@ public class CharacterCardUI : MonoBehaviour
         if (iconImage == null) iconImage = transform.Find("Icon")?.GetComponent<Image>();
         if (nameText  == null) nameText  = transform.Find("NameText")?.GetComponent<TextMeshProUGUI>();
         if (weaponText == null) weaponText = transform.Find("WeaponText")?.GetComponent<TextMeshProUGUI>();
+        if (lockOverlay == null) lockOverlay = transform.Find("LockOverlay")?.gameObject;
+        if (lockCostText == null)
+            lockCostText = transform.Find("LockCostText")?.GetComponent<TextMeshProUGUI>()
+                        ?? lockOverlay?.GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
     // ── Setup ─────────────────────────────────────────────────────────────
@@ -56,6 +69,7 @@ public class CharacterCardUI : MonoBehaviour
             iconImage.enabled = spr != null;
         }
 
+        SetLocked(!CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(cd), cd.unlockCost);
         SetSelected(false);
     }
 
@@ -65,4 +79,19 @@ public class CharacterCardUI : MonoBehaviour
         if (bgImage != null)
             bgImage.color = on ? selectedColor : normalColor;
     }
+
+    /// <summary>แสดง/ซ่อน overlay ล็อก + ราคา</summary>
+    public void SetLocked(bool locked, int cost)
+    {
+        isLocked = locked;
+
+        if (lockOverlay  != null) lockOverlay.SetActive(locked);
+        if (lockCostText != null) lockCostText.text = locked ? $"{cost:N0} G" : "";
+
+        // ถ้าไม่มี overlay prefab ก็ยังเห็นความต่างได้จากไอคอนที่มืดลง
+        if (iconImage != null)
+            iconImage.color = locked ? lockedIconTint : Color.white;
+    }
+
+    public bool IsLocked => isLocked;
 }

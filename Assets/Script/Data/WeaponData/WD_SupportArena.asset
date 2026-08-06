@@ -28,35 +28,35 @@ MonoBehaviour:
     duration: 8
     piercing: 0
   - damage: 20
-    cooldown: 1
+    cooldown: 10
     projectileCount: 1
     range: 20
     projectileSpeed: 12
-    radius: 2.8
+    radius: 20
     duration: 0
     piercing: 0
   - damage: 20
-    cooldown: 1
+    cooldown: 10
     projectileCount: 1
-    range: 8
+    range: 20
     projectileSpeed: 12
-    radius: 3.1
+    radius: 20
     duration: 0
     piercing: 0
   - damage: 20
-    cooldown: 1
+    cooldown: 10
     projectileCount: 1
-    range: 8
+    range: 20
     projectileSpeed: 12
-    radius: 3.4
+    radius: 20
     duration: 0
     piercing: 0
   - damage: 20
-    cooldown: 1
+    cooldown: 10
     projectileCount: 1
-    range: 8
+    range: 20
     projectileSpeed: 12
-    radius: 3.8
+    radius: 20
     duration: 0
     piercing: 0
   superVersion: {fileID: 11400000, guid: 2b5bf41d9968ab0488da6c39237ae1db, type: 2}

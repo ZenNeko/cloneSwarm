@@ -25,6 +25,8 @@ public class MenuManager : MonoBehaviour
     public GameObject onlinePanel;
     public GameObject settingsPanel;
     public GameObject loadingPanel;
+    [Tooltip("ร้านอัปเกรดถาวร — มี TalentShopUI อยู่บนนี้")]
+    public GameObject talentShopPanel;
 
     // ═══════════════════════════════════════════════════════════════════════
     // MAIN PANEL
@@ -34,6 +36,10 @@ public class MenuManager : MonoBehaviour
     public Button          onlineButton;
     public Button          settingsButton;
     public Button          quitButton;
+    [Tooltip("เปิดร้าน Talent Shop")]
+    public Button          talentShopButton;
+    [Tooltip("ยอดทองที่โชว์บนหน้า Main — ปล่อยว่างได้")]
+    public TextMeshProUGUI goldText;
     [Tooltip("ข้อความ version ล่างจอ เช่น v0.1.0-alpha")]
     public TextMeshProUGUI versionText;
 
@@ -86,6 +92,12 @@ public class MenuManager : MonoBehaviour
         if (onlineButton)   onlineButton.onClick.AddListener(OnOnlineClicked);
         if (settingsButton) settingsButton.onClick.AddListener(OnSettingsClicked);
         if (quitButton)     quitButton.onClick.AddListener(OnQuitClicked);
+        if (talentShopButton) talentShopButton.onClick.AddListener(OnTalentShopClicked);
+
+        // Talent Shop — TalentShopUI ยิง OnBack เมื่อกดปุ่ม Back
+        CloneSwarm.Meta.TalentShopUI.OnBack       += ShowMain;
+        CloneSwarm.Meta.MetaProgression.OnGoldChanged += HandleGoldChanged;
+        RefreshGold();
 
         // CharSelect back
         if (charSelectBackButton) charSelectBackButton.onClick.AddListener(ShowMain);
@@ -106,6 +118,16 @@ public class MenuManager : MonoBehaviour
     {
         CharacterSelectUI.OnCharacterConfirmed -= OnCharacterConfirmed;
         SettingsMenuUI.OnBack                  -= ShowMain;
+        CloneSwarm.Meta.TalentShopUI.OnBack           -= ShowMain;
+        CloneSwarm.Meta.MetaProgression.OnGoldChanged -= HandleGoldChanged;
+    }
+
+    void HandleGoldChanged(int _) => RefreshGold();
+
+    void RefreshGold()
+    {
+        if (goldText != null)
+            goldText.text = $"{CloneSwarm.Meta.MetaProgression.Gold:N0} G";
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -124,6 +146,7 @@ public class MenuManager : MonoBehaviour
         onlinePanel?.SetActive(false);
         settingsPanel?.SetActive(false);
         loadingPanel?.SetActive(false);
+        talentShopPanel?.SetActive(false);
         target?.SetActive(true);
     }
 
@@ -142,7 +165,9 @@ public class MenuManager : MonoBehaviour
         ShowPanel(charSelectPanel);
     }
 
-    void OnSettingsClicked() => ShowPanel(settingsPanel);
+    void OnSettingsClicked()   => ShowPanel(settingsPanel);
+
+    void OnTalentShopClicked() => ShowPanel(talentShopPanel);
 
     /// <summary>
     /// Back ออกจาก Online panel — leave session ก่อน (ถ้ามี) แล้ว navigate กลับ

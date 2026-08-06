@@ -67,6 +67,14 @@ public class CharacterSelectUI : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Buttons ─────────────────────────────")]
     public Button confirmButton;
+    [Tooltip("Text บนปุ่ม Confirm — สลับเป็น \"ปลดล็อก 1,000 G\" เมื่อเลือกตัวที่ยังล็อก")]
+    public TextMeshProUGUI confirmButtonLabel;
+    [Tooltip("ข้อความบอกสถานะ เช่น \"ทองไม่พอ\" — ปล่อยว่างได้")]
+    public TextMeshProUGUI lockStatusText;
+
+    [Header("── Gold ────────────────────────────────")]
+    [Tooltip("ยอดทองปัจจุบัน — ปล่อยว่างได้")]
+    public TextMeshProUGUI goldText;
 
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Card Colors ─────────────────────────")]
@@ -80,15 +88,28 @@ public class CharacterSelectUI : MonoBehaviour
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
     {
-        if (characters.Count > 0 && SelectedCharacter == null)
-            SelectedCharacter = characters[0];
+        if (SelectedCharacter == null)
+            SelectedCharacter = FirstUnlocked();
     }
 
     void Start()
     {
         BuildCards();
         if (confirmButton) confirmButton.onClick.AddListener(OnConfirm);
-        SelectCharacter(SelectedCharacter ?? (characters.Count > 0 ? characters[0] : null));
+
+        var start = SelectedCharacter;
+        if (start == null || !CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(start))
+            start = FirstUnlocked() ?? (characters.Count > 0 ? characters[0] : null);
+
+        SelectCharacter(start);
+    }
+
+    /// <summary>ตัวละครตัวแรกที่ปลดล็อกแล้ว — null ถ้าไม่มีเลย (ควรมีอย่างน้อย 1 ตัว unlockedByDefault)</summary>
+    CharacterData FirstUnlocked()
+    {
+        foreach (var cd in characters)
+            if (cd != null && CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(cd)) return cd;
+        return null;
     }
 
     // ── Build Cards ───────────────────────────────────────────────────────
@@ -149,14 +170,67 @@ public class CharacterSelectUI : MonoBehaviour
         selected = cd;
         RefreshDetail();
         RefreshCardHighlights();
+        RefreshLockState();
     }
 
+    /// <summary>
+    /// ปุ่ม Confirm ทำ 2 หน้าที่:
+    ///   ตัวปลดล็อกแล้ว → ยืนยันเลือกตัวละคร (เข้าเกม)
+    ///   ตัวยังล็อก     → ซื้อด้วยทอง แล้วค่อยกดยืนยันอีกที
+    /// </summary>
     void OnConfirm()
     {
         if (selected == null) return;
+
+        if (!CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(selected))
+        {
+            if (CloneSwarm.Meta.MetaProgression.TryUnlockCharacter(selected))
+            {
+                RefreshCardLocks();
+                RefreshLockState();
+            }
+            else if (lockStatusText != null)
+            {
+                lockStatusText.text = $"ทองไม่พอ — ต้องการ {selected.unlockCost:N0} G";
+            }
+            return;   // ปลดล็อกแล้วยังไม่เข้าเกม ให้กดยืนยันอีกครั้ง
+        }
+
         SelectedCharacter = selected;
         OnCharacterConfirmed?.Invoke(selected);
         Debug.Log($"[CharSelect] ✅ {selected.characterName}");
+    }
+
+    // ── Lock / Gold display ───────────────────────────────────────────────
+    void RefreshLockState()
+    {
+        if (goldText != null)
+            goldText.text = $"{CloneSwarm.Meta.MetaProgression.Gold:N0} G";
+
+        if (selected == null) return;
+
+        bool unlocked = CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(selected);
+
+        if (confirmButtonLabel != null)
+            confirmButtonLabel.text = unlocked ? "CONFIRM" : $"ปลดล็อก {selected.unlockCost:N0} G";
+
+        if (confirmButton != null)
+            confirmButton.interactable =
+                unlocked || CloneSwarm.Meta.MetaProgression.CanUnlockCharacter(selected);
+
+        if (lockStatusText != null)
+            lockStatusText.text = unlocked ? "" : selected.description;
+    }
+
+    void RefreshCardLocks()
+    {
+        for (int i = 0; i < spawnedCards.Count && i < characters.Count; i++)
+        {
+            var cd = characters[i];
+            if (cd == null || spawnedCards[i] == null) continue;
+            spawnedCards[i].SetLocked(
+                !CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(cd), cd.unlockCost);
+        }
     }
 
     // ── Refresh Detail Panel ──────────────────────────────────────────────

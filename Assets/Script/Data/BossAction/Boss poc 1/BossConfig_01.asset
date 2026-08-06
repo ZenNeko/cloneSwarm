@@ -60,6 +60,9 @@ MonoBehaviour:
     invincibilityDuration: 1.5
     attackInterval: 2
     cameraShakeMagnitude: 0.4
+    announcementText: "PHASE 2 — ENRAGE"
+    announcementColor: {r: 1, g: 0.5, b: 0, a: 1}
+    phaseVfxName: PhaseShockwave
     actions:
     - {fileID: -7391095579135333687}
     enrageTime: -1
@@ -68,6 +71,9 @@ MonoBehaviour:
     invincibilityDuration: 1.5
     attackInterval: 1
     cameraShakeMagnitude: 0.4
+    announcementText: "PHASE 3 — FINAL FORM"
+    announcementColor: {r: 1, g: 0, b: 0, a: 1}
+    phaseVfxName: PhaseShockwave
     actions:
     - {fileID: 3106902516592259519}
     enrageTime: -1

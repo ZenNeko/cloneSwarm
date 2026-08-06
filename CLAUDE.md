@@ -52,7 +52,7 @@ Game content lives in `Assets/Script/Data/` and `Assets/ScriptableObjects/`. Cod
 - **AbilityData** (`Assets/Script/Data/AbilityData/`) — Q/E slot, prefab, levels
 - **CharacterData** — hero definition (starting weapon, passive, abilities)
 - **StatData** — player stat definitions
-- **MiniBossConfig** — list of `Mechanic` (CircleLine, Tether, Chase) + tunables + drop tables
+- **BossEncounterConfig** — list of `BossPhase` (HP threshold, invincibility, enrage timer, `BossAction` list) + attack timing + drop tables. `MiniBossConfig` is a legacy empty alias of it
 - **WaveConfig** — enemy composition per wave segment
 - **WeaponFusionRecipe** — Super A + Super B → Fusion weapon
 
@@ -79,8 +79,9 @@ All gameplay audio goes through `SoundManager.Instance.PlaySfx*`, `PlayRandomSfx
 ### Boss & objective systems
 
 - `GameTimeline` (singleton) — owns game clock; configurable start time + interval per system (objective, mini-boss, main-boss thresholds)
-- `MainBoss` — 3-phase AI (60% / 30% HP thresholds), Phase 3 uses anti-repeat cooldown queue across 7 AoE types. Fires static `OnAnyBossSpawned` / `OnAnyBossDespawned` on **all clients** (before `IsServer` check) so HUD can subscribe.
-- `MiniBossAI` — data-driven via `MiniBossConfig.mechanics` list (CircleLine, Tether, Chase, mix as desired). Fires `OnAnyMiniBossSpawned` / `OnAnyMiniBossDefeated` static events.
+- `BossController` — **the component every boss uses** (main and mini alike). Data-driven by `BossEncounterConfig`: phases by HP threshold, per-phase action list + enrage list, `AttackLoop` runs `BossAction.ExecuteCoroutine` on the server. Fires static `OnAnyBossSpawned` / `OnAnyBossDespawned` on **all clients** (before `IsServer` check) so HUD can subscribe. Put it on the prefab directly — subclass only for boss-specific presentation.
+- `BossAction` (ScriptableObject) — one modular attack. Subclasses in `Assets/Script/Data/`: `CircleAoEAction`, `LineAoEAction`, `CrossAoEAction`, `DonutAoEAction`, `ColorMatchAoEAction`, `TetherAction`, `RandomAttackAction`, `ComboAction`, `BossTimelineAction`.
+- Phase presentation (announcement text/color + phase VFX + camera shake) is data on `BossPhase` — there are no per-boss subclasses anymore (`MainBoss`/`MiniBossAI` were deleted 2026-07).
 - `BossManager` — picks random mini-boss prefab from `miniBossPrefabs[]`
 - `ZoneObjective` — 2-phase quest: Phase 1 activation timer, Phase 2 random quest (`FetchAndDeliver` or `Survive`). `FetchItem` is the pickup; player carries via `playermove.carriedQuestItems` NetworkVariable.
 - `ObjectiveManager` — picks delivery + item spawn positions
@@ -100,7 +101,7 @@ When writing or reviewing code:
 3. **SFX**: `SoundManager.Instance.PlaySfx*` / `PlayRandomSfx(clips, ...)`, never raw `AudioSource.PlayClipAtPoint`
 4. **Boss spawn events**: fire static events at the **top** of `OnNetworkSpawn` (before `IsServer` early-return) so all clients can subscribe for HUD
 5. **Static event subscriptions**: subscribe in `OnEnable`, unsubscribe in `OnDisable` (HUDs survive scene reloads — leaks compound)
-6. **Phase transitions**: use `Enemy.serverInvincible` flag to skip damage during boss phase changes (already wired in `MainBoss.PhaseTransitionInvincibility`)
+6. **Phase transitions**: use `Enemy.serverInvincible` flag to skip damage during boss phase changes (already wired in `BossController.PhaseTransitionInvincibility`)
 7. **New networked prefabs**: must be added to `Assets/DefaultNetworkPrefabs.asset` or NGO will refuse to spawn them
 8. **Audio defaults**: only the SoundManager Inspector holds defaults — don't duplicate `defaultMaster/Music/Sfx` fields in UI scripts
 

@@ -41,12 +41,16 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     public Color zoneColor      = new(0.20f, 0.85f, 1.00f);
     [Tooltip("สีของ FetchItem indicator")]
     public Color fetchItemColor = new(1.00f, 0.85f, 0.20f);
+    [Tooltip("สีของวัตถุที่ต้องทำลาย (quest DestroyObjects)")]
+    public Color destructibleColor = new(1.00f, 0.45f, 0.25f);
 
     [Header("Fetch Item Display")]
     [Tooltip("scale พิเศษของ FetchItem indicator (เล็กกว่า zone นิดๆ)")]
     public float fetchItemScale = 0.55f;
     [Tooltip("Prefix แสดงข้างหน้าระยะ — '★' หรือ icon character")]
     public string fetchItemPrefix = "★";
+    [Tooltip("Prefix ของวัตถุที่ต้องทำลาย — ห้ามใช้ glyph ที่ LiberationSans SDF ไม่มี")]
+    public string destructiblePrefix = "!";
 
     [Header("Player-Relative Indicator (Off-Screen)")]
     [Tooltip("แสดงตัวนำทางรอบตัวผู้เล่นแทนขอบจอ")]
@@ -55,7 +59,7 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     public float indicatorRadius = 120f;
 
     // ── Internal ──────────────────────────────────────────────────────────
-    private enum Kind { Zone, FetchItem }
+    private enum Kind { Zone, FetchItem, Destructible }
 
     private class Entry
     {
@@ -85,6 +89,9 @@ public class ObjectiveIndicatorUI : MonoBehaviour
 
         FetchItem.OnFetchItemSpawned   += OnFetchItemSpawned;
         FetchItem.OnFetchItemDespawned += OnFetchItemRemoved;
+
+        DestructibleObjective.OnDestructibleSpawned   += OnDestructibleSpawned;
+        DestructibleObjective.OnDestructibleDespawned += OnDestructibleRemoved;
     }
 
     void OnDisable()
@@ -96,6 +103,9 @@ public class ObjectiveIndicatorUI : MonoBehaviour
 
         FetchItem.OnFetchItemSpawned   -= OnFetchItemSpawned;
         FetchItem.OnFetchItemDespawned -= OnFetchItemRemoved;
+
+        DestructibleObjective.OnDestructibleSpawned   -= OnDestructibleSpawned;
+        DestructibleObjective.OnDestructibleDespawned -= OnDestructibleRemoved;
     }
 
     void Start()
@@ -138,6 +148,15 @@ public class ObjectiveIndicatorUI : MonoBehaviour
     }
 
     void OnFetchItemRemoved(FetchItem item) => RemoveByTarget(item != null ? item.transform : null);
+
+    // ── Destructible events (quest DestroyObjects) ────────────────────────
+    void OnDestructibleSpawned(DestructibleObjective d)
+    {
+        if (indicatorPrefab == null || d == null) return;
+        CreateEntry(Kind.Destructible, d.transform, destructibleColor);
+    }
+
+    void OnDestructibleRemoved(DestructibleObjective d) => RemoveByTarget(d != null ? d.transform : null);
 
     // ── Entry helpers ─────────────────────────────────────────────────────
     Entry CreateEntry(Kind kind, Transform target, Color tint)
@@ -201,8 +220,8 @@ public class ObjectiveIndicatorUI : MonoBehaviour
             && screenPos.x > edgeMargin && screenPos.x < sw - edgeMargin
             && screenPos.y > edgeMargin && screenPos.y < sh - edgeMargin;
 
-        // base scale ต่างกันตาม kind (FetchItem เล็กกว่า)
-        float baseScale = e.kind == Kind.FetchItem ? fetchItemScale : 1f;
+        // base scale ต่างกันตาม kind (ของกระจายรอบแมพเล็กกว่าตัวโซน)
+        float baseScale = e.kind == Kind.Zone ? 1f : fetchItemScale;
 
         if (onScreen)
         {
@@ -275,8 +294,11 @@ public class ObjectiveIndicatorUI : MonoBehaviour
                         // ป้ายนี้อัปเดตทุกวินาที = TMP warning วินาทีละครั้งตลอด quest
                         // (★ U+2605 บรรทัดบนใช้ได้ เพราะฟอนต์มี) ถ้าอยากได้ไอคอนจริง
                         // ต้องตั้ง fallback font หรือ TMP sprite asset ก่อน
-                        ZoneObjective.QuestType.Survive          => $"{e.delivered}/{e.required}s",
-                        _                                         => "",
+                        ZoneObjective.QuestType.Survive         => $"{e.delivered}/{e.required}s",
+                        ZoneObjective.QuestType.DestroyObjects  => $"{e.delivered}/{e.required}",
+                        ZoneObjective.QuestType.KillInZone      => $"{e.delivered}/{e.required}",
+                        ZoneObjective.QuestType.SealTheRift     => $"{e.delivered}/{e.required}s",
+                        _                                        => "",
                     };
                 }
 
@@ -284,9 +306,10 @@ public class ObjectiveIndicatorUI : MonoBehaviour
                 else if (string.IsNullOrEmpty(distPart))  text = countPart;
                 else                                      text = $"{distPart}  {countPart}";
             }
-            else // FetchItem
+            else
             {
-                text = string.IsNullOrEmpty(distPart) ? fetchItemPrefix : $"{fetchItemPrefix} {distPart}";
+                string prefix = e.kind == Kind.Destructible ? destructiblePrefix : fetchItemPrefix;
+                text = string.IsNullOrEmpty(distPart) ? prefix : $"{prefix} {distPart}";
             }
 
             e.distText.text = text;

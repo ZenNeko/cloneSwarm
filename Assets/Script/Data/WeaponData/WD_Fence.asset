@@ -20,11 +20,12 @@ MonoBehaviour:
   aimMode: 0
   levels:
   - damage: 15
-    cooldown: 1
+    cooldown: 4
     projectileCount: 2
     range: 30
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
   - damage: 20
     cooldown: 3.5
@@ -32,6 +33,7 @@ MonoBehaviour:
     range: 30
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
   - damage: 25
     cooldown: 3
@@ -39,6 +41,7 @@ MonoBehaviour:
     range: 30
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
   - damage: 30
     cooldown: 2.5
@@ -46,6 +49,7 @@ MonoBehaviour:
     range: 30
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
   - damage: 40
     cooldown: 2
@@ -53,6 +57,7 @@ MonoBehaviour:
     range: 30
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
   superVersion: {fileID: 11400000, guid: c0def996a0a34d04796da1ebdff3d69c, type: 2}
   superConditions:

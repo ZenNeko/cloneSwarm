@@ -45,6 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkedVFXPool
   vfxDatabase: {fileID: 11400000, guid: fd903c4b739f5b2498d19ec9cac5a7b2, type: 2}
+  poolSizeMultiplier: 2
+  minPoolSize: 8
+  warnOnFirstGrow: 1
   projectilePrefabs:
   - {fileID: 7311686904495137203, guid: f6e843c945048eb4a8f8aa237baa578b, type: 3}
   - {fileID: 3992335139775719314, guid: 20419f2d0e1b52740a613cfa170a4c4c, type: 3}
@@ -59,3 +62,15 @@ MonoBehaviour:
   - {fileID: 6266392510070060659, guid: 6d4a5b6b1a623044e9a4057d037cc4ed, type: 3}
   - {fileID: 4250853822560015088, guid: 3a0acbf383517ad44b13a6d966f35b1c, type: 3}
   - {fileID: 6729598477372940667, guid: c2c937b9cb34f2c4087cccda0901f502, type: 3}
+  - {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
+  - {fileID: 132410131150665497, guid: f3dd3e26fd7941e4cbe256a2ed4dfe5c, type: 3}
+  damageTextPrefab: {fileID: 2378269986135660056, guid: 151937641b2c81f43ab7b8ae0e70d3b1, type: 3}
+  damageTextCapacity: 600
+  damageTextDuration: 0.8
+  damageTextFloatSpeed: 1.2
+  damageTextFadeStart: 0.8
+  damageTextNormalSize: 10
+  damageTextCritSize: 15
+  damageTextNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  damageTextCritColor: {r: 1, g: 0.8348439, b: 0.0047169924, a: 1}
+  damageTextRandomOffset: 0.1

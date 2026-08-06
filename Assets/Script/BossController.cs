@@ -5,7 +5,7 @@ using UnityEngine;
 
 /// <summary>
 /// ตัวควบคุมกลางสำหรับบอสทุกตัว ทำหน้าที่จัดการ State, เลือดเปลี่ยน Phase, และยิงท่าโจมตีตาม BossEncounterConfig
-/// สืบทอดคลาสนี้ไปเป็น MainBoss หรือ MiniBossAI ได้เพื่อทำ Event เฉพาะตัว
+/// ใช้เป็น component ตรงๆ บน prefab บอสได้เลย หรือสืบทอดไปทำ Event เฉพาะตัว
 /// </summary>
 [RequireComponent(typeof(Enemy))]
 public class BossController : NetworkBehaviour
@@ -131,8 +131,19 @@ public class BossController : NetworkBehaviour
     protected virtual void OnPhaseChangedClient(int phaseIndex)
     {
         if (config == null || config.phases == null || phaseIndex >= config.phases.Count) return;
-        
+
         BossPhase phase = config.phases[phaseIndex];
+
+        // ประกาศเฟส + VFX — data-driven จาก BossPhase (ย้ายมาจาก MainBoss เดิม)
+        if (!string.IsNullOrEmpty(phase.announcementText))
+        {
+            GameHUD.Instance?.ShowAnnouncement(phase.announcementText, phase.announcementColor);
+        }
+        if (!string.IsNullOrEmpty(phase.phaseVfxName))
+        {
+            NetworkedVFXPool.Instance?.PlayByName(phase.phaseVfxName, transform.position);
+        }
+
         if (phase.cameraShakeMagnitude > 0)
         {
             CameraShake.Instance?.Shake(0.5f, phase.cameraShakeMagnitude);

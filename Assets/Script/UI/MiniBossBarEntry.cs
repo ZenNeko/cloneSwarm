@@ -13,7 +13,7 @@ using TMPro;
 ///   ├── HPFill         Image            — Filled / Horizontal
 ///   └── HPNumText      TextMeshProUGUI  — "800/1200" (optional)
 ///
-/// ชื่อ: ใช้ MiniBossAI.bossName → ถ้าว่างใช้ gameObject.name ของ boss
+/// ชื่อ: ใช้ BossController.bossDisplayName → ถ้าว่างใช้ gameObject.name ของ boss
 /// </summary>
 public class MiniBossBarEntry : MonoBehaviour
 {

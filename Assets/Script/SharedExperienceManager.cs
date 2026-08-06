@@ -25,6 +25,11 @@ public class SharedExperienceManager : NetworkBehaviour
     [Tooltip("วินาทีที่ให้แต่ละคนเลือก card (0 = ไม่มีกำหนด)")]
     public float upgradePickSeconds = 30f;
 
+    [Header("Augments")]
+    [Tooltip("เลเวลที่ผู้เล่นจะได้เลือก Augment แทน card ปกติ (สไตล์ LoL Swarm)\n" +
+             "ค่าแนะนำ: 3 / 7 / 12 / 18")]
+    public int[] augmentLevels = { 3, 7, 12, 18 };
+
     // ── Network Variables ─────────────────────────────────────────────────
     public NetworkVariable<float> sharedExp       = new(0f,   NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<int>   sharedLevel     = new(1,    NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -340,6 +345,15 @@ public class SharedExperienceManager : NetworkBehaviour
     }
 
     // ── Getters ───────────────────────────────────────────────────────────
+    /// <summary>true = level นี้ให้เลือก Augment แทน weapon/stat card</summary>
+    public bool IsAugmentLevel(int level)
+    {
+        if (augmentLevels == null) return false;
+        for (int i = 0; i < augmentLevels.Length; i++)
+            if (augmentLevels[i] == level) return true;
+        return false;
+    }
+
     public float GetExpPercent()   => sharedExpToNext.Value > 0 ? sharedExp.Value / sharedExpToNext.Value : 1f;
     public float GetCurrentExp()   => sharedExp.Value;
     public float GetExpToNext()    => sharedExpToNext.Value;

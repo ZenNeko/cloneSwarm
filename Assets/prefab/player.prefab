@@ -54,6 +54,8 @@ GameObject:
   - component: {fileID: 8713204962959621646}
   - component: {fileID: 7893533639906240797}
   - component: {fileID: 6880900941574084203}
+  - component: {fileID: -4709983444148486069}
+  - component: {fileID: 3446993503979069558}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -603,3 +605,29 @@ MonoBehaviour:
   speedSmoothTime: 0.1
   faceMoveDirection: 1
   rotateSpeed: 1440
+--- !u!114 &-4709983444148486069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac59385004669204dae8261117f88c9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.PlayerTalentApplier
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3446993503979069558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b00d2daf84690104cb1a13f9b22536cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAugmentManager
+  ShowTopMostFoldoutHeaderGroup: 1

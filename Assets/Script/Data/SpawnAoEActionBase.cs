@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public abstract class SpawnAoEActionBase : BossAction
 {
@@ -25,8 +26,18 @@ public abstract class SpawnAoEActionBase : BossAction
     public bool isRotatingChase = false;
     public bool isStackMarker = false;
     public bool isGaze = false;
-    public float knockbackForce = 0f;
-    public float knockbackDuration = 0.2f;
+
+    [Header("Knockback")]
+    [Tooltip("ทิศทางการผลัก — ดูคำอธิบายแต่ละแบบใน KnockbackMode.cs")]
+    public KnockbackMode knockbackMode = KnockbackMode.FromCenter;
+    [Tooltip("ระยะผลักเป็นหน่วยระยะทาง (0 = ไม่ผลัก)\n" +
+             "หมายเหตุ: ฟิลด์นี้เดิมคือ 'แรง' — ทุก asset เดิมตั้งไว้ 0 จึงไม่ต้องแปลงค่า")]
+    [FormerlySerializedAs("knockbackForce")]
+    [Min(0f)] public float knockbackDistance = 0f;
+    [Tooltip("ระยะเวลาที่ผู้เล่นถูกผลัก (วินาที) — ความเร็วคำนวณจาก ระยะ ÷ เวลา")]
+    [Min(0f)] public float knockbackDuration = 0.2f;
+    [Tooltip("ใช้เฉพาะ KnockbackMode.FixedDirection — ทิศในพิกัดโลก (คิดเฉพาะแกน XZ)")]
+    public Vector3 knockbackFixedDirection = Vector3.forward;
 
     protected abstract AoEType GetAoEType();
     protected abstract void ConfigureTelegraphZone(TelegraphZone zone);
@@ -77,8 +88,10 @@ public abstract class SpawnAoEActionBase : BossAction
                 zone.isRotatingChase = isRotatingChase;
                 zone.isStackMarker = isStackMarker;
                 zone.isGaze = isGaze;
-                zone.knockbackForce = knockbackForce;
+                zone.knockbackMode = knockbackMode;
+                zone.knockbackDistance = knockbackDistance;
                 zone.knockbackDuration = knockbackDuration;
+                zone.knockbackFixedDirection = knockbackFixedDirection;
 
                 if (followCaster && runner != null)
                 {

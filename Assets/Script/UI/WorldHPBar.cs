@@ -20,7 +20,7 @@ using TMPro;
 ///   4. Assign ทุก ref ใน Inspector ของ WorldHPBar
 ///
 /// **Notes:**
-///   • สามารถใช้กับทั้ง MainBoss และ MiniBossAI
+///   • สามารถใช้กับบอสทุกตัวที่มี BossController
 ///   • displayName ปล่อยว่าง = ใช้ gameObject.name อัตโนมัติ
 ///   • Phase markers สำหรับ MainBoss (ถ้าไม่มีก็ไม่ต้อง assign)
 /// </summary>
