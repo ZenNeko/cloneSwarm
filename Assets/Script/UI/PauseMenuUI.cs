@@ -106,7 +106,12 @@ public class PauseMenuUI : MonoBehaviour
     }
 
     // ── Public API ────────────────────────────────────────────────────────
-    public void Toggle() { if (isPaused) Resume(); else Pause(); }
+    public void Toggle()
+    {
+        if (WinLoseUI.IsShowing) return;
+        if (GamePause.Has(PauseReason.PhaseSelect)) return;
+        if (isPaused) Resume(); else Pause();
+    }
 
     public void Pause()
     {

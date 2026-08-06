@@ -265,10 +265,15 @@ public class TelegraphZone : NetworkBehaviour
                     mpb.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
             }
             
-            // Color Match: override สีตาม Client ID
+            // Color Match: override สีตาม Client ID / Slot
             if (isColorMatch.Value)
             {
-                Color c = ((int)(requiredClientId.Value % 4)) switch
+                ulong reqId = requiredClientId.Value;
+                int slot = PlayerSlotRegistry.Instance != null
+                    ? PlayerSlotRegistry.Instance.GetSlot(reqId) : -1;
+                if (slot < 0) slot = (int)(reqId % 4);
+
+                Color c = slot switch
                 {
                     0 => Color.red,
                     1 => Color.blue,

@@ -66,7 +66,7 @@ Game content lives in `Assets/Script/Data/` and `Assets/ScriptableObjects/`. Cod
 
 ### VFX system
 
-`Assets/Script/VFX/NetworkedVFXPool.cs` is a singleton pool indexed by the `VFXType` enum (see `VFXType.cs` and section 4.1 of `GDD.md`). **Always** spawn VFX via `NetworkedVFXPool.Instance.PlayByType(VFXType.X, pos)` — never `Instantiate` directly. Pool has a built-in recursion guard (depth counter) that prevents DeathField-style stack overflows; do not bypass it.
+`Assets/Script/VFX/NetworkedVFXPool.cs` is a singleton pool indexed by string keys in `VFXDatabase.asset`. **Always** spawn VFX via `NetworkedVFXPool.Instance.PlayByName(string key, Vector3 pos, ...)` — never `Instantiate` directly. Pool has a built-in recursion guard (depth counter) that prevents DeathField-style stack overflows; do not bypass it.
 
 `HitEffect` / `CritHitEffect` are fired by `Enemy.NotifyHitClientRpc` automatically inside `EnemyTakeDamage`. **Weapon scripts must NOT also spawn HitEffect** — doing so produces duplicate impact VFX (this bug was fixed in Laser/Raycast paths; don't reintroduce).
 
@@ -97,13 +97,17 @@ Boss attacks use `TelegraphZone` prefab (spawned via `NetworkObject.Spawn`). Bos
 When writing or reviewing code:
 
 1. **Routing damage**: weapon/ability scripts never call `Enemy.EnemyTakeDamage` from a client — go through `PlayerWeaponManager.<Action>ServerRpc(...)`
-2. **VFX**: `NetworkedVFXPool.Instance.PlayByType(...)`, never raw `Instantiate(vfxPrefab)`
+2. **VFX**: `NetworkedVFXPool.Instance.PlayByName(...)`, never raw `Instantiate(vfxPrefab)`
 3. **SFX**: `SoundManager.Instance.PlaySfx*` / `PlayRandomSfx(clips, ...)`, never raw `AudioSource.PlayClipAtPoint`
 4. **Boss spawn events**: fire static events at the **top** of `OnNetworkSpawn` (before `IsServer` early-return) so all clients can subscribe for HUD
 5. **Static event subscriptions**: subscribe in `OnEnable`, unsubscribe in `OnDisable` (HUDs survive scene reloads — leaks compound)
 6. **Phase transitions**: use `Enemy.serverInvincible` flag to skip damage during boss phase changes (already wired in `BossController.PhaseTransitionInvincibility`)
 7. **New networked prefabs**: must be added to `Assets/DefaultNetworkPrefabs.asset` or NGO will refuse to spawn them
 8. **Audio defaults**: only the SoundManager Inspector holds defaults — don't duplicate `defaultMaster/Music/Sfx` fields in UI scripts
+9. **Lobby state**: all lobby state lives in `LobbyState` — clients update via ServerRpc only
+10. **Character ID on network**: use `CharacterData.characterName` (string) — NEVER use int index
+11. **Player color**: resolve player color index via `PlayerSlotRegistry.GetSlot()` — NEVER use `clientId % 4`
+12. **Q/E key handling**: Q/E cycles tabs in menu UI by design — intentionally shares keybindings with in-game ability slots
 
 ## Custom skills available in this project
 

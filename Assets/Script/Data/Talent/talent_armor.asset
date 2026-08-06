@@ -22,3 +22,4 @@ MonoBehaviour:
   costPerLevel: 78000000f0000000e0010000c003000080070000i
   category: 1
   sortOrder: 11
+  tintColor: {r: 0.9411765, g: 0.7058824, b: 0.16078432, a: 1}

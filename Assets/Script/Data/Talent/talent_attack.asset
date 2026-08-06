@@ -16,7 +16,10 @@ MonoBehaviour:
   talentName: Attack Power
   description: "\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E1E\u0E25\u0E31\u0E07\u0E42\u0E08\u0E21\u0E15\u0E35\u0E16\u0E32\u0E27\u0E23 +3% \u0E15\u0E48\u0E2D\u0E40\u0E25\u0E40\u0E27\u0E25"
   icon: {fileID: 0}
-  talentType: 0
+  mode: 0
+  statType: 0
   valuePerLevel: 0.03
   costPerLevel: 64000000c8000000900100002003000040060000i
+  category: 0
   sortOrder: 0
+  tintColor: {r: 0.9411765, g: 0.5254902, b: 0.29411766, a: 1}

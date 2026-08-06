@@ -37,6 +37,7 @@ public class WinLoseUI : MonoBehaviour
 
     [Header("Button")]
     public Button returnButton;
+    public Button playAgainButton;
 
     [Header("Animation")]
     [Tooltip("วินาทีก่อน panel จะแสดง (เวลาระเบิด fade ฯลฯ)")]
@@ -56,7 +57,8 @@ public class WinLoseUI : MonoBehaviour
         canvasGroup = panelRoot?.GetComponent<CanvasGroup>();
         if (panelRoot) panelRoot.SetActive(false);
 
-        if (returnButton) returnButton.onClick.AddListener(ReturnToMenu);
+        if (returnButton)    returnButton.onClick.AddListener(ReturnToMenu);
+        if (playAgainButton) playAgainButton.onClick.AddListener(OnPlayAgainClicked);
     }
 
     void OnEnable()
@@ -135,6 +137,12 @@ public class WinLoseUI : MonoBehaviour
         // Fade in
         if (panelRoot) panelRoot.SetActive(true);
 
+        if (playAgainButton != null)
+        {
+            bool isHost = GameSessionManager.Instance?.IsHost ?? true;
+            playAgainButton.interactable = isHost;
+        }
+
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 0f;
@@ -150,6 +158,22 @@ public class WinLoseUI : MonoBehaviour
 
         // หยุดเกมหลัง fade in เสร็จ (ไม่ให้ enemy ยังวิ่ง)
         GamePause.Add(PauseReason.GameOver);
+    }
+
+    void OnPlayAgainClicked()
+    {
+        IsShowing = false;
+        GamePause.ResetAll();
+
+        string sceneName = RunSetup.Map != null ? RunSetup.Map.sceneName : "SampleScene";
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.StartGame(sceneName);
+        }
+        else if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsServer)
+        {
+            Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
     }
 
     // ── Return to Menu ────────────────────────────────────────────────────

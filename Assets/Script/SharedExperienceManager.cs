@@ -151,6 +151,11 @@ public class SharedExperienceManager : NetworkBehaviour
         NotifyPickedCountClientRpc(pickedPlayers.Count, total);
         Debug.Log($"[SharedEXP] Player {sender} เลือกแล้ว → {pickedPlayers.Count}/{total}");
 
+        if (pickedPlayers.Count == 1 && total > 1 && timerCoroutine == null)
+        {
+            timerCoroutine = StartCoroutine(UpgradeTimerCoroutine());
+        }
+
         if (pickedPlayers.Count >= total)
             CompleteUpgradePhase();
     }
@@ -183,10 +188,6 @@ public class SharedExperienceManager : NetworkBehaviour
         BeginUpgradePhaseClientRpc(level, total);
 
         if (timerCoroutine != null) StopCoroutine(timerCoroutine);
-        if (total > 1)
-        {
-            timerCoroutine = StartCoroutine(UpgradeTimerCoroutine());
-        }
     }
 
     void CompleteUpgradePhase()
@@ -289,10 +290,6 @@ public class SharedExperienceManager : NetworkBehaviour
         BeginOrbPhaseClientRpc(total);   // broadcast ทุกคน
 
         if (timerCoroutine != null) StopCoroutine(timerCoroutine);
-        if (total > 1)
-        {
-            timerCoroutine = StartCoroutine(OrbTimerCoroutine());
-        }
         Debug.Log($"[OrbPhase] Client {collectorClientId} เริ่ม Orb Phase — ทุกคนได้ card");
     }
 
@@ -312,6 +309,10 @@ public class SharedExperienceManager : NetworkBehaviour
         pickedPlayers.Add(rpcParams.Receive.SenderClientId);
         int total = NetworkManager.ConnectedClients.Count;
         NotifyPickedCountClientRpc(pickedPlayers.Count, total);
+        if (pickedPlayers.Count == 1 && total > 1 && timerCoroutine == null)
+        {
+            timerCoroutine = StartCoroutine(OrbTimerCoroutine());
+        }
         if (pickedPlayers.Count >= total) CompleteOrbPhase();
     }
 

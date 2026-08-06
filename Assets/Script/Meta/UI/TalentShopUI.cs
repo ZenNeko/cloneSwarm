@@ -24,6 +24,13 @@ namespace CloneSwarm.Meta
         /// <summary>ยิงเมื่อกดปุ่ม Back — MenuManager subscribe เพื่อกลับหน้า Main</summary>
         public static event System.Action OnBack;
 
+        [Header("── TabBar & Panels ─────────────────────")]
+        public TabBar     tabBar;
+        public GameObject talentPanel;
+        public GameObject characterPanel;
+        public Transform  characterGridContainer;
+        public GameObject characterTileTemplate;
+
         [Header("── Grid (ซ้าย) ────────────────────────")]
         [Tooltip("GameObject ที่มี Grid Layout Group — แนะนำ 3 คอลัมน์")]
         public Transform  tilesContainer;
@@ -65,6 +72,7 @@ namespace CloneSwarm.Meta
         public Button     resetConfirmNoButton;
 
         readonly List<TalentTileUI> tiles = new();
+        readonly List<GameObject> characterTiles = new();
         TalentData selected;
 
         // ═══════════════════════════════════════════════════════════════════
@@ -82,6 +90,7 @@ namespace CloneSwarm.Meta
         {
             MetaProgression.OnGoldChanged += HandleGoldChanged;
             BuildTiles();
+            BuildCharacterTiles();
             RefreshAll();
         }
 
@@ -128,6 +137,54 @@ namespace CloneSwarm.Meta
                 selected = tiles[0].Talent;
         }
 
+        void BuildCharacterTiles()
+        {
+            if (characterGridContainer == null || characterTileTemplate == null) return;
+            var db = MetaDatabase.Instance;
+            if (db == null || db.characters == null) return;
+
+            characterTileTemplate.SetActive(false);
+
+            foreach (var go in characterTiles) if (go != null) Destroy(go);
+            characterTiles.Clear();
+
+            foreach (var cd in db.characters)
+            {
+                if (cd == null) continue;
+                var go = Instantiate(characterTileTemplate, characterGridContainer);
+                go.name = $"CharTile_{cd.characterName}";
+                go.SetActive(true);
+                characterTiles.Add(go);
+
+                RefreshCharacterTile(go, cd);
+            }
+        }
+
+        void RefreshCharacterTile(GameObject go, CharacterData cd)
+        {
+            if (go == null || cd == null) return;
+            bool unlocked = MetaProgression.IsCharacterUnlocked(cd);
+            var text = go.GetComponentInChildren<TextMeshProUGUI>();
+            if (text != null)
+            {
+                text.text = unlocked ? $"{cd.characterName}\n[UNLOCKED]" : $"{cd.characterName}\n{cd.unlockCost} G";
+            }
+
+            var btn = go.GetComponent<Button>() ?? go.GetComponentInChildren<Button>();
+            if (btn != null)
+            {
+                btn.interactable = !unlocked && MetaProgression.Gold >= cd.unlockCost;
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(() =>
+                {
+                    if (MetaProgression.TryUnlockCharacter(cd))
+                    {
+                        RefreshAll();
+                    }
+                });
+            }
+        }
+
         // ═══════════════════════════════════════════════════════════════════
         // Select
         // ═══════════════════════════════════════════════════════════════════
@@ -160,6 +217,7 @@ namespace CloneSwarm.Meta
             }
 
             foreach (var tile in tiles) tile?.Refresh();
+            BuildCharacterTiles();
 
             RefreshSelection();
             RefreshDetail();

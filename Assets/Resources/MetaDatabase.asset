@@ -31,8 +31,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 368c82f914f7df542b886ba0f76f288e, type: 2}
   - {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}
   - {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
-  - {fileID: 11400000, guid: 7355fbb24c4052d4f8401af7c22a99b0, type: 2}
-  - {fileID: 11400000, guid: 124140ea30cdc9a49b303f27ae172e32, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
   augments: []
   goldPerExp: 0.1
   winBonusGold: 500

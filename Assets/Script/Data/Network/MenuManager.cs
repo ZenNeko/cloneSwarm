@@ -27,6 +27,9 @@ public class MenuManager : MonoBehaviour
     public GameObject loadingPanel;
     [Tooltip("ร้านอัปเกรดถาวร — มี TalentShopUI อยู่บนนี้")]
     public GameObject talentShopPanel;
+    public GameObject lobbyPanel;
+    public LobbyUI    lobbyUI;
+    public GameObject lobbyStatePrefab;
 
     // ═══════════════════════════════════════════════════════════════════════
     // MAIN PANEL
@@ -147,23 +150,22 @@ public class MenuManager : MonoBehaviour
         settingsPanel?.SetActive(false);
         loadingPanel?.SetActive(false);
         talentShopPanel?.SetActive(false);
+        lobbyPanel?.SetActive(false);
         target?.SetActive(true);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     // BUTTON CALLBACKS
     // ═══════════════════════════════════════════════════════════════════════
-    void OnPlaySoloClicked()
+    void OnPlayClicked(MenuMode mode)
     {
-        pendingMode = MenuMode.Solo;
+        pendingMode = mode;
         ShowPanel(charSelectPanel);
     }
 
-    void OnOnlineClicked()
-    {
-        pendingMode = MenuMode.Online;
-        ShowPanel(charSelectPanel);
-    }
+    void OnPlaySoloClicked() => OnPlayClicked(MenuMode.Solo);
+
+    void OnOnlineClicked() => OnPlayClicked(MenuMode.Online);
 
     void OnSettingsClicked()   => ShowPanel(settingsPanel);
 
@@ -198,16 +200,19 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     void OnCharacterConfirmed(CharacterData cd)
     {
+        if (lobbyUI != null && cd != null)
+        {
+            lobbyUI.SelectCharacter(cd.characterName);
+        }
+
         switch (pendingMode)
         {
             case MenuMode.Solo:
                 StartCoroutine(LaunchSolo());
                 break;
             case MenuMode.Online:
-                ShowPanel(onlinePanel);
-                // Trigger auto-create หลัง char confirm + รอ AuthenticationService.IsSignedIn
-                // (กัน error "Player is not authorized" ที่เกิดจาก auto-create ใน OnEnable
-                //  ตอน auth ยัง sign-in ไม่เสร็จ)
+                ShowPanel(lobbyPanel);
+                EnsureLobbyStateSpawned();
                 _ = TriggerOnlineCreateAsync();
                 break;
             default:
@@ -231,15 +236,25 @@ public class MenuManager : MonoBehaviour
     IEnumerator LaunchSolo()
     {
         ShowPanel(loadingPanel);
-        if (loadingText) loadingText.text = "Starting game...";
+        if (loadingText) loadingText.text = "Starting host...";
         yield return null;
 
-        NetworkManager.Singleton.StartHost();
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.StartHost();
+        }
 
-        if (loadingText) loadingText.text = "Loading scene...";
-        yield return null;
-
-        NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
+        ShowPanel(lobbyPanel);
+        EnsureLobbyStateSpawned();
     }
 
+    void EnsureLobbyStateSpawned()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+        if (LobbyState.Instance != null) return;
+        if (lobbyStatePrefab == null) return;
+        var go = Instantiate(lobbyStatePrefab);
+        go.GetComponent<NetworkObject>().Spawn();
+    }
 }

@@ -65,14 +65,18 @@ public class ColorMatchAoEAction : BossAction
             zone.BroadcastInit();
 
             // แจ้งผู้เล่นว่าต้องเข้าวงสีอะไร
-            string colorName = (clientId % 4) switch
+            int slot = PlayerSlotRegistry.Instance != null
+                ? PlayerSlotRegistry.Instance.GetSlot(clientId) : -1;
+            if (slot < 0) slot = (int)(clientId % 4);
+
+            string colorName = slot switch
             {
                 0 => "RED",
                 1 => "BLUE",
                 2 => "GREEN",
                 _ => "YELLOW"
             };
-            Color uiColor = (clientId % 4) switch
+            Color uiColor = slot switch
             {
                 0 => Color.red,
                 1 => Color.blue,

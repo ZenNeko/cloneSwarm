@@ -31,7 +31,8 @@ public class BossManager : NetworkBehaviour
     public UnityEvent onMainBossKilled;
 
     // ── State ─────────────────────────────────────────────────────────────
-    private Enemy        activeMainBossEnemy;
+    private Enemy               activeMainBossEnemy;
+    private BossEncounterConfig activeBossConfig;
 
     // กัน onDeath ยิงซ้ำ — EnemyTakeDamage ไม่มีธง "ตายแล้ว" 2 นัดในเฟรมเดียวเข้าได้ทั้งคู่
     bool _mainBossDeathHandled;
@@ -46,6 +47,15 @@ public class BossManager : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (!IsServer) return;
+
+        if (RunSetup.Map != null)
+        {
+            var tierContent = RunSetup.Map.GetTier(RunSetup.Difficulty);
+            if (tierContent != null)
+            {
+                activeBossConfig = tierContent.mainBossConfig;
+            }
+        }
 
         GameTimeline.OnMiniBossTime  += SpawnMiniBoss;
         GameTimeline.OnMainBossTime  += SpawnMainBoss;
@@ -120,6 +130,13 @@ public class BossManager : NetworkBehaviour
 
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(mainBossPrefab, pos, Quaternion.identity);
+
+        if (activeBossConfig != null)
+        {
+            var bc = go.GetComponent<BossController>();
+            if (bc != null) bc.config = activeBossConfig;
+        }
+
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         activeMainBossEnemy = go.GetComponent<Enemy>();
