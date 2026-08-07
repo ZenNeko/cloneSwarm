@@ -171,12 +171,16 @@ public class CharacterSelectUI : MonoBehaviour
         RefreshDetail();
         RefreshCardHighlights();
         RefreshLockState();
+
+        if (cd != null && CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(cd))
+        {
+            SelectedCharacter = cd;
+            OnCharacterConfirmed?.Invoke(cd);
+        }
     }
 
     /// <summary>
-    /// ปุ่ม Confirm ทำ 2 หน้าที่:
-    ///   ตัวปลดล็อกแล้ว → ยืนยันเลือกตัวละคร (เข้าเกม)
-    ///   ตัวยังล็อก     → ซื้อด้วยทอง แล้วค่อยกดยืนยันอีกที
+    /// ปุ่ม Confirm ทำหน้าที่ปลดล็อกตัวละครด้วยทองเมื่อยังไม่ได้ปลดล็อก
     /// </summary>
     void OnConfirm()
     {
@@ -188,17 +192,14 @@ public class CharacterSelectUI : MonoBehaviour
             {
                 RefreshCardLocks();
                 RefreshLockState();
+                SelectedCharacter = selected;
+                OnCharacterConfirmed?.Invoke(selected);
             }
             else if (lockStatusText != null)
             {
                 lockStatusText.text = $"ทองไม่พอ — ต้องการ {selected.unlockCost:N0} G";
             }
-            return;   // ปลดล็อกแล้วยังไม่เข้าเกม ให้กดยืนยันอีกครั้ง
         }
-
-        SelectedCharacter = selected;
-        OnCharacterConfirmed?.Invoke(selected);
-        Debug.Log($"[CharSelect] ✅ {selected.characterName}");
     }
 
     // ── Lock / Gold display ───────────────────────────────────────────────
@@ -212,11 +213,13 @@ public class CharacterSelectUI : MonoBehaviour
         bool unlocked = CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(selected);
 
         if (confirmButtonLabel != null)
-            confirmButtonLabel.text = unlocked ? "CONFIRM" : $"ปลดล็อก {selected.unlockCost:N0} G";
+            confirmButtonLabel.text = $"ปลดล็อก {selected.unlockCost:N0} G";
 
         if (confirmButton != null)
-            confirmButton.interactable =
-                unlocked || CloneSwarm.Meta.MetaProgression.CanUnlockCharacter(selected);
+        {
+            confirmButton.gameObject.SetActive(!unlocked);
+            confirmButton.interactable = !unlocked && CloneSwarm.Meta.MetaProgression.CanUnlockCharacter(selected);
+        }
 
         if (lockStatusText != null)
             lockStatusText.text = unlocked ? "" : selected.description;

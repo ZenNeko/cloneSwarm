@@ -1,5 +1,6 @@
 using System.Collections;
 using Unity.Netcode;
+using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,9 +10,10 @@ using TMPro;
 /// Main Menu Controller — จัดการทุก Panel ใน MenuScene
 ///
 /// Flow:
-///   Main → CharSelect → Solo  → StartHost → LoadScene
-///                     → Online → OnlinePanel (room code)
-///   Main → Settings (volume / quality)
+///   Main → PLAY → Lobby (StartHost offline)
+///   Main → Join Room → JoinSessionAsync → Lobby
+///   Main → Settings
+///   Main → Talent Shop
 ///   Main → Quit
 /// </summary>
 public class MenuManager : MonoBehaviour
@@ -21,8 +23,6 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Panels ──────────────────────────────")]
     public GameObject mainPanel;
-    public GameObject charSelectPanel;
-    public GameObject onlinePanel;
     public GameObject settingsPanel;
     public GameObject loadingPanel;
     [Tooltip("ร้านอัปเกรดถาวร — มี TalentShopUI อยู่บนนี้")]
@@ -36,7 +36,6 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Main Panel ─────────────────────────")]
     public Button          playSoloButton;
-    public Button          onlineButton;
     public Button          settingsButton;
     public Button          quitButton;
     [Tooltip("เปิดร้าน Talent Shop")]
@@ -46,19 +45,10 @@ public class MenuManager : MonoBehaviour
     [Tooltip("ข้อความ version ล่างจอ เช่น v0.1.0-alpha")]
     public TextMeshProUGUI versionText;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // CHARACTER SELECT
-    // ═══════════════════════════════════════════════════════════════════════
-    [Header("── Character Select ────────────────────")]
-    public CharacterSelectUI characterSelectUI;
-    public Button            charSelectBackButton;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ONLINE PANEL
-    // ═══════════════════════════════════════════════════════════════════════
-    [Header("── Online Panel ────────────────────────")]
-    public OnlineMenuUI onlineMenuUI;
-    public Button       onlinePanelBackButton;
+    [Header("── Join Room (Main Panel) ────────────")]
+    public Button          joinRoomButton;
+    public TMP_InputField  joinCodeInput;
+    public TextMeshProUGUI joinStatusText;
 
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS
@@ -76,10 +66,6 @@ public class MenuManager : MonoBehaviour
     [Tooltip("ชื่อ Game Scene ใน Build Settings")]
     public string          gameSceneName = "SampleScene";
 
-    // ── Internal ──────────────────────────────────────────────────────────
-    private enum MenuMode { None, Solo, Online }
-    private MenuMode pendingMode = MenuMode.None;
-
     // ═══════════════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════
@@ -88,11 +74,21 @@ public class MenuManager : MonoBehaviour
         if (versionText) versionText.text = $"v{Application.version}";
     }
 
+    void OnEnable()
+    {
+        GameSessionManager.OnStatus += HandleStatus;
+    }
+
+    void OnDisable()
+    {
+        GameSessionManager.OnStatus -= HandleStatus;
+    }
+
     void Start()
     {
         // Main panel buttons
-        if (playSoloButton) playSoloButton.onClick.AddListener(OnPlaySoloClicked);
-        if (onlineButton)   onlineButton.onClick.AddListener(OnOnlineClicked);
+        if (playSoloButton) playSoloButton.onClick.AddListener(OnPlayClicked);
+        if (joinRoomButton) joinRoomButton.onClick.AddListener(OnJoinRoomClicked);
         if (settingsButton) settingsButton.onClick.AddListener(OnSettingsClicked);
         if (quitButton)     quitButton.onClick.AddListener(OnQuitClicked);
         if (talentShopButton) talentShopButton.onClick.AddListener(OnTalentShopClicked);
@@ -102,27 +98,31 @@ public class MenuManager : MonoBehaviour
         CloneSwarm.Meta.MetaProgression.OnGoldChanged += HandleGoldChanged;
         RefreshGold();
 
-        // CharSelect back
-        if (charSelectBackButton) charSelectBackButton.onClick.AddListener(ShowMain);
-        CharacterSelectUI.OnCharacterConfirmed += OnCharacterConfirmed;
-
-        // Online back — leave session (ถ้ามี) ก่อน navigate กลับ เพื่อกัน orphan session
-        // และกัน bug "กลับเข้ามาแล้ว auto-create ซ้อนของเดิม"
-        if (onlinePanelBackButton)
-            onlinePanelBackButton.onClick.AddListener(OnOnlineBackClicked);
-
         // Settings — SettingsMenuUI fires OnBack เมื่อกดปุ่ม Back
         SettingsMenuUI.OnBack += ShowMain;
+
+        // Session joined -> EnsureLobbyStateSpawned
+        GameSessionManager.OnSessionJoined += HandleSessionJoined;
 
         ShowMain();
     }
 
     void OnDestroy()
     {
-        CharacterSelectUI.OnCharacterConfirmed -= OnCharacterConfirmed;
+        GameSessionManager.OnSessionJoined   -= HandleSessionJoined;
         SettingsMenuUI.OnBack                  -= ShowMain;
         CloneSwarm.Meta.TalentShopUI.OnBack           -= ShowMain;
         CloneSwarm.Meta.MetaProgression.OnGoldChanged -= HandleGoldChanged;
+    }
+
+    void HandleStatus(string msg)
+    {
+        if (joinStatusText != null) joinStatusText.text = msg;
+    }
+
+    void HandleSessionJoined(ISession _)
+    {
+        EnsureLobbyStateSpawned();
     }
 
     void HandleGoldChanged(int _) => RefreshGold();
@@ -138,15 +138,12 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     void ShowMain()
     {
-        pendingMode = MenuMode.None;
         ShowPanel(mainPanel);
     }
 
     void ShowPanel(GameObject target)
     {
         mainPanel?.SetActive(false);
-        charSelectPanel?.SetActive(false);
-        onlinePanel?.SetActive(false);
         settingsPanel?.SetActive(false);
         loadingPanel?.SetActive(false);
         talentShopPanel?.SetActive(false);
@@ -157,34 +154,30 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // BUTTON CALLBACKS
     // ═══════════════════════════════════════════════════════════════════════
-    void OnPlayClicked(MenuMode mode)
+    void OnPlayClicked()
     {
-        pendingMode = mode;
-        ShowPanel(charSelectPanel);
+        ShowPanel(lobbyPanel);
+        StartCoroutine(StartOfflineHostThenSpawn());
     }
 
-    void OnPlaySoloClicked() => OnPlayClicked(MenuMode.Solo);
+    IEnumerator StartOfflineHostThenSpawn()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm != null && !nm.IsListening) nm.StartHost();
+        yield return null;                 // ให้ NGO ตั้งตัวหนึ่งเฟรม
+        EnsureLobbyStateSpawned();
+    }
 
-    void OnOnlineClicked() => OnPlayClicked(MenuMode.Online);
+    async void OnJoinRoomClicked()
+    {
+        if (joinCodeInput == null || string.IsNullOrWhiteSpace(joinCodeInput.text)) return;
+        bool ok = await GameSessionManager.Instance.JoinSessionAsync(joinCodeInput.text.Trim());
+        if (ok) ShowPanel(lobbyPanel);
+    }
 
     void OnSettingsClicked()   => ShowPanel(settingsPanel);
 
     void OnTalentShopClicked() => ShowPanel(talentShopPanel);
-
-    /// <summary>
-    /// Back ออกจาก Online panel — leave session ก่อน (ถ้ามี) แล้ว navigate กลับ
-    /// — ใช้ async void เพราะ Button.onClick ไม่รองรับ Task
-    /// — UI navigate ทันที (ไม่รอ leave สำเร็จ) เพื่อกัน user ค้าง
-    /// — OnlineMenuUI.LeaveSessionIfActiveAsync() จัดการ leave ใน background
-    /// </summary>
-    async void OnOnlineBackClicked()
-    {
-        // นำทางออกก่อน → UX ดีขึ้น user ไม่ต้องรอ network
-        ShowPanel(charSelectPanel);
-
-        if (onlineMenuUI != null)
-            await onlineMenuUI.LeaveSessionIfActiveAsync();
-    }
 
     void OnQuitClicked()
     {
@@ -193,59 +186,6 @@ public class MenuManager : MonoBehaviour
 #else
         Application.Quit();
 #endif
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // CHARACTER CONFIRMED → route by pendingMode
-    // ═══════════════════════════════════════════════════════════════════════
-    void OnCharacterConfirmed(CharacterData cd)
-    {
-        if (lobbyUI != null && cd != null)
-        {
-            lobbyUI.SelectCharacter(cd.characterName);
-        }
-
-        switch (pendingMode)
-        {
-            case MenuMode.Solo:
-                StartCoroutine(LaunchSolo());
-                break;
-            case MenuMode.Online:
-                ShowPanel(lobbyPanel);
-                EnsureLobbyStateSpawned();
-                _ = TriggerOnlineCreateAsync();
-                break;
-            default:
-                ShowMain();
-                break;
-        }
-    }
-
-    /// <summary>Helper: รอให้ Online panel enable เสร็จก่อนค่อยเรียก auto-create</summary>
-    async System.Threading.Tasks.Task TriggerOnlineCreateAsync()
-    {
-        // รอ 1 frame ให้ OnEnable ของ OnlineMenuUI วิ่งก่อน (subscribe listeners + reset UI)
-        await System.Threading.Tasks.Task.Yield();
-        if (onlineMenuUI != null)
-            await onlineMenuUI.BeginAutoCreateAfterCharSelectAsync();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // SOLO LAUNCH
-    // ═══════════════════════════════════════════════════════════════════════
-    IEnumerator LaunchSolo()
-    {
-        ShowPanel(loadingPanel);
-        if (loadingText) loadingText.text = "Starting host...";
-        yield return null;
-
-        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.StartHost();
-        }
-
-        ShowPanel(lobbyPanel);
-        EnsureLobbyStateSpawned();
     }
 
     void EnsureLobbyStateSpawned()

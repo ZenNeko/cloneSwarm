@@ -1,105 +1,115 @@
-# Session Handoff — 2026-07-28
+# Session Handoff — 2026-08-07
 
-อ่านไฟล์นี้ก่อนถ้าเปิดเซสชันใหม่ · เป็นสารบัญ ไม่ใช่ที่เก็บเนื้อหา
-
----
-
-## ✅ ขอบเขต audit — ตรวจครบแล้ว ~170/171 ไฟล์
-
-ทำ 2 รอบ:
-1. **grep สแกนรูปแบบ** ทั้งโปรเจกต์ — authority, NetworkVariable permission, static event, `Instantiate` VFX, `.material`
-2. **Sonnet 5 ตัวอ่านลึก ~170 ไฟล์** แล้ว **Claude verify ทุกข้อ HIGH ด้วยตัวเอง** ก่อนบันทึก
-
-| ตรวจแล้ว | ผลหลัก |
-|---|---|
-| `Weapon/` 44 | HitEffect ซ้อน 3 จุด · `ClusterBomb` ไม่มี distance gate · crit flag หาย |
-| boss / objective / `Elite/` | `Enemy.maxHealth` ไม่ replicate · กลไกบอสมีชีวิตต่อหลังบอสตาย · Survive quest ไม่มี timeout |
-| `Projectile/` · `Weapon/hero/` · orb | `HealingOrb`/`MagnetOrb` เก็บซ้ำ · crit flag หาย 4 จุด |
-| `Data/` 22 · `Audio/` · manager | FlowField bake ทุก client · **ไม่พบการเขียนทับ SO ตอน runtime เลย** |
-| `UI/` 15 + HUD | **`Time.timeScale` softlock** · HUD ปลอดภัยกับ 4 ผู้เล่นจริง |
-
-**ไม่ได้ตรวจ**: `Editor/` (1 ไฟล์ ไม่ขึ้น build)
-
-### พื้นที่ที่ยืนยันว่าสะอาด — ไม่ต้องกลับมาดูอีก
-
-ไม่มีการเขียนทับ ScriptableObject ตอน runtime · HUD กรอง `IsOwner` ถูกทุกตัว ·
-static event pairing ถูกหมด · card pool ของ `UpgradeManager` ไม่มีบั๊ก ·
-`WaveConfig` weight กันหารศูนย์แล้ว · ไม่มี `RequireOwnership = false` เลยสักตัว
-
-### ⚠️ รูปแบบร่วมที่ต้องจำ — "แก้ไฟล์เดียว ลืมพี่น้อง"
-
-โปรเจกต์มีไฟล์โครงเหมือนกันเป็นตระกูล และการแก้บั๊กที่ผ่านมาลงแค่ไฟล์เดียว **4 ครั้ง**
-(`ExpOrb` vs `HealingOrb`/`MagnetOrb` · `Stormcaller` vs `LightningChain`/`StormBunny` ·
-`DeathField` vs `ClusterBomb` · `playermove.GetHealthPercent` vs `Enemy`/`WorldHPBar`)
-
-**แก้บั๊กเสร็จต้อง grep หาไฟล์รูปแบบเดียวกันก่อนปิดงานเสมอ**
+> เขียนไว้ให้เซสชันถัดไปอ่านต่อ · branch `ux-ui-flow-2026-08`
+> **ยังไม่ commit อะไรตั้งแต่ `41376152`** — Round 4, Round 5 และ asset reorg ค้างอยู่ทั้งหมด
 
 ---
 
-## สถานะงาน
+## จบไปแล้ว
 
-- branch **`audit-fixes-2026-07`** · **8 commits** เหนือ `main` · [PR #10](https://github.com/ZenNeko/cloneSwarm/pull/10) เปิดแล้ว ยังไม่ merge
-- playtest ผ่านครบตาม [playtest-checklist.md](playtest-checklist.md) (เทสต์ 2 client จริง)
-- **ค้างใน working tree**: `WD_Spike.asset` = งานปรับบาลานซ์ของผู้ใช้ (damage 20→25/30,
-  projectileCount 1→**10**, cooldown 1→1.9/1.7) **ไม่เกี่ยว PR นี้ ควรแยก commit**
+| Round | ได้อะไร | commit |
+|---|---|---|
+| 1–2 | ล็อบบี้ networked · `LobbyState` · Q/E TabBar · `PlayerSlotRegistry` (แก้บั๊ก `clientId % 4`) · map/difficulty | `deef957d` |
+| 3 | cast bar · `ArenaDefinition`/`ArenaAnchors` · `RollContext` + seed | `41376152` |
+| 4 | `StatusEffectData` · `PlayerStatusManager` · `damageTakenMult` · `StatusHUDUI` · roll ผูกกับ action | **ยังไม่ commit** |
+| 5 | รื้อเส้นทางเมนู · ลบ `OnlineMenuUI` · ยก session logic ขึ้น `GameSessionManager` | **ยังไม่ commit** |
 
-## เอกสารที่ต้องอ่าน (เรียงตามความสำคัญ)
+รวม 5 รอบ · 57 task · Fix Round เกิดครั้งเดียว · Claude แก้เองรวม 5 บรรทัด (mechanical ล้วน)
 
-| ไฟล์ | คืออะไร |
+---
+
+## กำลังทำอยู่ตอนนี้ — debug ล็อบบี้ออนไลน์
+
+### อาการเดิม
+กด "เชิญเพื่อน" แล้ว **ปุ่มรหัสห้องไม่โผล่** ทั้งที่ session สร้างสำเร็จ
+
+### root cause ที่หาเจอ
+`CreateSessionAsync` / `JoinSessionAsync` **ทิ้ง `ISession` ที่ได้มา** แล้ว `return true` โดยไม่เซ็ต
+`currentSession` — ตัวแปรนั้นถูกเซ็ตที่เดียวคือ `OnSessionAdded()` ซึ่งพึ่ง `SessionObserver`
+ที่เงียบหลัง `NetworkManager.Shutdown()`
+
+หลักฐานจาก log จริง:
+```
+[DBG-lobby7] CreateSessionAsync คืน True · CurrentSession null? True · code=''
+[DBG-lobby7] Refresh — hasSession=False · ทุกฟิลด์ไม่ null
+```
+และ `OnSessionJoined ยิงแล้ว` ไม่โผล่เลย
+
+### แก้ไปแล้ว (ยังไม่ได้ทดสอบ)
+1. `OnSessionAdded` — เพิ่ม guard `session == null || currentSession == session`
+2. `CreateSessionAsync` — เรียก `OnSessionAdded(created)` **นอก try** (ถ้าอยู่ในนั้น handler ที่ throw
+   จะทำให้รายงานว่าสร้างไม่สำเร็จทั้งที่ห้องเปิดแล้ว)
+3. `JoinSessionAsync` — เหมือนกัน
+4. `RestoreFromExistingSession` — **ลบทิ้ง** ไม่มีใครเรียก และ `Start():65` ทำงานเดียวกัน
+5. `Status()` — ตัดรหัสห้องออกจากข้อความทั้ง 3 จุด (เคยรั่วไปโผล่บนปุ่ม JoinLobby)
+6. `LobbyUI` — subscribe `GameSessionManager.OnSessionJoined` + `OnSessionLeft` → `Refresh()`
+   (เดิมไม่มีใครสั่งวาดใหม่หลังสร้าง session)
+
+### ขั้นถัดไป
+กด Invite → กรอง Console ด้วย **`DBG-lobby7`** → ต้องเห็น
+`OnSessionAdded ลงทะเบียนแล้ว` ตามด้วย `Refresh — hasSession=True`
+
+---
+
+## ความเสี่ยงที่ยังไม่ปิด
+
+**`EnsureLobbyStateSpawned` อาจพลาดเหมือนบั๊ก B1 เดิม** — `MenuManager` subscribe
+`OnSessionJoined` แล้วเรียก `EnsureLobbyStateSpawned()` ซึ่งเช็ค `if (!nm.IsServer) return;`
+ตอนนี้ `OnSessionJoined` ยิง synchronous จากกลาง `CreateSessionAsync` ถ้า Building Block
+ยัง `StartHost` ไม่เสร็จ จะ return เงียบอีกครั้ง
+
+**ยังไม่มีหลักฐานว่าเกิดจริง** — ดูจาก log รอบหน้าว่า `OnSessionAdded ลงทะเบียนแล้ว` มาก่อนหรือหลัง
+LobbyState spawn ถ้าเกิดจริง แก้โดยผูกกับ `NetworkManager.OnServerStarted` แทน
+
+---
+
+## ต้องเก็บกวาดก่อนปิดงาน
+
+- **ลบ probe ทั้งหมด**: `grep -rn "DBG-lobby7" Assets/Script/` แล้วลบ (ตอนนี้ 12 จุด ใน 2 ไฟล์)
+- **`CLAUDE.md` ชี้ path ผิด** — SO ย้ายจาก `Assets/Script/Data/` ไป `Assets/ScriptableObjects/` แล้ว
+  (ผู้ใช้ย้ายเองใน Editor · 97 ไฟล์ · GUID ไม่ขาด) แต่ `CLAUDE.md` ยังเขียน path เดิม
+- **`git status` มี 233 D + 24 ??** ส่วนใหญ่คือ asset reorg ที่ git ยังไม่ detect เป็น rename
+  แนะนำแยกเป็น 3 commit: Round 4 · Round 5 · asset reorg
+
+---
+
+## งาน Editor ที่ยังค้าง (`docs/lobby-setup.md`)
+
+ทำไปแล้ว: `MapData_Arena01.asset` · ต่อสาย `LobbyUI` ครบ 6 ฟิลด์ใหม่
+
+ยังไม่ได้ทำ:
+- `PlayerStatusManager` add ลง player prefab
+- `StatusHUDUI` ต่อ Canvas + สร้าง `StatusEffectData` asset อย่างน้อย 1 ตัว
+- `LevelUpUI.waitingStrip` · `WinLoseUI.playAgainButton`
+- ย้าย `CharacterSelectUI` ไปเป็นลูกของ `Panel_Character` (Round 5 ทำโค้ดไว้แล้ว)
+- ลบ missing script ของ `OnlineMenuUI` ที่เหลือบน Canvas
+- **`joinStatusText` ต้องเป็น Text แยก ห้ามใช้ป้ายบนปุ่ม JoinLobby** — เคยทำให้รหัสห้องไปเขียนทับป้ายปุ่ม
+
+---
+
+## ยังไม่เคยเล่นจริงสักครั้ง
+
+ทุกอย่างตั้งแต่ Round 1 **คอมไพล์ผ่านแต่ยังไม่เคยรันจนจบเกม** สิ่งที่ compile check จับไม่ได้
+และต้องเทสต์ด้วยมือ:
+
+- **สีผู้เล่นหลัง reconnect** — ให้คนออกแล้วต่อกลับ แล้วดูว่า color match ยังแจกสีไม่ซ้ำ
+  (เล่นรวดเดียว 4 คนไม่มีทางเจอ)
+- **boss config ตาม tier** — ดูจากจอ client ว่า phase marker ตรงกับ host ไหม
+- **`GetDamageTakenMult()`** — ต้องคืน 1.0 พอดีเมื่อไม่มี status ไม่งั้นดาเมจทั้งเกมเพี้ยนเงียบ
+- **กด ESC ตอน Level Up** — ต้องไม่มีอะไรเกิดขึ้น
+
+---
+
+## สิ่งที่ตัดสินใจไปแล้ว ห้ามรื้อ
+
+| หัวข้อ | ผล |
 |---|---|
-| [STATUS.md](STATUS.md) | **เขียนให้ผู้ใช้อ่าน ไม่ใช่ agent** — ถึงไหนแล้ว + อะไรค้างที่ตัวเขา · อัปเดตทุกครั้งที่จบ Round |
-| [plan-server-state-and-reconnect.md](plan-server-state-and-reconnect.md) | **แผนหลัก** Stage 0-4 · งานถัดไปทั้งหมดอยู่ในนี้ |
-| [audit-status.md](audit-status.md) | ผล audit ใหม่ + ลำดับความสำคัญ + สิ่งที่สแกนแล้วไม่มีปัญหา |
-| [multi-ai-workflow.md](multi-ai-workflow.md) | วิธีทำงาน Claude วางแผน → Antigravity เขียน → unity-check ตรวจ |
-| [playtest-checklist.md](playtest-checklist.md) | สิ่งที่ compile check จับไม่ได้ ต้องเล่นเทสต์ |
-| [../AGENTS.md](../AGENTS.md) | กฎโปรเจกต์สำหรับ coder agent |
-| [../.claude/commands/unity-loop.md](../.claude/commands/unity-loop.md) | ตัวคุมลูป (`/unity-loop`) |
+| Solo | ต้องเล่นออฟไลน์ได้ → ไม่สร้าง session |
+| จุดตัดสินออนไลน์ | ล็อบบี้ออฟไลน์เสมอ · เชิญเพื่อน = `Shutdown()` แล้วสร้าง session |
+| แหล่งความจริง | `RunSetup` เป็นหลัก · `LobbyState` เป็นกระจก |
+| เลือกตัวละคร | แท็บในล็อบบี้ที่เดียว · คลิก = เลือกทันที |
+| reset ready | เปลี่ยนตัวละคร = reset เฉพาะคนนั้น · เปลี่ยนแผนที่/ความยาก = reset ทุกคน |
+| ความยาก | 5 tier · สลับ WaveConfig/BossConfig ไม่ใช่คูณเลข · author จริงแค่ Normal |
+| แท็บแผนที่ | client ซ่อน (วงเหลือ 3) |
 
-## การตัดสินใจที่ล็อกแล้ว
-
-- **co-op PvE เน้นเล่นกับเพื่อน** · matchmaking เปิด-ปิดได้ ยังไม่ตัดสิน
-- **ต้องมี client reconnect และ host migration** ← ตัวนี้ทำให้ Stage 1 (server ถือ state) เลื่อนไม่ได้
-- coder = **Antigravity** (Gemini CLI ใช้โควตา AI Pro ไม่ได้แล้ว Google ปิด OAuth 1 ก.ค. 2026)
-- **ไม่ใช้ Distributed Authority** แม้ Unity แนะนำสำหรับ NGO migration — สวนทางกับ server-authoritative
-
-## ยังไม่ตัดสิน (บล็อกงานถัดไป)
-
-1. **Hit RPC throttling** — batch / throttle ต่อ enemy / predict ฝั่งคนยิง
-   ต้องเลือกก่อนเริ่ม Stage 1 เพราะแตะ damage path เดียวกัน
-2. **โลกในเกมหลัง host migrate** — สร้างใหม่ (แนะนำ) หรือเก็บทั้งหมด · ตอบตอน Stage 4
-
-## งานถัดไป เรียงตามลำดับ
-
-**1. ลูปที่เขียนแผนไว้แล้ว รอวางใน Antigravity** — `docs/handoff.md` + `docs/implementation_plan.md`
-N1-N4: `Enemy.netMaxHealth` + `WorldHPBar` · orb guard · HitEffect ซ้อน · ClusterBomb gate (9 ไฟล์ งานกลล้วน)
-
-**2. N5 `Time.timeScale` softlock** — ✅ **มีแผนแล้ว** [plan-n5-timescale.md](plan-n5-timescale.md) (Round 2, 5 ไฟล์)
-**4** ระบบเขียน `timeScale` อิสระกัน ไม่ใช่ 3 — ตกไป `DevTools:124`
-(`PauseMenuUI:85,102,112,119` คืนค่า 3 จุด · `SharedExperienceManager:225,234,291` · `WinLoseUI:121,128`)
-ตัดสินใจแล้ว: `GamePause` static เจ้าของเดียว **flag set + enum ที่ derive จาก priority**
-(`GameOver > PhaseSelect > PauseMenu > Playing`) · กด ESC ซ้อน card UI ได้ · DevTools slow-mo ผ่าน `ResumeScale`
-เหตุผลที่ไม่ใช้ counter: การเรียกไม่สมดุล — `EndUpgradePhaseClientRpc` ยิงจาก 2 เส้นทาง (`:189` upgrade · `:313` orb)
-
-**3. N6 FlowField bake ทุก client** — `FlowFieldPathfinder.cs:113` แก้บรรทัดเดียว
-`Update()` มี server gate แล้ว แต่ `Start()` ไม่มี → 10,000 `Physics.CheckSphere` ฟรีบนทุก client
-
-**4. Stage 0.1 buff ไม่ทำงานสำหรับ client**
-`tempMoveSpeedBonus` · `tempHealthRegenBonus` (`playermove.cs:295,298`) ·
-`tempAbilityHaste` · `tempDamageBonusMult` (`PlayerStatManager.cs:20,23`)
-→ **อย่าแก้ด้วย NetworkVariable ทีละตัว** อ่าน `plan-server-state-and-reconnect.md` §0.1
-
-**5. Stage 1 เป็นต้นไป** — server ถือ progression → reconnect → host migration
-
-## กฎที่ต้องบังคับตั้งแต่วันนี้
-
-> เพิ่มอาวุธ/สกิลใหม่ **ห้ามเพิ่ม ServerRpc ที่รับ `damage` เป็นพารามิเตอร์อีก**
-> ตอนนี้มี ~25 ตัวที่ต้องรื้อใน Stage 1 · ถ้าเลี่ยงไม่ได้ให้ส่ง "ชื่ออาวุธ + level" แทนตัวเลขดิบ
-
-## บทเรียนจากเซสชันนี้
-
-- ลูป multi-agent **5 ลูป ไม่มี Fix Round เลย** — เพราะแผนระบุ *กับดัก* ไว้ล่วงหน้า
-  (เช่น "เปลี่ยนเป็น HashSet แล้ว `FlowFieldPathfinder` จะพังด้วย")
-  ไม่ใช่เพราะเครื่องมือดี
-- **บั๊กที่หนักที่สุด compile check จับไม่ได้เลย** — Lance ไม่แสดง VFX, `MissingReferenceException`
-  ทั้งคู่เจอจากการเล่นจริง โปรเจกต์ไม่มี automated test นี่คือช่องว่างที่ยังไม่มีอะไรแทน
-- `unity-check.ps1`: cold **62 นาที** / warm **~41 วินาที** · Editor เปิดค้าง = exit 2 ไม่ใช่ compile error
+เอกสารเต็ม: `docs/plan-savage-boss-system.md` · `docs/lobby-setup.md` · `docs/implementation_plan.md`
