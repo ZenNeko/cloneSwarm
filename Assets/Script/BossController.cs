@@ -59,7 +59,9 @@ public class BossController : NetworkBehaviour
 
         if (IsServer)
         {
-            FightSeed.Value = new System.Random().Next();
+            int s;
+            do { s = new System.Random().Next(); } while (s == 0);
+            FightSeed.Value = s;
 
             enemy = GetComponent<Enemy>();
             if (enemy != null)
@@ -209,6 +211,11 @@ public class BossController : NetworkBehaviour
             BossAction action = currentActionList[mechanicIndex % currentActionList.Count];
             if (action != null)
             {
+                if (!string.IsNullOrEmpty(action.rollName) && Rolls != null)
+                {
+                    Rolls.Roll(action.rollName);
+                }
+
                 if (action.castTime > 0f && !string.IsNullOrEmpty(action.castName))
                 {
                     CastStartClientRpc(action.castName, action.castTime);

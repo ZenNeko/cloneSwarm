@@ -33,6 +33,7 @@ public class BossManager : NetworkBehaviour
     // ── State ─────────────────────────────────────────────────────────────
     private Enemy               activeMainBossEnemy;
     private BossEncounterConfig activeBossConfig;
+    private BossEncounterConfig activeMiniBossConfig;
 
     // กัน onDeath ยิงซ้ำ — EnemyTakeDamage ไม่มีธง "ตายแล้ว" 2 นัดในเฟรมเดียวเข้าได้ทั้งคู่
     bool _mainBossDeathHandled;
@@ -53,7 +54,8 @@ public class BossManager : NetworkBehaviour
             var tierContent = RunSetup.Map.GetTier(RunSetup.Difficulty);
             if (tierContent != null)
             {
-                activeBossConfig = tierContent.mainBossConfig;
+                activeBossConfig     = tierContent.mainBossConfig;
+                activeMiniBossConfig = tierContent.miniBossConfig;
             }
         }
 
@@ -88,6 +90,13 @@ public class BossManager : NetworkBehaviour
 
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(prefab, pos, Quaternion.identity);
+
+        if (activeMiniBossConfig != null)
+        {
+            var bc = go.GetComponent<BossController>();
+            if (bc != null) bc.config = activeMiniBossConfig;
+        }
+
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         // HP = baseHP × miniBossBaseHealthMult × waveHealthMult

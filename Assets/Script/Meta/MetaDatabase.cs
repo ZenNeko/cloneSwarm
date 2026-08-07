@@ -26,6 +26,9 @@ namespace CloneSwarm.Meta
         [Header("Augments (สุ่มตอน level ที่กำหนดใน SharedExperienceManager)")]
         public List<AugmentData> augments = new();
 
+        [Header("Status Effects")]
+        public List<StatusEffectData> statuses = new();
+
         [Header("Economy")]
         [Tooltip("ทองที่ได้ = expReward ของ enemy × ค่านี้")]
         public float goldPerExp = 0.1f;
@@ -93,6 +96,15 @@ namespace CloneSwarm.Meta
             for (int i = 0; i < characters.Count; i++)
                 if (characters[i] != null && characters[i].characterName == characterName)
                     return characters[i];
+            return null;
+        }
+
+        public StatusEffectData GetStatus(string statusId)
+        {
+            if (string.IsNullOrEmpty(statusId)) return null;
+            for (int i = 0; i < statuses.Count; i++)
+                if (statuses[i] != null && statuses[i].statusId == statusId)
+                    return statuses[i];
             return null;
         }
 

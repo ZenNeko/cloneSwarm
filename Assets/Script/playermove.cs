@@ -171,6 +171,9 @@ public class playermove : NetworkBehaviour
     {
         if (!IsServer || isDead.Value) return;
 
+        var status = GetComponent<PlayerStatusManager>();
+        if (status != null) amount *= status.GetDamageTakenMult();
+
         // Armor flat reduction
         var sm = GetComponent<PlayerStatManager>();
         if (sm != null) amount = Mathf.Max(1f, amount - sm.GetArmorValue());

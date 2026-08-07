@@ -15,6 +15,8 @@ public class MapData : ScriptableObject
         public DifficultyTier tier = DifficultyTier.Normal;
         public WaveConfig[] wavesByPhase;              // เรียงตามช่วงของรัน
         public BossEncounterConfig mainBossConfig;     // ปล่อย null = ใช้ของบน prefab
+        [Tooltip("ปล่อยว่าง = ใช้ของบน prefab")]
+        public BossEncounterConfig miniBossConfig;
     }
     public TierContent[] tiers;
 

@@ -15,6 +15,9 @@ public abstract class BossAction : ScriptableObject
     public string castName = "";
     [Tooltip("วินาทีที่ cast bar วิ่ง — 0 = ไม่โชว์")]
     public float castTime = 0f;
+    [Header("Roll")]
+    [Tooltip("ชื่อ roll ที่ action นี้อ่าน — ว่าง = ไม่ใช้ roll")]
+    public string rollName = "";
     [Tooltip("วินาทีที่เป็น Cooldown ล็อคการกระทำถัดไปหลังทำท่านี้เสร็จ")]
     public float cooldownAfter = 0f;
 
@@ -52,5 +55,19 @@ public abstract class BossAction : ScriptableObject
             if (d < minDist) { minDist = d; nearest = obj.transform; }
         }
         return nearest;
+    }
+
+    /// <summary>
+    /// อ่านค่า roll ที่ resolve แล้วของ fight นี้ — คืน -1 ถ้าไม่มี roll หรือหาไม่เจอ
+    /// </summary>
+    protected int GetRoll(NetworkBehaviour runner)
+    {
+        if (string.IsNullOrEmpty(rollName) || runner == null) return -1;
+        var boss = runner as BossController;
+        if (boss != null && boss.Rolls != null)
+        {
+            return boss.Rolls.Peek(rollName);
+        }
+        return -1;
     }
 }
