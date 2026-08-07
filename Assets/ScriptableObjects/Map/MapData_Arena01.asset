@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd5726ad80d652a40a03982d44b4b3ca, type: 3}
+  m_Name: MapData_Arena01
+  m_EditorClassIdentifier: Assembly-CSharp::MapData
+  mapId: arena01
+  displayName: Arena 01
+  description: map preview
+  previewImage: {fileID: 0}
+  sceneName: SampleScene
+  tiers:
+  - tier: 1
+    wavesByPhase: []
+    mainBossConfig: {fileID: 0}
+    miniBossConfig: {fileID: 0}
