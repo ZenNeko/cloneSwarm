@@ -68,8 +68,30 @@ namespace CloneSwarm.Meta
                 Migrate(_data);
             }
 
+            ApplyDevOverride();
+
             _dirty = false;
             OnDataChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// ทับค่าจาก Assets/Resources/DevProfileOverride.asset — Editor เท่านั้น
+        /// ไม่เรียก MarkDirty() หรือ Save() โดยตั้งใจ: ค่า dev ไม่ควรถูกเขียนลงดิสก์
+        /// เพราะแค่ตั้งค่ามัน
+        /// </summary>
+        static void ApplyDevOverride()
+        {
+#if UNITY_EDITOR
+            if (_data == null) return;
+
+            var ov = Resources.Load<DevProfileOverride>("DevProfileOverride");
+            if (ov == null || !ov.applyOnPlay) return;
+
+            _data.gold = ov.gold;
+            if (ov.alsoSetLifetimeGold) _data.lifetimeGold = ov.gold;
+
+            Debug.Log($"[Save] DevProfileOverride ทำงาน — ตั้งทองเป็น {ov.gold:N0}");
+#endif
         }
 
         static SaveData ReadFrom(string path)
@@ -163,6 +185,12 @@ namespace CloneSwarm.Meta
         {
             _data = SaveData.CreateNew();
             Save();
+
+            // หลัง Save โดยตั้งใจ — ไฟล์บนดิสก์ต้องเป็นโปรไฟล์ที่รีเซ็ตจริง
+            // ส่วนในหน่วยความจำได้ค่า dev ไปใช้ต่อ ไม่งั้นกด Reset ตอนเปิด override
+            // อยู่จะได้ทอง 0 แล้วงงว่าทำไม
+            ApplyDevOverride();
+
             Debug.Log("[Save] รีเซ็ตโปรไฟล์เรียบร้อย");
         }
 
