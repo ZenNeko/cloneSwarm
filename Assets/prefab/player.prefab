@@ -56,6 +56,7 @@ GameObject:
   - component: {fileID: 6880900941574084203}
   - component: {fileID: -4709983444148486069}
   - component: {fileID: 3446993503979069558}
+  - component: {fileID: -2969182571492405703}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -326,7 +327,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  <InScenePlaced>k__BackingField: 0
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -631,3 +632,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAugmentManager
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-2969182571492405703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5f56c6ed267e1443923f99b86abe978, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatusManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  telegraphPrefab: {fileID: 0}
+  Statuses:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
