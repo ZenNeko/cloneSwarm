@@ -13,8 +13,14 @@ MonoBehaviour:
   m_Name: ColorMatchAoEAction
   m_EditorClassIdentifier: Assembly-CSharp::ColorMatchAoEAction
   actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
   cooldownAfter: 0
-  radius: 3
-  warningDuration: 3.5
+  radius: 4
+  warningDuration: 3
   damage: 10
-  spawnRadius: 6
+  spawnRadius: 10
+  centerMode: 2
+  arenaAnchor: 0
+  arenaDistanceScale: 10
