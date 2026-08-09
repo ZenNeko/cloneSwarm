@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: AoE_Boss_Circle
   m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
   actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
   cooldownAfter: 0
   targetingMode: 0
   targetOffset: {x: 0, y: 0, z: 0}
@@ -23,6 +26,8 @@ MonoBehaviour:
   isRotatingChase: 0
   isStackMarker: 0
   isGaze: 0
-  knockbackForce: 0
+  knockbackMode: 0
+  knockbackDistance: 0
   knockbackDuration: 0.2
-  radius: 10
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  radius: 8

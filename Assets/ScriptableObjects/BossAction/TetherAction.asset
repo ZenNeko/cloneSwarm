@@ -13,8 +13,11 @@ MonoBehaviour:
   m_Name: TetherAction
   m_EditorClassIdentifier: Assembly-CSharp::TetherAction
   actionDelay: 2
+  castName: 
+  castTime: 0
+  rollName: 
   cooldownAfter: 8
-  tetherDistance: 10
+  tetherDistance: 20
   tetherDuration: 8
   tetherFailDamage: 50
   tetherSoloSpawnOffset: 3
