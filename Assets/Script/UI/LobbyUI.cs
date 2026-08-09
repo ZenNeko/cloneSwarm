@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
@@ -6,8 +7,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using CloneSwarm.Meta;
 
+/// <summary>Hub ใช้ shell เดียวสองโหมด — เข้าจาก PLAY หรือจากปุ่มร้าน</summary>
+public enum HubMode { Lobby, Shop }
+
 public class LobbyUI : MonoBehaviour
 {
+    /// <summary>ยิงเมื่อออกจากล็อบบี้เรียบร้อยแล้ว — MenuManager subscribe เพื่อกลับหน้า Main</summary>
+    public static event System.Action OnBack;
+
     [Header("TabBar & Maps")]
     public TabBar tabBar;
     public List<MapData> maps = new();
@@ -20,6 +27,7 @@ public class LobbyUI : MonoBehaviour
     public Button readyButton;
     public TextMeshProUGUI readyButtonText;
     public Button startRunButton;
+    public Button backButton;
 
     [Header("Selection Labels")]
     public TextMeshProUGUI mapNameLabel;
@@ -27,17 +35,22 @@ public class LobbyUI : MonoBehaviour
 
     [Header("Invite & Network Controls")]
     public Button inviteButton;
+    [Tooltip("ป้ายบนปุ่ม Invite — หลังสร้างห้องจะกลายเป็นรหัสห้อง กดแล้วคัดลอก")]
+    public TextMeshProUGUI inviteButtonText;
     public GameObject busyOverlay;
     public TextMeshProUGUI busyText;
 
     [Header("Room & Join Controls")]
-    public TextMeshProUGUI roomCodeLabel;
-    public Button copyCodeButton;
-    public TMP_InputField lobbyJoinCodeInput;
     public Button lobbyJoinButton;
+
+    [Header("Hub Mode")]
+    [Tooltip("แถบล่างที่มี Ready / Start Run — ซ่อนตอนอยู่โหมดร้าน")]
+    public GameObject bottomBar;
 
     private readonly List<GameObject> spawnedPartyRows = new();
     private LobbyState lastLobbyState;
+    private HubMode mode = HubMode.Lobby;
+    private Coroutine copyFeedbackRoutine;
 
     private void Start()
     {
@@ -51,14 +64,14 @@ public class LobbyUI : MonoBehaviour
             startRunButton.onClick.AddListener(OnStartRunClicked);
         }
 
-        if (inviteButton != null)
+        if (backButton != null)
         {
-            inviteButton.onClick.AddListener(OnInviteClicked);
+            backButton.onClick.AddListener(OnBackClicked);
         }
 
-        if (copyCodeButton != null)
+        if (inviteButton != null)
         {
-            copyCodeButton.onClick.AddListener(OnCopyCodeClicked);
+            inviteButton.onClick.AddListener(OnInviteButtonClicked);
         }
 
         if (lobbyJoinButton != null)
@@ -87,6 +100,18 @@ public class LobbyUI : MonoBehaviour
 
         GameSessionManager.OnSessionJoined -= OnSessionChanged;
         GameSessionManager.OnSessionLeft   -= Refresh;
+    }
+
+    /// <summary>MenuManager เรียกทันทีหลัง ShowPanel(lobbyPanel)</summary>
+    public void SetMode(HubMode m)
+    {
+        mode = m;
+        if (bottomBar != null) bottomBar.SetActive(m == HubMode.Lobby);
+
+        // Refresh ตั้งความมองเห็นของแท็บก่อน แล้วค่อยเลือก — สลับลำดับไม่ได้
+        // เพราะ TabBar.Select() ปฏิเสธแท็บที่ visible = false
+        Refresh();
+        if (tabBar != null) tabBar.Select(m == HubMode.Lobby ? "lobby" : "shop");
     }
 
     private void OnSessionChanged(Unity.Services.Multiplayer.ISession s)
@@ -155,6 +180,24 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
+    private async void OnBackClicked()
+    {
+        var gsm = GameSessionManager.Instance;
+        if (gsm != null && gsm.IsBusy) return;
+
+        ShowBusy("กำลังออกจากห้อง…");
+
+        // LeaveSessionIfActiveAsync คืนทันทีถ้าไม่มี session — solo จึงเรียกได้ตรงๆ
+        if (gsm != null) await gsm.LeaveSessionIfActiveAsync();
+
+        var nm = NetworkManager.Singleton;
+        if (nm != null && nm.IsListening) nm.Shutdown();
+        while (nm != null && nm.IsListening) await System.Threading.Tasks.Task.Yield();
+
+        HideBusy();
+        OnBack?.Invoke();
+    }
+
     private void ShowBusy(string msg)
     {
         if (busyOverlay != null) busyOverlay.SetActive(true);
@@ -200,25 +243,38 @@ public class LobbyUI : MonoBehaviour
         Debug.Log("[DBG-lobby7] เรียก Refresh() ท้าย OnInviteClicked แล้ว");
     }
 
-    private async void OnLobbyJoinClicked()
+    private void OnLobbyJoinClicked()
     {
-        if (lobbyJoinCodeInput == null || string.IsNullOrWhiteSpace(lobbyJoinCodeInput.text)) return;
-        string code = lobbyJoinCodeInput.text.Trim();
-
-        if (!await RestartAndShutdownNetworkAsync("กำลังเข้าห้อง…")) return;
-
-        bool ok = await GameSessionManager.Instance.JoinSessionAsync(code);
-        HideBusy();
-        if (!ok) return;
+        if (JoinRoomPanel.Instance != null) JoinRoomPanel.Instance.Open();
     }
 
-    private void OnCopyCodeClicked()
+    /// listener ตัวเดียวแยกสาขาตอนกด — ไม่สลับ listener เพราะผูกซ้ำเงียบได้ง่าย
+    private void OnInviteButtonClicked()
+    {
+        bool hasSession = GameSessionManager.Instance != null
+                       && GameSessionManager.Instance.CurrentSession != null;
+
+        if (hasSession) CopyRoomCode();
+        else            OnInviteClicked();
+    }
+
+    private void CopyRoomCode()
     {
         string code = GameSessionManager.Instance?.SessionCode;
-        if (!string.IsNullOrEmpty(code))
-        {
-            GUIUtility.systemCopyBuffer = code;
-        }
+        if (string.IsNullOrEmpty(code)) return;
+
+        GUIUtility.systemCopyBuffer = code;
+
+        if (copyFeedbackRoutine != null) StopCoroutine(copyFeedbackRoutine);
+        copyFeedbackRoutine = StartCoroutine(ShowCopiedThenRestore());
+    }
+
+    private IEnumerator ShowCopiedThenRestore()
+    {
+        if (inviteButtonText != null) inviteButtonText.text = "คัดลอกแล้ว";
+        yield return new WaitForSecondsRealtime(1.2f);
+        copyFeedbackRoutine = null;
+        Refresh();
     }
 
     public void Refresh()
@@ -228,27 +284,25 @@ public class LobbyUI : MonoBehaviour
 
         if (tabBar != null)
         {
-            tabBar.SetTabVisible("map", isHost);
+            bool lobbyMode = mode == HubMode.Lobby;
+            tabBar.SetTabVisible("lobby",     lobbyMode);
+            tabBar.SetTabVisible("map",       lobbyMode && isHost);
+            tabBar.SetTabVisible("character", true);
+            tabBar.SetTabVisible("shop",      true);
         }
 
         bool hasSession = GameSessionManager.Instance != null && GameSessionManager.Instance.CurrentSession != null;
-        Debug.Log($"[DBG-lobby7] Refresh — hasSession={hasSession} · roomCodeLabel null? {roomCodeLabel == null} · copyCodeButton null? {copyCodeButton == null} · inviteButton null? {inviteButton == null}");
+        Debug.Log($"[DBG-lobby7] Refresh — hasSession={hasSession} · inviteButton null? {inviteButton == null}");
 
-        if (hasSession)
+        if (inviteButton != null) inviteButton.gameObject.SetActive(true);
+
+        // เช็ค copyFeedbackRoutine ด้วย ไม่งั้น Refresh ที่ถูกยิงจาก OnLobbyChanged
+        // ระหว่าง 1.2 วินาทีจะลบข้อความ "คัดลอกแล้ว" ทิ้งก่อนผู้เล่นทันเห็น
+        if (inviteButtonText != null && copyFeedbackRoutine == null)
         {
-            if (roomCodeLabel != null)
-            {
-                roomCodeLabel.gameObject.SetActive(true);
-                roomCodeLabel.text = $"Room: {GameSessionManager.Instance.SessionCode}";
-            }
-            if (copyCodeButton != null) copyCodeButton.gameObject.SetActive(true);
-            if (inviteButton != null) inviteButton.gameObject.SetActive(false);
-        }
-        else
-        {
-            if (roomCodeLabel != null) roomCodeLabel.gameObject.SetActive(false);
-            if (copyCodeButton != null) copyCodeButton.gameObject.SetActive(false);
-            if (inviteButton != null) inviteButton.gameObject.SetActive(true);
+            inviteButtonText.text = hasSession
+                ? $"รหัส {GameSessionManager.Instance.SessionCode} · คัดลอก"
+                : "เชิญเพื่อน";
         }
 
         if (LobbyState.Instance != null && LobbyState.Instance != lastLobbyState)

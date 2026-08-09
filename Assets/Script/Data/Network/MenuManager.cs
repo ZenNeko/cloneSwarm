@@ -25,8 +25,6 @@ public class MenuManager : MonoBehaviour
     public GameObject mainPanel;
     public GameObject settingsPanel;
     public GameObject loadingPanel;
-    [Tooltip("ร้านอัปเกรดถาวร — มี TalentShopUI อยู่บนนี้")]
-    public GameObject talentShopPanel;
     public GameObject lobbyPanel;
     public LobbyUI    lobbyUI;
     public GameObject lobbyStatePrefab;
@@ -47,8 +45,6 @@ public class MenuManager : MonoBehaviour
 
     [Header("── Join Room (Main Panel) ────────────")]
     public Button          joinRoomButton;
-    public TMP_InputField  joinCodeInput;
-    public TextMeshProUGUI joinStatusText;
 
     // ═══════════════════════════════════════════════════════════════════════
     // SETTINGS
@@ -76,12 +72,22 @@ public class MenuManager : MonoBehaviour
 
     void OnEnable()
     {
-        GameSessionManager.OnStatus += HandleStatus;
+        CloneSwarm.Meta.MetaProgression.OnGoldChanged += HandleGoldChanged;
+        SettingsMenuUI.OnBack                         += ShowMain;
+        LobbyUI.OnBack                                += ShowMain;
+        JoinRoomPanel.OnJoined                         += HandleJoined;
+        JoinRoomPanel.OnJoinFailed                     += HandleJoinFailed;
+        GameSessionManager.OnSessionJoined             += HandleSessionJoined;
     }
 
     void OnDisable()
     {
-        GameSessionManager.OnStatus -= HandleStatus;
+        CloneSwarm.Meta.MetaProgression.OnGoldChanged -= HandleGoldChanged;
+        SettingsMenuUI.OnBack                         -= ShowMain;
+        LobbyUI.OnBack                                -= ShowMain;
+        JoinRoomPanel.OnJoined                         -= HandleJoined;
+        JoinRoomPanel.OnJoinFailed                     -= HandleJoinFailed;
+        GameSessionManager.OnSessionJoined             -= HandleSessionJoined;
     }
 
     void Start()
@@ -93,36 +99,21 @@ public class MenuManager : MonoBehaviour
         if (quitButton)     quitButton.onClick.AddListener(OnQuitClicked);
         if (talentShopButton) talentShopButton.onClick.AddListener(OnTalentShopClicked);
 
-        // Talent Shop — TalentShopUI ยิง OnBack เมื่อกดปุ่ม Back
-        CloneSwarm.Meta.TalentShopUI.OnBack       += ShowMain;
-        CloneSwarm.Meta.MetaProgression.OnGoldChanged += HandleGoldChanged;
         RefreshGold();
-
-        // Settings — SettingsMenuUI fires OnBack เมื่อกดปุ่ม Back
-        SettingsMenuUI.OnBack += ShowMain;
-
-        // Session joined -> EnsureLobbyStateSpawned
-        GameSessionManager.OnSessionJoined += HandleSessionJoined;
-
         ShowMain();
-    }
-
-    void OnDestroy()
-    {
-        GameSessionManager.OnSessionJoined   -= HandleSessionJoined;
-        SettingsMenuUI.OnBack                  -= ShowMain;
-        CloneSwarm.Meta.TalentShopUI.OnBack           -= ShowMain;
-        CloneSwarm.Meta.MetaProgression.OnGoldChanged -= HandleGoldChanged;
-    }
-
-    void HandleStatus(string msg)
-    {
-        if (joinStatusText != null) joinStatusText.text = msg;
     }
 
     void HandleSessionJoined(ISession _)
     {
         EnsureLobbyStateSpawned();
+    }
+
+    void HandleJoined() => ShowPanel(lobbyPanel);
+
+    void HandleJoinFailed()
+    {
+        if (lobbyPanel != null && lobbyPanel.activeSelf)
+            StartCoroutine(StartOfflineHostThenSpawn());
     }
 
     void HandleGoldChanged(int _) => RefreshGold();
@@ -146,7 +137,6 @@ public class MenuManager : MonoBehaviour
         mainPanel?.SetActive(false);
         settingsPanel?.SetActive(false);
         loadingPanel?.SetActive(false);
-        talentShopPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
         target?.SetActive(true);
     }
@@ -157,6 +147,7 @@ public class MenuManager : MonoBehaviour
     void OnPlayClicked()
     {
         ShowPanel(lobbyPanel);
+        if (lobbyUI != null) lobbyUI.SetMode(HubMode.Lobby);
         StartCoroutine(StartOfflineHostThenSpawn());
     }
 
@@ -168,16 +159,19 @@ public class MenuManager : MonoBehaviour
         EnsureLobbyStateSpawned();
     }
 
-    async void OnJoinRoomClicked()
+    void OnJoinRoomClicked()
     {
-        if (joinCodeInput == null || string.IsNullOrWhiteSpace(joinCodeInput.text)) return;
-        bool ok = await GameSessionManager.Instance.JoinSessionAsync(joinCodeInput.text.Trim());
-        if (ok) ShowPanel(lobbyPanel);
+        if (JoinRoomPanel.Instance != null) JoinRoomPanel.Instance.Open();
     }
 
     void OnSettingsClicked()   => ShowPanel(settingsPanel);
 
-    void OnTalentShopClicked() => ShowPanel(talentShopPanel);
+    /// ร้านเป็นแท็บใน Hub — ไม่แตะ network เลย
+    void OnTalentShopClicked()
+    {
+        ShowPanel(lobbyPanel);
+        if (lobbyUI != null) lobbyUI.SetMode(HubMode.Shop);
+    }
 
     void OnQuitClicked()
     {

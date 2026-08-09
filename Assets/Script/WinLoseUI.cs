@@ -177,10 +177,19 @@ public class WinLoseUI : MonoBehaviour
     }
 
     // ── Return to Menu ────────────────────────────────────────────────────
-    void ReturnToMenu()
+    async void ReturnToMenu()
     {
         IsShowing = false;
         GamePause.ResetAll();
+
+        // กันกดซ้ำระหว่าง await — LoadScene ยังไม่เกิด ปุ่มยังรับคลิกได้อยู่
+        if (returnButton)    returnButton.interactable    = false;
+        if (playAgainButton) playAgainButton.interactable = false;
+
+        // ไม่ทำข้อนี้ = GameSessionManager (DontDestroyOnLoad) ถือ session ตายข้ามซีน
+        // แล้วเมนูจะโชว์รหัสห้องของห้องที่ไม่มีใครอยู่
+        if (GameSessionManager.Instance != null)
+            await GameSessionManager.Instance.LeaveSessionIfActiveAsync();
 
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (nm != null && nm.IsListening)

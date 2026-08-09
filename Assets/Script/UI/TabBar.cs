@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -35,10 +36,24 @@ public class TabBar : MonoBehaviour
                 tab.button.onClick.AddListener(() => Select(tabId));
             }
         }
+
+        // เลือกให้เฉพาะตอนที่ยังไม่มีใครสั่งเลือก — LobbyUI.SetMode() เรียก Select() ตรงๆ
+        // ตั้งแต่เฟรมที่ Hub ถูกเปิด ซึ่งเกิดก่อน Start() ของ TabBar ในเฟรมเดียวกัน
+        // ถ้าไม่กันตรงนี้ Start จะเลือกแท็บแรกทับโหมดที่เพิ่งสั่งไป
+        if (string.IsNullOrEmpty(currentTabId))
+        {
+            var first = tabs.Find(t => t != null && t.visible);
+            if (first != null) Select(first.id);
+        }
     }
 
     private void Update()
     {
+        // พิมพ์ Q หรือ E ในช่องรหัสห้องแล้วแท็บเด้ง ตัวอักษรหาย
+        // JoinRoomPanel ลอยทับล็อบบี้ที่ยัง active อยู่ TabBar จึงยังรับคีย์ได้ถ้าไม่กันตรงนี้
+        var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (selected != null && selected.GetComponent<TMP_InputField>() != null) return;
+
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
 
