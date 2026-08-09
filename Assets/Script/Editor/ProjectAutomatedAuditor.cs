@@ -14,17 +14,23 @@ public static class ProjectAutomatedAuditor
 
         // 1. Audit Network Prefabs for missing NetworkObject
         string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" });
+        // เดิมเช็คจากชื่อ path ("Network"/"Projectile"/"Enemy"/"Boss") ซึ่งจับ asset pack
+        // ของคนอื่นทั้งกอง — 229 คำเตือน ไม่มีอันไหนจริงสักอัน
+        // บั๊กจริงหน้าตาแบบนี้: มีสคริปต์ NetworkBehaviour อยู่ แต่หา NetworkObject
+        // บนตัวเองหรือ parent ไม่เจอ → NGO ปฏิเสธ spawn เงียบๆ
         foreach (var guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.Contains("Network") || path.Contains("Projectile") || path.Contains("Enemy") || path.Contains("Boss"))
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab == null) continue;
+
+            foreach (var nb in prefab.GetComponentsInChildren<Unity.Netcode.NetworkBehaviour>(true))
             {
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (prefab != null && prefab.GetComponent<Unity.Netcode.NetworkObject>() == null)
-                {
-                    Debug.LogWarning($"[AutomatedAudit] ⚠️ Network candidate missing NetworkObject: {path}");
-                    issueCount++;
-                }
+                if (nb.GetComponentInParent<Unity.Netcode.NetworkObject>(true) != null) continue;
+
+                Debug.LogWarning($"[AutomatedAudit] ⚠️ {nb.GetType().Name} on prefab but NetworkObject is missing on it or any parent: {path}");
+                issueCount++;
+                break;   // รายงาน prefab ละครั้งพอ
             }
         }
 
