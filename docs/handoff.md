@@ -1,41 +1,43 @@
-# Handoff → Antigravity  (Round 5)
+# Handoff → Antigravity  (Round 7 — ชุดเพิ่ม)
 
 ก๊อปข้อความข้างล่างนี้ไปวางใน Antigravity:
 
 ---
-อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นทำทุก Task ที่เป็น [ ] เรียงตามลำดับห้ามสลับ เพราะ T64 ลบไฟล์ที่ T56 ต้องเลิกอ้างอิงก่อน แก้เฉพาะไฟล์ที่แผนระบุ ห้ามแตะไฟล์ที่ Round 1-4 ทำไปแล้ว (LobbyState TabBar MapData RunSetup DifficultyTier PlayerSlotRegistry PlayerStatusManager StatusHUDUI BossController) ห้ามรัน build หรือ unity-check ห้ามแตะไฟล์ .unity .prefab .asset ห้าม commit เสร็จแต่ละข้อให้ติ๊ก [x] และสรุปไฟล์ที่แก้ใต้ ## Changed Files ถ้าติดให้หยุดแล้วเขียนใต้ ## Questions อย่าเดาต่อ
+อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นลงมือทำทุก Task ที่ยังเป็น [ ] แก้เฉพาะไฟล์ที่แผนระบุ ห้ามรัน build หรือ unity-check เสร็จแต่ละ task ให้ติ๊ก [x] และสรุปไฟล์ที่แก้ไว้ท้ายไฟล์แผนใต้ ## Changed Files
 ---
 
-รอบนี้ให้ทำ: T51–T64 (13 ข้อ · 6 ไฟล์)
+## รอบนี้เหลือ task เดียว
 
-กอง A — ยกลอจิก session ขึ้น GameSessionManager (ทำก่อนทุกกอง)
-T51 GameSessionManager.cs   เพิ่ม sessionSettings + OnStatus event + isBusy
-T52 GameSessionManager.cs   ยก CreateSessionAsync มา ครบทั้ง 4 กันชน
-T53 GameSessionManager.cs   ยก JoinSessionAsync(code) มา
-T54 GameSessionManager.cs   ยก LeaveSessionIfActiveAsync + RestoreFromExistingSession
-T55 GameSessionManager.cs   IsHost = NetworkManager.IsServer || session.IsHost   ← แก้บั๊ก solo
+**T79** · `Assets/Script/Editor/ProjectAutomatedAuditor.cs` — **MODIFY**
+เปลี่ยนการตรวจ NetworkObject จาก "เดาจากชื่อ path" เป็น "ดูว่ามี `NetworkBehaviour` จริงไหม"
 
-กอง B — เส้นทางเมนู
-T56 MenuManager.cs          ลบ MenuMode + charSelect + onlinePanel · PLAY เข้าล็อบบี้ตรง
-T57 MenuManager.cs          ปุ่มเข้าห้องเพื่อนที่เมนูหลัก
+T74–T78 ติ๊ก `[x]` และคอมไพล์ผ่านแล้ว **ห้ามแตะซ้ำ**
 
-กอง C — ล็อบบี้
-T58 LobbyUI.cs              RunSetup เป็นแหล่งความจริง
-T59 LobbyUI.cs              เชิญเพื่อน = Shutdown แล้วสร้าง session
-T60 LobbyUI.cs              รหัสห้อง + copy + เข้าห้องจากในล็อบบี้
-T61 LobbyUI.cs              ใช้ PlayerSlotRegistry แทน clientId ดิบ
+## ทำไมต้องแก้
 
-กอง D — เก็บกวาด
-T62 CharacterSelectUI.cs    คลิกการ์ด = เลือกทันที · Confirm เหลือแค่ปลดล็อก
-T63 LobbyUI.cs              subscribe OnCharacterConfirmed
-T64 OnlineMenuUI.cs         DELETE ทั้งไฟล์ + .meta   ← ข้อสุดท้ายเท่านั้น
+รัน `-Audit` แล้วได้ **229 คำเตือน false positive 100%** เพราะเงื่อนไขเช็คแค่ชื่อโฟลเดอร์:
 
-จุดที่ให้ระวังเป็นพิเศษ:
-- T52 ห้ามตัดกันชน 4 อย่างทิ้ง (รอ services 15 วิ / รอ auth 15 วิ / isBusy / WebGL guard) ทั้งหมดมาจากบั๊กจริงที่เคยเจอ
-- T55 แก้บรรทัดเดียวแต่แก้ทั้ง START RUN ใน solo และปุ่มเล่นอีกครั้งใน WinLoseUI ห้ามไปแก้ StartGame หรือ WinLoseUI เอง
-- T62 บรรทัด SelectedCharacter = cd ต้องมาก่อนยิง event เสมอ ตัวละครที่เล่นจริงพึ่งเส้นนี้ ห้ามแตะ
-- T61 ถ้า GetSlot คืน -1 ให้แสดง "?" ห้าม fallback ไป clientId
-- T64 ก่อนลบ grep หา OnlineMenuUI ให้เหลือศูนย์ก่อน ถ้ายังมีแปลว่า T56 ไม่ครบ ให้หยุดเขียนใต้ Questions
-- ห้ามเขียน retry loop เองทุกที่
+```csharp
+if (path.Contains("Network") || path.Contains("Projectile") || path.Contains("Enemy") || path.Contains("Boss"))
+```
+
+จับ asset pack ของคนอื่นทั้งกอง (`GabrielAguiarProductions/…/Projectiles/` 183 ตัว) และ
+prefab งานอาร์ตของเราที่ไม่มีสคริปต์สักตัว → `-Audit` คืน exit 1 ทุกครั้งไม่ว่าจะสะอาดแค่ไหน
+
+## สามข้อที่พลาดง่ายมากในงานนี้
+
+1. **ข้อความ `LogWarning` ต้องมีคำว่า `missing` เป็นภาษาอังกฤษ**
+   `unity-check.ps1:148` จับ failure ด้วย regex `\[AutomatedAudit\].*(?i:missing|error|failed)`
+   ถ้าเปลี่ยนข้อความเป็นไทยล้วน auditor จะเจอปัญหาจริงแล้วสคริปต์ยังคืน exit 0 — **แย่กว่าเดิม**
+2. **ใช้ `nb.GetComponentInParent<NetworkObject>(true)` ไม่ใช่ `prefab.GetComponent<NetworkObject>()`**
+   NGO ยอมให้ `NetworkBehaviour` อยู่บน GameObject ลูกได้ ถ้ามี `NetworkObject` อยู่บน parent
+   สายเดียวกัน — เช็คแค่รากจะได้ false positive ชุดใหม่แทนชุดเดิม
+3. **ห้ามแตะบล็อกตรวจ `WeaponData` ที่ `weaponName` ว่าง** — ทำงานถูกอยู่แล้ว คืน 0 ปัญหา
+
+## ห้ามทำ
+
+- ห้ามเพิ่มการตรวจชนิดใหม่ที่แผนไม่ได้สั่ง (เช่น เช็คว่า prefab อยู่ใน `DefaultNetworkPrefabs.asset` ไหม)
+- ห้ามแตะไฟล์อื่นนอกจาก `ProjectAutomatedAuditor.cs`
+- ห้ามรัน build หรือ unity-check — Claude รันเอง
 
 เสร็จแล้วกลับมาบอกว่า "เสร็จ"
