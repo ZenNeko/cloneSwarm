@@ -17,6 +17,13 @@ public class CharacterData : ScriptableObject
     public float baseHealth    = 100f;
     public float baseMoveSpeed = 5f;
 
+    // ─────────────────────────────────────────────────────────────────────
+    [Header("Meta Unlock")]
+    [Tooltip("ติ๊ก = เล่นได้ตั้งแต่แรก ไม่ต้องซื้อ (ควรมีอย่างน้อย 1 ตัว)")]
+    public bool unlockedByDefault = false;
+    [Tooltip("ราคาทองที่ต้องจ่ายเพื่อปลดล็อก — ใช้เมื่อ unlockedByDefault ไม่ติ๊ก")]
+    public int  unlockCost = 1000;
+
     [Header("Visual Model")]
     [Tooltip("Prefab โมเดลตัวละคร (mesh + animator + materials)\n" +
              "Spawn เป็น child ของ PlayerVisual.modelHolder บนทุก client\n" +

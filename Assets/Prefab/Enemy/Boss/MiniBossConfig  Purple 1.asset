@@ -1,5 +1,31 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7828266700600522419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f8e298e6b8f6a64990055cdc221654b, type: 3}
+  m_Name: Phase1_Timeline
+  m_EditorClassIdentifier: Assembly-CSharp::BossTimelineAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  tracks:
+  - trackName: Main
+    clips:
+    - action: {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+      startTime: 0
+    - action: {fileID: 11400000, guid: 50973767a0e3ab446b5a18c7de9547da, type: 2}
+      startTime: 4
+  waitForTimelineEnd: 1
+  extraTailTime: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12,14 +38,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 597f7a7473cb85a4caf994a00211ad0e, type: 3}
   m_Name: MiniBossConfig  Purple 1
   m_EditorClassIdentifier: Assembly-CSharp::MiniBossConfig
+  arena: {fileID: 0}
+  rolls: []
   phases:
   - transitionHealthPct: 0
     invincibilityDuration: 1.5
     attackInterval: -1
     cameraShakeMagnitude: 0.4
+    announcementText: 
+    announcementColor: {r: 1, g: 1, b: 1, a: 1}
+    phaseVfxName: 
     actions:
-    - {fileID: 11400000, guid: a65568856861b1c4fba2f0ebd0dd4163, type: 2}
-    - {fileID: 11400000, guid: 5c57f8002f2cb4247a9920190288eea5, type: 2}
+    - {fileID: -7828266700600522419}
     enrageTime: -1
     enrageActions: []
   attackInterval: 4
@@ -34,4 +64,3 @@ MonoBehaviour:
   - prefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
     count: 10
     scatterRadius: 2
-  actions: []

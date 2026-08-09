@@ -83,6 +83,37 @@ public class PlayerStatManager : NetworkBehaviour
         return result;
     }
 
+    /// <summary>
+    /// เพิ่มโบนัสถาวรเข้า total ตรงๆ **โดยไม่กิน stat slot และไม่ขึ้น stat level**
+    ///
+    /// ใช้โดยระบบที่ไม่ใช่ upgrade card:
+    ///   • Talent ถาวรจาก Talent Shop  (PlayerTalentApplier)
+    ///   • Augment                      (StatAugment / WeaponGrantAugment)
+    ///
+    /// เรียกได้ทั้งฝั่ง owner และ server — แต่ละฝั่งเก็บสำเนาของตัวเอง
+    /// (side-effect ที่ต้องผ่าน network เช่น MaxHealth จะทำงานเฉพาะฝั่ง server)
+    /// </summary>
+    public void AddPermanentBonus(StatType type, float value, playermove pm = null)
+    {
+        if (Mathf.Approximately(value, 0f)) return;
+
+        if (!statTotals.ContainsKey(type)) statTotals[type] = 0f;
+        statTotals[type] += value;
+
+        if (pm != null)
+        {
+            switch (type)
+            {
+                case StatType.MaxHealth:
+                    pm.GainMaxHealth(value);        // server-only ข้างใน
+                    break;
+                case StatType.HealthRegen:
+                    pm.healthRegenPerSecond += value;
+                    break;
+            }
+        }
+    }
+
     public void ApplyStat(StatData stat, playermove pm)
     {
         if (stat == null) return;

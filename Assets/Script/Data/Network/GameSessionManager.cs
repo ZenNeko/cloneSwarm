@@ -1,5 +1,7 @@
 using System;
+using Blocks.Sessions.Common;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,6 +16,9 @@ public class GameSessionManager : MonoBehaviour
 {
     public static GameSessionManager Instance { get; private set; }
 
+    [Header("Session Settings (ลากจาก Assets/Blocks/MultiplayerSession/Settings)")]
+    [SerializeField] private SessionSettings sessionSettings;
+
     [Header("Session Type (ต้องตรงกับ SessionSettings)")]
     [SerializeField] private string sessionType = "default-session";
 
@@ -22,6 +27,8 @@ public class GameSessionManager : MonoBehaviour
     public string[] availableScenes = { "SampleScene" };
 
     // ── Static Events สำหรับ game code subscribe ─────────────────────────
+    /// <summary>ข้อความสถานะ — UI subscribe แทนที่จะให้ manager ไปยุ่งกับ Text</summary>
+    public static event Action<string> OnStatus;
     /// <summary>เมื่อเข้า session สำเร็จ (ทั้ง Host และ Client)</summary>
     public static event Action<ISession> OnSessionJoined;
     /// <summary>เมื่อออกจาก session หรือ session ถูกลบ</summary>
@@ -34,6 +41,11 @@ public class GameSessionManager : MonoBehaviour
     // ── Internal State ────────────────────────────────────────────────────
     private SessionObserver sessionObserver;
     private ISession        currentSession;
+    private bool            isBusy;    // กันกดซ้ำระหว่างสร้าง/เข้า/ออก
+
+    public bool IsBusy => isBusy;
+
+    private void Status(string msg) => OnStatus?.Invoke(msg);
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -69,7 +81,16 @@ public class GameSessionManager : MonoBehaviour
     // ── Session Observer Events ───────────────────────────────────────────
     void OnSessionAdded(ISession session)
     {
+        // เรียกได้จากสองทาง: SessionObserver และจาก Create/Join ที่ลงทะเบียนเอง
+        // guard กันผูก event ซ้ำถ้าทั้งสองทางยิงมาที่ session เดียวกัน
+        if (session == null || currentSession == session)
+        {
+            Debug.Log($"[DBG-lobby7] OnSessionAdded ข้าม — null? {session == null} · ซ้ำ? {currentSession == session}");
+            return;
+        }
+
         currentSession = session;
+        Debug.Log($"[DBG-lobby7] OnSessionAdded ลงทะเบียนแล้ว — code='{session.Code}' IsHost={session.IsHost}");
 
         session.Changed                 += OnSessionChanged;
         session.RemovedFromSession      += HandleLeftSession;
@@ -130,9 +151,168 @@ public class GameSessionManager : MonoBehaviour
         currentSession.PlayerHasLeft      -= HandlePlayerLeft;
     }
 
+    // ── Session Flow API ──────────────────────────────────────────────────
+    public async System.Threading.Tasks.Task<bool> CreateSessionAsync()
+    {
+        if (isBusy) return false;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        Status("WebGL: Host ไม่ได้");
+        return false;
+#endif
+
+        isBusy = true;
+        Status("กำลังเชื่อมต่อ Services…");
+
+        ISession created = null;
+        try
+        {
+            float elapsed = 0f;
+            while (MultiplayerService.Instance == null && elapsed < 15f)
+            {
+                await System.Threading.Tasks.Task.Delay(200);
+                elapsed += 0.2f;
+            }
+
+            if (MultiplayerService.Instance == null)
+            {
+                Status("⚠️ Services ไม่พร้อม");
+                return false;
+            }
+
+            Status("กำลังเข้าสู่ระบบ…");
+            elapsed = 0f;
+            while (!AuthenticationService.Instance.IsSignedIn && elapsed < 15f)
+            {
+                await System.Threading.Tasks.Task.Delay(200);
+                elapsed += 0.2f;
+            }
+
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                Status("⚠️ Sign-in ไม่สำเร็จ");
+                return false;
+            }
+
+            Status("กำลังสร้าง Session…");
+
+            SessionOptions options = sessionSettings != null
+                ? sessionSettings.ToSessionOptions()
+                : new SessionOptions { MaxPlayers = 4 }.WithRelayNetwork();
+
+            created = await MultiplayerService.Instance.CreateSessionAsync(options);
+            Debug.Log($"[DBG-lobby7] MultiplayerService สร้างเสร็จ — code='{created?.Code}'");
+        }
+        catch (Exception e)
+        {
+            Status($"❌ สร้างไม่สำเร็จ: {e.Message}");
+            return false;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+
+        // ลงทะเบียน "นอก try" โดยตั้งใจ — ถ้า OnSessionAdded throw (เช่น session.Players ยังไม่พร้อม)
+        // เราไม่ต้องการให้ catch ข้างบนรายงานว่าสร้างไม่สำเร็จ ทั้งที่ห้องเปิดไปแล้วจริง
+        if (created == null) return false;
+        OnSessionAdded(created);
+
+        Status("สร้างห้องสำเร็จ");
+        return true;
+    }
+
+    public async System.Threading.Tasks.Task<bool> JoinSessionAsync(string code)
+    {
+        if (isBusy) return false;
+
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            Status("กรุณาใส่ Room Code");
+            return false;
+        }
+
+        isBusy = true;
+        Status("กำลังเชื่อมต่อ Services…");
+
+        ISession joined = null;
+        try
+        {
+            float elapsed = 0f;
+            while (MultiplayerService.Instance == null && elapsed < 15f)
+            {
+                await System.Threading.Tasks.Task.Delay(200);
+                elapsed += 0.2f;
+            }
+
+            if (MultiplayerService.Instance == null)
+            {
+                Status("⚠️ Services ไม่พร้อม");
+                return false;
+            }
+
+            Status("กำลังเข้าสู่ระบบ…");
+            elapsed = 0f;
+            while (!AuthenticationService.Instance.IsSignedIn && elapsed < 15f)
+            {
+                await System.Threading.Tasks.Task.Delay(200);
+                elapsed += 0.2f;
+            }
+
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                Status("⚠️ Sign-in ไม่สำเร็จ");
+                return false;
+            }
+
+            Status("กำลังเข้าร่วม…");
+
+            JoinSessionOptions options = sessionSettings != null
+                ? sessionSettings.ToJoinSessionOptions()
+                : new JoinSessionOptions();
+
+            joined = await MultiplayerService.Instance.JoinSessionByCodeAsync(code, options);
+            Debug.Log($"[DBG-lobby7] MultiplayerService เข้าห้องเสร็จ — code='{joined?.Code}'");
+        }
+        catch (Exception e)
+        {
+            Status($"❌ Join ไม่สำเร็จ: {e.Message}");
+            return false;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+
+        // ลงทะเบียนนอก try ด้วยเหตุผลเดียวกับ CreateSessionAsync
+        if (joined == null) return false;
+        OnSessionAdded(joined);
+
+        Status("เข้าห้องสำเร็จ");
+        return true;
+    }
+
+    public async System.Threading.Tasks.Task LeaveSessionIfActiveAsync()
+    {
+        if (currentSession == null) return;
+
+        try
+        {
+            Status("กำลังออกจาก Session…");
+            await currentSession.LeaveAsync();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[GameSessionManager] Leave: {e.Message}");
+        }
+    }
+
     // ── Public API ────────────────────────────────────────────────────────
     public ISession CurrentSession  => currentSession;
-    public bool     IsHost          => currentSession?.IsHost ?? false;
+
+    /// เจ้าของรัน — NGO server มาก่อน เพราะ solo เป็น host ที่ไม่มี session
+    public bool IsHost => (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                          || (currentSession?.IsHost ?? false);
     public string   SessionCode     => currentSession?.Code ?? "";
     public int      PlayerCount     => currentSession?.Players.Count ?? 0;
     public int      MaxPlayers      => currentSession?.MaxPlayers ?? 0;

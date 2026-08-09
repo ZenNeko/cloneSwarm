@@ -10,13 +10,21 @@ public abstract class BossAction : ScriptableObject
     [Header("Modular Action Settings")]
     [Tooltip("วินาทีที่หน่วงก่อนจะเริ่มทำท่านี้")]
     public float actionDelay = 0f;
+    [Header("Cast bar")]
+    [Tooltip("ชื่อท่าที่โชว์บน cast bar — ว่าง = ไม่โชว์ cast bar")]
+    public string castName = "";
+    [Tooltip("วินาทีที่ cast bar วิ่ง — 0 = ไม่โชว์")]
+    public float castTime = 0f;
+    [Header("Roll")]
+    [Tooltip("ชื่อ roll ที่ action นี้อ่าน — ว่าง = ไม่ใช้ roll")]
+    public string rollName = "";
     [Tooltip("วินาทีที่เป็น Cooldown ล็อคการกระทำถัดไปหลังทำท่านี้เสร็จ")]
     public float cooldownAfter = 0f;
 
     /// <summary>
     /// ทำการรัน Action แบบ Coroutine บน Server
     /// </summary>
-    /// <param name="runner">ตัวเรียกใช้งาน (เช่น MiniBossAI หรือ MainBoss)</param>
+    /// <param name="runner">ตัวเรียกใช้งาน (BossController บน prefab บอส)</param>
     /// <param name="telegraphPrefab">TelegraphZone prefab</param>
     public abstract IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab);
 
@@ -25,10 +33,10 @@ public abstract class BossAction : ScriptableObject
     protected static int s_editorDurationDepth;
 
     /// <summary>
-    /// ประมาณความยาวรวมของท่านี้เป็นวินาที (รวม actionDelay) — ใช้วาดความยาวคลิปใน Boss Designer
+    /// ประมาณความยาวรวมของท่านี้เป็นวินาที (รวม actionDelay และ castTime) — ใช้วาดความยาวคลิปใน Boss Designer
     /// ไม่มีผลต่อ gameplay
     /// </summary>
-    public virtual float GetEditorDuration() => actionDelay + 1f;
+    public virtual float GetEditorDuration() => actionDelay + castTime + 1f;
 
     // Helper: ค้นหาผู้เล่นที่อยู่ใกล้ที่สุด
     protected Transform FindNearestPlayer(Vector3 origin)
@@ -47,5 +55,19 @@ public abstract class BossAction : ScriptableObject
             if (d < minDist) { minDist = d; nearest = obj.transform; }
         }
         return nearest;
+    }
+
+    /// <summary>
+    /// อ่านค่า roll ที่ resolve แล้วของ fight นี้ — คืน -1 ถ้าไม่มี roll หรือหาไม่เจอ
+    /// </summary>
+    protected int GetRoll(NetworkBehaviour runner)
+    {
+        if (string.IsNullOrEmpty(rollName) || runner == null) return -1;
+        var boss = runner as BossController;
+        if (boss != null && boss.Rolls != null)
+        {
+            return boss.Rolls.Peek(rollName);
+        }
+        return -1;
     }
 }

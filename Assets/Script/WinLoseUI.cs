@@ -31,8 +31,13 @@ public class WinLoseUI : MonoBehaviour
     public TextMeshProUGUI levelLabel;     // "Level: 8"
     public TextMeshProUGUI waveLabel;      // "Wave:  12"
 
+    [Header("Meta Reward")]
+    public TextMeshProUGUI goldEarnedLabel;  // "+ 1,240 G"
+    public TextMeshProUGUI goldTotalLabel;   // "รวม 8,430 G"
+
     [Header("Button")]
     public Button returnButton;
+    public Button playAgainButton;
 
     [Header("Animation")]
     [Tooltip("วินาทีก่อน panel จะแสดง (เวลาระเบิด fade ฯลฯ)")]
@@ -52,19 +57,43 @@ public class WinLoseUI : MonoBehaviour
         canvasGroup = panelRoot?.GetComponent<CanvasGroup>();
         if (panelRoot) panelRoot.SetActive(false);
 
-        if (returnButton) returnButton.onClick.AddListener(ReturnToMenu);
+        if (returnButton)    returnButton.onClick.AddListener(ReturnToMenu);
+        if (playAgainButton) playAgainButton.onClick.AddListener(OnPlayAgainClicked);
     }
 
     void OnEnable()
     {
         GameTimeline.OnGameWon  += OnWin;
         GameTimeline.OnGameLost += OnLose;
+        CloneSwarm.Meta.RunRewardTracker.OnRewardGranted += OnRewardGranted;
     }
 
     void OnDisable()
     {
         GameTimeline.OnGameWon  -= OnWin;
         GameTimeline.OnGameLost -= OnLose;
+        CloneSwarm.Meta.RunRewardTracker.OnRewardGranted -= OnRewardGranted;
+    }
+
+    /// <summary>
+    /// RunRewardTracker จ่ายทองมาแล้ว — อาจมาถึงก่อนหรือหลัง panel แสดง
+    /// จึงเก็บค่าไว้แล้วเขียนทับทั้งสองทาง
+    /// </summary>
+    void OnRewardGranted(int goldEarned, int goldTotal)
+    {
+        pendingGoldEarned = goldEarned;
+        pendingGoldTotal  = goldTotal;
+        RefreshGoldLabels();
+    }
+
+    int pendingGoldEarned = -1;
+    int pendingGoldTotal;
+
+    void RefreshGoldLabels()
+    {
+        if (pendingGoldEarned < 0) return;
+        if (goldEarnedLabel) goldEarnedLabel.text = $"+ {pendingGoldEarned:N0} G";
+        if (goldTotalLabel)  goldTotalLabel.text  = $"รวม {pendingGoldTotal:N0} G";
     }
 
     // ── Event Handlers ────────────────────────────────────────────────────
@@ -101,8 +130,18 @@ public class WinLoseUI : MonoBehaviour
         if (levelLabel) levelLabel.text = $"Level   {level}";
         if (waveLabel)  waveLabel.text  = $"Wave    {wave}";
 
+        // รางวัลอาจมาถึงก่อน panel แสดง — เขียนค่าที่ค้างไว้ตรงนี้
+        if (goldEarnedLabel && pendingGoldEarned < 0) goldEarnedLabel.text = "...";
+        RefreshGoldLabels();
+
         // Fade in
         if (panelRoot) panelRoot.SetActive(true);
+
+        if (playAgainButton != null)
+        {
+            bool isHost = GameSessionManager.Instance?.IsHost ?? true;
+            playAgainButton.interactable = isHost;
+        }
 
         if (canvasGroup != null)
         {
@@ -121,11 +160,36 @@ public class WinLoseUI : MonoBehaviour
         GamePause.Add(PauseReason.GameOver);
     }
 
-    // ── Return to Menu ────────────────────────────────────────────────────
-    void ReturnToMenu()
+    void OnPlayAgainClicked()
     {
         IsShowing = false;
         GamePause.ResetAll();
+
+        string sceneName = RunSetup.Map != null ? RunSetup.Map.sceneName : "SampleScene";
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.StartGame(sceneName);
+        }
+        else if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsServer)
+        {
+            Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
+    }
+
+    // ── Return to Menu ────────────────────────────────────────────────────
+    async void ReturnToMenu()
+    {
+        IsShowing = false;
+        GamePause.ResetAll();
+
+        // กันกดซ้ำระหว่าง await — LoadScene ยังไม่เกิด ปุ่มยังรับคลิกได้อยู่
+        if (returnButton)    returnButton.interactable    = false;
+        if (playAgainButton) playAgainButton.interactable = false;
+
+        // ไม่ทำข้อนี้ = GameSessionManager (DontDestroyOnLoad) ถือ session ตายข้ามซีน
+        // แล้วเมนูจะโชว์รหัสห้องของห้องที่ไม่มีใครอยู่
+        if (GameSessionManager.Instance != null)
+            await GameSessionManager.Instance.LeaveSessionIfActiveAsync();
 
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (nm != null && nm.IsListening)

@@ -38,6 +38,8 @@ public class LevelUpUI : MonoBehaviour
     [Header("Waiting Status")]
     [Tooltip("แสดงจำนวนคนที่เลือกแล้ว  เช่น 'รอผู้เล่น: 1 / 2'")]
     public TextMeshProUGUI waitingLabel;
+    [Tooltip("แถบเล็กมุมจอตอนรอเพื่อน — ปล่อยว่างได้")]
+    public GameObject waitingStrip;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -75,6 +77,7 @@ public class LevelUpUI : MonoBehaviour
         if (panelRoot)      panelRoot.SetActive(true);
         if (cardsSection)   cardsSection.SetActive(true);
         if (cardsContainer) cardsContainer.SetActive(true);
+        if (waitingStrip)   waitingStrip.SetActive(false);
 
         // 2. Header
         if (levelLabel)
@@ -110,12 +113,14 @@ public class LevelUpUI : MonoBehaviour
     public void HideCards()
     {
         if (cardsSection) cardsSection.SetActive(false);
+        if (waitingStrip) waitingStrip.SetActive(true);
     }
 
     /// <summary>ปิด Panel ทั้งหมด — เรียกเมื่อทุกคนเลือกเสร็จ (OnUpgradePhaseEnd)</summary>
     public void Hide()
     {
-        if (panelRoot) panelRoot.SetActive(false);
+        if (waitingStrip) waitingStrip.SetActive(false);
+        if (panelRoot)    panelRoot.SetActive(false);
     }
 
     // ── Timer ─────────────────────────────────────────────────────────────

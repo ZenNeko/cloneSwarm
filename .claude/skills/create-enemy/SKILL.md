@@ -110,3 +110,38 @@ When invoked:
 - ✅ Use `enemy.serverInvincible` flag for phase transition iframes (built into Enemy.cs)
 - ✅ For mini-boss with multiple variants, use the same prefab + different MiniBossConfig
 - ✅ Add `bossName` to MiniBossAI Inspector for HP bar display (falls back to gameObject.name)
+
+### Max health: use the setter, never the field
+
+`Enemy.maxHealth` is a plain field the **server** scales (`ApplyWaveScaling`, Elite shields).
+Clients never receive it. Anything drawn on screen must divide by `netMaxHealth`.
+
+- Setting it: **always** `enemy.ServerSetMaxHealth(value)` — it writes the field and the
+  NetworkVariable together, so a new call site can't update one and forget the other
+- Reading it for display: `netMaxHealth.Value`, never `maxHealth`
+- Reading it in server-only logic (behind `if (!IsServer) return;`): either is fine
+
+Before this existed, a mini-boss scaled ×5 from 30 showed clients `Clamp01(150/30)` — a bar pinned
+full that only moved below 30 HP, labelled `150 / 30`. Playing as host hid it completely.
+
+**A boss has two health bars.** `WorldHPBar` floats above it and `MiniBossBarEntry` sits in the HUD
+list. Fixing one and shipping is the mistake that has been made most often in this project — the
+round-1 plan warned about it in writing and still missed the second one.
+
+### Boss mechanics must die with the boss
+
+Telegraph zones, tethers and floor hazards are independent NetworkObjects with no reference back
+to whoever spawned them. `BossController.OnDeath` used to stop only its own coroutines, so a boss
+killed mid-cast still landed the attack.
+
+Any new `NetworkObject.Spawn()` inside a `BossAction` must be followed by
+`(runner as BossController)?.RegisterMechanic(no);`. If the spawn sits in a private helper,
+**pass the controller in** — two of the four call sites do, and a plan that assumed `runner` was
+in scope everywhere is what broke the round-4 build.
+
+### Never spawn from inside `OnNetworkSpawn`
+
+Objects spawned there don't reach clients — the host sees them, nobody else does, and nothing
+logs. Defer to the first server `Update()` or a later event. This cost a full debugging round
+before the pattern was identified; every correct spawner in the project waits for a timer, a
+death, or the wave manager.

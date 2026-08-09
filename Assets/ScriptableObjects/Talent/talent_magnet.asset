@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a355067378b829e44acc451e9e12aa20, type: 3}
+  m_Name: talent_magnet
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.TalentData
+  talentId: talent_magnet
+  talentName: Magnet Boost
+  description: "\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E23\u0E31\u0E28\u0E21\u0E35\u0E14\u0E39\u0E14 EXP/\u0E44\u0E2D\u0E40\u0E17\u0E21 +10% \u0E15\u0E48\u0E2D\u0E40\u0E25\u0E40\u0E27\u0E25"
+  icon: {fileID: 0}
+  mode: 0
+  statType: 10
+  valuePerLevel: 0.1
+  costPerLevel: 50000000a0000000400100008002000000050000i
+  category: 2
+  sortOrder: 3
+  tintColor: {r: 0.9411765, g: 0.7058824, b: 0.16078432, a: 1}

@@ -64,8 +64,10 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public bool    isChasing         = false;
     [HideInInspector] public bool    isStackMarker     = false;
     [HideInInspector] public bool    isGaze            = false;
-    [HideInInspector] public float   knockbackForce    = 0f;
+    [HideInInspector] public KnockbackMode knockbackMode = KnockbackMode.FromCenter;
+    [HideInInspector] public float   knockbackDistance = 0f;   // หน่วยระยะทาง ไม่ใช่แรง
     [HideInInspector] public float   knockbackDuration = 0.2f;
+    [HideInInspector] public Vector3 knockbackFixedDirection = Vector3.forward;
 
     [HideInInspector] public bool    isRotatingChase   = false;
     [HideInInspector] public NetworkObject casterNetworkObject;
@@ -263,10 +265,15 @@ public class TelegraphZone : NetworkBehaviour
                     mpb.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
             }
             
-            // Color Match: override สีตาม Client ID
+            // Color Match: override สีตาม Client ID / Slot
             if (isColorMatch.Value)
             {
-                Color c = ((int)(requiredClientId.Value % 4)) switch
+                ulong reqId = requiredClientId.Value;
+                int slot = PlayerSlotRegistry.Instance != null
+                    ? PlayerSlotRegistry.Instance.GetSlot(reqId) : -1;
+                if (slot < 0) slot = (int)(reqId % 4);
+
+                Color c = slot switch
                 {
                     0 => Color.red,
                     1 => Color.blue,
@@ -527,14 +534,54 @@ public class TelegraphZone : NetworkBehaviour
             pm.TakeDamage(finalDamage);
             Debug.Log($"[TelegraphZone] ⚡ Hit player {pm.OwnerClientId} — {finalDamage} dmg (isStack={isStackMarker}, isColorMatch={isColorMatch.Value})");
 
-            if (knockbackForce > 0f)
+            if (knockbackDistance > 0f)
             {
-                Vector3 pushDir = (pm.transform.position - transform.position).normalized;
-                pushDir.y = 0f;
-                pushDir = pushDir.normalized;
-                pm.ApplyKnockbackClientRpc(pushDir * knockbackForce, knockbackDuration);
+                Vector3 pushDir = ResolveKnockbackDirection(pm);
+                // playermove ใส่ velocity คงที่ตลอด duration → ระยะที่ได้ = speed × duration พอดี
+                float speed = knockbackDuration > 0.0001f ? knockbackDistance / knockbackDuration : knockbackDistance;
+                pm.ApplyKnockbackClientRpc(pushDir * speed, knockbackDuration);
             }
         }
+    }
+
+    /// <summary>คำนวณทิศผลักตาม KnockbackMode — คืนเวกเตอร์ normalize บนระนาบ XZ</summary>
+    Vector3 ResolveKnockbackDirection(playermove pm)
+    {
+        Vector3 playerPos = pm.transform.position;
+        Vector3 dir;
+
+        switch (knockbackMode)
+        {
+            case KnockbackMode.FromCaster:
+                Vector3 casterPos = casterNetworkObject != null
+                    ? casterNetworkObject.transform.position
+                    : transform.position;
+                dir = playerPos - casterPos;
+                break;
+
+            case KnockbackMode.TowardCenter:
+                dir = transform.position - playerPos;
+                break;
+
+            case KnockbackMode.FixedDirection:
+                dir = knockbackFixedDirection;
+                break;
+
+            case KnockbackMode.AlongLine:
+                dir = transform.forward;
+                break;
+
+            default:   // FromCenter
+                dir = playerPos - transform.position;
+                break;
+        }
+
+        dir.y = 0f;
+        // ผู้เล่นยืนทับจุดอ้างอิงพอดี (เช่น ยืนกลางวงตอน TowardCenter) → เวกเตอร์เป็นศูนย์
+        // ถ้าปล่อยไว้ normalize จะได้ zero แล้ว knockback หายเงียบๆ — ใช้ทิศของโซนแทน
+        if (dir.sqrMagnitude < 0.0001f) dir = transform.forward;
+
+        return dir.normalized;
     }
 
     bool IsInCircle(Vector3 pos)

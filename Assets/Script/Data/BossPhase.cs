@@ -20,6 +20,16 @@ public class BossPhase
     [Tooltip("ความแรงของการสั่นกล้องเมื่อเข้าสู่ Phase นี้")]
     public float cameraShakeMagnitude = 0.4f;
 
+    [Header("Phase Announcement (Client)")]
+    [Tooltip("ข้อความประกาศกลางจอเมื่อเข้าสู่ Phase นี้ เช่น \"PHASE 2 — ENRAGE\" (เว้นว่าง = ไม่ประกาศ)\n" +
+             "หมายเหตุ: Phase แรกไม่ถูกประกาศ — RPC ยิงเฉพาะตอนเปลี่ยนเฟส")]
+    public string announcementText = "";
+    [Tooltip("สีข้อความประกาศ")]
+    public Color announcementColor = Color.white;
+    [VFXKey]
+    [Tooltip("VFX จาก NetworkedVFXPool ที่เล่นตำแหน่งบอสตอนเข้า Phase นี้ (เว้นว่าง = ไม่เล่น)")]
+    public string phaseVfxName = "";
+
     [Tooltip("รายการท่าโจมตีประจำ Phase นี้ (ทำงานเรียงตามลำดับ หรือปล่อยคู่ขนาน)")]
     public List<BossAction> actions = new List<BossAction>();
 

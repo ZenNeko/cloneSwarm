@@ -52,7 +52,7 @@ Game content lives in `Assets/Script/Data/` and `Assets/ScriptableObjects/`. Cod
 - **AbilityData** (`Assets/Script/Data/AbilityData/`) — Q/E slot, prefab, levels
 - **CharacterData** — hero definition (starting weapon, passive, abilities)
 - **StatData** — player stat definitions
-- **MiniBossConfig** — list of `Mechanic` (CircleLine, Tether, Chase) + tunables + drop tables
+- **BossEncounterConfig** — list of `BossPhase` (HP threshold, invincibility, enrage timer, `BossAction` list) + attack timing + drop tables. `MiniBossConfig` is a legacy empty alias of it
 - **WaveConfig** — enemy composition per wave segment
 - **WeaponFusionRecipe** — Super A + Super B → Fusion weapon
 
@@ -66,7 +66,7 @@ Game content lives in `Assets/Script/Data/` and `Assets/ScriptableObjects/`. Cod
 
 ### VFX system
 
-`Assets/Script/VFX/NetworkedVFXPool.cs` is a singleton pool indexed by the `VFXType` enum (see `VFXType.cs` and section 4.1 of `GDD.md`). **Always** spawn VFX via `NetworkedVFXPool.Instance.PlayByType(VFXType.X, pos)` — never `Instantiate` directly. Pool has a built-in recursion guard (depth counter) that prevents DeathField-style stack overflows; do not bypass it.
+`Assets/Script/VFX/NetworkedVFXPool.cs` is a singleton pool indexed by string keys in `VFXDatabase.asset`. **Always** spawn VFX via `NetworkedVFXPool.Instance.PlayByName(string key, Vector3 pos, ...)` — never `Instantiate` directly. Pool has a built-in recursion guard (depth counter) that prevents DeathField-style stack overflows; do not bypass it.
 
 `HitEffect` / `CritHitEffect` are fired by `Enemy.NotifyHitClientRpc` automatically inside `EnemyTakeDamage`. **Weapon scripts must NOT also spawn HitEffect** — doing so produces duplicate impact VFX (this bug was fixed in Laser/Raycast paths; don't reintroduce).
 
@@ -79,8 +79,9 @@ All gameplay audio goes through `SoundManager.Instance.PlaySfx*`, `PlayRandomSfx
 ### Boss & objective systems
 
 - `GameTimeline` (singleton) — owns game clock; configurable start time + interval per system (objective, mini-boss, main-boss thresholds)
-- `MainBoss` — 3-phase AI (60% / 30% HP thresholds), Phase 3 uses anti-repeat cooldown queue across 7 AoE types. Fires static `OnAnyBossSpawned` / `OnAnyBossDespawned` on **all clients** (before `IsServer` check) so HUD can subscribe.
-- `MiniBossAI` — data-driven via `MiniBossConfig.mechanics` list (CircleLine, Tether, Chase, mix as desired). Fires `OnAnyMiniBossSpawned` / `OnAnyMiniBossDefeated` static events.
+- `BossController` — **the component every boss uses** (main and mini alike). Data-driven by `BossEncounterConfig`: phases by HP threshold, per-phase action list + enrage list, `AttackLoop` runs `BossAction.ExecuteCoroutine` on the server. Fires static `OnAnyBossSpawned` / `OnAnyBossDespawned` on **all clients** (before `IsServer` check) so HUD can subscribe. Put it on the prefab directly — subclass only for boss-specific presentation.
+- `BossAction` (ScriptableObject) — one modular attack. Subclasses in `Assets/Script/Data/`: `CircleAoEAction`, `LineAoEAction`, `CrossAoEAction`, `DonutAoEAction`, `ColorMatchAoEAction`, `TetherAction`, `RandomAttackAction`, `ComboAction`, `BossTimelineAction`.
+- Phase presentation (announcement text/color + phase VFX + camera shake) is data on `BossPhase` — there are no per-boss subclasses anymore (`MainBoss`/`MiniBossAI` were deleted 2026-07).
 - `BossManager` — picks random mini-boss prefab from `miniBossPrefabs[]`
 - `ZoneObjective` — 2-phase quest: Phase 1 activation timer, Phase 2 random quest (`FetchAndDeliver` or `Survive`). `FetchItem` is the pickup; player carries via `playermove.carriedQuestItems` NetworkVariable.
 - `ObjectiveManager` — picks delivery + item spawn positions
@@ -96,13 +97,17 @@ Boss attacks use `TelegraphZone` prefab (spawned via `NetworkObject.Spawn`). Bos
 When writing or reviewing code:
 
 1. **Routing damage**: weapon/ability scripts never call `Enemy.EnemyTakeDamage` from a client — go through `PlayerWeaponManager.<Action>ServerRpc(...)`
-2. **VFX**: `NetworkedVFXPool.Instance.PlayByType(...)`, never raw `Instantiate(vfxPrefab)`
+2. **VFX**: `NetworkedVFXPool.Instance.PlayByName(...)`, never raw `Instantiate(vfxPrefab)`
 3. **SFX**: `SoundManager.Instance.PlaySfx*` / `PlayRandomSfx(clips, ...)`, never raw `AudioSource.PlayClipAtPoint`
 4. **Boss spawn events**: fire static events at the **top** of `OnNetworkSpawn` (before `IsServer` early-return) so all clients can subscribe for HUD
 5. **Static event subscriptions**: subscribe in `OnEnable`, unsubscribe in `OnDisable` (HUDs survive scene reloads — leaks compound)
-6. **Phase transitions**: use `Enemy.serverInvincible` flag to skip damage during boss phase changes (already wired in `MainBoss.PhaseTransitionInvincibility`)
+6. **Phase transitions**: use `Enemy.serverInvincible` flag to skip damage during boss phase changes (already wired in `BossController.PhaseTransitionInvincibility`)
 7. **New networked prefabs**: must be added to `Assets/DefaultNetworkPrefabs.asset` or NGO will refuse to spawn them
 8. **Audio defaults**: only the SoundManager Inspector holds defaults — don't duplicate `defaultMaster/Music/Sfx` fields in UI scripts
+9. **Lobby state**: all lobby state lives in `LobbyState` — clients update via ServerRpc only
+10. **Character ID on network**: use `CharacterData.characterName` (string) — NEVER use int index
+11. **Player color**: resolve player color index via `PlayerSlotRegistry.GetSlot()` — NEVER use `clientId % 4`
+12. **Q/E key handling**: Q/E cycles tabs in menu UI by design — intentionally shares keybindings with in-game ability slots
 
 ## Custom skills available in this project
 

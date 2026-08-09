@@ -1,4 +1,4 @@
-# Handoff → Antigravity  (Round 8)
+# Handoff → Antigravity  (Round 7 — ชุดเพิ่ม)
 
 ก๊อปข้อความข้างล่างนี้ไปวางใน Antigravity:
 
@@ -6,47 +6,38 @@
 อ่าน AGENTS.md แล้วอ่าน docs/implementation_plan.md จากนั้นลงมือทำทุก Task ที่ยังเป็น [ ] แก้เฉพาะไฟล์ที่แผนระบุ ห้ามรัน build หรือ unity-check เสร็จแต่ละ task ให้ติ๊ก [x] และสรุปไฟล์ที่แก้ไว้ท้ายไฟล์แผนใต้ ## Changed Files
 ---
 
-รอบนี้ **11 tasks · 7 ไฟล์** — มาจากผลเทสต์จริงและการตัดสินใจของผู้ใช้ ไม่ใช่จาก audit
+## รอบนี้เหลือ task เดียว
 
-**ก้อนที่ 1 — host กด ESC ไม่ให้หยุดทั้งห้อง (T1-T5)**
-- T1 `GamePause.cs` — เพิ่ม `LocalInputSuspended` (ระงับ input **ห้ามแตะ `timeScale`**)
-- T2 `UI/PauseMenuUI.cs` — solo หยุดโลกเหมือนเดิม · multiplayer ระงับแค่ input
-- T3 `playermove.cs:152` — เพิ่มเงื่อนไขในบรรทัด gate ที่มีอยู่
-- T4 `Weapon/WeaponBase.cs:92-96` — เพิ่ม gate ชั้นที่ 4 (ทุกอาวุธผ่านจุดนี้หมด)
-- T5 ability — **grep หาเอง** ถ้ากระจายเกิน 3 ไฟล์ให้หยุดถาม
+**T79** · `Assets/Script/Editor/ProjectAutomatedAuditor.cs` — **MODIFY**
+เปลี่ยนการตรวจ NetworkObject จาก "เดาจากชื่อ path" เป็น "ดูว่ามี `NetworkBehaviour` จริงไหม"
 
-**ก้อนที่ 2 — เลขดาเมจปรับได้จาก Inspector (T6-T8)**
-- ยกค่าที่ฝังในโค้ดขึ้นมาเป็น field: อายุ · ความเร็วลอย · ขนาด · สี · สีคริต · ระยะสุ่ม
+T74–T78 ติ๊ก `[x]` และคอมไพล์ผ่านแล้ว **ห้ามแตะซ้ำ**
 
-**ก้อนที่ 3 — ย้าย pool (T9-T10)**
-- `FloatingDamageTextPool` เลิกสร้าง GameObject เอง ให้ผู้ใช้แปะบน `NetworkedVFXPool` แทน
+## ทำไมต้องแก้
 
-- T11 grep ตรวจปิดงาน (**ไม่แก้ไฟล์**)
+รัน `-Audit` แล้วได้ **229 คำเตือน false positive 100%** เพราะเงื่อนไขเช็คแค่ชื่อโฟลเดอร์:
 
-## กฎที่สำคัญที่สุดของรอบนี้
+```csharp
+if (path.Contains("Network") || path.Contains("Projectile") || path.Contains("Enemy") || path.Contains("Boss"))
+```
 
-> **`LocalInputSuspended` ห้ามแตะ `Time.timeScale` เด็ดขาด**
-> นั่นคือบั๊กที่กำลังแก้อยู่พอดี — host คือ server พอ `timeScale = 0` ศัตรูหยุดทั้งห้อง
-> ตัวนี้ระงับแค่ input ของเครื่องตัวเอง **โลกต้องเดินต่อ**
+จับ asset pack ของคนอื่นทั้งกอง (`GabrielAguiarProductions/…/Projectiles/` 183 ตัว) และ
+prefab งานอาร์ตของเราที่ไม่มีสคริปต์สักตัว → `-Audit` คืน exit 1 ทุกครั้งไม่ว่าจะสะอาดแค่ไหน
 
-## ข้อควรระวัง
+## สามข้อที่พลาดง่ายมากในงานนี้
 
-**อย่าลืมคืนค่า** — `GamePause.ResetAll()` ต้องเคลียร์ `LocalInputSuspended` ด้วย
-และ `PauseMenuUI` ต้องคืนทั้งใน `Resume()` · `OnDisable()` · `OnQuitClicked()`
-ไม่งั้นเปลี่ยนฉากแล้วขยับไม่ได้ **นี่คือรูปแบบเดียวกับบั๊ก `prevTimeScale` ที่ Round 2 แก้ไป**
+1. **ข้อความ `LogWarning` ต้องมีคำว่า `missing` เป็นภาษาอังกฤษ**
+   `unity-check.ps1:148` จับ failure ด้วย regex `\[AutomatedAudit\].*(?i:missing|error|failed)`
+   ถ้าเปลี่ยนข้อความเป็นไทยล้วน auditor จะเจอปัญหาจริงแล้วสคริปต์ยังคืน exit 0 — **แย่กว่าเดิม**
+2. **ใช้ `nb.GetComponentInParent<NetworkObject>(true)` ไม่ใช่ `prefab.GetComponent<NetworkObject>()`**
+   NGO ยอมให้ `NetworkBehaviour` อยู่บน GameObject ลูกได้ ถ้ามี `NetworkObject` อยู่บน parent
+   สายเดียวกัน — เช็คแค่รากจะได้ false positive ชุดใหม่แทนชุดเดิม
+3. **ห้ามแตะบล็อกตรวจ `WeaponData` ที่ `weaponName` ว่าง** — ทำงานถูกอยู่แล้ว คืน 0 ปัญหา
 
-**T3 ห้ามแตะ regen/สถานะฝั่ง server ใน `playermove`** — แก้เฉพาะบรรทัด gate ของการเคลื่อนที่
-`:112` regen รันฝั่ง server ต้องเดินต่อ
+## ห้ามทำ
 
-**T4 ห้ามแตะ `PlayerWeaponManager.WeaponsEnabledInScene`** — มันแปลว่า "อยู่ในฉากเกม"
-คนละความหมายกับ pause ให้เพิ่ม gate ใหม่ต่อจากมัน
-
-**T9 ห้ามลบ guard ที่ใช้ `_instance` ตรงๆ ใน `Awake`/`OnDestroy`** — มันกัน stack overflow
-ที่ getter เรียกตัวเองไม่รู้จบ (เจอมาแล้วใน Round 7) **อ่านคอมเมนต์ในไฟล์ก่อนแก้**
-
-**T6 ห้ามเปลี่ยนค่า default** — ย้ายที่มาของค่าขึ้นมา Inspector เฉยๆ หน้าตาต้องเหมือนที่เทสต์ไปแล้ว
-
-**Round 3-7 มี scope creep ทุกรอบ** รูปแบบ: เติมโค้ดกันไว้ก่อนที่ไม่มีใครขอ
-ถ้าติดจนทำตามแผนไม่ได้ **หยุดแล้วเขียนใต้ `## Questions`** อย่าหาทางอ้อม
+- ห้ามเพิ่มการตรวจชนิดใหม่ที่แผนไม่ได้สั่ง (เช่น เช็คว่า prefab อยู่ใน `DefaultNetworkPrefabs.asset` ไหม)
+- ห้ามแตะไฟล์อื่นนอกจาก `ProjectAutomatedAuditor.cs`
+- ห้ามรัน build หรือ unity-check — Claude รันเอง
 
 เสร็จแล้วกลับมาบอกว่า "เสร็จ"

@@ -81,11 +81,12 @@ public class UpgradeCardUI : MonoBehaviour
             }
         }
 
-        // Card color
+        // Card color — Augment ใช้สีตาม rarity ของตัวเอง
         if (cardBackground)
         {
             cardBackground.color = card.type switch
             {
+                UpgradeCardType.Augment       => card.augment != null ? card.augment.RarityColor : weaponColor,
                 UpgradeCardType.WeaponSuper   => superColor,
                 UpgradeCardType.WeaponFusion  => fusionColor,
                 UpgradeCardType.Stat          => statColor,

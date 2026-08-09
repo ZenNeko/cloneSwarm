@@ -133,3 +133,34 @@ When invoked:
 - ✅ Always check `playermove.isDead.Value` before allowing cast
 - ✅ Use `data.slotType` to bind Q vs E input (don't hardcode)
 - ✅ For toggle abilities, expose a public bool the AbilityHUDUI can read
+
+### The input gate every ability needs
+
+Abilities read `Keyboard.current` in their own `Update` — there is no shared input path, so each
+new one must add the gate itself. Put it with the other guards, before reading the key:
+
+```csharp
+if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
+if (IsOnCooldown) return;
+if (GamePause.LocalInputSuspended) return;   // host opened the pause menu in multiplayer
+
+var kb = Keyboard.current;
+```
+
+`LocalInputSuspended` is not a time-scale pause. The host **is** the server, so freezing time on
+the host freezes every client's enemies; multiplayer pause therefore only suspends the local
+machine's input while the world keeps running. Miss this gate and the host keeps casting with the
+menu open.
+
+All six existing abilities carry it — `ValorWeapon`, `BladeOfExileWeapon`, `GunnerGiantRocket`,
+`GunnerRocketMode`, `HunterMissileAbility`, `HunterUltimate`. Copy the shape from any of them.
+
+### Also inherited from the weapon rules
+
+- **No new ServerRpc taking `damage`** — send weapon name + level instead
+- **Never discard the crit flag** — `RollDamage(dmg, out bool _)` silently downgrades every crit
+  to a normal-looking hit. `HunterMissileAbility` and `GunnerGiantRocket` still do; they are left
+  that way on purpose until the server owns crit rolling
+- **Don't fire `HitEffect` yourself** — `Enemy.NotifyHitClientRpc` already does it on every client
+- **Check the ability isn't mid-action when the player dies** — `BunnyHopWeapon` dashed to
+  completion after its owner died because it only tested `isDead` before starting

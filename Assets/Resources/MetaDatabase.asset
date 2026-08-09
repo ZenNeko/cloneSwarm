@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37a100539923c184f98ae020ee5aacb2, type: 3}
+  m_Name: MetaDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.MetaDatabase
+  talents:
+  - {fileID: 11400000, guid: 6dfa32192a6d3f743a68a8013a0857bf, type: 2}
+  - {fileID: 11400000, guid: 04489f40bdda46c42ad20af2f3fc2170, type: 2}
+  - {fileID: 11400000, guid: b42e0a2cbac98fb4fb2d8dd21df0967f, type: 2}
+  - {fileID: 11400000, guid: 2e32fa3a731f8944794a0386c58d44df, type: 2}
+  - {fileID: 11400000, guid: 98bd2b3e813352048a1ce263c14d2d10, type: 2}
+  - {fileID: 11400000, guid: 6ee5d7ab591e31d4d99f5fbc54bf9dfe, type: 2}
+  - {fileID: 11400000, guid: 02d6192ca1cac4846bc072b3cdeffa11, type: 2}
+  - {fileID: 11400000, guid: 3682db37403ff414992655181093f8e5, type: 2}
+  - {fileID: 11400000, guid: 7561dfca9ddc1794c92b377325ac72f7, type: 2}
+  - {fileID: 11400000, guid: c9e2ae76fa91d1b47ab99dea3828455e, type: 2}
+  - {fileID: 11400000, guid: 775c2cd71a8bab3409cad53f17c34509, type: 2}
+  - {fileID: 11400000, guid: 50098bd2b4d8d2b4aa8ec198a82b356b, type: 2}
+  - {fileID: 11400000, guid: d4dc0a2d073ba0b48996921602ae61fc, type: 2}
+  - {fileID: 11400000, guid: 6d20ef4770e95be4180570fd7cc7484d, type: 2}
+  characters:
+  - {fileID: 11400000, guid: 368c82f914f7df542b886ba0f76f288e, type: 2}
+  - {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}
+  - {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  augments: []
+  goldPerExp: 0.1
+  winBonusGold: 500
+  goldPerMinuteSurvived: 20

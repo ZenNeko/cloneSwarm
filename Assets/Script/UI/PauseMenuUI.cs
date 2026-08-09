@@ -68,6 +68,12 @@ public class PauseMenuUI : MonoBehaviour
         if (resumeButton)        resumeButton.onClick.AddListener(Resume);
         if (quitButton)          quitButton.onClick.AddListener(OnQuitClicked);
         if (resetDefaultsButton) resetDefaultsButton.onClick.AddListener(OnResetDefaults);
+
+        // Multiplayer: โลกยังเดินตอนเมนู pause เปิด → overlay priority สูงกว่าเด้งทับได้
+        // ปิดเมนูให้เองแทนที่จะปล่อยให้ซ้อนกัน
+        SharedExperienceManager.OnUpgradePhaseStart += HandleUpgradePhaseStart;
+        SharedExperienceManager.OnOrbPhaseStart     += ForceResume;
+        WinLoseUI.OnAnyResultTriggered              += ForceResume;
     }
 
     void OnDisable()
@@ -79,6 +85,10 @@ public class PauseMenuUI : MonoBehaviour
         if (resumeButton)        resumeButton.onClick.RemoveListener(Resume);
         if (quitButton)          quitButton.onClick.RemoveListener(OnQuitClicked);
         if (resetDefaultsButton) resetDefaultsButton.onClick.RemoveListener(OnResetDefaults);
+
+        SharedExperienceManager.OnUpgradePhaseStart -= HandleUpgradePhaseStart;
+        SharedExperienceManager.OnOrbPhaseStart     -= ForceResume;
+        WinLoseUI.OnAnyResultTriggered              -= ForceResume;
 
         // กัน scene unload ทิ้ง pause state → restore
         if (isPaused)
@@ -96,11 +106,21 @@ public class PauseMenuUI : MonoBehaviour
     }
 
     // ── Public API ────────────────────────────────────────────────────────
-    public void Toggle() { if (isPaused) Resume(); else Pause(); }
+    public void Toggle()
+    {
+        if (WinLoseUI.IsShowing) return;
+        if (GamePause.Has(PauseReason.PhaseSelect)) return;
+        if (isPaused) Resume(); else Pause();
+    }
 
     public void Pause()
     {
         if (isPaused) return;
+
+        // PauseReason เรียง priority ไว้แล้ว (PauseMenu = ต่ำสุด) — บังคับใช้ที่ชั้น UI ด้วย
+        // ไม่งั้นเมนูจะเปิดทับแผงเลือกการ์ด / หน้าจบเกม แล้วกดอะไรไม่ได้จนต้องปิดเกมทิ้ง
+        if (IsHigherPriorityOverlayOpen()) return;
+
         isPaused = true;
 
         bool isMultiplayer = NetworkManager.Singleton != null &&
@@ -128,6 +148,21 @@ public class PauseMenuUI : MonoBehaviour
         GamePause.SuspendLocalInput(false);
         if (panelRoot != null) panelRoot.SetActive(false);
     }
+
+    // ── Overlay priority ──────────────────────────────────────────────────
+    /// <summary>
+    /// มี overlay เต็มจอที่ priority สูงกว่าเมนู pause ถืออยู่หรือไม่
+    /// (เลือกการ์ดตอนเลเวลอัป / orb phase / หน้าจบเกม)
+    /// </summary>
+    static bool IsHigherPriorityOverlayOpen()
+        => WinLoseUI.IsShowing
+        || GamePause.Has(PauseReason.PhaseSelect)
+        || GamePause.Has(PauseReason.GameOver);
+
+    /// <summary>ปิดเมนูเงียบๆ เมื่อ overlay priority สูงกว่าเปิดขึ้นมาทับ</summary>
+    void ForceResume() => Resume();
+
+    void HandleUpgradePhaseStart(int _) => ForceResume();
 
     void OnQuitClicked()
     {

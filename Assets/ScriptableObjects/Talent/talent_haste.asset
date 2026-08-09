@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a355067378b829e44acc451e9e12aa20, type: 3}
+  m_Name: talent_haste
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.TalentData
+  talentId: talent_haste
+  talentName: Haste Speed
+  description: "\u0E25\u0E14\u0E04\u0E39\u0E25\u0E14\u0E32\u0E27\u0E19\u0E4C\u0E2D\u0E32\u0E27\u0E38\u0E18/\u0E2A\u0E01\u0E34\u0E25 +5 Haste \u0E15\u0E48\u0E2D\u0E40\u0E25\u0E40\u0E27\u0E25"
+  icon: {fileID: 0}
+  mode: 0
+  statType: 1
+  valuePerLevel: 5
+  costPerLevel: 960000002c01000058020000b004000060090000i
+  category: 0
+  sortOrder: 2
+  tintColor: {r: 0.9411765, g: 0.5254902, b: 0.29411766, a: 1}

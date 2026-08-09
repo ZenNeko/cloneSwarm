@@ -125,9 +125,20 @@ public class WaveManager : NetworkBehaviour
 
     WaveConfig GetConfigForWave(int wave)
     {
-        if (waveConfigs == null || waveConfigs.Length == 0) return null;
-        int idx = Mathf.Min((wave - 1) / Mathf.Max(1, wavesPerConfig), waveConfigs.Length - 1);
-        return waveConfigs[idx];
+        WaveConfig[] activeConfigs = waveConfigs;
+
+        if (RunSetup.Map != null)
+        {
+            var tierContent = RunSetup.Map.GetTier(RunSetup.Difficulty);
+            if (tierContent != null && tierContent.wavesByPhase != null && tierContent.wavesByPhase.Length > 0)
+            {
+                activeConfigs = tierContent.wavesByPhase;
+            }
+        }
+
+        if (activeConfigs == null || activeConfigs.Length == 0) return null;
+        int idx = Mathf.Min((wave - 1) / Mathf.Max(1, wavesPerConfig), activeConfigs.Length - 1);
+        return activeConfigs[idx];
     }
 
     // ── Getters ───────────────────────────────────────────────────────────

@@ -12,7 +12,12 @@ using UnityEngine;
 ///
 /// Phase 2 (Active Quest) — สุ่มประเภท
 ///   • FetchAndDeliver : เก็บ FetchItem N ชิ้น → ส่งใน zone จนครบ requiredDeliveryCount
-///   (เพิ่มประเภทใหม่ได้ — ขยาย enum + switch ใน Phase 2 logic)
+///   • Survive         : ยืนในโซนจนครบเวลา (timer pause เมื่อไม่มีใคร)
+///   • DestroyObjects  : ทำลายวัตถุ N ชิ้นที่กระจายรอบโซน
+///   • KillInZone      : ฆ่า enemy N ตัวในรัศมีโซน
+///   • SealTheRift     : ยืนในโซนจนครบเวลา แต่ progress ถอยหลังเมื่อไม่มีใคร
+///   (เพิ่มประเภทใหม่ได้ — ต่อท้าย enum + เพิ่ม case ใน switch ของ Phase 2
+///    ห้ามแทรกกลาง enum เพราะ availableQuests/activeQuestInt serialize เป็น int)
 ///
 /// Phase 3 (Complete) → reward + despawn
 ///
@@ -22,7 +27,7 @@ using UnityEngine;
 public class ZoneObjective : NetworkBehaviour
 {
     public enum Phase     : int { Activating, Active, Complete }
-    public enum QuestType : int { FetchAndDeliver, Survive }
+    public enum QuestType : int { FetchAndDeliver, Survive, DestroyObjects, KillInZone, SealTheRift }
 
     [Header("Common Settings")]
     public float zoneRadius      = 3f;
@@ -43,17 +48,66 @@ public class ZoneObjective : NetworkBehaviour
     [Header("Quest: FetchAndDeliver")]
     [Tooltip("Prefab ของ item ที่ต้องเก็บ (มี FetchItem.cs + NetworkObject)")]
     public GameObject fetchItemPrefab;
-    [Tooltip("จำนวนต้องส่งให้ครบ — = จำนวน item ที่ spawn")]
+    [Tooltip("จำนวนต้องส่งให้ครบเมื่อเล่นคนเดียว — ผู้เล่นเพิ่มจะ scale ตาม fetchCountPerExtraPlayer")]
     [Min(1)] public int requiredDeliveryCount = 5;
+    [Tooltip("จำนวน item ที่เพิ่มต่อผู้เล่น 1 คนที่เกินจากคนแรก")]
+    [Min(0)] public int fetchCountPerExtraPlayer = 2;
+    [Tooltip("เพดานจำนวน item ต่อ quest")]
+    [Min(1)] public int fetchCountMax = 12;
     [Tooltip("เวลา fail ของ quest (วินาที) — เริ่มนับใหม่หลัง activation จบ\n" +
              "0 = ไม่มี timeout (quest จะอยู่จน complete หรือ player หาย)")]
     public float fetchQuestTimeLimit = 90f;
+    [Tooltip("รัศมีวงในที่ item จะไป spawn (ห่างจากโซนอย่างน้อยเท่านี้)")]
+    public float itemMinRadius  = 10f;
+    [Tooltip("รัศมีวงนอกที่ item จะไป spawn")]
+    public float itemMaxRadius  = 26f;
+    [Tooltip("ระยะห่างขั้นต่ำระหว่าง item แต่ละชิ้น")]
+    public float itemMinSpacing = 5f;
 
     [Header("Quest: Survive")]
     [Tooltip("วินาทีที่ต้องอยู่ใน zone (timer pause เมื่อไม่มีใครอยู่)")]
     public float surviveTime          = 20f;
     [Tooltip("จำนวน enemy เพิ่มต่อ spawn tick ระหว่างทำ quest (0 = ไม่ boost)")]
     [Min(0)] public int surviveExtraSpawnsPerTick = 2;
+
+    [Header("Quest: DestroyObjects")]
+    [Tooltip("Prefab วัตถุทำลายได้ (มี Enemy + DestructibleObjective + NetworkObject, layer = Enemy)")]
+    public GameObject destructiblePrefab;
+    [Tooltip("จำนวนวัตถุเมื่อเล่นคนเดียว")]
+    [Min(1)] public int destroyCountBase           = 5;
+    [Tooltip("จำนวนวัตถุที่เพิ่มต่อผู้เล่น 1 คนที่เกินจากคนแรก")]
+    [Min(0)] public int destroyCountPerExtraPlayer = 2;
+    [Tooltip("เพดานจำนวนวัตถุ (ตามที่ออกแบบไว้ 5-10)")]
+    [Min(1)] public int destroyCountMax            = 10;
+    [Tooltip("HP ต่อวัตถุ 1 ชิ้น")]
+    public float destructibleHealth   = 60f;
+    public float destructibleMinRadius  = 6f;
+    public float destructibleMaxRadius  = 22f;
+    public float destructibleMinSpacing = 4f;
+    [Tooltip("เวลา fail ของ quest (วินาที) — 0 = ไม่มี timeout")]
+    public float destroyQuestTimeLimit = 90f;
+
+    [Header("Quest: KillInZone (Sacrifice)")]
+    [Tooltip("จำนวน enemy ที่ต้องฆ่าในรัศมีโซน เมื่อเล่นคนเดียว")]
+    [Min(1)] public int killCountBase           = 20;
+    [Tooltip("จำนวนที่เพิ่มต่อผู้เล่น 1 คนที่เกินจากคนแรก")]
+    [Min(0)] public int killCountPerExtraPlayer = 10;
+    [Min(1)] public int killCountMax            = 80;
+    [Tooltip("จำนวน enemy เพิ่มต่อ spawn tick ระหว่างทำ quest")]
+    [Min(0)] public int killExtraSpawnsPerTick  = 2;
+    [Tooltip("เวลา fail ของ quest (วินาที) — 0 = ไม่มี timeout")]
+    public float killQuestTimeLimit = 75f;
+
+    [Header("Quest: SealTheRift")]
+    [Tooltip("วินาทีที่ต้องอยู่ในโซน — ต่างจาก Survive ตรง progress ถอยหลังเมื่อไม่มีใคร")]
+    public float sealTime = 15f;
+    [Tooltip("อัตราถอยหลังของ progress เมื่อโซนว่าง (× ของอัตราเดินหน้า)\n" +
+             "1 = ถอยเร็วเท่าที่เดินหน้า, 0.5 = ถอยครึ่งเดียว")]
+    [Min(0f)] public float sealDecayMultiplier = 0.5f;
+    [Tooltip("จำนวน enemy เพิ่มต่อ spawn tick ระหว่างทำ quest")]
+    [Min(0)] public int sealExtraSpawnsPerTick = 3;
+    [Tooltip("เวลา fail ของ quest (วินาที) — 0 = ไม่มี timeout")]
+    public float sealQuestTimeLimit = 60f;
 
     [Header("Rewards")]
     public float      expReward  = 80f;
@@ -65,7 +119,9 @@ public class ZoneObjective : NetworkBehaviour
     [Tooltip("Quad prefab — ถ้าปล่อยว่างจะสร้าง runtime Quad")]
     public GameObject zoneVisualPrefab;
 
-    // ── Server-side runtime data (set by ObjectiveManager ก่อน Spawn) ────
+    // ── Server-side runtime data ──────────────────────────────────────────
+    /// <summary>Override ตำแหน่ง FetchItem — ถ้าว่าง (ปกติ) จะสุ่มรอบโซนเอง
+    /// ObjectiveManager เติมให้เฉพาะตอนเปิด useFixedItemLocations</summary>
     [HideInInspector] public List<Vector3> itemSpawnPositions = new();
 
     // ── Network State ─────────────────────────────────────────────────────
@@ -94,6 +150,15 @@ public class ZoneObjective : NetworkBehaviour
     private EnemySpawner cachedSpawner;
     private bool         spawnBoostActive;
 
+    /// <summary>วัตถุของ quest DestroyObjects ที่ยังไม่ถูกทำลาย (server only)</summary>
+    private readonly HashSet<NetworkObject> trackedDestructibles = new();
+    private int  destroyedCount;
+    private int  killsInZone;
+    private bool countingKillsInZone;
+
+    /// <summary>กัน OnObjectiveCompleted/Expired ยิงซ้ำ — ดู NotifyRemoved()</summary>
+    private bool removalNotified;
+
     // ── Client Visual ─────────────────────────────────────────────────────
     private GameObject runtimeDisc;
     private Material   discMat;
@@ -112,16 +177,67 @@ public class ZoneObjective : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (IsServer)
+        {
+            Enemy.OnEnemyDiedServer += HandleEnemyDiedServer;
             StartCoroutine(ObjectiveStateMachine());
+        }
 
         CreateDisc();
-        progress.OnValueChanged       += (_, v) => UpdateShader(v);
+        // named method ไม่ใช่ lambda — ต้อง unsubscribe ได้ใน OnNetworkDespawn
+        progress.OnValueChanged       += OnProgressChanged;
         deliveredCount.OnValueChanged += OnDeliveredCountChanged;
         phaseInt.OnValueChanged       += OnPhaseChangedClient;
 
         OnObjectiveSpawned?.Invoke(this);
         AnnounceHUD("ZONE OBJECTIVE — Stand to activate!", COL_ACTIVATING);
         SetDiscColor(COL_ACTIVATING);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        progress.OnValueChanged       -= OnProgressChanged;
+        deliveredCount.OnValueChanged -= OnDeliveredCountChanged;
+        phaseInt.OnValueChanged       -= OnPhaseChangedClient;
+
+        if (IsServer)
+        {
+            Enemy.OnEnemyDiedServer -= HandleEnemyDiedServer;
+            ClearSpawnBoostIfActive();   // กัน boost ค้างถ้าโดน despawn กลางคัน
+        }
+
+        // ทางออกสุดท้าย — ถ้าหายไปโดยไม่ผ่าน complete/expire (host ปิด, scene reload)
+        // UI ยังต้องได้ยินว่าให้ลบ indicator ทิ้ง
+        NotifyRemoved(completed: false);
+    }
+
+    /// <summary>ยิง OnObjectiveCompleted/Expired ครั้งเดียวไม่ว่าจะเข้ามาทางไหน</summary>
+    void NotifyRemoved(bool completed)
+    {
+        if (removalNotified) return;
+        removalNotified = true;
+
+        if (completed) OnObjectiveCompleted?.Invoke(this);
+        else           OnObjectiveExpired?.Invoke(this);
+    }
+
+    // ── Server: นับศพ (ใช้ทั้ง DestroyObjects และ KillInZone) ─────────────
+    void HandleEnemyDiedServer(Enemy enemy, Vector3 deathPos)
+    {
+        if (!IsServer || enemy == null) return;
+
+        // วัตถุของ quest นี้เอง → นับเป็น destroy (และไม่ให้ไปนับซ้ำเป็น kill)
+        var no = enemy.NetworkObject;
+        if (no != null && trackedDestructibles.Remove(no))
+        {
+            destroyedCount++;
+            return;
+        }
+
+        if (!countingKillsInZone) return;
+
+        float dx = deathPos.x - transform.position.x;
+        float dz = deathPos.z - transform.position.z;
+        if (dx * dx + dz * dz <= zoneRadius * zoneRadius) killsInZone++;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -176,6 +292,17 @@ public class ZoneObjective : NetworkBehaviour
                 float surviveDeadline = Time.time + surviveLimit;
                 yield return StartCoroutine(QuestSurvive(surviveDeadline));
                 break;
+            case QuestType.DestroyObjects:
+                yield return StartCoroutine(QuestDestroyObjects(Deadline(destroyQuestTimeLimit)));
+                break;
+            case QuestType.KillInZone:
+                yield return StartCoroutine(QuestKillInZone(Deadline(killQuestTimeLimit)));
+                break;
+            case QuestType.SealTheRift:
+                // เหมือน Survive — progress เดินเฉพาะตอนมีคน จึงต้องมี hard deadline
+                yield return StartCoroutine(QuestSealTheRift(
+                    Deadline(sealQuestTimeLimit > 0f ? sealQuestTimeLimit : sealTime * 3f)));
+                break;
             default:
                 Debug.LogError($"[ZoneObjective] Unimplemented QuestType: {chosen}");
                 CompleteAndReward();
@@ -188,9 +315,20 @@ public class ZoneObjective : NetworkBehaviour
     // ── Quest: FetchAndDeliver ────────────────────────────────────────────
     IEnumerator QuestFetchAndDeliver(float timeoutAt)
     {
-        requiredCount.Value  = requiredDeliveryCount;
+        int target = ScaledCount(requiredDeliveryCount, fetchCountPerExtraPlayer, fetchCountMax);
         deliveredCount.Value = 0;
-        SpawnFetchItems();
+
+        // requiredCount ต้องเป็นจำนวนที่ spawn ได้จริง ไม่ใช่ที่ขอ
+        // ไม่งั้นถ้าวางไม่ครบ quest จะจบไม่ลงเพราะรอ item ที่ไม่มีอยู่
+        requiredCount.Value = SpawnFetchItems(target);
+
+        if (requiredCount.Value == 0)
+        {
+            Debug.LogWarning("[ZoneObjective] วาง fetch item ไม่ได้เลย — complete ทันทีกัน quest ค้าง");
+            progress.Value = 1f;
+            CompleteAndReward();
+            yield break;
+        }
 
         while (deliveredCount.Value < requiredCount.Value)
         {
@@ -232,7 +370,7 @@ public class ZoneObjective : NetworkBehaviour
         deliveredCount.Value = 0;
 
         // เริ่ม spawn boost
-        ApplySpawnBoost();
+        ApplySpawnBoost(surviveExtraSpawnsPerTick);
 
         float survived = 0f;
         while (survived < surviveTime)
@@ -259,13 +397,133 @@ public class ZoneObjective : NetworkBehaviour
         CompleteAndReward();
     }
 
-    void ApplySpawnBoost()
+    // ── Quest: DestroyObjects ─────────────────────────────────────────────
+    /// <summary>
+    /// ทำลายวัตถุ N ชิ้นที่กระจายรอบโซน (Crush the Statues / Vase Destruction)
+    ///   - วัตถุคือ Enemy ที่ปิด movement → อาวุธทุกตัวยิงโดนโดยไม่ต้องแก้อะไร
+    ///   - ไม่ต้องยืนในโซน — โซนเป็นแค่จุดอ้างอิงบนแผนที่
+    ///   - จำนวนที่ต้องทำลายอ่านจาก trackedDestructibles ที่วางได้จริง ไม่ใช่ที่ขอ
+    /// </summary>
+    IEnumerator QuestDestroyObjects(float timeoutAt)
     {
-        if (surviveExtraSpawnsPerTick <= 0) return;
+        int target = ScaledCount(destroyCountBase, destroyCountPerExtraPlayer, destroyCountMax);
+        destroyedCount = 0;
+        SpawnDestructibles(target);
+
+        requiredCount.Value  = trackedDestructibles.Count;
+        deliveredCount.Value = 0;
+
+        if (requiredCount.Value == 0)
+        {
+            Debug.LogWarning("[ZoneObjective] วางวัตถุไม่ได้เลย — complete ทันทีกัน quest ค้าง");
+            CompleteAndReward();
+            yield break;
+        }
+
+        while (destroyedCount < requiredCount.Value)
+        {
+            if (Time.time >= timeoutAt) { ExpireAndDespawn(); yield break; }
+
+            playersInZone.Value = CountPlayersInZone();
+
+            if (deliveredCount.Value != destroyedCount)
+            {
+                deliveredCount.Value = destroyedCount;
+                progress.Value       = (float)destroyedCount / requiredCount.Value;
+            }
+
+            yield return null;
+        }
+
+        progress.Value = 1f;
+        CompleteAndReward();
+    }
+
+    // ── Quest: KillInZone (Sacrifice) ─────────────────────────────────────
+    /// <summary>
+    /// ฆ่า enemy N ตัวที่ตายในรัศมีโซน — บังคับให้ดึงศัตรูเข้ามาตายในวง
+    /// นับผ่าน Enemy.OnEnemyDiedServer (ดู HandleEnemyDiedServer)
+    /// </summary>
+    IEnumerator QuestKillInZone(float timeoutAt)
+    {
+        requiredCount.Value  = ScaledCount(killCountBase, killCountPerExtraPlayer, killCountMax);
+        deliveredCount.Value = 0;
+        killsInZone          = 0;
+        countingKillsInZone  = true;
+
+        ApplySpawnBoost(killExtraSpawnsPerTick);
+
+        while (killsInZone < requiredCount.Value)
+        {
+            if (Time.time >= timeoutAt)
+            {
+                countingKillsInZone = false;
+                ClearSpawnBoostIfActive();
+                ExpireAndDespawn();
+                yield break;
+            }
+
+            playersInZone.Value = CountPlayersInZone();
+
+            if (deliveredCount.Value != killsInZone)
+            {
+                deliveredCount.Value = Mathf.Min(requiredCount.Value, killsInZone);
+                progress.Value       = (float)deliveredCount.Value / requiredCount.Value;
+            }
+
+            yield return null;
+        }
+
+        countingKillsInZone = false;
+        ClearSpawnBoostIfActive();
+        progress.Value       = 1f;
+        deliveredCount.Value = requiredCount.Value;
+        CompleteAndReward();
+    }
+
+    // ── Quest: SealTheRift ────────────────────────────────────────────────
+    /// <summary>
+    /// เหมือน Survive แต่ progress "ถอยหลัง" เมื่อโซนว่าง แทนที่จะแค่หยุด
+    /// (Seal the Rift ของ The Spell Brigade) — ลงโทษการวิ่งหนีออกจากวง
+    /// </summary>
+    IEnumerator QuestSealTheRift(float timeoutAt)
+    {
+        requiredCount.Value  = Mathf.CeilToInt(sealTime);
+        deliveredCount.Value = 0;
+
+        ApplySpawnBoost(sealExtraSpawnsPerTick);
+
+        float sealProgress = 0f;
+        while (sealProgress < sealTime)
+        {
+            if (Time.time >= timeoutAt) { ClearSpawnBoostIfActive(); ExpireAndDespawn(); yield break; }
+
+            int count = CountPlayersInZone();
+            playersInZone.Value = count;
+
+            if (count > 0) sealProgress += Time.deltaTime;
+            else           sealProgress  = Mathf.Max(0f, sealProgress - Time.deltaTime * sealDecayMultiplier);
+
+            progress.Value       = Mathf.Clamp01(sealProgress / sealTime);
+            deliveredCount.Value = Mathf.Min(requiredCount.Value, Mathf.FloorToInt(sealProgress));
+
+            yield return null;
+        }
+
+        ClearSpawnBoostIfActive();
+        progress.Value       = 1f;
+        deliveredCount.Value = requiredCount.Value;
+        CompleteAndReward();
+    }
+
+    // ── Spawn boost ───────────────────────────────────────────────────────
+    void ApplySpawnBoost(int extraPerTick)
+    {
+        if (extraPerTick <= 0) return;
         if (cachedSpawner == null) cachedSpawner = Object.FindAnyObjectByType<EnemySpawner>();
         if (cachedSpawner == null) { Debug.LogWarning("[ZoneObjective] EnemySpawner not found — skip boost"); return; }
 
-        cachedSpawner.BoostSpawn(surviveExtraSpawnsPerTick);
+        cachedSpawner.BoostSpawn(extraPerTick);
         spawnBoostActive = true;
     }
 
@@ -274,39 +532,108 @@ public class ZoneObjective : NetworkBehaviour
         if (!spawnBoostActive) return;
         cachedSpawner?.ClearSpawnBoost();
         spawnBoostActive = false;
-        Debug.Log($"[ZoneObjective] Spawn rate restored (removed boost of +{surviveExtraSpawnsPerTick} spawns/tick)");
+        Debug.Log("[ZoneObjective] Spawn rate restored");
+    }
+
+    // ── Helpers: scaling + deadline ───────────────────────────────────────
+    /// <summary>ปรับจำนวนตามจำนวนผู้เล่น (ทั้ง LoL Swarm และ Spell Brigade scale แบบนี้)</summary>
+    int ScaledCount(int baseCount, int perExtraPlayer, int max)
+    {
+        int players = 1;
+        if (NetworkManager.Singleton != null)
+            players = Mathf.Max(1, NetworkManager.Singleton.ConnectedClientsList.Count);
+
+        int n = baseCount + perExtraPlayer * (players - 1);
+        return Mathf.Clamp(n, 1, Mathf.Max(1, max));
+    }
+
+    static float Deadline(float limitSeconds)
+        => limitSeconds > 0f ? Time.time + limitSeconds : float.MaxValue;
+
+    // ── Server: Spawn destructibles ───────────────────────────────────────
+    void SpawnDestructibles(int count)
+    {
+        trackedDestructibles.Clear();
+
+        if (destructiblePrefab == null)
+        {
+            Debug.LogWarning("[ZoneObjective] destructiblePrefab not assigned — skip spawn");
+            return;
+        }
+
+        var positions = ObjectivePlacement.SampleRing(
+            transform.position, count,
+            destructibleMinRadius, destructibleMaxRadius, destructibleMinSpacing);
+
+        foreach (var pos in positions)
+        {
+            var go = Instantiate(destructiblePrefab, pos, Quaternion.Euler(0f, Random.value * 360f, 0f));
+
+            // ตั้ง HP ก่อน Spawn — DestructibleObjective อ่านค่านี้ใน OnNetworkSpawn
+            var d = go.GetComponent<DestructibleObjective>();
+            if (d != null) d.health = destructibleHealth;
+
+            var no = go.GetComponent<NetworkObject>();
+            if (no == null)
+            {
+                Debug.LogError("[ZoneObjective] destructiblePrefab ไม่มี NetworkObject");
+                Destroy(go);
+                continue;
+            }
+
+            no.Spawn(true);
+            trackedDestructibles.Add(no);
+            spawnedItems.Add(no);          // ให้ CleanupSpawnedItems เก็บกวาดตอน expire
+        }
+
+        Debug.Log($"[ZoneObjective] 🗿 Spawned {trackedDestructibles.Count}/{count} destructibles");
     }
 
     // ── Server: Spawn FetchItems ──────────────────────────────────────────
-    void SpawnFetchItems()
+    /// <summary>
+    /// วาง fetch item — ปกติสุ่มตำแหน่งสดรอบโซนทุกครั้ง (ObjectivePlacement)
+    /// ถ้า itemSpawnPositions มีของ (ObjectiveManager.useFixedItemLocations เปิด)
+    /// จะใช้จุดที่กำหนดไว้แทน
+    /// </summary>
+    /// <returns>จำนวนที่ spawn สำเร็จจริง</returns>
+    int SpawnFetchItems(int target)
     {
         if (fetchItemPrefab == null)
         {
             Debug.LogWarning("[ZoneObjective] fetchItemPrefab not assigned — skip spawn");
-            return;
-        }
-        if (itemSpawnPositions == null || itemSpawnPositions.Count == 0)
-        {
-            Debug.LogWarning("[ZoneObjective] itemSpawnPositions empty — ObjectiveManager ไม่ได้ pick locations");
-            return;
+            return 0;
         }
 
-        int count = Mathf.Min(requiredDeliveryCount, itemSpawnPositions.Count);
-        if (count < requiredDeliveryCount)
+        List<Vector3> positions;
+        if (itemSpawnPositions != null && itemSpawnPositions.Count > 0)
         {
-            Debug.LogWarning($"[ZoneObjective] locations ไม่พอ ({itemSpawnPositions.Count} < {requiredDeliveryCount}) — adjust requiredCount");
-            requiredCount.Value = count;
+            positions = new List<Vector3>(itemSpawnPositions);
+            if (positions.Count > target) positions.RemoveRange(target, positions.Count - target);
+        }
+        else
+        {
+            positions = ObjectivePlacement.SampleRing(
+                transform.position, target, itemMinRadius, itemMaxRadius, itemMinSpacing);
         }
 
-        for (int i = 0; i < count; i++)
+        int spawned = 0;
+        foreach (var pos in positions)
         {
-            var go = Instantiate(fetchItemPrefab, itemSpawnPositions[i], Quaternion.identity);
+            var go = Instantiate(fetchItemPrefab, pos, Quaternion.identity);
             var no = go.GetComponent<NetworkObject>();
-            if (no == null) { Destroy(go); continue; }
+            if (no == null)
+            {
+                Debug.LogError("[ZoneObjective] fetchItemPrefab ไม่มี NetworkObject");
+                Destroy(go);
+                continue;
+            }
             no.Spawn(true);
             spawnedItems.Add(no);
+            spawned++;
         }
-        Debug.Log($"[ZoneObjective] 📦 Spawned {count} fetch items");
+
+        Debug.Log($"[ZoneObjective] 📦 Spawned {spawned}/{target} fetch items");
+        return spawned;
     }
 
     // ── Server: shared helpers ────────────────────────────────────────────
@@ -364,22 +691,27 @@ public class ZoneObjective : NetworkBehaviour
 
     void ExpireAndDespawn()
     {
+        countingKillsInZone = false;
+        trackedDestructibles.Clear();
         CleanupSpawnedItems();
         ClearSpawnBoostIfActive();
         ResetAllPlayersCarriedItems();
         ObjectiveExpiredClientRpc();
-        OnObjectiveExpired?.Invoke(this);
         if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
     }
 
     void CompleteAndReward()
     {
+        countingKillsInZone = false;
+        trackedDestructibles.Clear();
+        CleanupSpawnedItems();      // เก็บของที่เหลือ เช่น fetch item ที่ไม่มีใครไปเอา
+        ClearSpawnBoostIfActive();
+
         phaseInt.Value = (int)Phase.Complete;
         progress.Value = 1f;
         ResetAllPlayersCarriedItems();
         GiveRewards();
         ObjectiveCompleteClientRpc();
-        OnObjectiveCompleted?.Invoke(this);
         Debug.Log("[ZoneObjective] ✅ Completed!");
 
         StartCoroutine(DespawnAfter(2f));
@@ -415,6 +747,8 @@ public class ZoneObjective : NetworkBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // CLIENT VISUAL + ANNOUNCEMENTS
     // ═══════════════════════════════════════════════════════════════════════
+    // หมายเหตุ: NotifyRemoved ถูกเรียกจากใน ClientRpc (ไม่ใช่ฝั่ง server ตรงๆ)
+    // เพื่อให้ทุก client ได้ยิน event ไม่ใช่แค่ host — UI จะได้ลบ indicator ทัน
     [ClientRpc]
     void ObjectiveCompleteClientRpc()
     {
@@ -422,6 +756,7 @@ public class ZoneObjective : NetworkBehaviour
         if (discMat != null) discMat.SetFloat(ID_Progress, 1f);
         VFXFactory.Play("None", transform.position);
         AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  ★ORB", Color.green);
+        NotifyRemoved(completed: true);
     }
 
     [ClientRpc]
@@ -430,6 +765,7 @@ public class ZoneObjective : NetworkBehaviour
         SetDiscColor(COL_EXPIRED);
         VFXFactory.Play("EnemyDeath", transform.position);
         AnnounceHUD("OBJECTIVE EXPIRED", new Color(1f, 0.40f, 0.05f));
+        NotifyRemoved(completed: false);
     }
 
     void OnPhaseChangedClient(int oldPhase, int newPhase)
@@ -457,8 +793,11 @@ public class ZoneObjective : NetworkBehaviour
         return ActiveQuestType switch
         {
             QuestType.FetchAndDeliver => $"QUEST: Deliver {requiredCount.Value} items!",
-            QuestType.Survive          => $"QUEST: Survive {surviveTime:F0}s in the zone!",
-            _                          => "QUEST STARTED",
+            QuestType.Survive         => $"QUEST: Survive {surviveTime:F0}s in the zone!",
+            QuestType.DestroyObjects  => $"QUEST: Destroy {requiredCount.Value} objects!",
+            QuestType.KillInZone      => $"QUEST: Kill {requiredCount.Value} enemies inside the zone!",
+            QuestType.SealTheRift     => $"QUEST: Seal the rift — hold the zone {sealTime:F0}s!",
+            _                         => "QUEST STARTED",
         };
     }
 
@@ -514,6 +853,8 @@ public class ZoneObjective : NetworkBehaviour
         // sync visual scale ทุก frame เผื่อ designer ปรับ zoneRadius ใน Inspector ตอน play
         if (runtimeDisc != null) ApplyDiscScale();
     }
+
+    void OnProgressChanged(float _, float newValue) => UpdateShader(newValue);
 
     void UpdateShader(float p)
     {

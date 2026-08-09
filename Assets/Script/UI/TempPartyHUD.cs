@@ -195,7 +195,7 @@ public class TempPartyHUD : MonoBehaviour
         // Displaying both allows instant verification of audit 1.1 stat sync correctness.
 
         string deadSuffix = isDead ? " [DEAD]" : "";
-        string line = $"{tags}id:{pm.OwnerClientId}  {charName}  {netHp:F0} / {netMaxHp:F0}  (local {localMaxHp:F0}){deadSuffix}";
+        string line = $"{tags}Player {pm.OwnerClientId} ({charName})  HP: {netHp:F0} / {netMaxHp:F0} (local {localMaxHp:F0}){deadSuffix}";
 
         textComp.text = line;
         textComp.color = isDead ? Color.gray : Color.white;

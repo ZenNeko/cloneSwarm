@@ -20,9 +20,10 @@ public class UpgradeManager : NetworkBehaviour
     public int cardsPerLevel = 3;
 
     // ── References ────────────────────────────────────────────────────────
-    private PlayerWeaponManager weaponManager;
-    private PlayerStatManager   statManager;
+    private PlayerWeaponManager  weaponManager;
+    private PlayerStatManager    statManager;
     private playermove           playerMove;
+    private PlayerAugmentManager augmentManager;
     private CharacterData        myCharacter;   // ตัวละครของ player นี้
 
     // ── State ─────────────────────────────────────────────────────────────
@@ -36,11 +37,12 @@ public class UpgradeManager : NetworkBehaviour
     {
         if (!IsOwner) { enabled = false; return; }
 
-        weaponManager = GetComponent<PlayerWeaponManager>();
-        statManager   = GetComponent<PlayerStatManager>();
-        playerMove    = GetComponent<playermove>();
-        myCharacter   = GetComponent<PlayerWeaponManager>()?.characterData
-                        ?? CharacterSelectUI.SelectedCharacter;
+        weaponManager  = GetComponent<PlayerWeaponManager>();
+        statManager    = GetComponent<PlayerStatManager>();
+        playerMove     = GetComponent<playermove>();
+        augmentManager = GetComponent<PlayerAugmentManager>();
+        myCharacter    = GetComponent<PlayerWeaponManager>()?.characterData
+                         ?? CharacterSelectUI.SelectedCharacter;
 
         SharedExperienceManager.OnUpgradePhaseStart += OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   += OnUpgradePhaseEnd;
@@ -62,7 +64,17 @@ public class UpgradeManager : NetworkBehaviour
     {
         _isOrbPhase    = false;
         hasPicked      = false;
-        currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
+
+        // เลเวลที่กำหนดไว้ → ให้เลือก Augment แทน card ปกติ
+        bool isAugmentLevel = SharedExperienceManager.Instance?.IsAugmentLevel(newLevel) ?? false;
+        currentOptions = isAugmentLevel
+            ? PickAugmentCards(cardsPerLevel)
+            : PickCards(cardsPerLevel, isOrbReward: false);
+
+        // ถ้า augment pool หมด (เลือกครบทุกใบแล้ว) → ตกกลับเป็น card ปกติ
+        if (isAugmentLevel && currentOptions.Count == 0)
+            currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
+
         if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
         RecommendCards(currentOptions);
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);
@@ -396,6 +408,58 @@ public class UpgradeManager : NetworkBehaviour
         return result;
     }
 
+    // ── Augment Pool ──────────────────────────────────────────────────────
+    /// <summary>
+    /// สุ่ม Augment แบบถ่วงน้ำหนัก — ตัดใบที่ถือครบ maxStacks แล้ว
+    /// และตัดใบที่เป็น exclusive ของตัวละครอื่น
+    /// </summary>
+    List<UpgradeCardInfo> PickAugmentCards(int count)
+    {
+        var result = new List<UpgradeCardInfo>();
+
+        var db = CloneSwarm.Meta.MetaDatabase.Instance;
+        if (db == null || db.augments == null || augmentManager == null) return result;
+
+        var pool = new List<AugmentData>();
+        foreach (var a in db.augments)
+        {
+            if (a == null) continue;
+            if (a.exclusiveCharacter != null && a.exclusiveCharacter != myCharacter) continue;
+            if (augmentManager.GetStackCount(a) >= a.maxStacks) continue;
+            pool.Add(a);
+        }
+
+        var used = new HashSet<int>();
+        for (int n = 0; n < count && used.Count < pool.Count; n++)
+        {
+            float total = 0f;
+            for (int i = 0; i < pool.Count; i++)
+                if (!used.Contains(i)) total += Mathf.Max(0.01f, pool[i].weight);
+
+            if (total <= 0f) break;
+
+            float roll = Random.Range(0f, total);
+            float acc  = 0f;
+            for (int i = 0; i < pool.Count; i++)
+            {
+                if (used.Contains(i)) continue;
+                acc += Mathf.Max(0.01f, pool[i].weight);
+                if (roll <= acc)
+                {
+                    result.Add(new UpgradeCardInfo
+                    {
+                        type    = UpgradeCardType.Augment,
+                        augment = pool[i]
+                    });
+                    used.Add(i);
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
     // ── Level Up Pool — Weapon + Stat cards ───────────────────────────────
     List<UpgradeCardInfo> BuildLevelUpPool()
     {
@@ -612,6 +676,9 @@ public class UpgradeManager : NetworkBehaviour
                 break;
             case UpgradeCardType.Stat:
                 statManager.ApplyStat(card.stat, playerMove);
+                break;
+            case UpgradeCardType.Augment:
+                augmentManager?.Acquire(card.augment);
                 break;
         }
     }

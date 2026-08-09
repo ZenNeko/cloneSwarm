@@ -663,6 +663,11 @@ public class NetworkedVFXPool : MonoBehaviour
     public float damageTextDuration = 0.8f;
     [Tooltip("ความเร็วลอยขึ้น")]
     public float damageTextFloatSpeed = 1.2f;
+
+    [Range(0f, 1f)]
+    [Tooltip("เริ่มจางที่กี่ % ของอายุ — 0.5 = ทึบครึ่งแรก แล้วค่อยจางในครึ่งหลัง\n" +
+             "ตั้ง 0 = จางตั้งแต่วินาทีแรก (แบบเดิม ซึ่งดูเหมือนหายวับเพราะช่วงที่ยังอ่านออกกินเวลาเกือบทั้งหมด)")]
+    public float damageTextFadeStart = 0.5f;
     [Tooltip("ขนาดตัวอักษรปกติ")]
     public float damageTextNormalSize = 4f;
     [Tooltip("ขนาดตัวอักษรตอนคริต")]
@@ -828,6 +833,7 @@ public class FloatingDamageText : MonoBehaviour
     private TextMeshPro textMesh;
     private float   _duration = 0.8f;
     private float   _floatSpeed = 1.2f;
+    private float   _fadeStart = 0.5f;
     private float   _elapsedTime;
     private Vector3 _startPos;
     private Camera  _cam;
@@ -854,6 +860,7 @@ public class FloatingDamageText : MonoBehaviour
         _elapsedTime = 0f;
         _duration    = pool.damageTextDuration;
         _floatSpeed  = pool.damageTextFloatSpeed;
+        _fadeStart   = pool.damageTextFadeStart;
 
         EnsureTextMesh();
 
@@ -871,6 +878,7 @@ public class FloatingDamageText : MonoBehaviour
         textMesh.fontStyle = isCrit ? FontStyles.Bold : FontStyles.Normal;
         _activeColor       = isCrit ? pool.damageTextCritColor : pool.damageTextNormalColor;
         textMesh.color     = _activeColor;
+        textMesh.alpha     = 1f;   // รีเซ็ตความโปร่ง — ตัวนี้ถูกใช้ซ้ำจาก pool
 
         gameObject.SetActive(true);
     }
@@ -885,12 +893,18 @@ public class FloatingDamageText : MonoBehaviour
             return;
         }
 
-        // ลอยขึ้น + จางหาย
-        transform.position = _startPos + Vector3.up * (_floatSpeed * (_elapsedTime / _duration));
-        float alpha = Mathf.Clamp01(1f - (_elapsedTime / _duration));
-        Color c = _activeColor;
-        c.a = alpha;
-        textMesh.color = c;
+        float t = _elapsedTime / _duration;
+
+        // ลอยขึ้น
+        transform.position = _startPos + Vector3.up * (_floatSpeed * t);
+
+        // จางหาย — ทึบเต็มจนถึง _fadeStart แล้วค่อยไล่ลงเป็นศูนย์
+        // ใช้ textMesh.alpha ไม่ใช่ .color เพราะ .color เขียนทับ vertex color ทั้งชุด
+        // ทุกเฟรม ส่วน alpha เป็นช่องที่ TMP เตรียมไว้ให้คุมความโปร่งอย่างเดียว
+        float fade = _fadeStart >= 1f
+            ? 1f
+            : Mathf.Clamp01((t - _fadeStart) / (1f - _fadeStart));
+        textMesh.alpha = 1f - fade;
     }
 
     void LateUpdate()

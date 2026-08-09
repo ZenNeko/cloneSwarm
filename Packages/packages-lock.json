@@ -241,7 +241,7 @@
       "dependencies": {}
     },
     "com.unity.multiplayer.tools": {
-      "version": "2.2.9",
+      "version": "2.2.10",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -256,7 +256,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.netcode.gameobjects": {
-      "version": "2.13.0",
+      "version": "2.13.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {

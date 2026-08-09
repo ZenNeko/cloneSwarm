@@ -11,10 +11,10 @@ public class BossManager : NetworkBehaviour
     public static BossManager Instance { get; private set; }
 
     [Header("Prefabs")]
-    [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + MainBoss.cs (attacks)")]
+    [Tooltip("Prefab ที่มี Enemy.cs (health/movement) + BossController.cs (attacks)")]
     public GameObject mainBossPrefab;
     [Tooltip("Mini Boss prefabs — สุ่มเลือก 1 ตัวต่อครั้งที่ spawn\n" +
-             "ใส่ได้หลายตัว (แต่ละตัวต้องมี MiniBossAI.cs + MiniBossConfig)")]
+             "ใส่ได้หลายตัว (แต่ละตัวต้องมี BossController.cs + BossEncounterConfig)")]
     public GameObject[] miniBossPrefabs = new GameObject[0];
 
     [Header("Mini Boss Scaling")]
@@ -31,7 +31,9 @@ public class BossManager : NetworkBehaviour
     public UnityEvent onMainBossKilled;
 
     // ── State ─────────────────────────────────────────────────────────────
-    private Enemy        activeMainBossEnemy;
+    private Enemy               activeMainBossEnemy;
+    private BossEncounterConfig activeBossConfig;
+    private BossEncounterConfig activeMiniBossConfig;
 
     // กัน onDeath ยิงซ้ำ — EnemyTakeDamage ไม่มีธง "ตายแล้ว" 2 นัดในเฟรมเดียวเข้าได้ทั้งคู่
     bool _mainBossDeathHandled;
@@ -46,6 +48,16 @@ public class BossManager : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (!IsServer) return;
+
+        if (RunSetup.Map != null)
+        {
+            var tierContent = RunSetup.Map.GetTier(RunSetup.Difficulty);
+            if (tierContent != null)
+            {
+                activeBossConfig     = tierContent.mainBossConfig;
+                activeMiniBossConfig = tierContent.miniBossConfig;
+            }
+        }
 
         GameTimeline.OnMiniBossTime  += SpawnMiniBoss;
         GameTimeline.OnMainBossTime  += SpawnMainBoss;
@@ -78,6 +90,13 @@ public class BossManager : NetworkBehaviour
 
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(prefab, pos, Quaternion.identity);
+
+        if (activeMiniBossConfig != null)
+        {
+            var bc = go.GetComponent<BossController>();
+            if (bc != null) bc.config = activeMiniBossConfig;
+        }
+
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         // HP = baseHP × miniBossBaseHealthMult × waveHealthMult
@@ -120,6 +139,13 @@ public class BossManager : NetworkBehaviour
 
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(mainBossPrefab, pos, Quaternion.identity);
+
+        if (activeBossConfig != null)
+        {
+            var bc = go.GetComponent<BossController>();
+            if (bc != null) bc.config = activeBossConfig;
+        }
+
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         activeMainBossEnemy = go.GetComponent<Enemy>();

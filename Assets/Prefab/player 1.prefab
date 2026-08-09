@@ -18,7 +18,6 @@ GameObject:
   - component: {fileID: 4250323636796052472}
   - component: {fileID: 4642509835648411498}
   - component: {fileID: 8264601110927716481}
-  - component: {fileID: 7655913753558015870}
   - component: {fileID: 1258628423518312534}
   - component: {fileID: 4941737850633899768}
   - component: {fileID: 8713204962959621646}
@@ -286,12 +285,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1385780694
+  GlobalObjectIdHash: 2128275501
   InScenePlacedSourceGlobalObjectIdHash: 1385780694
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -344,8 +344,15 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+  carriedQuestItems:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   isDashing: 0
+  isKnockedBack: 0
   tempMoveSpeedBonus: 0
+  tempHealthRegenBonus: 0
 --- !u!114 &4642509835648411498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,6 +373,7 @@ MonoBehaviour:
   startingWeapon: {fileID: 11400000, guid: db5d5dbb80f04d24ebab518c447ddde1, type: 2}
   boomerangPrefab: {fileID: 3540909906679412635, guid: bbded883f8d72c848af072ede9013de1, type: 3}
   grenadePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
+  molotovPrefab: {fileID: 0}
   minePrefab: {fileID: 3857138112386556378, guid: dfd2732f78f6198458c1cb26a8aaaaf9, type: 3}
   stickyRocketPrefab: {fileID: 4823905976387484198, guid: 6fa70133ffa22dc498d767d669f60666, type: 3}
   giantRocketPrefab: {fileID: 193240346247142991, guid: d76cf29a69b21814c9cdb72073942deb, type: 3}
@@ -434,38 +442,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
   - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
   cardsPerLevel: 3
---- !u!114 &7655913753558015870
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7353199761178665806}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9aa3f860f74f3c84fbc0a5e610061aa2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ExperienceManager
-  ShowTopMostFoldoutHeaderGroup: 1
-  maxLevel: 30
-  baseExpToLevel: 100
-  expGrowthRate: 1.25
-  expMultiplier: 1
-  netCurrentExp:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 0
-  netCurrentLevel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 1
-  netExpToNext:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
 --- !u!114 &1258628423518312534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -526,6 +502,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatManager
   ShowTopMostFoldoutHeaderGroup: 1
   tempAbilityHaste: 0
+  tempDamageBonusMult: 0
 --- !u!114 &8713204962959621646
 MonoBehaviour:
   m_ObjectHideFlags: 0

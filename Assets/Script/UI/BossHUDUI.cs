@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Canvas HP bars สำหรับ Boss ทุกประเภท
@@ -15,6 +17,11 @@ public class BossHUDUI : MonoBehaviour
     [Tooltip("Prefab ที่มี MiniBossBarEntry.cs")]
     public MiniBossBarEntry miniBossBarPrefab;
 
+    [Header("Main Boss Cast Bar")]
+    public GameObject      castBarRoot;
+    public Image           castFill;
+    public TextMeshProUGUI castNameText;
+
     [Header("Enrage Warning")]
     [Tooltip("วินาทีก่อน Boss enrage ที่จะแสดง warning")]
     public float enrageWarningTime = 45f;
@@ -22,25 +29,32 @@ public class BossHUDUI : MonoBehaviour
     // ── Boss State ────────────────────────────────────────────────────────
     readonly Dictionary<BossController, MiniBossBarEntry> _miniBars = new();
     bool enrageWarned;
+    Coroutine _castCoroutine;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
     {
         if (miniBossPanel) miniBossPanel.SetActive(false);
+        if (castBarRoot)   castBarRoot.SetActive(false);
     }
 
     void OnEnable()
     {
         BossController.OnAnyBossSpawned   += OnBossSpawned;
         BossController.OnAnyBossDespawned += OnBossDespawned;
+        BossController.OnAnyCastStarted   += OnCastStarted;
+        BossController.OnAnyCastEnded     += OnCastEnded;
     }
 
     void OnDisable()
     {
         BossController.OnAnyBossSpawned   -= OnBossSpawned;
         BossController.OnAnyBossDespawned -= OnBossDespawned;
+        BossController.OnAnyCastStarted   -= OnCastStarted;
+        BossController.OnAnyCastEnded     -= OnCastEnded;
 
         ClearAllBars();
+        OnCastEnded(null);
     }
 
     // ── Handlers ──────────────────────────────────────────────────────────
@@ -85,6 +99,43 @@ public class BossHUDUI : MonoBehaviour
         }
         _miniBars.Clear();
         if (miniBossPanel) miniBossPanel.SetActive(false);
+    }
+
+    void OnCastStarted(BossController boss, string castName, float castTime)
+    {
+        if (castBarRoot == null || string.IsNullOrEmpty(castName) || castTime <= 0f) return;
+
+        if (_castCoroutine != null) StopCoroutine(_castCoroutine);
+        _castCoroutine = StartCoroutine(AnimateCastBar(castName, castTime));
+    }
+
+    void OnCastEnded(BossController boss)
+    {
+        if (_castCoroutine != null)
+        {
+            StopCoroutine(_castCoroutine);
+            _castCoroutine = null;
+        }
+        if (castBarRoot) castBarRoot.SetActive(false);
+    }
+
+    System.Collections.IEnumerator AnimateCastBar(string castName, float castTime)
+    {
+        castBarRoot.SetActive(true);
+        if (castNameText != null) castNameText.text = castName;
+        if (castFill != null) castFill.fillAmount = 0f;
+
+        float elapsed = 0f;
+        while (elapsed < castTime)
+        {
+            elapsed += Time.deltaTime;
+            if (castFill != null) castFill.fillAmount = Mathf.Clamp01(elapsed / castTime);
+            yield return null;
+        }
+
+        if (castFill != null) castFill.fillAmount = 1f;
+        castBarRoot.SetActive(false);
+        _castCoroutine = null;
     }
 
     // ── Enrage Warning ────────────────────────────────────────────────────
