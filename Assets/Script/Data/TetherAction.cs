@@ -3,15 +3,33 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
+/// <summary>
+/// spawn BossTether แล้วสั่ง Activate — ดู docs/adr-002-tether-modes.md
+///
+/// อยากให้บอสสุ่มโหมด: ทำ asset หลายตัวต่างโหมด แล้วโยนเข้า pool ของ RandomAttackAction
+/// ไม่ต้องเขียนการสุ่มลงในนี้
+/// </summary>
 [CreateAssetMenu(fileName = "TetherAction", menuName = "Boss/Actions/TetherAction")]
 public class TetherAction : BossAction
 {
+    [Header("Mode")]
+    public TetherMode mode = TetherMode.Far;
+    [Tooltip("ใช้เมื่อ mode = Close · ตอนนี้ทำแค่ OnTimeout (ตัวอื่นจะ warn แล้ว fallback)")]
+    public CloseFailMode closeFailMode = CloseFailMode.OnTimeout;
+
     [Header("Tether Settings")]
+    [Tooltip("Far = ระยะที่ต้องวิ่งห่างให้สายขาด · Close = ระยะที่ห้ามเกิน · Leash = รัศมีที่ห้ามออก")]
     public float tetherDistance = 25f;
     public float tetherDuration = 10f;
+    [Tooltip("Leash ไม่ใช้ค่านี้ — Leash ดึงกลับแทนการทำดาเมจ")]
     public float tetherFailDamage = 50f;
-    [Tooltip("ระยะห่างเสาจากผู้เล่นในกรณีเล่นคนเดียว")]
+    [Tooltip("ระยะห่างเสาจากผู้เล่น กรณีไม่มีคนอื่นให้ผูก (Far/Close)")]
     public float tetherSoloSpawnOffset = 10f;
+
+    [Header("Leash")]
+    public LeashScope leashScope = LeashScope.EachPlayerOwnAnchor;
+    [Tooltip("เยื้องจุดศูนย์กลางวงจากตัวผู้เล่นเท่าไหร่ — 0 = วงล้อมรอบตำแหน่งที่ยืนอยู่พอดี")]
+    public float leashAnchorOffset = 0f;
 
     public override float GetEditorDuration() => actionDelay + tetherDuration;
 
@@ -28,50 +46,126 @@ public class TetherAction : BossAction
 
         if (NetworkManager.Singleton == null) yield break;
 
-        var clients = new List<NetworkClient>(NetworkManager.Singleton.ConnectedClientsList);
-        if (clients.Count == 0) yield break;
+        // เป้าหลัก (คนที่ต้องวิ่ง) ต้องยังไม่ตาย — ทุกโหมด
+        var alive = CollectPlayers(aliveOnly: true);
+        if (alive.Count == 0) yield break;
 
-        Vector3 spawnPos = runner.transform.position;
-        if (clients.Count == 1 && clients[0].PlayerObject != null)
+        if (mode == TetherMode.Leash) SpawnLeash(bossController, alive);
+        else                          SpawnPairOrPillar(bossController, alive);
+    }
+
+    // ── Far / Close / (Transferable → BossTether จะ fallback เป็น Far) ─────
+    private void SpawnPairOrPillar(BossController boss, List<(ulong id, Vector3 pos)> alive)
+    {
+        var target = alive[Random.Range(0, alive.Count)];
+
+        // anchor —
+        //   Far  : ต้องเป็นคนเป็นเท่านั้น · ศพวิ่งหนีไม่ได้ สายไม่มีทางขาด กลไกแก้ไม่ได้
+        //   Close: คนเป็นก่อน แต่ถ้าเพื่อนตายหมดผูกกับศพได้ · คนเป็นเดินไปยืนข้างศพเอาได้ ยังแก้ได้อยู่
+        var anchors = alive.FindAll(p => p.id != target.id);
+        if (anchors.Count == 0 && mode == TetherMode.Close)
+            anchors = CollectPlayers(aliveOnly: false).FindAll(p => p.id != target.id);
+
+        if (anchors.Count > 0)
         {
-            // Solo Mode: สร้างเสาห่างจากผู้เล่น
-            Vector3 playerPos = clients[0].PlayerObject.transform.position;
-            Vector2 rand = Random.insideUnitCircle.normalized * tetherSoloSpawnOffset;
-            spawnPos = new Vector3(playerPos.x + rand.x, playerPos.y, playerPos.z + rand.y);
+            var anchor = anchors[Random.Range(0, anchors.Count)];
+            var tether = SpawnTether(boss, boss.transform.position);
+            if (tether == null) return;
+
+            tether.Activate(target.id, anchor.id);
+            Debug.Log($"[TetherAction] 🔗 {mode}: Client {target.id} ↔ Client {anchor.id}");
+            return;
         }
 
-        var go = Instantiate(bossController.tetherPrefab, spawnPos, Quaternion.identity);
+        // ไม่มีใครให้ผูก → ผูกกับเสาแทน
+        Vector3 spawnPos = OffsetAround(target.pos, tetherSoloSpawnOffset);
+        var solo = SpawnTether(boss, spawnPos);
+        if (solo == null) return;
+
+        solo.ActivateOnPillar(target.id);
+        Debug.Log($"[TetherAction] 🔗 {mode} (เสา): Client {target.id}");
+    }
+
+    // ── Leash ─────────────────────────────────────────────────────────────
+    private void SpawnLeash(BossController boss, List<(ulong id, Vector3 pos)> alive)
+    {
+        switch (leashScope)
+        {
+            case LeashScope.SingleRandom:
+            {
+                var p = alive[Random.Range(0, alive.Count)];
+                SpawnLeashFor(boss, p.id, OffsetAround(p.pos, leashAnchorOffset));
+                break;
+            }
+
+            case LeashScope.AllSharedAnchor:
+            {
+                Vector3 shared = boss.transform.position;
+                foreach (var p in alive) SpawnLeashFor(boss, p.id, shared);
+                break;
+            }
+
+            case LeashScope.EachPlayerOwnAnchor:
+            default:
+                foreach (var p in alive) SpawnLeashFor(boss, p.id, OffsetAround(p.pos, leashAnchorOffset));
+                break;
+        }
+
+        Debug.Log($"[TetherAction] ⛓ Leash {leashScope} → {alive.Count} คน");
+    }
+
+    private void SpawnLeashFor(BossController boss, ulong clientId, Vector3 anchorPos)
+    {
+        var tether = SpawnTether(boss, anchorPos);
+        if (tether == null) return;
+        tether.ActivateOnPillar(clientId);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    private List<(ulong id, Vector3 pos)> CollectPlayers(bool aliveOnly)
+    {
+        var list = new List<(ulong, Vector3)>();
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null) continue;
+
+            var pm = client.PlayerObject.GetComponent<playermove>();
+            if (pm == null) continue;
+            if (aliveOnly && pm.isDead.Value) continue;
+
+            list.Add((client.ClientId, pm.transform.position));
+        }
+        return list;
+    }
+
+    private BossTether SpawnTether(BossController boss, Vector3 pos)
+    {
+        var go = Instantiate(boss.tetherPrefab, pos, Quaternion.identity);
         var tether = go.GetComponent<BossTether>();
         var no = go.GetComponent<NetworkObject>();
 
         if (tether == null || no == null)
         {
             Destroy(go);
-            yield break;
+            return null;
         }
 
-        // โหลดค่าต่างๆ
+        // โหลดค่าลง instance ฝั่ง server — ค่าที่ client ต้องใช้ถูกส่งต่อผ่าน ClientRpc ใน Activate
+        tether.mode             = mode;
+        tether.closeFailMode    = closeFailMode;
         tether.requiredDistance = tetherDistance;
-        tether.duration = tetherDuration;
-        tether.failDamage = tetherFailDamage;
+        tether.duration         = tetherDuration;
+        tether.failDamage       = tetherFailDamage;
 
         no.Spawn(true);
-        bossController.RegisterMechanic(no);
+        boss.RegisterMechanic(no);
+        return tether;
+    }
 
-        if (clients.Count == 1)
-        {
-            tether.ActivateSolo(clients[0].ClientId);
-            Debug.Log($"[TetherAction] 🔗 Solo Tether → Client {clients[0].ClientId}");
-        }
-        else
-        {
-            // Co-op Mode: ผูกผู้เล่น 2 คน
-            int idxA = Random.Range(0, clients.Count);
-            int idxB;
-            do { idxB = Random.Range(0, clients.Count); } while (idxB == idxA);
-            
-            tether.Activate(clients[idxA].ClientId, clients[idxB].ClientId);
-            Debug.Log($"[TetherAction] 🔗 Tether: Client {clients[idxA].ClientId} ↔ Client {clients[idxB].ClientId}");
-        }
+    private static Vector3 OffsetAround(Vector3 origin, float distance)
+    {
+        if (distance <= 0f) return origin;
+        Vector2 rand = Random.insideUnitCircle.normalized * distance;
+        return new Vector3(origin.x + rand.x, origin.y, origin.z + rand.y);
     }
 }
