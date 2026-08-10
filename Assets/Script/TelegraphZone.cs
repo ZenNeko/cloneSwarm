@@ -50,6 +50,7 @@ public class TelegraphZone : NetworkBehaviour
     private bool           initialized;
     private static Material cachedFallbackMaterial;
     private MaterialPropertyBlock mpb;
+    private Vector3        visualBaseScale = Vector3.one;
 
     // ── Server-side params (set before Spawn, read via InitClientRpc) ─────
     [HideInInspector] public AoEType aoeType         = AoEType.Circle;
@@ -75,6 +76,26 @@ public class TelegraphZone : NetworkBehaviour
     // VFX ตอนระเบิดแบบต่อ action — telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม
     // ถ้าไม่มีช่องนี้ ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด · ว่าง = ใช้ detonateVfxPrefab บน prefab
     [HideInInspector] public string  detonateVfxKey = "";
+
+    [HideInInspector] public float   coneAngle = 90f;    // Cone: มุมกางทั้งหมด (องศา)
+
+    // ขยาย/หด และกวาด — client เล่นภาพเอง server คำนวณค่าสุดท้ายตอน resolve
+    // ทั้งสองฝั่งรู้ warningDuration กับอัตราอยู่แล้ว จึงไม่ต้อง sync ระหว่างทาง
+    [HideInInspector] public float   scaleStart = 1f;
+    [HideInInspector] public float   scaleEnd   = 1f;
+    [HideInInspector] public float   sweepDegreesPerSecond = 0f;
+    private Quaternion initialRotation;
+
+    /// <summary>ตัวคูณขนาด ณ วินาทีนี้ — ใช้ทั้งภาพฝั่ง client และ hit test ฝั่ง server</summary>
+    public float CurrentScale
+    {
+        get
+        {
+            if (Mathf.Approximately(scaleStart, scaleEnd)) return scaleEnd;
+            float t = warningDuration > 0.0001f ? Mathf.Clamp01(elapsed / warningDuration) : 1f;
+            return Mathf.Lerp(scaleStart, scaleEnd, t);
+        }
+    }
 
     // ── Rabbit & Steel: Color Match ──
     public NetworkVariable<bool> isColorMatch = new NetworkVariable<bool>(false);
@@ -138,6 +159,10 @@ public class TelegraphZone : NetworkBehaviour
             damage              = damage,
             innerRadius         = innerRadius,
             chaseTargetClientId = chaseTargetClientId,
+            coneAngle             = coneAngle,
+            scaleStart            = scaleStart,
+            scaleEnd              = scaleEnd,
+            sweepDegreesPerSecond = sweepDegreesPerSecond,
             isChasing           = isChasing,
             isStackMarker       = isStackMarker,
             isGaze              = isGaze,
@@ -158,6 +183,11 @@ public class TelegraphZone : NetworkBehaviour
         damage                = init.damage;
         innerRadius           = init.innerRadius;
         chaseTargetClientId   = init.chaseTargetClientId;
+        coneAngle             = init.coneAngle;
+        scaleStart            = init.scaleStart;
+        scaleEnd              = init.scaleEnd;
+        sweepDegreesPerSecond = init.sweepDegreesPerSecond;
+        initialRotation       = transform.rotation;
         isChasing             = init.isChasing;
         isStackMarker         = init.isStackMarker;
         isGaze                = init.isGaze;
@@ -177,6 +207,14 @@ public class TelegraphZone : NetworkBehaviour
         // Visual: 3D prefab (preferred) > runtime primitive (fallback)
         if (!TrySpawnVfxPrefab())
             CreateVisual();
+
+        // จำขนาดตั้งต้นไว้คูณกับ CurrentScale ตอนวงขยาย/หด
+        if (visual != null)
+        {
+            visualBaseScale = visual.transform.localScale;
+            if (!Mathf.Approximately(scaleStart, 1f))
+                visual.transform.localScale = visualBaseScale * scaleStart;
+        }
 
         // Audio: warning cue ตอน telegraph เริ่ม
         if (warningClip != null)
@@ -368,6 +406,14 @@ public class TelegraphZone : NetworkBehaviour
             }
         }
 
+        // ลำแสงกวาด — server ไม่ต้อง sync ระหว่างทาง เพราะดาเมจลงครั้งเดียวตอนจบ
+        // ตั้งมุมสุดท้ายให้ตรงกับที่ client เห็นแล้วค่อยคิด hit test
+        if (Mathf.Abs(sweepDegreesPerSecond) > 0.001f)
+        {
+            transform.rotation = initialRotation
+                               * Quaternion.Euler(0f, sweepDegreesPerSecond * warningDuration, 0f);
+        }
+
         DealDamage();
         ExplodeClientRpc();
 
@@ -502,6 +548,7 @@ public class TelegraphZone : NetworkBehaviour
                 AoEType.Circle => IsInCircle(playerPos),
                 AoEType.Cross  => IsInLine(playerPos) || IsInLineCross(playerPos),
                 AoEType.Donut  => IsInDonut(playerPos),
+                AoEType.Cone   => IsInCone(playerPos),
                 _              => IsInLine(playerPos),    // Line (can chase too)
             };
 
@@ -609,17 +656,37 @@ public class TelegraphZone : NetworkBehaviour
         return dir.normalized;
     }
 
+    /// <summary>
+    /// ตัวคูณขนาดที่ใช้ตอน resolve ดาเมจ — ดาเมจลงครั้งเดียวตอนจบเสมอ จึงเป็น scaleEnd
+    /// ไม่ใช้ CurrentScale เพราะ elapsed เป็นตัวนับฝั่ง client ไม่ควรให้ hit test ฝั่ง server พึ่ง
+    /// </summary>
+    float HitScale => scaleEnd > 0.0001f ? scaleEnd : 1f;
+
     bool IsInCircle(Vector3 pos)
     {
         Vector2 d = new Vector2(pos.x - transform.position.x, pos.z - transform.position.z);
-        return d.magnitude <= radius;
+        return d.magnitude <= radius * HitScale;
+    }
+
+    /// <summary>Cone: อยู่ในรัศมี **และ** อยู่ในมุมกางจากทิศที่ zone หันอยู่</summary>
+    bool IsInCone(Vector3 pos)
+    {
+        Vector3 d = pos - transform.position;
+        d.y = 0f;
+
+        float r = radius * HitScale;
+        if (d.sqrMagnitude > r * r) return false;
+        if (coneAngle >= 360f) return true;
+        if (d.sqrMagnitude < 0.0001f) return true;   // ยืนทับจุดยอดกรวย
+
+        return Vector3.Angle(transform.forward, d) <= coneAngle * 0.5f;
     }
 
     bool IsInLine(Vector3 pos)
     {
         Vector3 local = Quaternion.Inverse(transform.rotation) * (pos - transform.position);
-        return Mathf.Abs(local.x) <= lineWidth * 0.5f
-            && Mathf.Abs(local.z) <= lineLength * 0.5f;
+        return Mathf.Abs(local.x) <= lineWidth * HitScale * 0.5f
+            && Mathf.Abs(local.z) <= lineLength * HitScale * 0.5f;
     }
 
     // Line ที่หมุน 90° (ใช้สำหรับ Cross)
@@ -627,15 +694,15 @@ public class TelegraphZone : NetworkBehaviour
     {
         Quaternion rot90 = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
         Vector3 local = Quaternion.Inverse(rot90) * (pos - transform.position);
-        return Mathf.Abs(local.x) <= lineWidth * 0.5f
-            && Mathf.Abs(local.z) <= lineLength * 0.5f;
+        return Mathf.Abs(local.x) <= lineWidth * HitScale * 0.5f
+            && Mathf.Abs(local.z) <= lineLength * HitScale * 0.5f;
     }
 
     bool IsInDonut(Vector3 pos)
     {
         float dist = new Vector2(pos.x - transform.position.x,
                                  pos.z - transform.position.z).magnitude;
-        return dist >= innerRadius && dist <= radius;
+        return dist >= innerRadius * HitScale && dist <= radius * HitScale;
     }
 
     // ── Client Visual ──────────────────────────────────────────────────────
@@ -677,7 +744,69 @@ public class TelegraphZone : NetworkBehaviour
                 CreateSafeCylinderPrimitive(visual.transform, new Vector3(0f, 0.001f, 0f),
                                             Quaternion.identity, innerRadius * 2f);
                 break;
+
+            case AoEType.Cone:
+                visual = new GameObject("Visual_Cone");
+                visual.transform.SetParent(transform);
+                visual.transform.localPosition = Vector3.zero;
+                CreateConePrimitive(visual.transform, radius, coneAngle);
+                break;
         }
+    }
+
+    /// <summary>
+    /// พัดรูปกรวยบนระนาบ XZ — ไม่มี primitive สำเร็จรูปของ Unity ที่เป็นเซกเตอร์แบน
+    /// ต้องปั้น mesh เอง ไม่งั้น Cone จะไม่มี telegraph ให้เห็นเลย (กลไกที่มองไม่เห็นเงื่อนไข = ห้าม ship)
+    /// กางรอบแกน +Z ข้างละครึ่งมุม ให้ตรงกับ IsInCone ที่วัดจาก transform.forward
+    /// </summary>
+    void CreateConePrimitive(Transform parent, float coneRadius, float angleDeg)
+    {
+        int segments = Mathf.Clamp(Mathf.CeilToInt(angleDeg / 5f), 3, 96);
+
+        var verts = new Vector3[segments + 2];
+        var tris  = new int[segments * 3];
+
+        verts[0] = Vector3.zero;   // จุดยอด
+        float half = angleDeg * 0.5f;
+        for (int i = 0; i <= segments; i++)
+        {
+            float a = Mathf.Deg2Rad * Mathf.Lerp(-half, half, i / (float)segments);
+            // มุม 0 = +Z · บวกไปทาง +X ให้ตรงกับ Quaternion.LookRotation
+            verts[i + 1] = new Vector3(Mathf.Sin(a) * coneRadius, 0f, Mathf.Cos(a) * coneRadius);
+        }
+        for (int i = 0; i < segments; i++)
+        {
+            tris[i * 3 + 0] = 0;
+            tris[i * 3 + 1] = i + 1;
+            tris[i * 3 + 2] = i + 2;
+        }
+
+        var mesh = new Mesh { name = "TelegraphCone" };
+        mesh.vertices  = verts;
+        mesh.triangles = tris;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+
+        var go = new GameObject("ConeFan");
+        go.transform.SetParent(parent);
+        go.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+        go.transform.localRotation = Quaternion.identity;
+
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = GetWarningMaterial();
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        visualRenderers.Add(r);
+
+        coneMesh = mesh;   // mesh ที่ new เองต้องลบเอง
+    }
+
+    private Mesh coneMesh;
+
+    void OnDestroy()
+    {
+        if (coneMesh != null) Destroy(coneMesh);
+        coneMesh = null;
     }
 
     void CreateSafeCylinderPrimitive(Transform parent, Vector3 localPos, Quaternion localRot, float diameter)
@@ -726,6 +855,14 @@ public class TelegraphZone : NetworkBehaviour
 
         elapsed += Time.deltaTime;
         float progress = Mathf.Clamp01(elapsed / totalWarning);
+
+        // วงขยาย/หด — ภาพฝั่ง client · ดาเมจใช้ scaleEnd ตอน resolve (ดู HitScale)
+        if (!Mathf.Approximately(scaleStart, scaleEnd))
+            visual.transform.localScale = visualBaseScale * CurrentScale;
+
+        // ลำแสงกวาด — ทุก client คำนวณเองจากสูตรเดียวกัน ไม่ต้อง sync
+        if (Mathf.Abs(sweepDegreesPerSecond) > 0.001f)
+            transform.rotation = initialRotation * Quaternion.Euler(0f, sweepDegreesPerSecond * elapsed, 0f);
 
         // Fallback color (สำหรับ primitive ที่ไม่มี _FillProgress shader graph property)
         // warning (yellow) → danger (red): G channel ลดลงตาม progress

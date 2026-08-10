@@ -80,7 +80,9 @@ All gameplay audio goes through `SoundManager.Instance.PlaySfx*`, `PlayRandomSfx
 
 - `GameTimeline` (singleton) — owns game clock; configurable start time + interval per system (objective, mini-boss, main-boss thresholds)
 - `BossController` — **the component every boss uses** (main and mini alike). Data-driven by `BossEncounterConfig`: phases by HP threshold, per-phase action list + enrage list, `AttackLoop` runs `BossAction.ExecuteCoroutine` on the server. Fires static `OnAnyBossSpawned` / `OnAnyBossDespawned` on **all clients** (before `IsServer` check) so HUD can subscribe. Put it on the prefab directly — subclass only for boss-specific presentation.
-- `BossAction` (ScriptableObject) — one modular attack. Subclasses in `Assets/Script/Data/`: `CircleAoEAction`, `LineAoEAction`, `CrossAoEAction`, `DonutAoEAction`, `ColorMatchAoEAction`, `TetherAction`, `RandomAttackAction`, `ComboAction`, `BossTimelineAction`.
+- `BossAction` (ScriptableObject) — one modular attack. Subclasses in `Assets/Script/Data/`: `CircleAoEAction`, `LineAoEAction`, `CrossAoEAction`, `DonutAoEAction`, `ConeAoEAction`, `ColorMatchAoEAction`, `TetherAction`, `LimitCutAction`, `KeepMovingAction`, `RandomAttackAction`, `ComboAction`, `BossTimelineAction`.
+- **Rolls** (`RollDefinition` / `RollContext`) — seeded per-fight randomization so the same action plays out mirrored / rotated / on a different victim each pull. **`BossController.AttackLoop` rolls only top-level actions in the phase list**; `ComboAction` / `BossTimelineAction` must call `RollForSubActions(...)` **once** at start and their children then `Peek` — re-rolling per child breaks a pattern into inconsistent pieces. Spatial kinds (`Anchor` / `SnapAngle` / `MirrorX` / `MirrorZ`) are applied generically in `SpawnAoEActionBase` via `RollTransform`; pivot is `BossEncounterConfig.arena.center` and falls back to the boss position **with a warning**. Roll once per volley and apply the same transform to every spawn position.
+- **VFX ownership differs by content type**: weapons/abilities put VFX on their own prefab (see the VFX section below), but a boss action has no per-action prefab — every AoE shares one `TelegraphZone` prefab. So **boss content carries VFX as a string key on the data** (`BossPhase.phaseVfxName`, `SpawnAoEActionBase.detonateVfxKey`), resolved through `NetworkedVFXPool.PlayByName`.
 - Phase presentation (announcement text/color + phase VFX + camera shake) is data on `BossPhase` — there are no per-boss subclasses anymore (`MainBoss`/`MiniBossAI` were deleted 2026-07).
 - `BossManager` — picks random mini-boss prefab from `miniBossPrefabs[]`
 - `ZoneObjective` — 2-phase quest: Phase 1 activation timer, Phase 2 random quest (`FetchAndDeliver` or `Survive`). `FetchItem` is the pickup; player carries via `playermove.carriedQuestItems` NetworkVariable.
@@ -90,7 +92,9 @@ All gameplay audio goes through `SoundManager.Instance.PlaySfx*`, `PlayRandomSfx
 
 ### Telegraph / AoE pattern
 
-Boss attacks use `TelegraphZone` prefab (spawned via `NetworkObject.Spawn`). Boss script sets `aoeType` (`AoEType.Circle / Line / Cross / Donut / Chase`), radius/length, `warningDuration`, `damage`, then calls `BroadcastInit()` to sync visuals to clients. The zone handles the warning → activation flow itself.
+Boss attacks use `TelegraphZone` prefab (spawned via `NetworkObject.Spawn`). Boss script sets `aoeType` (`AoEType.Circle / Line / Cross / Donut / Cone` — **Chase is a separate `isChasing` bool, not an AoEType**), radius/length, `warningDuration`, `damage`, then calls `BroadcastInit()` to sync visuals to clients. The zone handles the warning → activation flow itself.
+
+All client-visible zone parameters travel in one `TelegraphInit` struct (`INetworkSerializable`) — add new fields there rather than growing the RPC signature. Server-only values (the whole knockback group) stay off the struct. Damage always resolves once at the end, so `scaleStart`/`scaleEnd` (expanding rings) and `sweepDegreesPerSecond` (sweeping beams) are visual on clients and use the **final** value for the server hit test (`HitScale`).
 
 ## Project-specific conventions to enforce
 

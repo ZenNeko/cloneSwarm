@@ -21,6 +21,11 @@ public struct TelegraphInit : INetworkSerializable
     public float innerRadius;          // Donut: รัศมีวงในที่ปลอดภัย
     public ulong chaseTargetClientId;
 
+    public float coneAngle;            // Cone: มุมกางทั้งหมด (องศา)
+    public float scaleStart;           // ตัวคูณขนาดตอนเริ่ม — 1 = ขนาดเต็มตั้งแต่แรก
+    public float scaleEnd;             // ตัวคูณขนาดตอนระเบิด
+    public float sweepDegreesPerSecond;
+
     public bool isChasing;
     public bool isStackMarker;
     public bool isGaze;
@@ -39,6 +44,10 @@ public struct TelegraphInit : INetworkSerializable
         s.SerializeValue(ref damage);
         s.SerializeValue(ref innerRadius);
         s.SerializeValue(ref chaseTargetClientId);
+        s.SerializeValue(ref coneAngle);
+        s.SerializeValue(ref scaleStart);
+        s.SerializeValue(ref scaleEnd);
+        s.SerializeValue(ref sweepDegreesPerSecond);
         s.SerializeValue(ref isChasing);
         s.SerializeValue(ref isStackMarker);
         s.SerializeValue(ref isGaze);

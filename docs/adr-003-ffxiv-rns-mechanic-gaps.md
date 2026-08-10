@@ -216,32 +216,52 @@ ADR นี้เติม `arcAngle`, `radiusEnd`, `sweepSpeed`, `detonateVfxKey
 ตั้ง radius 38 เผื่อระยะ 2 m ไม่ให้ anchor ที่ `distanceScale = 1` ไปจมในกำแพง
 **ต้องเปิดดูในซีนจริงแล้วลากปรับ** — ตัวเลขนี้มาจากสคริปต์ build level ไม่ใช่จากการวัดซีนที่ใช้จริง
 
-### Stage B · Roll
+### Stage B · Roll — **ทำแล้ว**
 
-4. [ ] `TargetingMode.ArenaAnchor` ใน `SpawnAoEActionBase`
-5. [ ] ชั้น transform จาก roll — `Anchor` / `SnapAngle` / `MirrorX` / `MirrorZ` · pivot = arena center + fallback บอส
-6. [ ] `RollKind.Target` ใน `TargetingMode.RandomPlayer`
-7. [ ] `BossTimelineAction` / `ComboAction` roll ให้คลิปลูกครั้งเดียวตอนเริ่ม แล้วคลิป `Peek`
-8. [ ] `BossController` พ่น roll seed ลง log ตอนบอสเกิด
-9. [ ] ตั้ง `RollDefinition` ชุดแรกใน `BossConfig_01` เป็นตัวอย่าง
-10. [ ] **แก้ `TargetingMode.RandomPlayer` ให้กรอง `isDead`** — ตอนนี้ไม่กรอง ([:124-146](../Assets/Script/Data/SpawnAoEActionBase.cs:124)) ขณะที่ `AllPlayers` กรอง ([:169](../Assets/Script/Data/SpawnAoEActionBase.cs:169)) · บั๊กตระกูลเดียวกับ tether
+4. [x] `TargetingMode.ArenaAnchor` + `arenaAnchor` / `arenaDistanceScale` / `anchorChoices`
+5. [x] [`RollTransform`](../Assets/Script/Data/RollTransform.cs) + `BossAction.GetRollTransform()` · pivot = arena center + fallback บอสพร้อม warning
+6. [x] `RollKind.Target` ใน `TargetingMode.RandomPlayer`
+7. [x] `RollForSubActions()` ใน `BossAction` · `BossTimelineAction` และ `ComboAction` เรียกตอนเริ่ม
+8. [x] `BossController.InitRolls` พ่น seed + จำนวน roll definition ลง log
+9. [x] `RollDefinition` 5 ตัวใน `BossConfig_01` — `mirror` / `spin` / `quadrant` / `victim` / `order`
+10. [x] `RandomPlayer` กรอง `isDead` แล้ว (`CollectAlivePlayerPositions`)
 
-### Stage C · ท่าและตัวปรับใหม่
+### Stage C · ท่าและตัวปรับใหม่ — **ทำแล้ว**
 
-11. [ ] `AoEType.Cone` + `ConeAoEAction` + hit test เชิงมุม
-12. [ ] `repeatCount` / `repeatInterval` / `rerollEachRepeat` + แก้ `GetEditorDuration()`
-13. [ ] `radiusStart` → `radiusEnd` และ `sweepDegreesPerSecond`
+11. [x] `AoEType.Cone` + [`ConeAoEAction`](../Assets/Script/Data/ConeAoEAction.cs) + `IsInCone()` + **mesh พัดกรวยที่ปั้นเอง**
+    (`CreateVisual` ไม่มีเคส Cone มาก่อน ปล่อยไว้จะได้ telegraph ที่มองไม่เห็น)
+12. [x] `repeatCount` / `repeatInterval` / `rerollEachRepeat` + `GetEditorDuration()` บวกเวลาซ้ำแล้ว
+13. [x] `scaleStart` → `scaleEnd` และ `sweepDegreesPerSecond`
 
-### Stage D · การมองเห็น
+**เปลี่ยนจากแผน:** ใช้ `scaleStart`/`scaleEnd` เป็น**ตัวคูณ** แทน `radiusStart`/`radiusEnd` เป็นค่าสัมบูรณ์
+เพราะแต่ละ subclass ตั้งขนาดของตัวเอง (radius / lineLength / innerRadius) ตัวคูณจึงใช้ได้กับทุกทรง
+โดยไม่ต้องแก้ subclass สักตัว
 
-14. [ ] `playermove.limitCutNumber` + `WorldNumberTag` (ล้อ `WorldHPBar`)
-15. [ ] `LimitCutAction` — แจกเลขด้วย `RollKind.Order` + ไล่ resolve ตาม `perNumberDelay`
-16. [ ] วงนับเวลาที่จุดกึ่งกลางสาย tether
-17. [ ] ไล่ดูว่าทุก AoEType แสดงตัวนับเวลาด้วยภาษาเดียวกัน
+### Stage D · การมองเห็น — **ทำแล้ว**
 
-### Stage E · เอกสาร
+14. [x] `playermove.limitCutNumber` (Everyone read) + [`WorldNumberTag`](../Assets/Script/UI/WorldNumberTag.cs)
+15. [x] [`LimitCutAction`](../Assets/Script/Data/LimitCutAction.cs) — `RollKind.Order` หมุนคิว + ไล่ resolve ตาม `perNumberDelay`
+16. [x] วงหดที่จุดกึ่งกลางสาย tether (`showCountdownRing`) — ใช้กับทุกโหมดรวม Leash
+17. [x] zone ส่ง `WarningDuration` เข้า VFX Graph อยู่แล้วและ `Update` ไล่สี warning→danger ครบทุกทรง
 
-18. [ ] `CLAUDE.md` — `AoEType` ไม่มี `Chase` · เพิ่มกฎ roll (roll ที่ระดับบนสุด คลิปลูก Peek)
+`WorldNumberTag` **ปั้น TextMeshPro ของตัวเองตอนรัน** ไม่ต้อง wire child หรือ ref ใดๆ
+(ต่างจาก `WorldHPBar` ที่ต้อง assign Canvas + Image + Text) — ลากลง prefab อย่างเดียวจบ
+
+### Stage E · เอกสาร — **ทำแล้ว**
+
+18. [x] `CLAUDE.md` — `AoEType` ไม่มี `Chase` · กฎ roll · กฎ VFX ต่อ content type · `TelegraphInit`
+
+---
+
+## งาน Editor ที่เหลือ — ต้องทำด้วยมือ (เข้า Editor รอบเดียวจบได้)
+
+| ทำอะไร | ทำไม |
+|---|---|
+| **ลาก `WorldNumberTag` ลง player prefab** | ไม่มีตัวนี้ = ไม่มีใครเห็นเลข = `LimitCutAction` เล่นไม่ได้ |
+| เปิด `Arena_BossPoc.asset` แล้วดูในหน้า Scene · ลากปรับถ้าไม่ตรง | radius 38 มาจาก `LevelLayoutBuilder` ไม่ได้วัดจากซีนที่ใช้จริง |
+| ตั้ง `detonateVfxKey` ในท่าที่อยากให้ระเบิดต่างกัน | ว่างไว้ทุกท่าจะยังระเบิดเหมือนกันหมดเหมือนเดิม |
+| ผูก `rollName` ให้ action ที่อยากให้สุ่ม (`mirror` / `spin` / `quadrant` / `victim` / `order`) | **ไม่ผูก = ไม่มีอะไรเปลี่ยน** ท่าจะยังออกเหมือนเดิมทุกรอบ |
+| สร้าง `ConeAoEAction` / `LimitCutAction` asset แล้วใส่ในเฟส | ท่าใหม่ยังไม่มี asset สักตัว |
 
 ---
 

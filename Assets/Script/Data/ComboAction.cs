@@ -39,6 +39,9 @@ public class ComboAction : BossAction
             yield return new WaitForSeconds(actionDelay);
         }
 
+        // เหมือน BossTimelineAction — AttackLoop ไม่ roll ให้ท่าลูก ต้อง roll เองครั้งเดียวตอนเริ่ม
+        RollForSubActions(runner, EnumerateSubActions());
+
         foreach (var entry in subActions)
         {
             if (entry.action != null)
@@ -49,6 +52,13 @@ public class ComboAction : BossAction
 
         // คอมโบรันคู่ขนานกันไป คืนค่าทันทีเพื่อให้บอสล๊อคคูลดาวน์หลักได้ตามต้องการ
         yield break;
+    }
+
+    private IEnumerable<BossAction> EnumerateSubActions()
+    {
+        if (subActions == null) yield break;
+        foreach (var e in subActions)
+            if (e.action != null) yield return e.action;
     }
 
     private IEnumerator RunSubActionDelayed(NetworkBehaviour runner, GameObject telegraphPrefab, BossAction action, float delay)

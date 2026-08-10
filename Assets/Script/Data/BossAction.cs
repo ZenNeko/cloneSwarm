@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -69,5 +70,71 @@ public abstract class BossAction : ScriptableObject
             return boss.Rolls.Peek(rollName);
         }
         return -1;
+    }
+
+    /// <summary>
+    /// จุดหมุน/จุดพลิกของ roll เชิงพื้นที่ = จุดศูนย์กลางสนาม
+    /// ไม่มี arena ให้ถอยไปใช้ตำแหน่งบอสพร้อม warning — ปล่อยเงียบไม่ได้ เพราะแพตเทิร์นจะเพี้ยน
+    /// แบบหาสาเหตุยาก (เหตุผลเดียวกับ ColorMatchAoEAction.ResolveSharedCenter)
+    /// </summary>
+    protected Vector3 ResolveArenaPivot(NetworkBehaviour runner)
+    {
+        ArenaDefinition arena = (runner as BossController)?.config?.arena;
+        if (arena != null) return arena.center;
+
+        Debug.LogWarning($"[{GetType().Name}] {name}: ใช้ roll เชิงพื้นที่แต่ BossEncounterConfig.arena ว่าง — ใช้ตำแหน่งบอสเป็นจุดหมุนแทน");
+        return runner != null ? runner.transform.position : Vector3.zero;
+    }
+
+    /// <summary>
+    /// แปลงค่า roll ที่ resolve แล้วเป็นการพลิก/หมุนพิกัด · คืน Identity ถ้าไม่ใช่ roll เชิงพื้นที่
+    /// `Anchor` ไม่อยู่ในนี้เพราะมันคือการ **เลือกจุดเกิด** ไม่ใช่การแปลง — จัดการที่ targeting
+    /// </summary>
+    protected RollTransform GetRollTransform(NetworkBehaviour runner)
+    {
+        var boss = runner as BossController;
+        if (boss?.Rolls == null || string.IsNullOrEmpty(rollName)) return RollTransform.Identity;
+
+        int value = boss.Rolls.Peek(rollName);
+        if (value < 0) return RollTransform.Identity;
+
+        var t = RollTransform.Identity;
+        switch (boss.Rolls.GetKind(rollName))
+        {
+            case RollKind.SnapAngle:
+                t.angleDeg = 360f / Mathf.Max(1, boss.Rolls.GetOptionCount(rollName)) * value;
+                break;
+            case RollKind.MirrorX:
+                t.mirrorX = value != 0;
+                break;
+            case RollKind.MirrorZ:
+                t.mirrorZ = value != 0;
+                break;
+            default:
+                return RollTransform.Identity;   // Variant / Target / Anchor / Order — ไม่ใช่การแปลงพิกัด
+        }
+
+        t.pivot = ResolveArenaPivot(runner);
+        return t;
+    }
+
+    /// <summary>
+    /// roll ให้ action ลูก **ครั้งเดียวต่อ rollName** ตอนที่ชุดท่าเริ่ม
+    ///
+    /// `BossController.AttackLoop` roll ให้เฉพาะ action ระดับบนสุด · คลิปใน Timeline/Combo
+    /// รันผ่าน StartCoroutine ตรงๆ จึงไม่เคยถูก roll เลย · และต้อง roll **ครั้งเดียว** ไม่ใช่ต่อคลิป
+    /// ไม่งั้นคลิปที่ใช้ rollName เดียวกันจะได้คนละค่า แพตเทิร์นแตกเป็นคนละทิศ
+    /// </summary>
+    protected void RollForSubActions(NetworkBehaviour runner, IEnumerable<BossAction> subActions)
+    {
+        var boss = runner as BossController;
+        if (boss?.Rolls == null || subActions == null) return;
+
+        var rolled = new HashSet<string>();
+        foreach (var a in subActions)
+        {
+            if (a == null || a == this || string.IsNullOrEmpty(a.rollName)) continue;
+            if (rolled.Add(a.rollName)) boss.Rolls.Roll(a.rollName);
+        }
     }
 }

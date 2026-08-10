@@ -74,6 +74,12 @@ public class BossTether : NetworkBehaviour
     [Tooltip("จำนวนด้านของวงรัศมีในโหมด Leash — สูงขึ้น = วงกลมเนียนขึ้น")]
     public int   leashRingSegments = 48;
 
+    [Header("Countdown (แบบ Rabbit and Steel)")]
+    [Tooltip("วงหดที่จุดกึ่งกลางสาย บอกเวลาที่เหลือ — อ่านได้โดยไม่ต้องละสายตาจากตัวละคร")]
+    public bool  showCountdownRing = true;
+    [Tooltip("รัศมีวงตอนเริ่ม (เมตร) — หดจนเป็น 0 ตอนหมดเวลา")]
+    public float countdownRingRadius = 1.1f;
+
     // ── Server-side state ─────────────────────────────────────────────────
     private ulong clientIdA = ulong.MaxValue;
     private ulong clientIdB = ulong.MaxValue;
@@ -93,9 +99,12 @@ public class BossTether : NetworkBehaviour
     private bool         clientInitialized;
     private GameObject   pillarVisual;
     private GameObject   ringVisual;
+    private GameObject   countdownVisual;
+    private LineRenderer countdownRing;
     private Material     lineMaterial;    // สร้างเองด้วย new Material() → ต้องลบเอง
     private Material     pillarMaterial;
     private Material     ringMaterial;
+    private Material     countdownMaterial;
     private float        clientTimer;     // ขึ้นทุก client (ใช้คำนวณ remaining สำหรับ urgent flash)
 
     // ── Entry Points (Server calls this right after Spawn) ────────────────
@@ -182,6 +191,7 @@ public class BossTether : NetworkBehaviour
         // และสิ่งที่ผู้เล่นต้องเห็นคือ "ขอบ" ไม่ใช่ "จุดกึ่งกลาง"
         if (mode == TetherMode.Leash) SetupLeashRing();
         else if (pillar)              SetupPillarVisual();
+        if (showCountdownRing) SetupCountdownRing();
         FindPlayerTransforms();
         clientInitialized = true;
 
@@ -339,6 +349,7 @@ public class BossTether : NetworkBehaviour
         if (missing)
         {
             lineRenderer.enabled = false;
+            if (countdownRing != null) countdownRing.enabled = false;
             return;
         }
 
@@ -359,6 +370,14 @@ public class BossTether : NetworkBehaviour
             : baseCol;
         lineRenderer.startColor = col;
         lineRenderer.endColor   = col;
+
+        // วงหดที่กึ่งกลางสาย — ใช้กับทุกโหมดรวม Leash เพราะบอก "อีกนานแค่ไหนกลไกจะจบ"
+        if (countdownRing != null)
+        {
+            Vector3 mid = (lineRenderer.GetPosition(0) + endPos) * 0.5f;
+            float remaining01 = duration > 0.0001f ? 1f - Mathf.Clamp01(clientTimer / duration) : 0f;
+            UpdateCountdownRing(mid, remaining01, col);
+        }
     }
 
     // ── Visual Setup ──────────────────────────────────────────────────────
@@ -423,6 +442,57 @@ public class BossTether : NetworkBehaviour
             ringMaterial = new Material(shader) { color = leashColor };
             ring.sharedMaterial = ringMaterial;
         }
+    }
+
+    /// <summary>
+    /// วงหดที่จุดกึ่งกลางสาย — ภาษาเวลาแบบ Rabbit and Steel
+    /// ของเดิมสื่อเวลาด้วย "สายแดงตอนเหลือ &lt; 2 วิ" ซึ่งเป็น binary อ่านไม่ออกว่าเหลือเท่าไหร่
+    /// วงหดบอกเวลาต่อเนื่องและอยู่ในสายตาพอดี ไม่ต้องเหลือบไปมองมุมจอ
+    /// </summary>
+    void SetupCountdownRing()
+    {
+        int segments = 32;
+
+        countdownVisual = new GameObject("TetherCountdown");
+        countdownVisual.transform.SetParent(transform, worldPositionStays: true);
+
+        countdownRing = countdownVisual.AddComponent<LineRenderer>();
+        countdownRing.positionCount     = segments;
+        countdownRing.loop              = true;
+        countdownRing.useWorldSpace     = false;
+        countdownRing.startWidth        = lineWidth * 0.8f;
+        countdownRing.endWidth          = lineWidth * 0.8f;
+        countdownRing.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default")
+                  ?? Shader.Find("Unlit/Color");
+        if (shader != null)
+        {
+            countdownMaterial = new Material(shader) { color = BaseLineColor() };
+            countdownRing.sharedMaterial = countdownMaterial;
+        }
+    }
+
+    /// <summary>วาดวงหดใหม่ทุกเฟรมตามเวลาที่เหลือ — เรียกจาก LateUpdate</summary>
+    void UpdateCountdownRing(Vector3 midPoint, float remaining01, Color col)
+    {
+        if (countdownRing == null) return;
+
+        countdownVisual.transform.position = midPoint;
+        countdownVisual.transform.rotation = Quaternion.identity;
+
+        float r = countdownRingRadius * Mathf.Clamp01(remaining01);
+        int segments = countdownRing.positionCount;
+        for (int i = 0; i < segments; i++)
+        {
+            float a = (i / (float)segments) * Mathf.PI * 2f;
+            countdownRing.SetPosition(i, new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r));
+        }
+
+        countdownRing.startColor = col;
+        countdownRing.endColor   = col;
+        countdownRing.enabled    = r > 0.02f;
     }
 
     void SetupPillarVisual()
@@ -497,15 +567,19 @@ public class BossTether : NetworkBehaviour
     // ถ้าไม่ลบเองจะสะสมไปเรื่อยๆ · ใช้ OnDestroy เพราะรันแน่ทั้ง despawn ปกติและตอนปิดฉาก
     void OnDestroy()
     {
-        if (pillarVisual)   Destroy(pillarVisual);
-        if (ringVisual)     Destroy(ringVisual);
-        if (lineMaterial)   Destroy(lineMaterial);
-        if (pillarMaterial) Destroy(pillarMaterial);
-        if (ringMaterial)   Destroy(ringMaterial);
-        pillarVisual   = null;
-        ringVisual     = null;
-        lineMaterial   = null;
-        pillarMaterial = null;
-        ringMaterial   = null;
+        if (pillarVisual)      Destroy(pillarVisual);
+        if (ringVisual)        Destroy(ringVisual);
+        if (countdownVisual)   Destroy(countdownVisual);
+        if (lineMaterial)      Destroy(lineMaterial);
+        if (pillarMaterial)    Destroy(pillarMaterial);
+        if (ringMaterial)      Destroy(ringMaterial);
+        if (countdownMaterial) Destroy(countdownMaterial);
+        pillarVisual      = null;
+        ringVisual        = null;
+        countdownVisual   = null;
+        lineMaterial      = null;
+        pillarMaterial    = null;
+        ringMaterial      = null;
+        countdownMaterial = null;
     }
 }

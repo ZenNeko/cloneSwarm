@@ -31,6 +31,8 @@ public class playermove : NetworkBehaviour
     public NetworkVariable<float> netHealth       = new(100f,  NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<float> netMaxHealth     = new(100f,  NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool>  isDead           = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>เลขลำดับจาก LimitCutAction — 0 = ไม่มีเลข · ทุก client อ่านได้เพื่อโชว์เหนือหัวกันและกัน</summary>
+    public NetworkVariable<int>   limitCutNumber   = new(0,     NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     /// <summary>วินาทีที่เหลือก่อน respawn — 0 = ไม่ได้ตาย</summary>
     public NetworkVariable<float> respawnCountdown = new(0f,   NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
