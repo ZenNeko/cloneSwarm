@@ -16,6 +16,9 @@ public abstract class SpawnAoEActionBase : BossAction
     [Header("Telegraph Properties")]
     public float warningDuration = 2.5f;
     public float damage = 25f;
+    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab\n" +
+             "telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม ถ้าไม่ตั้งตรงนี้ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด")]
+    public string detonateVfxKey = "";
 
     [Header("FFXIV Special Settings")]
     [Tooltip("เปิดให้ท่าโจมตีรูปแบบนี้วิ่งตามล่าผู้เล่นเป้าหมาย (Chase)")]
@@ -92,6 +95,7 @@ public abstract class SpawnAoEActionBase : BossAction
                 zone.knockbackDistance = knockbackDistance;
                 zone.knockbackDuration = knockbackDuration;
                 zone.knockbackFixedDirection = knockbackFixedDirection;
+                zone.detonateVfxKey = detonateVfxKey;
 
                 if (followCaster && runner != null)
                 {

@@ -72,6 +72,10 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public bool    isRotatingChase   = false;
     [HideInInspector] public NetworkObject casterNetworkObject;
 
+    // VFX ตอนระเบิดแบบต่อ action — telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม
+    // ถ้าไม่มีช่องนี้ ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด · ว่าง = ใช้ detonateVfxPrefab บน prefab
+    [HideInInspector] public string  detonateVfxKey = "";
+
     // ── Rabbit & Steel: Color Match ──
     public NetworkVariable<bool> isColorMatch = new NetworkVariable<bool>(false);
     public NetworkVariable<ulong> requiredClientId = new NetworkVariable<ulong>(ulong.MaxValue);
@@ -124,28 +128,42 @@ public class TelegraphZone : NetworkBehaviour
     /// <summary>Server เรียกทันทีหลัง Spawn เพื่อส่งพารามิเตอร์ไปทุก client</summary>
     public void BroadcastInit()
     {
-        InitClientRpc((int)aoeType, radius, lineLength, lineWidth, warningDuration, damage,
-                      innerRadius, chaseTargetClientId, isChasing, isStackMarker, isGaze, isRotatingChase);
+        InitClientRpc(new TelegraphInit
+        {
+            aoeType             = (int)aoeType,
+            radius              = radius,
+            lineLength          = lineLength,
+            lineWidth           = lineWidth,
+            warningDuration     = warningDuration,
+            damage              = damage,
+            innerRadius         = innerRadius,
+            chaseTargetClientId = chaseTargetClientId,
+            isChasing           = isChasing,
+            isStackMarker       = isStackMarker,
+            isGaze              = isGaze,
+            isRotatingChase     = isRotatingChase,
+            detonateVfxKey      = detonateVfxKey ?? "",
+        });
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
     [ClientRpc]
-    void InitClientRpc(int type, float r, float len, float wid, float warn, float dmg,
-                       float innerR, ulong chaseId, bool chasing, bool stack, bool gaze, bool rotatingChase)
+    void InitClientRpc(TelegraphInit init)
     {
-        aoeType               = (AoEType)type;
-        radius                = r;
-        lineLength            = len;
-        lineWidth             = wid;
-        warningDuration       = warn;
-        damage                = dmg;
-        innerRadius           = innerR;
-        chaseTargetClientId   = chaseId;
-        isChasing             = chasing;
-        isStackMarker         = stack;
-        isGaze                = gaze;
-        isRotatingChase       = rotatingChase;
-        totalWarning          = warn;
+        aoeType               = (AoEType)init.aoeType;
+        radius                = init.radius;
+        lineLength            = init.lineLength;
+        lineWidth             = init.lineWidth;
+        warningDuration       = init.warningDuration;
+        damage                = init.damage;
+        innerRadius           = init.innerRadius;
+        chaseTargetClientId   = init.chaseTargetClientId;
+        isChasing             = init.isChasing;
+        isStackMarker         = init.isStackMarker;
+        isGaze                = init.isGaze;
+        isRotatingChase       = init.isRotatingChase;
+        detonateVfxKey        = init.detonateVfxKey.ToString();
+        totalWarning          = init.warningDuration;
         elapsed               = 0f;
         initialized           = true;
 
@@ -296,17 +314,24 @@ public class TelegraphZone : NetworkBehaviour
     {
         if (visual) visual.SetActive(false);
 
-        // Detonate VFX (impact shockwave)
-        if (detonateVfxPrefab != null)
+        // Scale ตาม radius ของ AoE
+        float scale = aoeType switch
         {
+            AoEType.Circle => radius,
+            AoEType.Donut  => radius,
+            _              => Mathf.Max(lineWidth, lineLength * 0.3f),
+        };
+
+        // Detonate VFX (impact shockwave)
+        // key ต่อ action มาก่อน — ผ่าน pool ตาม convention #2
+        if (!string.IsNullOrEmpty(detonateVfxKey) && detonateVfxKey != "None")
+        {
+            NetworkedVFXPool.Instance?.PlayByName(detonateVfxKey, transform.position, scale);
+        }
+        else if (detonateVfxPrefab != null)
+        {
+            // ทางเดิม — asset ที่ยังไม่ได้ตั้ง key ต้องทำงานเหมือนเดิม
             var fx = Instantiate(detonateVfxPrefab, transform.position, Quaternion.identity);
-            // Scale ตาม radius ของ AoE
-            float scale = aoeType switch
-            {
-                AoEType.Circle => radius,
-                AoEType.Donut  => radius,
-                _              => Mathf.Max(lineWidth, lineLength * 0.3f),
-            };
             fx.transform.localScale = Vector3.one * scale;
             Destroy(fx, 3f);   // auto cleanup หลัง 3 วินาที
         }

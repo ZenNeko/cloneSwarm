@@ -21,6 +21,8 @@ public class ColorMatchAoEAction : BossAction
     public float radius = 3f;
     public float warningDuration = 3.5f;
     public float damage = 99f; // High damage for failing
+    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab")]
+    public string detonateVfxKey = "";
 
     [Tooltip("ระยะจากจุดศูนย์กลางถึงวงที่จะเกิด — 0 = วงทุกใบซ้อนกันที่จุดศูนย์กลางพอดี")]
     public float spawnRadius = 6f;
@@ -96,7 +98,8 @@ public class ColorMatchAoEAction : BossAction
             zone.radius = radius;
             zone.warningDuration = warningDuration;
             zone.damage = damage;
-            
+            zone.detonateVfxKey = detonateVfxKey;
+
             zone.isColorMatch.Value = true;
             zone.requiredClientId.Value = clientId;
 
