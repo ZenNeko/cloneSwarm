@@ -203,11 +203,18 @@ ADR นี้เติม `arcAngle`, `radiusEnd`, `sweepSpeed`, `detonateVfxKey
 
 ## Action Items
 
-### Stage A · เตรียมพื้น (ต้องมาก่อน)
+### Stage A · เตรียมพื้น — **ทำแล้ว `8470ac2e`** · compile ผ่าน · ยังไม่ได้เทสต์ในเกม
 
-1. [ ] ยุบ `InitClientRpc` เป็น `struct TelegraphInit : INetworkSerializable`
-2. [ ] `ArenaDefinitionEditor` — handles ลาก center/radius + โชว์ anchor 25 จุดพร้อมป้าย
-3. [ ] สร้าง `ArenaDefinition` asset ตัวแรก + ผูกเข้า `BossConfig_01`
+1. [x] ยุบ `InitClientRpc` เป็น `struct TelegraphInit : INetworkSerializable` → [TelegraphInit.cs](../Assets/Script/Data/TelegraphInit.cs)
+2. [x] `ArenaDefinitionEditor` — handles ลาก center/radius + โชว์ anchor 25 จุดพร้อมป้าย (ซ่อนตำแหน่งนาฬิกาได้ ไม่งั้นรก)
+3. [x] สร้าง `Arena_BossPoc.asset` + ผูกเข้า `BossConfig_01` — Square · center origin · radius 38
+4. [x] **รวบ `detonateVfxKey` เข้ามาด้วย** — อยู่ใน RPC เดียวกัน แยกทำจะแก้ไฟล์เดิมสองรอบ
+   `SpawnAoEActionBase` / `ColorMatchAoEAction` / `KeepMovingAction` + `ExplodeClientRpc` ใช้ `PlayByName`
+   (ของเดิม `Instantiate` ตรงๆ ผิด convention #2 — แก้ไปพร้อมกัน) · ว่างไว้ = ใช้ prefab เดิม asset เก่าไม่พัง
+
+**ค่า arena มาจากสนามจริง** — `LevelLayoutBuilder` สร้างพื้น 80×80 กำแพงที่ ±40 (`float hw = 40f`)
+ตั้ง radius 38 เผื่อระยะ 2 m ไม่ให้ anchor ที่ `distanceScale = 1` ไปจมในกำแพง
+**ต้องเปิดดูในซีนจริงแล้วลากปรับ** — ตัวเลขนี้มาจากสคริปต์ build level ไม่ใช่จากการวัดซีนที่ใช้จริง
 
 ### Stage B · Roll
 
