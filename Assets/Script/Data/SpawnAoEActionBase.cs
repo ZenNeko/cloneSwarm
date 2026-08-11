@@ -38,6 +38,17 @@ public abstract class SpawnAoEActionBase : BossAction
              "telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม ถ้าไม่ตั้งตรงนี้ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด")]
     public string detonateVfxKey = "";
 
+    [Header("Telegraph Colors  (ปกติไม่ต้องแตะ)")]
+    // สีปกติมาจาก palette บน TelegraphZone prefab ตามหมวดกลไก (Gaze / Stack / Chase / default)
+    // ให้สี = ความหมาย ผู้เล่นเห็นสีม่วงก็รู้ทันทีว่าต้องหันหลัง โดยไม่ต้องจำว่าเป็นท่าไหน
+    // ช่องนี้ไว้สำหรับท่าพิเศษที่จงใจให้หลุดจากภาษาสีกลาง — ใช้บ่อยเมื่อไหร่แปลว่าควรเพิ่มหมวดใหม่แทน
+    [Tooltip("ทับสีจาก palette กลาง — ใช้เฉพาะท่าพิเศษ")]
+    public bool  overrideTelegraphColors = false;
+    [Tooltip("สีตอนเริ่ม telegraph")]
+    public Color telegraphWarningColor = new Color(1f, 0.64f, 0.024f, 0.5f);
+    [Tooltip("สีตอนใกล้ระเบิด")]
+    public Color telegraphDangerColor  = new Color(1f, 0f, 0.099f, 0.85f);
+
     [Header("FFXIV Special Settings")]
     [Tooltip("เปิดให้ท่าโจมตีรูปแบบนี้วิ่งตามล่าผู้เล่นเป้าหมาย (Chase)")]
     public bool isChasing = false;
@@ -60,7 +71,7 @@ public abstract class SpawnAoEActionBase : BossAction
     [Tooltip("ใช้เฉพาะ KnockbackMode.FixedDirection — ทิศในพิกัดโลก (คิดเฉพาะแกน XZ)")]
     public Vector3 knockbackFixedDirection = Vector3.forward;
 
-    [Header("Expanding / Sweeping")]
+    // หัวข้อกลุ่มวาดโดย SpawnAoEActionEditor (เป็น foldout) — ไม่ใส่ [Header] ซ้ำ
     [Tooltip("ตัวคูณขนาดตอนเริ่ม telegraph — 1 = ขนาดเต็มตั้งแต่แรก (พฤติกรรมเดิม)")]
     [Min(0f)] public float scaleStart = 1f;
     [Tooltip("ตัวคูณขนาดตอนระเบิด — >1 = วงขยาย · <1 = วงหด\n" +
@@ -154,6 +165,9 @@ public abstract class SpawnAoEActionBase : BossAction
                 zone.knockbackDuration = knockbackDuration;
                 zone.knockbackFixedDirection = knockbackFixedDirection;
                 zone.detonateVfxKey = detonateVfxKey;
+                zone.overrideColors = overrideTelegraphColors;
+                zone.overrideWarningColor = telegraphWarningColor;
+                zone.overrideDangerColor  = telegraphDangerColor;
 
                 if (followCaster && runner != null)
                 {

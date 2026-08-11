@@ -34,6 +34,11 @@ public struct TelegraphInit : INetworkSerializable
     /// <summary>key ใน VFXDatabase สำหรับ VFX ตอนระเบิด — ว่าง = ใช้ detonateVfxPrefab บน prefab</summary>
     public FixedString32Bytes detonateVfxKey;
 
+    /// <summary>สีที่ action สั่งมาต่อท่า — false = ใช้ palette บน TelegraphZone prefab</summary>
+    public bool         overrideColors;
+    public UnityEngine.Color warningColor;
+    public UnityEngine.Color dangerColor;
+
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref aoeType);
@@ -53,5 +58,8 @@ public struct TelegraphInit : INetworkSerializable
         s.SerializeValue(ref isGaze);
         s.SerializeValue(ref isRotatingChase);
         s.SerializeValue(ref detonateVfxKey);
+        s.SerializeValue(ref overrideColors);
+        s.SerializeValue(ref warningColor);
+        s.SerializeValue(ref dangerColor);
     }
 }

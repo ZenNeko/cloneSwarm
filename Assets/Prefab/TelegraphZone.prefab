@@ -51,6 +51,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -76,7 +77,20 @@ MonoBehaviour:
   donutPrefab: {fileID: 1739453452110915177, guid: 72f56613b4622104984e1d8010e0e136, type: 3}
   detonateVfxPrefab: {fileID: 1921079115439858272, guid: 58ccbd4512dbb4948af71ceb553abe39, type: 3}
   warningMaterial: {fileID: 2100000, guid: fe2ad4e5b512e4f41b58865a46ec970b, type: 2}
-  dangerMaterial: {fileID: 2100000, guid: 52766d693f1833a4f80dd3c57834d5a6, type: 2}
+  warningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  dangerColor: {r: 1, g: 0, b: 0, a: 1}
+  chaseWarningColor: {r: 1, g: 0.6392157, b: 0.023529412, a: 0.5019608}
+  chaseDangerColor: {r: 1, g: 0, b: 0, a: 1}
+  stackWarningColor: {r: 1, g: 1, b: 0, a: 0.5}
+  stackDangerColor: {r: 1, g: 0, b: 0, a: 1}
+  gazeWarningColor: {r: 0.6, g: 0.1960784, b: 0.8000001, a: 1}
+  gazeDangerColor: {r: 1, g: 0, b: 0, a: 1}
+  safeZoneColor: {r: 0.1, g: 0.8, b: 0.9, a: 0.3}
+  slotColors:
+  - {r: 1, g: 0.25, b: 0.25, a: 1}
+  - {r: 0.3, g: 0.5, b: 1, a: 1}
+  - {r: 0.3, g: 0.9, b: 0.4, a: 1}
+  - {r: 1, g: 0.9, b: 0.25, a: 1}
   warningClip: {fileID: 8300000, guid: 3474e0823d8f1c546a57cadb99cf27fc, type: 3}
   detonateClip: {fileID: 8300000, guid: 216ca49885f56024bb0f049e57eff813, type: 3}
   warningVolume: 0.5
@@ -89,5 +103,32 @@ MonoBehaviour:
   damage: 30
   innerRadius: 1.5
   chaseTargetClientId: 18446744073709551615
+  isChasing: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  isRotatingChase: 0
+  casterNetworkObject: {fileID: 0}
+  detonateVfxKey: 
+  coneAngle: 90
+  overrideColors: 0
+  overrideWarningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  overrideDangerColor: {r: 1, g: 0, b: 0, a: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  isColorMatch:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  requiredClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 18446744073709551615
   chaseLockInTime: 0.8
   chaseSmoothing: 0.15

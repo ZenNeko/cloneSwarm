@@ -31,7 +31,48 @@ public class TelegraphZone : NetworkBehaviour
 
     [Header("Materials (fallback primitive mode — ใช้เมื่อไม่ใส่ prefab)")]
     public Material warningMaterial;   // transparent red — assign in Inspector
-    public Material dangerMaterial;    // brighter red ตอนใกล้ระเบิด
+
+    // ── Palette กลาง ──────────────────────────────────────────────────────
+    // ใช้ทั้งสองเส้นทางการวาด: ส่งเข้า _WarningColor/_DangerColor ของ TelegraphUniversal
+    // และใช้ lerp เองในโหมด primitive fallback (Cone ใช้ทางนี้เสมอเพราะยังไม่มี prefab)
+    // action ทับเป็นรายท่าได้ผ่าน SpawnAoEActionBase.overrideTelegraphColors
+    [Header("Telegraph Colors")]
+    [Tooltip("สีตอนเริ่ม telegraph — default ตรงกับ _WarningColor ของ shader")]
+    public Color warningColor      = new Color(1f, 0.64f, 0.024f, 0.5f);
+    [Tooltip("สีตอนใกล้ระเบิด — default ตรงกับ _DangerColor ของ shader")]
+    public Color dangerColor       = new Color(1f, 0f, 0.099f, 0.85f);
+    [Tooltip("Chase: สีเริ่ม — แยกจาก AoE ปกติเพื่อให้อ่านออกว่านี่คือท่าไล่ตาม")]
+    public Color chaseWarningColor = new Color(1f, 0.2f, 1f, 0.5f);
+    [Tooltip("Chase: สีตอนใกล้ระเบิด")]
+    public Color chaseDangerColor  = new Color(0.8f, 0f, 0.6f, 0.85f);
+    [Tooltip("Stack: สีเริ่ม — กลไกนี้ต้องวิ่ง **เข้า** หาคนอื่น ตรงข้ามกับ AoE ปกติ")]
+    public Color stackWarningColor = new Color(0.35f, 0.75f, 1f, 0.5f);
+    [Tooltip("Stack: สีตอนใกล้ระเบิด")]
+    public Color stackDangerColor  = new Color(0.1f, 0.45f, 1f, 0.85f);
+    [Tooltip("Gaze: สีเริ่ม — ต้องหันหลัง ตำแหน่งไม่ช่วย")]
+    public Color gazeWarningColor  = new Color(0.75f, 0.55f, 1f, 0.5f);
+    [Tooltip("Gaze: สีตอนใกล้ระเบิด")]
+    public Color gazeDangerColor   = new Color(0.5f, 0.15f, 0.9f, 0.85f);
+    [Tooltip("วงในที่ปลอดภัยของ Donut")]
+    public Color safeZoneColor     = new Color(0.1f, 0.8f, 0.9f, 0.3f);
+    [Tooltip("ColorMatch: สีประจำ slot ผู้เล่น 0-3 — ต้องตรงกับสีที่ HUD บอก ไม่งั้นกลไกอ่านไม่ออก")]
+    public Color[] slotColors = {
+        new Color(1f, 0.25f, 0.25f, 1f),   // 0 แดง
+        new Color(0.3f, 0.5f, 1f, 1f),     // 1 น้ำเงิน
+        new Color(0.3f, 0.9f, 0.4f, 1f),   // 2 เขียว
+        new Color(1f, 0.9f, 0.25f, 1f),    // 3 เหลือง
+    };
+
+    /// <summary>
+    /// สีประจำ slot — จุดเดียวที่นิยามสีผู้เล่นสำหรับกลไก ColorMatch
+    /// `ColorMatchAoEAction` อ่านผ่าน telegraph prefab ที่มันถืออยู่แล้ว จะได้ไม่ hardcode ซ้ำสองที่
+    /// (เดิมซ้ำกันระหว่าง zone material กับข้อความ HUD ซึ่งเพี้ยนจากกันได้เงียบๆ)
+    /// </summary>
+    public Color GetSlotColor(int slot)
+    {
+        if (slotColors == null || slotColors.Length == 0) return Color.white;
+        return slotColors[Mathf.Abs(slot) % slotColors.Length];
+    }
 
     [Header("Audio (Optional)")]
     [Tooltip("เสียงเตือนตอน telegraph เริ่ม (one-shot)")]
@@ -78,6 +119,53 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public string  detonateVfxKey = "";
 
     [HideInInspector] public float   coneAngle = 90f;    // Cone: มุมกางทั้งหมด (องศา)
+
+    // สีที่ action สั่งมาเป็นรายท่า — ทับ palette กลางบน prefab
+    [HideInInspector] public bool    overrideColors;
+    [HideInInspector] public Color   overrideWarningColor = Color.yellow;
+    [HideInInspector] public Color   overrideDangerColor  = Color.red;
+
+    /// <summary>
+    /// ลำดับความสำคัญของสี — ColorMatch ต้องชนะทุกอย่างเพราะสีคือ**เงื่อนไขของกลไก**
+    /// ไม่ใช่การตกแต่ง · ถัดมาคือสีที่ designer สั่งมาต่อท่า แล้วค่อยเรียงตามหมวดกลไก
+    ///
+    /// **Gaze > Stack > Chase** — เรียงตาม "ถ้าทำตามสัญชาตญาณปกติแล้วตายแค่ไหน"
+    /// Gaze ตำแหน่งไม่ช่วยเลยต้องหันหลัง · Stack ต้องวิ่งเข้าไม่ใช่ออก · ส่วน Chase ยังหนีถูกอยู่
+    /// สีบอกได้ทีละอย่าง จึงให้ตัวที่กลับด้านปฏิกิริยามากที่สุดชนะ
+    /// </summary>
+    (Color warn, Color danger) ResolveColors()
+    {
+        if (isColorMatch.Value)
+        {
+            ulong reqId = requiredClientId.Value;
+            int slot = PlayerSlotRegistry.Instance != null
+                ? PlayerSlotRegistry.Instance.GetSlot(reqId) : -1;
+            if (slot < 0) slot = (int)(reqId % 4);
+
+            Color c = GetSlotColor(slot);
+            return (c, c * 0.8f);
+        }
+
+        if (overrideColors) return (overrideWarningColor, overrideDangerColor);
+        if (isGaze)         return (gazeWarningColor,  gazeDangerColor);
+        if (isStackMarker)  return (stackWarningColor, stackDangerColor);
+        if (isChasing)      return (chaseWarningColor, chaseDangerColor);
+        return (warningColor, dangerColor);
+    }
+
+    /// <summary>
+    /// zone เดียวติดหลายหมวดพร้อมกัน — สีบอกได้อย่างเดียว สัญญาณที่เหลือหายไปเงียบๆ
+    /// designer ต้องรู้ ไม่งั้นจะงงว่าทำไม Stack ที่ตั้งไว้ไม่เป็นสีฟ้า
+    /// </summary>
+    void WarnIfMultipleColorCategories()
+    {
+        int categories = (isGaze ? 1 : 0) + (isStackMarker ? 1 : 0) + (isChasing ? 1 : 0);
+        if (categories <= 1) return;
+
+        string on = $"{(isGaze ? "Gaze " : "")}{(isStackMarker ? "Stack " : "")}{(isChasing ? "Chase" : "")}".Trim();
+        Debug.LogWarning($"[TelegraphZone] zone เดียวติดหลายหมวด ({on}) — สีจะใช้ตัวที่สำคัญสุด " +
+                         "ตามลำดับ Gaze > Stack > Chase · หมวดที่เหลือจะไม่มีสีบอก");
+    }
 
     // ขยาย/หด และกวาด — client เล่นภาพเอง server คำนวณค่าสุดท้ายตอน resolve
     // ทั้งสองฝั่งรู้ warningDuration กับอัตราอยู่แล้ว จึงไม่ต้อง sync ระหว่างทาง
@@ -168,6 +256,9 @@ public class TelegraphZone : NetworkBehaviour
             isGaze              = isGaze,
             isRotatingChase     = isRotatingChase,
             detonateVfxKey      = detonateVfxKey ?? "",
+            overrideColors      = overrideColors,
+            warningColor        = overrideWarningColor,
+            dangerColor         = overrideDangerColor,
         });
     }
 
@@ -193,6 +284,9 @@ public class TelegraphZone : NetworkBehaviour
         isGaze                = init.isGaze;
         isRotatingChase       = init.isRotatingChase;
         detonateVfxKey        = init.detonateVfxKey.ToString();
+        overrideColors        = init.overrideColors;
+        overrideWarningColor  = init.warningColor;
+        overrideDangerColor   = init.dangerColor;
         totalWarning          = init.warningDuration;
         elapsed               = 0f;
         initialized           = true;
@@ -204,9 +298,13 @@ public class TelegraphZone : NetworkBehaviour
             GameHUD.Instance?.ShowAnnouncement("⚡ TARGETED — RUN AWAY!", Color.magenta);
         }
 
+        WarnIfMultipleColorCategories();
+
         // Visual: 3D prefab (preferred) > runtime primitive (fallback)
         if (!TrySpawnVfxPrefab())
             CreateVisual();
+
+        PushShaderColors();
 
         // จำขนาดตั้งต้นไว้คูณกับ CurrentScale ตอนวงขยาย/หด
         if (visual != null)
@@ -312,37 +410,40 @@ public class TelegraphZone : NetworkBehaviour
 
             r.GetPropertyBlock(mpb);
 
-            // Chase: override สีเป็น magenta เพื่อแยกจาก AoE ปกติ
-            if (isChasing)
-            {
-                if (sharedMat.HasProperty("_WarningColor"))
-                    mpb.SetColor("_WarningColor", new Color(1f, 0.2f, 1f, 1f));
-                if (sharedMat.HasProperty("_DangerColor"))
-                    mpb.SetColor("_DangerColor", new Color(0.8f, 0f, 0.6f, 1f));
-            }
-            
-            // Color Match: override สีตาม Client ID / Slot
-            if (isColorMatch.Value)
-            {
-                ulong reqId = requiredClientId.Value;
-                int slot = PlayerSlotRegistry.Instance != null
-                    ? PlayerSlotRegistry.Instance.GetSlot(reqId) : -1;
-                if (slot < 0) slot = (int)(reqId % 4);
-
-                Color c = slot switch
-                {
-                    0 => Color.red,
-                    1 => Color.blue,
-                    2 => Color.green,
-                    _ => Color.yellow,
-                };
-                if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", c);
-                if (sharedMat.HasProperty("_DangerColor")) mpb.SetColor("_DangerColor", c * 0.8f);
-            }
-
             // เริ่ม fill ที่ 0 (กันค่าค้างจาก material asset)
             if (sharedMat.HasProperty("_FillProgress")) mpb.SetFloat("_FillProgress", 0f);
 
+            r.SetPropertyBlock(mpb);
+        }
+    }
+
+    /// <summary>
+    /// ดันสีเข้า shader ให้ renderer ทุกตัวที่เก็บไว้ — **จุดเดียวที่ทำเรื่องนี้**
+    ///
+    /// เรียกหลังสร้าง visual เสร็จ จึงครอบทั้งเส้นทาง prefab และเส้นทาง primitive
+    /// เดิมดันเฉพาะใน CollectRenderersAndApplyShaderParams ซึ่งรันแค่ตอนใช้ prefab —
+    /// Cone ที่ปั้น mesh เองเลยไม่เคยได้สีตามหมวดกลไกเลยสักครั้ง
+    /// </summary>
+    void PushShaderColors()
+    {
+        var (warn, danger) = ResolveColors();
+        mpb ??= new MaterialPropertyBlock();
+
+        // Line/Cross เป็นกล่องสี่เหลี่ยม ต้องใช้ระยะแบบเหลี่ยม ไม่งั้นขอบจะโค้งบนกล่อง
+        float outlineShape = aoeType is AoEType.Line or AoEType.Cross ? 0f : 1f;
+
+        foreach (var r in visualRenderers)
+        {
+            if (r == null) continue;
+            var sharedMat = r.sharedMaterial;
+            if (sharedMat == null) continue;
+
+            r.GetPropertyBlock(mpb);
+            if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", warn);
+            if (sharedMat.HasProperty("_DangerColor"))  mpb.SetColor("_DangerColor",  danger);
+            // ขอบใช้สีอันตรายของหมวดเดียวกัน — Gaze ขอบม่วง Stack ขอบฟ้า ตามพื้นวง
+            if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", danger);
+            if (sharedMat.HasProperty("_OutlineShape")) mpb.SetFloat("_OutlineShape", outlineShape);
             r.SetPropertyBlock(mpb);
         }
     }
@@ -749,7 +850,11 @@ public class TelegraphZone : NetworkBehaviour
                 visual = new GameObject("Visual_Cone");
                 visual.transform.SetParent(transform);
                 visual.transform.localPosition = Vector3.zero;
-                CreateConePrimitive(visual.transform, radius, coneAngle);
+                // ปั้นที่ Ø1 (รัศมี 0.5) ตาม prefab convention แล้วขยายด้วย transform
+                // shader วัดระยะขอบจากตำแหน่ง object space เทียบ Ø1 — ถ้าปั้นที่รัศมีจริง
+                // Length จะเกิน 1 ทั้งใบ Step ติด 1 หมด แล้วกรวยจะกลายเป็นสีขอบทั้งอัน
+                visual.transform.localScale = new Vector3(radius * 2f, 1f, radius * 2f);
+                CreateConePrimitive(visual.transform, 0.5f, coneAngle);
                 break;
         }
     }
@@ -865,22 +970,22 @@ public class TelegraphZone : NetworkBehaviour
             transform.rotation = initialRotation * Quaternion.Euler(0f, sweepDegreesPerSecond * elapsed, 0f);
 
         // Fallback color (สำหรับ primitive ที่ไม่มี _FillProgress shader graph property)
-        // warning (yellow) → danger (red): G channel ลดลงตาม progress
+        // ใช้ palette ตัวเดียวกับเส้นทาง shader จะได้ไม่เพี้ยนกันระหว่างทรงที่มี prefab กับที่ไม่มี
+        // (Cone ใช้ทางนี้เสมอเพราะยังไม่มี prefab ของตัวเอง)
+        var (warn, danger) = ResolveColors();
         float urgency  = Mathf.Lerp(1f, 8f, progress);
         float blink    = Mathf.Sin(Time.time * urgency * Mathf.PI) * 0.5f + 0.5f;
-        Color baseColor = isChasing
-            ? new Color(1f, 0f, Mathf.Lerp(1f, 0.3f, progress), Mathf.Lerp(0.35f, 0.75f, progress))
-            : new Color(1f, Mathf.Lerp(0.85f, 0.0f, progress), 0f, Mathf.Lerp(0.45f, 0.85f, progress));
-        Color fallbackCol = baseColor * (0.7f + blink * 0.3f);
-        fallbackCol.a = baseColor.a * (0.7f + blink * 0.3f);
+        Color baseColor = Color.Lerp(warn, danger, progress);
+        float dim = 0.7f + blink * 0.3f;
+        Color fallbackCol = new Color(baseColor.r * dim, baseColor.g * dim, baseColor.b * dim,
+                                      baseColor.a * dim);
 
         foreach (var r in visualRenderers)
             if (r) ApplyTelegraphState(r, progress, fallbackCol);
 
-        // safe zone (Donut center) — fixed teal, no blink
-        Color safeCol = new Color(0.1f, 0.8f, 0.9f, 0.3f);
+        // safe zone (Donut center) — สีคงที่ ไม่กระพริบ
         foreach (var r in safeZoneRenderers)
-            if (r) ApplyTelegraphState(r, 0f, safeCol);   // safe zone fill=0 ตลอด
+            if (r) ApplyTelegraphState(r, 0f, safeZoneColor);   // safe zone fill=0 ตลอด
     }
 
     /// <summary>

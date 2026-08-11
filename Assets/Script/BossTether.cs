@@ -45,10 +45,12 @@ public class BossTether : NetworkBehaviour
     public float minSeparationGain = 2f;
 
     [Header("Leash")]
+    // แรงดึงต้องชนะความเร็ววิ่งอย่างชัดเจน ไม่งั้นผู้เล่นวิ่งสวนกลับออกไปได้พอๆ กับที่ถูกดึงเข้า
+    // แล้วจะรู้สึกเหมือน "ไม่มีอะไรเกิดขึ้น" · ระยะที่ดึงได้ต่อรอบ = leashPullSpeed × leashPullDuration
     [Tooltip("ความเร็วที่ดึงผู้เล่นกลับเข้าหา anchor (หน่วย/วินาที) — server-only")]
-    public float leashPullSpeed    = 8f;
+    public float leashPullSpeed    = 12f;
     [Tooltip("แต่ละครั้งที่ดึง กินเวลากี่วินาที — ต้องน้อยกว่า leashPullInterval ไม่งั้นผู้เล่นจะคุมตัวเองไม่ได้เลย")]
-    public float leashPullDuration = 0.22f;
+    public float leashPullDuration = 0.28f;
     [Tooltip("เว้นกี่วินาทีถึงดึงอีกครั้ง — กัน RPC ท่วมและเว้นจังหวะให้ผู้เล่นคุมตัวเองได้")]
     public float leashPullInterval = 0.45f;
 
@@ -120,6 +122,7 @@ public class BossTether : NetworkBehaviour
 
         anchorStartedDead = IsClientDead(playerB);
         ResolveBreakDistance(GetPlayerTransform(playerA), GetPlayerTransform(playerB)?.position);
+        LogActivation(playerA, playerB);
         InitTetherClientRpc(playerA, playerB, duration, requiredDistance, (int)mode, false);
     }
 
@@ -133,6 +136,7 @@ public class BossTether : NetworkBehaviour
 
         anchorStartedDead = false;   // เสาไม่มีวันฟื้น
         ResolveBreakDistance(GetPlayerTransform(playerA), transform.position);
+        LogActivation(playerA, ulong.MaxValue);
         InitTetherClientRpc(playerA, ulong.MaxValue, duration, requiredDistance, (int)mode, true);
     }
 
@@ -141,6 +145,23 @@ public class BossTether : NetworkBehaviour
     /// ถ้าปล่อยเงียบ designer จะเจอ tether ที่ spawn ขึ้นมาแล้วไม่ทำอะไร แล้วอ่านว่าเป็นบั๊ก
     /// เรียกก่อนส่ง ClientRpc เสมอ เพื่อให้ client ได้ mode ที่ normalize แล้ว
     /// </summary>
+    /// <summary>
+    /// พ่นค่าที่ใช้จริงลง log — ค่าพวกนี้มาจาก asset ทับ prefab ทีหลัง เปิด Inspector ดูตอนรันไม่เห็นของจริง
+    /// เวลากลไก "เหมือนไม่ทำงาน" ข้อแรกที่ต้องรู้คือ mode กับระยะที่ตั้งไว้จริงคือเท่าไหร่
+    /// </summary>
+    void LogActivation(ulong playerA, ulong playerB)
+    {
+        string anchor = pillarAnchor ? "เสา" : $"Client {playerB}";
+        Debug.Log($"[BossTether] {mode} · Client {playerA} ↔ {anchor} · " +
+                  $"requiredDistance={requiredDistance} · duration={duration}");
+
+        if (mode == TetherMode.Leash)
+        {
+            float perPull = leashPullSpeed * leashPullDuration;
+            Debug.Log($"[BossTether] Leash: รัศมี {requiredDistance} m · ดึงกลับ {perPull:0.0} m ทุก {leashPullInterval} วิ");
+        }
+    }
+
     void NormalizeUnimplemented()
     {
         if (mode == TetherMode.Transferable)
@@ -329,8 +350,11 @@ public class BossTether : NetworkBehaviour
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) return;
 
-        tA.GetComponent<playermove>()
-          ?.ApplyKnockbackClientRpc(dir.normalized * leashPullSpeed, leashPullDuration);
+        var pm = tA.GetComponent<playermove>();
+        if (pm == null) return;
+
+        pm.ApplyKnockbackClientRpc(dir.normalized * leashPullSpeed, leashPullDuration);
+        Debug.Log($"[BossTether] ⛓ ดึง Client {clientIdA} กลับ — ห่าง {dir.magnitude:0.0}/{requiredDistance} m");
     }
 
     // ── Client Visual Update ───────────────────────────────────────────────
@@ -381,6 +405,23 @@ public class BossTether : NetworkBehaviour
     }
 
     // ── Visual Setup ──────────────────────────────────────────────────────
+    /// <summary>
+    /// หักล้าง scale ของ prefab แม่ออกจากลูก
+    ///
+    /// `BossTether.prefab` root มี scale (0.5, 1.5, 0.5) ติดมา ทำให้วงที่วาดด้วยรัศมี
+    /// `requiredDistance` หดเหลือครึ่งเดียวบนแกน XZ — ผู้เล่นวิ่งพ้นวงที่เห็นแต่ยังไม่พ้นระยะจริง
+    /// เลยไม่ถูกดึงกลับ กลไกดูเหมือนพัง
+    ///
+    /// หักล้างที่โค้ดแทนการแก้ prefab เพราะจะได้ถูกต้องต่อให้มีคนไปเปลี่ยน scale ทีหลัง
+    /// </summary>
+    static void NeutralizeParentScale(Transform child, Vector3 parentLossyScale)
+    {
+        child.localScale = new Vector3(
+            Mathf.Abs(parentLossyScale.x) < 0.0001f ? 1f : 1f / parentLossyScale.x,
+            Mathf.Abs(parentLossyScale.y) < 0.0001f ? 1f : 1f / parentLossyScale.y,
+            Mathf.Abs(parentLossyScale.z) < 0.0001f ? 1f : 1f / parentLossyScale.z);
+    }
+
     void SetupLineRenderer()
     {
         Color baseCol = BaseLineColor();
@@ -417,6 +458,7 @@ public class BossTether : NetworkBehaviour
         ringVisual = new GameObject("LeashRing");
         ringVisual.transform.SetParent(transform, worldPositionStays: false);
         ringVisual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
+        NeutralizeParentScale(ringVisual.transform, transform.lossyScale);
 
         var ring = ringVisual.AddComponent<LineRenderer>();
         ring.positionCount     = segments;
@@ -455,6 +497,7 @@ public class BossTether : NetworkBehaviour
 
         countdownVisual = new GameObject("TetherCountdown");
         countdownVisual.transform.SetParent(transform, worldPositionStays: true);
+        NeutralizeParentScale(countdownVisual.transform, transform.lossyScale);
 
         countdownRing = countdownVisual.AddComponent<LineRenderer>();
         countdownRing.positionCount     = segments;
@@ -501,8 +544,17 @@ public class BossTether : NetworkBehaviour
         pillarVisual.name = "TetherPillar";
         pillarVisual.transform.SetParent(transform, worldPositionStays: false);
         // Cylinder primitive's mesh height is 2 units, so scale.y = height/2
-        pillarVisual.transform.localPosition = new Vector3(0f, pillarHeight * 0.5f, 0f);
-        pillarVisual.transform.localScale    = new Vector3(pillarRadius * 2f, pillarHeight * 0.5f, pillarRadius * 2f);
+        // หาร lossyScale ของ prefab ออกด้วย ไม่งั้นเสาถูกบีบ 0.5 แล้วยืดสูง 1.5 ตาม root
+        Vector3 inv = transform.lossyScale;
+        inv = new Vector3(
+            Mathf.Abs(inv.x) < 0.0001f ? 1f : 1f / inv.x,
+            Mathf.Abs(inv.y) < 0.0001f ? 1f : 1f / inv.y,
+            Mathf.Abs(inv.z) < 0.0001f ? 1f : 1f / inv.z);
+
+        pillarVisual.transform.localPosition = new Vector3(0f, pillarHeight * 0.5f * inv.y, 0f);
+        pillarVisual.transform.localScale    = new Vector3(pillarRadius * 2f * inv.x,
+                                                           pillarHeight * 0.5f * inv.y,
+                                                           pillarRadius * 2f * inv.z);
         Destroy(pillarVisual.GetComponent<Collider>());
 
         var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")

@@ -119,13 +119,11 @@ public class ColorMatchAoEAction : BossAction
                 2 => "GREEN",
                 _ => "YELLOW"
             };
-            Color uiColor = slot switch
-            {
-                0 => Color.red,
-                1 => Color.blue,
-                2 => Color.green,
-                _ => Color.yellow
-            };
+
+            // อ่านสีจาก palette เดียวกับที่ zone ใช้ทาวง — เดิม hardcode ซ้ำสองที่
+            // ถ้าเพี้ยนจากกันเมื่อไหร่ HUD จะบอกสีนึงแต่วงเป็นอีกสี กลไกพังแบบหาสาเหตุยาก
+            Color uiColor = zone.GetSlotColor(slot);
+
             zone.NotifyColorClientRpc(clientId, colorName, uiColor);
         }
         else

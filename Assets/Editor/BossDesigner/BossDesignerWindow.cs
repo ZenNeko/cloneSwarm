@@ -23,6 +23,9 @@ public class BossDesignerWindow : EditorWindow
     const float TrackH       = 38f;
     const float RulerH       = 26f;
     const float SnapStep     = 0.1f;
+    const float MinPxPerSec  = 5f;
+    const float MaxPxPerSec  = 400f;
+    const float ZoomStep     = 1.12f;   // ต่อ 1 คลิกล้อ
 
     // ── State (serialize เพื่อรอด domain reload) ──────────────────────────
     [SerializeField] BossEncounterConfig config;
@@ -34,10 +37,17 @@ public class BossDesignerWindow : EditorWindow
 
     BossTimelineAction.TimelineClip selectedClip;
 
+    /// <summary>ตำแหน่ง scroll แนวนอนที่ต้องเรียกคืนหลัง rebuild · &lt;0 = ให้จำตำแหน่งปัจจุบันเอง</summary>
+    float pendingScrollX = -1f;
+    ScrollView timelineScroll;
+    /// <summary>element ของคลิปที่เลือกอยู่ — ใช้ล้างไฮไลต์ตัวเก่าโดยไม่ต้อง rebuild ทั้งเลน</summary>
+    VisualElement selectedClipEl;
+
     // ── UI refs ───────────────────────────────────────────────────────────
     ObjectField   configField;
     VisualElement graphPane;
     VisualElement timelinePane;
+    VisualElement inspectorPane;
 
     static readonly Color NodeBg       = new Color(0.22f, 0.22f, 0.22f);
     static readonly Color NodeSelected = new Color(0.95f, 0.55f, 0.25f);
@@ -121,11 +131,33 @@ public class BossDesignerWindow : EditorWindow
         graphPane = new VisualElement();
         graphPane.style.borderBottomWidth = 1;
         graphPane.style.borderBottomColor = GridLine;
+        // กันไม่ให้ bodyRow ที่ flexGrow=1 บีบแถวเฟสจนป้ายชื่อซ้อนกัน
+        graphPane.style.flexShrink = 0;
         root.Add(graphPane);
+
+        // timeline ซ้าย · inspector ของคลิปที่เลือกอยู่ขวา — จะได้ปรับค่าจบในหน้าต่างเดียว
+        // ไม่ต้องเด้งไปมองหน้าต่าง Inspector ข้างนอก
+        var bodyRow = new VisualElement();
+        bodyRow.style.flexDirection = FlexDirection.Row;
+        bodyRow.style.flexGrow = 1;
 
         timelinePane = new VisualElement();
         timelinePane.style.flexGrow = 1;
-        root.Add(timelinePane);
+        timelinePane.style.flexShrink = 1;
+        timelinePane.style.minWidth = 0;   // ยอมให้หดได้ ไม่งั้นมันดันแผงขวาจนแบน
+        bodyRow.Add(timelinePane);
+
+        inspectorPane = new VisualElement();
+        inspectorPane.style.width = 330;
+        inspectorPane.style.minWidth = 260;
+        inspectorPane.style.flexShrink = 0;   // ห้ามหด — ตัวที่ทำให้แผงเหลือ 30px
+        inspectorPane.style.borderLeftWidth = 1;
+        inspectorPane.style.borderLeftColor = GridLine;
+        inspectorPane.style.paddingLeft = 4;
+        inspectorPane.style.paddingRight = 4;
+        bodyRow.Add(inspectorPane);
+
+        root.Add(bodyRow);
 
         RebuildAll();
     }
@@ -136,6 +168,99 @@ public class BossDesignerWindow : EditorWindow
         if (configField != null) configField.SetValueWithoutNotify(config);
         BuildGraphPane();
         BuildTimelinePane();
+        BuildInspectorPane();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Inspector ของคลิปที่เลือก (แผงขวา)
+    // ══════════════════════════════════════════════════════════════════════
+    /// <summary>ซูมให้ timeline ทั้งเส้นพอดีความกว้างที่มี</summary>
+    void FitZoomToContent()
+    {
+        if (timeline == null || timelinePane == null) return;
+
+        float avail = timelinePane.resolvedStyle.width - TrackHeaderW - 24f;
+        if (avail <= 1f || float.IsNaN(avail)) return;
+
+        float contentSec = Mathf.Max(timeline.GetTimelineDuration() + 10f, 30f);
+        pxPerSec = Mathf.Clamp(avail / contentSec, MinPxPerSec, MaxPxPerSec);
+        pendingScrollX = 0f;
+        BuildTimelinePane();
+    }
+
+    void BuildInspectorPane()
+    {
+        if (inspectorPane == null) return;
+        inspectorPane.Clear();
+
+        if (selectedClip?.action == null)
+        {
+            var hint = new Label("เลือกคลิปเพื่อแก้ค่าที่นี่");
+            hint.style.marginTop = 8;
+            hint.style.unityFontStyleAndWeight = FontStyle.Italic;
+            hint.style.color = new Color(1f, 1f, 1f, 0.45f);
+            hint.style.whiteSpace = WhiteSpace.Normal;
+            inspectorPane.Add(hint);
+            return;
+        }
+
+        var action = selectedClip.action;
+
+        var title = new Label($"{action.GetType().Name}\n{action.name}");
+        title.style.unityFontStyleAndWeight = FontStyle.Bold;
+        title.style.marginTop = 6;
+        title.style.marginBottom = 2;
+        title.style.whiteSpace = WhiteSpace.Normal;
+        inspectorPane.Add(title);
+
+        // เตือนตั้งแต่แรกว่าแก้แล้วกระทบใครบ้าง — เป็นกับดักหลักของ ScriptableObject ที่ใช้ร่วมกัน
+        int  refs       = CountClipsUsing(action);
+        bool ownedHere  = IsOwnedSubAsset(action);
+        bool sharedHere = refs > 1;
+
+        string msg;
+        Color  msgCol;
+        if (!ownedHere)
+        {
+            // ไฟล์ asset แยก — อาจถูกอ้างจาก timeline อื่น เฟสอื่น หรือบอสตัวอื่นที่เรามองไม่เห็นจากตรงนี้
+            msg = sharedHere
+                ? $"⚠ ไฟล์ asset แยก · ใช้ {refs} คลิปใน timeline นี้ และอาจถูกใช้ที่อื่นด้วย\nกด Make Unique ถ้าอยากแก้เฉพาะคลิปนี้"
+                : "⚠ ไฟล์ asset แยก — อาจถูกใช้ที่อื่นด้วย\nกด Make Unique ถ้าอยากแก้เฉพาะคลิปนี้";
+            msgCol = new Color(1f, 0.75f, 0.3f);
+        }
+        else if (sharedHere)
+        {
+            msg = $"⚠ ฝังอยู่ใน config นี้ แต่ใช้ร่วม {refs} คลิป — แก้แล้วเปลี่ยนทุกคลิป";
+            msgCol = new Color(1f, 0.75f, 0.3f);
+        }
+        else
+        {
+            msg = "✓ เป็นของคลิปนี้ตัวเดียว แก้ได้อิสระ";
+            msgCol = new Color(0.5f, 0.9f, 0.6f);
+        }
+
+        var badge = new Label(msg);
+        badge.style.whiteSpace = WhiteSpace.Normal;
+        badge.style.fontSize = 10;
+        badge.style.marginBottom = 4;
+        badge.style.color = msgCol;
+        inspectorPane.Add(badge);
+
+        // FloatField อยู่ใน UnityEngine.UIElements — ไม่มีตัวคู่ใน UnityEditor.UIElements
+        var startField = new UnityEngine.UIElements.FloatField("Start Time") { value = selectedClip.startTime };
+        startField.RegisterValueChangedCallback(evt =>
+        {
+            Undo.RecordObject(timeline, "Edit Clip Start");
+            selectedClip.startTime = Mathf.Max(0f, evt.newValue);
+            EditorUtility.SetDirty(timeline);
+            BuildTimelinePane();
+        });
+        inspectorPane.Add(startField);
+
+        var scroll = new ScrollView();
+        scroll.style.flexGrow = 1;
+        scroll.Add(new InspectorElement(action));
+        inspectorPane.Add(scroll);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -257,6 +382,7 @@ public class BossDesignerWindow : EditorWindow
         phaseIndex = idx;
         editingEnrage = enrage;
         selectedClip = null;
+        pendingScrollX = 0f;   // คนละ timeline แล้ว เริ่มดูจากต้นเส้น
         timeline = ResolvePhaseTimeline();
         RebuildAll();
     }
@@ -325,6 +451,12 @@ public class BossDesignerWindow : EditorWindow
     // ══════════════════════════════════════════════════════════════════════
     void BuildTimelinePane()
     {
+        // rebuild สร้าง ScrollView ใหม่ทุกครั้ง ตำแหน่ง scroll เลยหายทุกครั้ง
+        // ถ้าไม่มีใครสั่งตำแหน่งไว้ ให้จำของเดิมไว้เอง ไม่งั้นแค่คลิกคลิปภาพก็เด้งไปต้นเส้น
+        if (pendingScrollX < 0f && timelineScroll != null)
+            pendingScrollX = timelineScroll.scrollOffset.x;
+
+        timelineScroll = null;
         timelinePane.Clear();
 
         if (config != null && phaseIndex >= 0)
@@ -454,12 +586,29 @@ public class BossDesignerWindow : EditorWindow
         playheadLabel.style.opacity = 0.8f;
         bar.Add(playheadLabel);
 
-        var zoom = new Slider(10f, 200f) { value = pxPerSec };
+        var zoom = new Slider(MinPxPerSec, MaxPxPerSec) { value = pxPerSec };
         zoom.style.width = 120;
-        zoom.style.marginRight = 8;
-        zoom.tooltip = "Zoom (px ต่อวินาที)";
-        zoom.RegisterValueChangedCallback(e => { pxPerSec = e.newValue; BuildTimelinePane(); });
+        zoom.tooltip = "Zoom (px ต่อวินาที) — หรือ Ctrl+ล้อเมาส์บน timeline · ล้อเปล่า = เลื่อนแนวนอน";
+        zoom.RegisterValueChangedCallback(e =>
+        {
+            pxPerSec = Mathf.Clamp(e.newValue, MinPxPerSec, MaxPxPerSec);
+            BuildTimelinePane();
+        });
         bar.Add(zoom);
+
+        var fit = new Button(FitZoomToContent) { text = "Fit" };
+        fit.tooltip = "ซูมให้เห็น timeline ทั้งเส้นพอดีหน้าต่าง";
+        fit.style.marginLeft = 4;
+        fit.style.marginRight = 8;
+        bar.Add(fit);
+
+        if (config != null)
+        {
+            var clean = new Button(CleanUnusedActions) { text = "Clean Unused" };
+            clean.tooltip = "ลบ action ที่ฝังอยู่ใน config นี้แต่ไม่มีคลิปหรือเฟสไหนอ้างถึงแล้ว";
+            clean.style.marginRight = 6;
+            bar.Add(clean);
+        }
 
         var addTrack = new Button(() =>
         {
@@ -510,6 +659,7 @@ public class BossDesignerWindow : EditorWindow
         // ── ฝั่งขวา: ruler + lanes ใน ScrollView แนวนอน ──
         var scroll = new ScrollView(ScrollViewMode.Horizontal);
         scroll.style.flexGrow = 1;
+        timelineScroll = scroll;
 
         var content = new VisualElement();
         content.style.width = contentW;
@@ -532,6 +682,52 @@ public class BossDesignerWindow : EditorWindow
         content.Add(ph);
 
         scroll.Add(content);
+
+        // ── ล้อเมาส์ ─────────────────────────────────────────────────────
+        // ล้อเปล่า = เลื่อนแนวนอน · Ctrl (หรือ Cmd) + ล้อ = ซูม
+        scroll.RegisterCallback<WheelEvent>(e =>
+        {
+            if (!(e.ctrlKey || e.commandKey))
+            {
+                // จัดการเองแทนที่จะพึ่ง ScrollView map ล้อแนวตั้ง → เลื่อนแนวนอนให้
+                // จะได้ระยะเลื่อนคงที่เป็นพิกเซลไม่ว่าซูมอยู่ระดับไหน
+                scroll.scrollOffset = new Vector2(
+                    Mathf.Max(0f, scroll.scrollOffset.x + e.delta.y * 50f),
+                    scroll.scrollOffset.y);
+                e.StopPropagation();
+                return;
+            }
+
+            float before = pxPerSec;
+            float after  = Mathf.Clamp(before * Mathf.Pow(ZoomStep, -e.delta.y), MinPxPerSec, MaxPxPerSec);
+            if (Mathf.Approximately(before, after)) { e.StopPropagation(); return; }
+
+            // ตรึงเวลาที่อยู่ใต้เคอร์เซอร์ให้ค้างที่เดิม ไม่งั้นซูมแล้วภาพไถลหนีมือ
+            float localX       = scroll.WorldToLocal(e.mousePosition).x;
+            float timeAtCursor = (scroll.scrollOffset.x + localX) / before;
+
+            pxPerSec       = after;
+            pendingScrollX = Mathf.Max(0f, timeAtCursor * after - localX);
+
+            e.StopPropagation();
+            // สร้างใหม่ทีหลัง — rebuild ต้นไม้ระหว่างที่ยัง dispatch event บนต้นไม้เดิมอยู่ไม่ปลอดภัย
+            scroll.schedule.Execute(BuildTimelinePane);
+        });
+
+        // เรียกคืนตำแหน่ง scroll หลัง layout รู้ขนาดจริงแล้ว
+        if (pendingScrollX >= 0f)
+        {
+            float restore = pendingScrollX;
+            pendingScrollX = -1f;
+            content.RegisterCallback<GeometryChangedEvent>(OnceRestoreScroll);
+
+            void OnceRestoreScroll(GeometryChangedEvent _)
+            {
+                content.UnregisterCallback<GeometryChangedEvent>(OnceRestoreScroll);
+                scroll.scrollOffset = new Vector2(restore, scroll.scrollOffset.y);
+            }
+        }
+
         body.Add(scroll);
         timelinePane.Add(body);
     }
@@ -709,6 +905,22 @@ public class BossDesignerWindow : EditorWindow
         return lane;
     }
 
+    /// <summary>
+    /// ไฮไลต์คลิปที่เลือก — ขอบขาวอย่างเดียวแยกไม่ออกเวลาคลิปเรียงติดกัน
+    /// เลยเพิ่มการทำพื้นหลังสว่างขึ้นกับขอบหนาขึ้นด้วย
+    /// </summary>
+    static void ApplyClipSelectionStyle(VisualElement el, Color baseCol, bool selected)
+    {
+        if (el == null) return;
+
+        el.style.backgroundColor = selected
+            ? Color.Lerp(baseCol, Color.white, 0.35f)
+            : baseCol;
+        SetBorder(el,
+            selected ? Color.white : new Color(0f, 0f, 0f, 0.5f),
+            selected ? 3 : 1);
+    }
+
     VisualElement BuildClipElement(BossTimelineAction.TimelineClip clip, int trackIdx)
     {
         float dur = Mathf.Max(clip.action.GetEditorDuration(), 0.3f);
@@ -723,8 +935,8 @@ public class BossDesignerWindow : EditorWindow
         el.style.borderBottomLeftRadius = el.style.borderBottomRightRadius = 3;
 
         Color baseCol = ClipColor(clip.action);
-        el.style.backgroundColor = baseCol;
-        SetBorder(el, clip == selectedClip ? Color.white : new Color(0f, 0f, 0f, 0.5f), clip == selectedClip ? 2 : 1);
+        ApplyClipSelectionStyle(el, baseCol, clip == selectedClip);
+        if (clip == selectedClip) selectedClipEl = el;
 
         // ส่วน telegraph (สีอ่อนกว่า) สำหรับท่า AoE — เห็นชัดว่า warning นานแค่ไหน
         if (clip.action is SpawnAoEActionBase aoe && dur > 0f)
@@ -758,14 +970,21 @@ public class BossDesignerWindow : EditorWindow
         el.RegisterCallback<PointerDownEvent>(e =>
         {
             if (e.button != 0) return;
-            selectedClip = clip;
-            Selection.activeObject = clip.action;
+
+            // ล้างไฮไลต์ตัวเก่าก่อน ไม่งั้นขอบขาวค้างสะสมทุกตัวที่เคยคลิก
+            if (selectedClipEl != null && selectedClipEl != el)
+                ApplyClipSelectionStyle(selectedClipEl, ClipColor(selectedClip?.action), false);
+
+            selectedClip   = clip;
+            selectedClipEl = el;
+            ApplyClipSelectionStyle(el, baseCol, true);
+            BuildInspectorPane();
+
             Undo.RecordObject(timeline, "Move Timeline Clip");
             dragStartT = clip.startTime;
             accum = 0f;
             el.CapturePointer(e.pointerId);
             el.BringToFront();
-            SetBorder(el, Color.white, 2);
             e.StopPropagation();
         });
         el.RegisterCallback<PointerMoveEvent>(e =>
@@ -780,6 +999,10 @@ public class BossDesignerWindow : EditorWindow
         {
             if (!el.HasPointerCapture(e.pointerId)) return;
             el.ReleasePointer(e.pointerId);
+
+            // แค่คลิกเลือกไม่ได้ลาก — ไม่มีอะไรให้รีเฟรช ข้าม rebuild ไปเลย
+            if (Mathf.Approximately(clip.startTime, dragStartT)) return;
+
             EditorUtility.SetDirty(timeline);
             BuildTimelinePane(); // รีเฟรช duration/ความยาว ruler
         });
@@ -796,8 +1019,11 @@ public class BossDesignerWindow : EditorWindow
     void ShowClipContextMenu(BossTimelineAction.TimelineClip clip, int trackIdx)
     {
         var menu = new GenericMenu();
-        menu.AddItem(new GUIContent("Edit in Inspector"), false, () => Selection.activeObject = clip.action);
-        menu.AddItem(new GUIContent("Duplicate (+0.5s)"), false, () =>
+        menu.AddItem(new GUIContent("Ping Asset"), false, () => EditorGUIUtility.PingObject(clip.action));
+
+        // ชื่อเดิมคือ "Duplicate (+0.5s)" ซึ่งชวนเข้าใจว่าได้ action ตัวใหม่
+        // จริงๆ ได้แค่คลิปที่ชี้ไป action เดิม — เปลี่ยนชื่อให้ตรงกับที่มันทำ
+        menu.AddItem(new GUIContent("Duplicate Clip (same action)"), false, () =>
         {
             Undo.RecordObject(timeline, "Duplicate Timeline Clip");
             timeline.tracks[trackIdx].clips.Add(new BossTimelineAction.TimelineClip
@@ -808,6 +1034,19 @@ public class BossDesignerWindow : EditorWindow
             EditorUtility.SetDirty(timeline);
             BuildTimelinePane();
         });
+
+        // ตัวที่ให้ action อิสระจริงๆ
+        if (config != null && clip.action != null)
+        {
+            menu.AddItem(new GUIContent("Make Unique"), false, () => MakeClipActionUnique(clip));
+        }
+        else
+        {
+            menu.AddDisabledItem(new GUIContent("Make Unique  (ต้องเปิดผ่าน Encounter Config)"));
+        }
+
+        if (config != null && IsOwnedSubAsset(clip.action))
+            menu.AddItem(new GUIContent("Extract to Asset File"), false, () => ExtractToAssetFile(clip.action));
 
         for (int i = 0; i < timeline.tracks.Count; i++)
         {
@@ -824,32 +1063,235 @@ public class BossDesignerWindow : EditorWindow
         }
 
         menu.AddSeparator("");
-        menu.AddItem(new GUIContent("Delete Clip"), false, () =>
-        {
-            Undo.RecordObject(timeline, "Delete Timeline Clip");
-            timeline.tracks[trackIdx].clips.Remove(clip);
-            if (selectedClip == clip) selectedClip = null;
-            EditorUtility.SetDirty(timeline);
-            BuildTimelinePane();
-        });
+        menu.AddItem(new GUIContent("Delete Clip"), false, () => DeleteClip(clip, trackIdx));
         menu.ShowAsContext();
+    }
+
+    /// <summary>
+    /// ลบคลิป · ถ้า action เป็น sub-asset ของ config นี้และไม่มีคลิปอื่นใช้แล้ว ให้ทำลายทิ้งด้วย
+    ///
+    /// ต่างจากการลบ GameObject ตรงที่ sub-asset **ไม่มีใครเป็นเจ้าของเชิงโครงสร้าง**
+    /// ลบคลิปเฉยๆ แล้วมันจะค้างอยู่ใน config ตลอดไปแบบมองไม่เห็น สร้าง-ลบสิบรอบ config บวม
+    /// </summary>
+    void DeleteClip(BossTimelineAction.TimelineClip clip, int trackIdx)
+    {
+        var action = clip.action;
+
+        Undo.RecordObject(timeline, "Delete Timeline Clip");
+        timeline.tracks[trackIdx].clips.Remove(clip);
+        if (selectedClip == clip) selectedClip = null;
+        EditorUtility.SetDirty(timeline);
+
+        // เช็คหลังลบคลิปแล้ว — เหลือ 0 การอ้างอิงถึงค่อยทำลาย
+        if (IsOwnedSubAsset(action) && CountClipsUsing(action) == 0 && !IsReferencedByPhases(action))
+        {
+            Undo.DestroyObjectImmediate(action);
+            AssetDatabase.SaveAssets();
+        }
+
+        BuildTimelinePane();
+        BuildInspectorPane();
+    }
+
+    /// <summary>ก๊อป action ของคลิปนี้เป็น sub-asset ใหม่ แล้วให้คลิปชี้ไปตัวก๊อป</summary>
+    void MakeClipActionUnique(BossTimelineAction.TimelineClip clip)
+    {
+        if (config == null || clip.action == null) return;
+
+        var copy = Instantiate(clip.action);
+        copy.name = MakeUniqueSubAssetName(clip.action.name);
+        Undo.RegisterCreatedObjectUndo(copy, "Make Clip Action Unique");
+        AssetDatabase.AddObjectToAsset(copy, config);
+
+        Undo.RecordObject(timeline, "Make Clip Action Unique");
+        clip.action = copy;
+        EditorUtility.SetDirty(timeline);
+        AssetDatabase.SaveAssets();
+
+        selectedClip = clip;
+        BuildTimelinePane();
+        BuildInspectorPane();
+    }
+
+    /// <summary>สร้าง action ใหม่เป็น sub-asset แล้วเพิ่มเป็นคลิปทันที — เหมือนกด GameObject → Cube</summary>
+    void CreateActionAndAddClip(System.Type type, int trackIdx, float atTime)
+    {
+        if (config == null || timeline == null) return;
+
+        var action = ScriptableObject.CreateInstance(type) as BossAction;
+        if (action == null) return;
+
+        action.name = MakeUniqueSubAssetName(type.Name);
+        Undo.RegisterCreatedObjectUndo(action, "Create Boss Action");
+        AssetDatabase.AddObjectToAsset(action, config);
+
+        Undo.RecordObject(timeline, "Add Timeline Clip");
+        var clip = new BossTimelineAction.TimelineClip
+        {
+            action = action,
+            startTime = Mathf.Max(0f, atTime),
+        };
+        timeline.tracks[trackIdx].clips.Add(clip);
+        EditorUtility.SetDirty(timeline);
+        AssetDatabase.SaveAssets();
+
+        selectedClip = clip;
+        BuildTimelinePane();
+        BuildInspectorPane();
+    }
+
+    /// <summary>ดึง sub-asset ออกมาเป็นไฟล์เดี่ยว — ใช้เมื่ออยากเอาท่านี้ไปใช้กับบอสตัวอื่น</summary>
+    void ExtractToAssetFile(BossAction action)
+    {
+        if (action == null) return;
+
+        string dir  = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(config));
+        string path = EditorUtility.SaveFilePanelInProject(
+            "Extract Boss Action", action.name, "asset",
+            "เลือกที่เก็บ action ที่ดึงออกมา", dir);
+        if (string.IsNullOrEmpty(path)) return;
+
+        var copy = Instantiate(action);
+        copy.name = System.IO.Path.GetFileNameWithoutExtension(path);
+        AssetDatabase.CreateAsset(copy, path);
+
+        // ชี้ทุกคลิปที่ใช้ตัวเดิมไปที่ไฟล์ใหม่ แล้วทิ้ง sub-asset
+        Undo.RecordObject(timeline, "Extract Boss Action");
+        foreach (var track in timeline.tracks)
+        {
+            if (track?.clips == null) continue;
+            foreach (var c in track.clips)
+                if (c != null && c.action == action) c.action = copy;
+        }
+        EditorUtility.SetDirty(timeline);
+
+        if (IsOwnedSubAsset(action) && !IsReferencedByPhases(action))
+            Undo.DestroyObjectImmediate(action);
+
+        AssetDatabase.SaveAssets();
+        RebuildAll();
+    }
+
+    // ── Sub-asset helpers ─────────────────────────────────────────────────
+    /// <summary>true ถ้า action ตัวนี้เป็น sub-asset ที่ฝังอยู่ใน config ที่เปิดอยู่</summary>
+    bool IsOwnedSubAsset(Object action)
+    {
+        if (action == null || config == null) return false;
+        if (!AssetDatabase.IsSubAsset(action)) return false;
+        return AssetDatabase.GetAssetPath(action) == AssetDatabase.GetAssetPath(config);
+    }
+
+    int CountClipsUsing(BossAction action)
+    {
+        if (action == null || timeline?.tracks == null) return 0;
+        int n = 0;
+        foreach (var track in timeline.tracks)
+        {
+            if (track?.clips == null) continue;
+            foreach (var c in track.clips)
+                if (c != null && c.action == action) n++;
+        }
+        return n;
+    }
+
+    /// <summary>เช็คว่ามีเฟสไหนอ้าง action นี้ตรงๆ อยู่ไหม — กันลบของที่ยังมีคนใช้</summary>
+    bool IsReferencedByPhases(BossAction action)
+    {
+        if (action == null || config?.phases == null) return false;
+        foreach (var phase in config.phases)
+        {
+            if (phase == null) continue;
+            if (phase.actions != null && phase.actions.Contains(action)) return true;
+            if (phase.enrageActions != null && phase.enrageActions.Contains(action)) return true;
+        }
+        return false;
+    }
+
+    string MakeUniqueSubAssetName(string baseName)
+    {
+        if (config == null) return baseName;
+
+        var existing = new HashSet<string>();
+        foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(config)))
+            if (o != null) existing.Add(o.name);
+
+        if (!existing.Contains(baseName)) return baseName;
+        for (int i = 2; i < 999; i++)
+            if (!existing.Contains($"{baseName}_{i}")) return $"{baseName}_{i}";
+        return baseName;
+    }
+
+    /// <summary>ล้าง sub-asset ที่ไม่มีคลิปหรือเฟสไหนอ้างถึงแล้ว</summary>
+    void CleanUnusedActions()
+    {
+        if (config == null) return;
+
+        string path = AssetDatabase.GetAssetPath(config);
+        var orphans = new List<BossAction>();
+        foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path))
+        {
+            if (o is not BossAction a) continue;
+            if (a == timeline || a is BossTimelineAction) continue;   // timeline เป็นตัวถือคลิป ไม่ใช่ของกำพร้า
+            if (!AssetDatabase.IsSubAsset(a)) continue;
+            if (CountClipsUsing(a) == 0 && !IsReferencedByPhases(a)) orphans.Add(a);
+        }
+
+        if (orphans.Count == 0)
+        {
+            EditorUtility.DisplayDialog("Clean Unused Actions", "ไม่มี action กำพร้าใน config นี้", "OK");
+            return;
+        }
+
+        string names = string.Join("\n", orphans.ConvertAll(a => "• " + a.name));
+        if (!EditorUtility.DisplayDialog("Clean Unused Actions",
+                $"จะลบ action ที่ไม่มีใครอ้างถึง {orphans.Count} ตัว:\n\n{names}\n\nลบเลยไหม?",
+                "ลบ", "ยกเลิก"))
+            return;
+
+        foreach (var a in orphans) Undo.DestroyObjectImmediate(a);
+        AssetDatabase.SaveAssets();
+        RebuildAll();
     }
 
     void ShowAddClipMenu(int trackIdx, float atTime)
     {
         var menu = new GenericMenu();
+
+        // ── สร้างใหม่ตรงนี้เลย ─────────────────────────────────────────────
+        // เดิมเมนูนี้บอกให้ไปสร้างที่ Project window ก่อนแล้วค่อยกลับมา
+        if (config != null)
+        {
+            var types = TypeCache.GetTypesDerivedFrom<BossAction>()
+                .Where(t => !t.IsAbstract)
+                .OrderBy(t => t.Name);
+            foreach (var t in types)
+            {
+                var type = t;
+                menu.AddItem(new GUIContent($"New/{type.Name}"), false,
+                             () => CreateActionAndAddClip(type, trackIdx, atTime));
+            }
+            menu.AddSeparator("");
+        }
+
+        // ── asset ที่มีอยู่แล้ว ───────────────────────────────────────────
+        // LoadAllAssetsAtPath คืน sub-asset มาด้วย — ต้องกรอง sub-asset ของ config อื่นออก
+        // ไม่งั้นท่าที่สร้างในบอส A จะไปโผล่ในเมนูของบอสทุกตัว
+        string configPath = config != null ? AssetDatabase.GetAssetPath(config) : null;
         var guids = AssetDatabase.FindAssets("t:BossAction");
         var actions = guids
             .SelectMany(g => AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(g)))
             .OfType<BossAction>()
             .Where(a => a != timeline)
+            .Where(a => !AssetDatabase.IsSubAsset(a)
+                        || AssetDatabase.GetAssetPath(a) == configPath)
             .Distinct()
             .OrderBy(a => a.GetType().Name).ThenBy(a => a.name)
             .ToList();
 
         if (actions.Count == 0)
         {
-            menu.AddDisabledItem(new GUIContent("ไม่พบ BossAction asset — สร้างผ่าน Create → Boss → Actions ก่อน"));
+            if (config == null)
+                menu.AddDisabledItem(new GUIContent("ไม่พบ BossAction asset — เปิดผ่าน Encounter Config เพื่อสร้างใหม่ได้ที่นี่"));
         }
         else
         {
