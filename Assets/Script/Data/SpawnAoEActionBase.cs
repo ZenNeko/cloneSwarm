@@ -49,6 +49,20 @@ public abstract class SpawnAoEActionBase : BossAction
     [Tooltip("สีตอนใกล้ระเบิด")]
     public Color telegraphDangerColor  = new Color(1f, 0f, 0.099f, 0.85f);
 
+    [Header("Telegraph Effects  (ปกติไม่ต้องแตะ)")]
+    // ความแรงปกติมาจาก material — ช่องนี้ไว้ทำท่าที่จงใจให้เงียบกว่าหรือดังกว่าปกติ
+    // เช่นท่าที่ยิงรัวๆ ควรลด blink ลง ไม่งั้นจอกะพริบจนอ่านอะไรไม่ออก
+    [Tooltip("ทับความแรงเอฟเฟกต์จาก material — ใช้เฉพาะท่าพิเศษ")]
+    public bool  overrideTelegraphEffects = false;
+    [Tooltip("จังหวะเต้นของ alpha · 0 = ปิด")]
+    [Range(0f, 2f)] public float pulseAmount = 1f;
+    [Tooltip("การกระพริบ · 0 = ปิด")]
+    [Range(0f, 2f)] public float blinkAmount = 1f;
+    [Tooltip("ความสว่างของวงที่ไหลออก · 0 = ปิด")]
+    [Range(0f, 3f)] public float ringAmount = 1f;
+    [Tooltip("ความเร็ววง (เมตร/วินาที)")]
+    [Min(0f)] public float ringSpeed = 2f;
+
     [Header("FFXIV Special Settings")]
     [Tooltip("เปิดให้ท่าโจมตีรูปแบบนี้วิ่งตามล่าผู้เล่นเป้าหมาย (Chase)")]
     public bool isChasing = false;
@@ -168,6 +182,11 @@ public abstract class SpawnAoEActionBase : BossAction
                 zone.overrideColors = overrideTelegraphColors;
                 zone.overrideWarningColor = telegraphWarningColor;
                 zone.overrideDangerColor  = telegraphDangerColor;
+                zone.overrideEffects      = overrideTelegraphEffects;
+                zone.overridePulseAmount  = pulseAmount;
+                zone.overrideBlinkAmount  = blinkAmount;
+                zone.overrideRingAmount   = ringAmount;
+                zone.overrideRingSpeed    = ringSpeed;
 
                 if (followCaster && runner != null)
                 {

@@ -94,6 +94,13 @@ public class SpawnAoEActionEditor : Editor
         var dangerCol   = serializedObject.FindProperty("telegraphDangerColor");
         bool useOverrideColors = overrideCol != null && overrideCol.boolValue;
 
+        var overrideFx = serializedObject.FindProperty("overrideTelegraphEffects");
+        var fxPulse    = serializedObject.FindProperty("pulseAmount");
+        var fxBlink    = serializedObject.FindProperty("blinkAmount");
+        var fxRing     = serializedObject.FindProperty("ringAmount");
+        var fxSpeed    = serializedObject.FindProperty("ringSpeed");
+        bool useOverrideFx = overrideFx != null && overrideFx.boolValue;
+
         bool ffxivActive = useChase
                         || (followCaster != null && followCaster.boolValue)
                         || (isStack      != null && isStack.boolValue)
@@ -220,6 +227,26 @@ public class SpawnAoEActionEditor : Editor
                 continue;
             }
             if (it.propertyPath is "telegraphWarningColor" or "telegraphDangerColor") continue;
+
+            if (it.propertyPath == "overrideTelegraphEffects")
+            {
+                EditorGUILayout.Space(4);
+                EditorGUILayout.PropertyField(overrideFx, true);
+                if (useOverrideFx)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(fxPulse, true);
+                    EditorGUILayout.PropertyField(fxBlink, true);
+                    EditorGUILayout.PropertyField(fxRing, true);
+                    EditorGUILayout.PropertyField(fxSpeed, true);
+                    EditorGUI.indentLevel--;
+                    EditorGUILayout.HelpBox(
+                        "ทับความแรงจาก material — ท่าที่ยิงรัวควรลด blink ลง ไม่งั้นจอกะพริบจนอ่านไม่ออก",
+                        MessageType.Info);
+                }
+                continue;
+            }
+            if (it.propertyPath is "pulseAmount" or "blinkAmount" or "ringAmount" or "ringSpeed") continue;
 
             bool hide = it.propertyPath switch
             {

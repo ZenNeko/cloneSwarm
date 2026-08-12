@@ -43,9 +43,14 @@ Material:
     - _EdgeGlow: 1.5
     - _FillProgress: 0.2
     - _InnerRadius: 0
+    - _OutlineShape: 0
+    - _OutlineWidth: 0.15
     - _PulseSpeed: 4
     - _QueueControl: 0
-    m_Colors: []
+    - _SweepAmount: 3
+    - _SweepWidth: 0.15
+    m_Colors:
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &2800419722494097700

@@ -125,6 +125,14 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public Color   overrideWarningColor = Color.yellow;
     [HideInInspector] public Color   overrideDangerColor  = Color.red;
 
+    // ความแรงเอฟเฟกต์ที่ action สั่งมาเป็นรายท่า — ทับค่าบน material
+    // ไม่ override = ไม่ดันเข้า shader เลย material จึงคุมเองทั้งหมด
+    [HideInInspector] public bool    overrideEffects;
+    [HideInInspector] public float   overridePulseAmount = 1f;
+    [HideInInspector] public float   overrideBlinkAmount = 1f;
+    [HideInInspector] public float   overrideRingAmount  = 1f;
+    [HideInInspector] public float   overrideRingSpeed   = 2f;
+
     /// <summary>
     /// ลำดับความสำคัญของสี — ColorMatch ต้องชนะทุกอย่างเพราะสีคือ**เงื่อนไขของกลไก**
     /// ไม่ใช่การตกแต่ง · ถัดมาคือสีที่ designer สั่งมาต่อท่า แล้วค่อยเรียงตามหมวดกลไก
@@ -259,6 +267,11 @@ public class TelegraphZone : NetworkBehaviour
             overrideColors      = overrideColors,
             warningColor        = overrideWarningColor,
             dangerColor         = overrideDangerColor,
+            overrideEffects     = overrideEffects,
+            pulseAmount         = overridePulseAmount,
+            blinkAmount         = overrideBlinkAmount,
+            ringAmount          = overrideRingAmount,
+            ringSpeed           = overrideRingSpeed,
         });
     }
 
@@ -287,6 +300,11 @@ public class TelegraphZone : NetworkBehaviour
         overrideColors        = init.overrideColors;
         overrideWarningColor  = init.warningColor;
         overrideDangerColor   = init.dangerColor;
+        overrideEffects       = init.overrideEffects;
+        overridePulseAmount   = init.pulseAmount;
+        overrideBlinkAmount   = init.blinkAmount;
+        overrideRingAmount    = init.ringAmount;
+        overrideRingSpeed     = init.ringSpeed;
         totalWarning          = init.warningDuration;
         elapsed               = 0f;
         initialized           = true;
@@ -444,6 +462,16 @@ public class TelegraphZone : NetworkBehaviour
             // ขอบใช้สีอันตรายของหมวดเดียวกัน — Gaze ขอบม่วง Stack ขอบฟ้า ตามพื้นวง
             if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", danger);
             if (sharedMat.HasProperty("_OutlineShape")) mpb.SetFloat("_OutlineShape", outlineShape);
+
+            // ไม่ override = ไม่แตะเลย ปล่อยให้ค่าบน material ทำงาน
+            if (overrideEffects)
+            {
+                if (sharedMat.HasProperty("_PulseAmount")) mpb.SetFloat("_PulseAmount", overridePulseAmount);
+                if (sharedMat.HasProperty("_BlinkAmount")) mpb.SetFloat("_BlinkAmount", overrideBlinkAmount);
+                if (sharedMat.HasProperty("_SweepAmount")) mpb.SetFloat("_SweepAmount", overrideRingAmount);
+                if (sharedMat.HasProperty("_RingSpeed"))   mpb.SetFloat("_RingSpeed",   overrideRingSpeed);
+            }
+
             r.SetPropertyBlock(mpb);
         }
     }

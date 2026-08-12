@@ -39,6 +39,13 @@ public struct TelegraphInit : INetworkSerializable
     public UnityEngine.Color warningColor;
     public UnityEngine.Color dangerColor;
 
+    /// <summary>ความแรงเอฟเฟกต์ที่ action สั่งมาต่อท่า — false = ใช้ค่าบน material</summary>
+    public bool  overrideEffects;
+    public float pulseAmount;      // จังหวะเต้นของ alpha
+    public float blinkAmount;      // การกระพริบ
+    public float ringAmount;       // ความสว่างของวงที่ไหลออก
+    public float ringSpeed;        // ความเร็ววง (เมตร/วินาที)
+
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref aoeType);
@@ -61,5 +68,10 @@ public struct TelegraphInit : INetworkSerializable
         s.SerializeValue(ref overrideColors);
         s.SerializeValue(ref warningColor);
         s.SerializeValue(ref dangerColor);
+        s.SerializeValue(ref overrideEffects);
+        s.SerializeValue(ref pulseAmount);
+        s.SerializeValue(ref blinkAmount);
+        s.SerializeValue(ref ringAmount);
+        s.SerializeValue(ref ringSpeed);
     }
 }
