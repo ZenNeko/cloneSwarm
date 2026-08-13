@@ -21,6 +21,8 @@ public class ColorMatchAoEAction : BossAction
     public float radius = 3f;
     public float warningDuration = 3.5f;
     public float damage = 99f; // High damage for failing
+    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab")]
+    public string detonateVfxKey = "";
 
     [Tooltip("ระยะจากจุดศูนย์กลางถึงวงที่จะเกิด — 0 = วงทุกใบซ้อนกันที่จุดศูนย์กลางพอดี")]
     public float spawnRadius = 6f;
@@ -96,7 +98,8 @@ public class ColorMatchAoEAction : BossAction
             zone.radius = radius;
             zone.warningDuration = warningDuration;
             zone.damage = damage;
-            
+            zone.detonateVfxKey = detonateVfxKey;
+
             zone.isColorMatch.Value = true;
             zone.requiredClientId.Value = clientId;
 
@@ -116,13 +119,11 @@ public class ColorMatchAoEAction : BossAction
                 2 => "GREEN",
                 _ => "YELLOW"
             };
-            Color uiColor = slot switch
-            {
-                0 => Color.red,
-                1 => Color.blue,
-                2 => Color.green,
-                _ => Color.yellow
-            };
+
+            // อ่านสีจาก palette เดียวกับที่ zone ใช้ทาวง — เดิม hardcode ซ้ำสองที่
+            // ถ้าเพี้ยนจากกันเมื่อไหร่ HUD จะบอกสีนึงแต่วงเป็นอีกสี กลไกพังแบบหาสาเหตุยาก
+            Color uiColor = zone.GetSlotColor(slot);
+
             zone.NotifyColorClientRpc(clientId, colorName, uiColor);
         }
         else

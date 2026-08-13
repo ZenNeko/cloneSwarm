@@ -70,6 +70,19 @@ public class RollContext
     }
 
     /// <summary>
+    /// ชนิดของ roll — ตัวที่เอาไปแปลงเป็น transform เชิงพื้นที่อยู่ที่ SpawnAoEActionBase
+    /// ไม่มี definition = ถือเป็น Variant (ค่าดิบ ให้ action ตีความเอง)
+    /// </summary>
+    public RollKind GetKind(string rollName)
+        => !string.IsNullOrEmpty(rollName) && _defs.TryGetValue(rollName, out var def)
+            ? def.kind : RollKind.Variant;
+
+    /// <summary>จำนวนตัวเลือกของ roll นี้ — ใช้แปลง value เป็นมุมหรือ index</summary>
+    public int GetOptionCount(string rollName)
+        => !string.IsNullOrEmpty(rollName) && _defs.TryGetValue(rollName, out var def)
+            ? Math.Max(1, def.optionCount) : 2;
+
+    /// <summary>
     /// ล้างประวัติการ roll ทั้งหมด
     /// </summary>
     public void ResetAll()

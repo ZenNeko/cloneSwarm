@@ -16,6 +16,8 @@ public class KeepMovingAction : BossAction
     public float radius = 2f;
     public float warningDuration = 1f;
     public float damage = 40f;
+    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab")]
+    public string detonateVfxKey = "";
 
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
@@ -102,6 +104,7 @@ public class KeepMovingAction : BossAction
             zone.radius = radius;
             zone.warningDuration = warningDuration;
             zone.damage = damage;
+            zone.detonateVfxKey = detonateVfxKey;
 
             no.Spawn(true);
             boss?.RegisterMechanic(no);

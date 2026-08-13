@@ -6,16 +6,90 @@ using UnityEngine.Serialization;
 
 public abstract class SpawnAoEActionBase : BossAction
 {
-    public enum TargetingMode { BossPosition, RandomPlayer, AllPlayers, NearestPlayer, StaticCoords }
+    public enum TargetingMode { BossPosition, RandomPlayer, AllPlayers, NearestPlayer, StaticCoords, ArenaAnchor }
 
     [Header("Targeting")]
     public TargetingMode targetingMode = TargetingMode.BossPosition;
     [Tooltip("ค่า offset ทิศทางที่บวกเพิ่มจากพิกัดเป้าหมาย (แกน XZ)")]
     public Vector3 targetOffset = Vector3.zero;
 
+    [Header("Arena Anchor  (targetingMode = ArenaAnchor)")]
+    [Tooltip("จุดยึดในสนาม — ต้องผูก BossEncounterConfig.arena ด้วย")]
+    public ArenaAnchor arenaAnchor = global::ArenaAnchor.Center;
+    [Tooltip("1 = ขอบสนาม · 0.5 = ครึ่งทาง (Center ไม่สนค่านี้)")]
+    public float arenaDistanceScale = 1f;
+    [Tooltip("ใช้เมื่อ rollName เป็น RollKind.Anchor — roll จะเลือก 1 ตัวจากลิสต์นี้แทน arenaAnchor\n" +
+             "ว่าง = ใช้ arenaAnchor ตัวเดียวเสมอ")]
+    public ArenaAnchor[] anchorChoices = new ArenaAnchor[0];
+
+    [Header("Repeat")]
+    [Tooltip("ยิงซ้ำกี่ครั้งในท่าเดียว — 1 = ครั้งเดียวเหมือนเดิม")]
+    [Min(1)] public int repeatCount = 1;
+    [Tooltip("เว้นกี่วินาทีระหว่างแต่ละครั้ง")]
+    [Min(0f)] public float repeatInterval = 0.6f;
+    [Tooltip("สุ่ม roll ใหม่ทุกครั้งที่ซ้ำ — คู่กับ RollDefinition.excludePrevious จะได้ 'ไล่ไม่ซ้ำที่'\n" +
+             "ปิดไว้ = ทั้งชุดใช้ค่า roll เดียวกัน (แพตเทิร์นเดียวยิงรัว)")]
+    public bool rerollEachRepeat = false;
+
     [Header("Telegraph Properties")]
     public float warningDuration = 2.5f;
     public float damage = 25f;
+    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab\n" +
+             "telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม ถ้าไม่ตั้งตรงนี้ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด")]
+    public string detonateVfxKey = "";
+
+    [Header("Telegraph Colors  (ปกติไม่ต้องแตะ)")]
+    // สีปกติมาจาก palette บน TelegraphZone prefab ตามหมวดกลไก (Gaze / Stack / Chase / default)
+    // ให้สี = ความหมาย ผู้เล่นเห็นสีม่วงก็รู้ทันทีว่าต้องหันหลัง โดยไม่ต้องจำว่าเป็นท่าไหน
+    // ช่องนี้ไว้สำหรับท่าพิเศษที่จงใจให้หลุดจากภาษาสีกลาง — ใช้บ่อยเมื่อไหร่แปลว่าควรเพิ่มหมวดใหม่แทน
+    [Tooltip("ทับสีจาก palette กลาง — ใช้เฉพาะท่าพิเศษ")]
+    public bool  overrideTelegraphColors = false;
+    [Tooltip("สีตอนเริ่ม telegraph")]
+    public Color telegraphWarningColor = new Color(1f, 0.64f, 0.024f, 0.5f);
+    [Tooltip("สีตอนใกล้ระเบิด")]
+    public Color telegraphDangerColor  = new Color(1f, 0f, 0.099f, 0.85f);
+    [Tooltip("ทับสีขอบแยกจากสีพื้น — ปิด = ขอบใช้สีอันตรายของหมวดเดียวกัน (Gaze ขอบม่วง Stack ขอบฟ้า)\n" +
+             "แยก gate จากสีพื้นเพราะคนละเจตนา: ทับสีพื้น = ท่าหลุดจากภาษาสีกลาง · ทับสีขอบ = แค่ให้ขอบเด่นบนพื้นบางแบบ")]
+    public bool  overrideTelegraphOutlineColor = false;
+    [Tooltip("สีแถบขอบ")]
+    public Color telegraphOutlineColor = Color.white;
+
+    [Header("Telegraph Effects  (ปกติไม่ต้องแตะ)")]
+    // หน้าตาปกติมาจาก material — ช่องนี้ไว้ทำท่าที่จงใจให้เงียบกว่าหรือดังกว่าปกติ
+    // เช่นท่าที่ยิงรัวๆ ควรลด blink ลง ไม่งั้นจอกะพริบจนอ่านอะไรไม่ออก
+    //
+    // **ค่า default ทุกช่องตรงกับ Mat_Tele_Universal** — ติ๊กเปิดแล้วหน้าตายังเหมือนเดิม
+    // จนกว่าจะลงมือปรับจริง · ถ้าไม่ทำแบบนี้ การติ๊กเปิดเพื่อแก้ค่าเดียวจะเผลอรีเซ็ตอีกสิบค่า
+    //
+    // ข้อยกเว้น — asset ที่สร้างก่อน 2026-08-12 เก็บ `ringAmount: 1` / `ringSpeed: 2` ไว้แล้ว
+    // (ค่า default เดิมของโค้ด) Unity จะไม่เขียนทับให้ · ถ้าจะเปิด override บน asset เก่า
+    // ให้ตั้งสองช่องนี้เป็น 3 / 1 เองเพื่อให้ตรงกับ material
+    [Tooltip("ทับหน้าตา telegraph ทั้งชุดจาก material — ใช้เฉพาะท่าพิเศษ")]
+    public bool  overrideTelegraphEffects = false;
+    [Tooltip("จังหวะเต้นของ alpha · 0 = ปิด")]
+    [Range(0f, 2f)] public float pulseAmount = 1f;
+    [Tooltip("การกระพริบ · 0 = ปิด")]
+    [Range(0f, 2f)] public float blinkAmount = 1f;
+    [Tooltip("ความสว่างของวงที่ไหลออก · 0 = ปิด")]
+    // เพดานเดิมคือ 3 ซึ่งพอดีกับค่าที่ material ตั้งไว้ — สไลเดอร์จะติดสุดตั้งแต่ค่า default
+    // ขยายเป็น 5 ให้มีที่ให้ดันขึ้นได้จริง
+    [Range(0f, 5f)] public float ringAmount = 3f;
+    [Tooltip("ความเร็ววง (เมตร/วินาที) · shader คูณ (1 + FillProgress) ให้เร็วขึ้นเองเมื่อใกล้ระเบิด")]
+    [Min(0f)] public float ringSpeed = 1f;
+    [Tooltip("ความถี่ pulse (รอบ/วินาที)")]
+    [Min(0f)] public float pulseSpeed = 4f;
+    [Tooltip("ระยะห่างระหว่างวง (เมตร) · ยิ่งน้อยยิ่งถี่")]
+    [Min(0.01f)] public float ringSpacing = 1.5f;
+    [Tooltip("ความหนาของแต่ละวง (เมตร)")]
+    [Min(0f)] public float ringWidth = 0.15f;
+    [Tooltip("ความหนาแถบขอบ (เมตร)")]
+    [Min(0f)] public float outlineWidth = 0.15f;
+    [Tooltip("ความเรืองของขอบ")]
+    [Min(0f)] public float edgeGlow = 1.5f;
+    [Tooltip("ความคมของขอบ · สูง = ขอบชัดเป็นเส้น · ต่ำ = ฟุ้ง")]
+    [Min(0f)] public float edgeStrength = 2f;
+    [Tooltip("ความทึบรวมของ zone · ลดลงเมื่อมีหลาย zone ซ้อนกันจนอ่านพื้นไม่ออก")]
+    [Range(0f, 1f)] public float baseAlpha = 1f;
 
     [Header("FFXIV Special Settings")]
     [Tooltip("เปิดให้ท่าโจมตีรูปแบบนี้วิ่งตามล่าผู้เล่นเป้าหมาย (Chase)")]
@@ -39,11 +113,21 @@ public abstract class SpawnAoEActionBase : BossAction
     [Tooltip("ใช้เฉพาะ KnockbackMode.FixedDirection — ทิศในพิกัดโลก (คิดเฉพาะแกน XZ)")]
     public Vector3 knockbackFixedDirection = Vector3.forward;
 
+    // หัวข้อกลุ่มวาดโดย SpawnAoEActionEditor (เป็น foldout) — ไม่ใส่ [Header] ซ้ำ
+    [Tooltip("ตัวคูณขนาดตอนเริ่ม telegraph — 1 = ขนาดเต็มตั้งแต่แรก (พฤติกรรมเดิม)")]
+    [Min(0f)] public float scaleStart = 1f;
+    [Tooltip("ตัวคูณขนาดตอนระเบิด — >1 = วงขยาย · <1 = วงหด\n" +
+             "หมายเหตุ: ดาเมจยัง resolve ครั้งเดียวตอนจบ ใช้ขนาด ณ วินาทีนั้น (ดู ADR-003)")]
+    [Min(0f)] public float scaleEnd = 1f;
+    [Tooltip("หมุน zone กี่องศาต่อวินาทีระหว่าง telegraph — ลำแสงกวาด · 0 = ไม่หมุน")]
+    public float sweepDegreesPerSecond = 0f;
+
     protected abstract AoEType GetAoEType();
     protected abstract void ConfigureTelegraphZone(TelegraphZone zone);
 
-    // warning + ช่วง resolve สั้นๆ หลัง telegraph ระเบิด
-    public override float GetEditorDuration() => actionDelay + warningDuration + 0.5f;
+    // warning + ช่วง resolve สั้นๆ หลัง telegraph ระเบิด × จำนวนครั้งที่ยิงซ้ำ
+    public override float GetEditorDuration()
+        => actionDelay + Mathf.Max(0, repeatCount - 1) * repeatInterval + warningDuration + 0.5f;
 
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
@@ -58,12 +142,34 @@ public abstract class SpawnAoEActionBase : BossAction
             yield break;
         }
 
-        List<Vector3> spawnPositions = GetSpawnPositions(runner);
-        foreach (var pos in spawnPositions)
+        int shots = Mathf.Max(1, repeatCount);
+        for (int shot = 0; shot < shots; shot++)
         {
+            // ซ้ำครั้งถัดไปสุ่มใหม่ได้ — ครั้งแรกใช้ค่าที่ AttackLoop roll มาให้แล้ว
+            if (shot > 0 && rerollEachRepeat && !string.IsNullOrEmpty(rollName))
+                (runner as BossController)?.Rolls?.Roll(rollName);
+
+            SpawnOneWave(runner, telegraphPrefab);
+
+            if (shot < shots - 1 && repeatInterval > 0f)
+                yield return new WaitForSeconds(repeatInterval);
+        }
+    }
+
+    private void SpawnOneWave(NetworkBehaviour runner, GameObject telegraphPrefab)
+    {
+        // roll ครั้งเดียวต่อระลอก แล้วใช้ transform เดียวกันกับทุกจุดเกิด
+        // ถ้าแปลงแยกทีละจุด แพตเทิร์น AllPlayers จะกลายเป็นมั่วแทนลวดลายที่อ่านออก
+        RollTransform rollTf = GetRollTransform(runner);
+
+        List<Vector3> spawnPositions = GetSpawnPositions(runner);
+        foreach (var rawPos in spawnPositions)
+        {
+            Vector3 pos = rollTf.Apply(rawPos);
+
             // คำนวณทิศทางการหันหน้า: หากยิงใส่เป้าหมาย หรือหันไปทางเป้าหมาย
             Quaternion rot = Quaternion.identity;
-            if (GetAoEType() == AoEType.Line)
+            if (GetAoEType() == AoEType.Line || GetAoEType() == AoEType.Cone)
             {
                 // หมุนไปทางผู้เล่นที่ใกล้ที่สุดหรือเป้าหมายเพื่อให้พาดผ่านตัว
                 Transform nearestPlayer = FindNearestPlayer(pos);
@@ -74,6 +180,11 @@ public abstract class SpawnAoEActionBase : BossAction
                     if (dir != Vector3.zero) rot = Quaternion.LookRotation(dir);
                 }
             }
+            else
+            {
+                // ทรงที่ไม่หันตามใคร ให้ roll หมุน/พลิกทิศได้
+                rot = rollTf.Apply(rot);
+            }
 
             var go = Instantiate(telegraphPrefab, pos, rot);
             var zone = go.GetComponent<TelegraphZone>();
@@ -82,6 +193,9 @@ public abstract class SpawnAoEActionBase : BossAction
             if (zone != null && no != null)
             {
                 zone.aoeType = GetAoEType();
+                zone.scaleStart = scaleStart;
+                zone.scaleEnd = scaleEnd;
+                zone.sweepDegreesPerSecond = sweepDegreesPerSecond;
                 zone.warningDuration = warningDuration;
                 zone.damage = damage;
                 zone.isChasing = isChasing;
@@ -92,6 +206,24 @@ public abstract class SpawnAoEActionBase : BossAction
                 zone.knockbackDistance = knockbackDistance;
                 zone.knockbackDuration = knockbackDuration;
                 zone.knockbackFixedDirection = knockbackFixedDirection;
+                zone.detonateVfxKey = detonateVfxKey;
+                zone.overrideColors = overrideTelegraphColors;
+                zone.overrideWarningColor = telegraphWarningColor;
+                zone.overrideDangerColor  = telegraphDangerColor;
+                zone.overrideOutlineColorFlag = overrideTelegraphOutlineColor;
+                zone.overrideOutlineColor     = telegraphOutlineColor;
+                zone.overrideEffects      = overrideTelegraphEffects;
+                zone.overridePulseAmount  = pulseAmount;
+                zone.overrideBlinkAmount  = blinkAmount;
+                zone.overrideRingAmount   = ringAmount;
+                zone.overrideRingSpeed    = ringSpeed;
+                zone.overridePulseSpeed   = pulseSpeed;
+                zone.overrideRingSpacing  = ringSpacing;
+                zone.overrideRingWidth    = ringWidth;
+                zone.overrideOutlineWidth = outlineWidth;
+                zone.overrideEdgeGlow     = edgeGlow;
+                zone.overrideEdgeStrength = edgeStrength;
+                zone.overrideBaseAlpha    = baseAlpha;
 
                 if (followCaster && runner != null)
                 {
@@ -122,29 +254,24 @@ public abstract class SpawnAoEActionBase : BossAction
                 list.Add(basePos + targetOffset);
                 break;
             case TargetingMode.RandomPlayer:
-                if (NetworkManager.Singleton != null)
+            {
+                // เดิมไม่กรอง isDead ทั้งที่ AllPlayers กรอง — สุ่มติดศพแล้ววงไปลงที่ศพ
+                // บั๊กตระกูลเดียวกับ tether ที่แก้ไปแล้ว
+                var alive = CollectAlivePlayerPositions(basePos.y);
+                if (alive.Count > 0)
                 {
-                    var clients = new List<NetworkClient>(NetworkManager.Singleton.ConnectedClientsList);
-                    if (clients.Count > 0)
-                    {
-                        var target = clients[Random.Range(0, clients.Count)];
-                        if (target.PlayerObject != null)
-                        {
-                            Vector3 pos = target.PlayerObject.transform.position;
-                            pos.y = basePos.y;
-                            list.Add(pos + targetOffset);
-                        }
-                        else
-                        {
-                            list.Add(basePos + targetOffset);
-                        }
-                    }
-                    else
-                    {
-                        list.Add(basePos + targetOffset);
-                    }
+                    // RollKind.Target ให้ roll เป็นคนเลือก จะได้ reproduce ตาม seed ได้
+                    int idx = TryGetTargetRoll(runner, alive.Count, out int rolled)
+                        ? rolled
+                        : Random.Range(0, alive.Count);
+                    list.Add(alive[idx] + targetOffset);
+                }
+                else
+                {
+                    list.Add(basePos + targetOffset);
                 }
                 break;
+            }
             case TargetingMode.NearestPlayer:
                 Transform nearest = FindNearestPlayer(basePos);
                 if (nearest != null)
@@ -182,8 +309,71 @@ public abstract class SpawnAoEActionBase : BossAction
             case TargetingMode.StaticCoords:
                 list.Add(targetOffset);
                 break;
+
+            case TargetingMode.ArenaAnchor:
+                list.Add(ResolveAnchorPosition(runner) + targetOffset);
+                break;
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// จุดยึดในสนาม · ถ้า roll เป็น RollKind.Anchor และมี anchorChoices ให้ roll เลือกจากลิสต์
+    /// (เลือกจากลิสต์ที่ designer ตั้ง ไม่ใช่ index ดิบของ enum — ไม่งั้นจะได้จุดมั่วซั่ว)
+    /// </summary>
+    private Vector3 ResolveAnchorPosition(NetworkBehaviour runner)
+    {
+        var boss = runner as BossController;
+        ArenaDefinition arena = boss?.config?.arena;
+
+        ArenaAnchor chosen = arenaAnchor;
+        if (anchorChoices != null && anchorChoices.Length > 0 && boss?.Rolls != null
+            && !string.IsNullOrEmpty(rollName)
+            && boss.Rolls.GetKind(rollName) == RollKind.Anchor)
+        {
+            int value = boss.Rolls.Peek(rollName);
+            if (value >= 0) chosen = anchorChoices[value % anchorChoices.Length];
+        }
+
+        if (arena == null)
+        {
+            Debug.LogWarning($"[{GetType().Name}] {name}: targetingMode = ArenaAnchor แต่ BossEncounterConfig.arena ว่าง — ใช้ตำแหน่งบอสแทน");
+            return runner != null ? runner.transform.position : Vector3.zero;
+        }
+
+        return ArenaAnchors.Resolve(arena, chosen, arenaDistanceScale);
+    }
+
+    private List<Vector3> CollectAlivePlayerPositions(float y)
+    {
+        var list = new List<Vector3>();
+        if (NetworkManager.Singleton == null) return list;
+
+        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (c.PlayerObject == null) continue;
+            var pm = c.PlayerObject.GetComponent<playermove>();
+            if (pm == null || pm.isDead.Value) continue;
+
+            Vector3 p = c.PlayerObject.transform.position;
+            p.y = y;
+            list.Add(p);
+        }
+        return list;
+    }
+
+    private bool TryGetTargetRoll(NetworkBehaviour runner, int count, out int index)
+    {
+        index = 0;
+        var boss = runner as BossController;
+        if (boss?.Rolls == null || string.IsNullOrEmpty(rollName)) return false;
+        if (boss.Rolls.GetKind(rollName) != RollKind.Target) return false;
+
+        int value = boss.Rolls.Peek(rollName);
+        if (value < 0) return false;
+
+        index = value % count;
+        return true;
     }
 }

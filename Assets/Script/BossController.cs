@@ -101,6 +101,10 @@ public class BossController : NetworkBehaviour
     private void InitRolls(int seed)
     {
         Rolls = new RollContext(seed, config != null ? config.rolls : null);
+
+        // ท่าไม่ deterministic อีกต่อไปหลังเสียบ roll — ต้องจด seed ไว้ถึงจะ reproduce บั๊กได้
+        int rollCount = config?.rolls != null ? config.rolls.Length : 0;
+        Debug.Log($"[BossController] {gameObject.name} roll seed = {seed} · roll definitions = {rollCount}");
     }
 
     // ── Phase Tracking (Server Only) ──────────────────────────────────────

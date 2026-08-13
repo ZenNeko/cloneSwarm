@@ -3,59 +3,96 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Boss Tether — Raid Mechanic
+/// Boss Tether — Raid Mechanic · 4 โหมดใน component เดียว (ดู docs/adr-002-tether-modes.md)
 ///
-/// Co-op flow (>= 2 players):
-///   1. Activate(playerA, playerB) → SetPlayersClientRpc(A, B)
-///   2. Server ตรวจระยะ player A vs player B ทุก frame
-///      - ห่างพอ → TETHER BROKEN!
-///      - หมดเวลา → ดาเมจทั้งคู่
+/// แกนที่ใช้ร่วมกันทุกโหมด:
+///   เป้าหลัก = clientIdA (ต้องยังไม่ตายเสมอ) · anchor = ผู้เล่นอีกคน (clientIdB) หรือเสา (transform.position)
+///   Server ตรวจระยะทุก frame → resolve ตาม mode → ClientRpc ประกาศ → despawn
 ///
-/// Solo flow (== 1 player):
-///   1. ActivateSolo(playerA) → SetSoloPlayerClientRpc(A)
-///   2. ทุก client สร้าง "เสา anchor" ที่ตำแหน่ง tether transform
-///   3. Server ตรวจระยะ player A vs pillar (= transform.position)
-///      - ห่างพอ → TETHER BROKEN!
-///      - หมดเวลา → ดาเมจ player A คนเดียว
+/// | mode  | ระหว่างทาง                | หมดเวลา                          |
+/// |-------|---------------------------|----------------------------------|
+/// | Far   | ห่างพอ → สำเร็จทันที       | ยังไม่ขาด = ดาเมจทั้งคู่           |
+/// | Close | ไม่ทำอะไร                  | ห่างกัน = ดาเมจทั้งคู่ · ใกล้ = รอด |
+/// | Leash | ออกนอกรัศมี → ดึงกลับ      | จบเฉยๆ ไม่มีดาเมจ                |
 ///
 /// Client visual:
-///   LineRenderer cyan ระหว่าง playerA → (playerB | pillar)
-///   กระพริบแดงเมื่อเหลือเวลา < 2s (ใช้ clientTimer ที่ขึ้นทุก client)
+///   LineRenderer จาก playerA → (playerB | เสา) · สีตามโหมดแบบ FF14 —
+///   ฟ้า = ต้องออกห่าง · เขียว = ต้องอยู่ใกล้ · ส้ม = ห้ามออกนอกวง
+///   กระพริบแดงเมื่อเหลือ < 2s เฉพาะโหมดที่มีบทลงโทษ (Far/Close)
 ///
 /// Prefab ต้องการ: NetworkObject + BossTether.cs
 /// </summary>
 public class BossTether : NetworkBehaviour
 {
+    // ── ค่าที่ TetherAction ทับตอน spawn ──────────────────────────────────
+    // failDamage / minSeparationGain / leashPull* เป็น **server-only**
+    // client ไม่เคยได้ค่าจริง (ไม่ใช่ NetworkVariable) — อย่าเอาไปใช้ใน visual
+    // duration / mode / requiredDistance ใช้ทั้งสองฝั่ง จึงถูกส่งไปกับ ClientRpc
+    [Header("Mode")]
+    [Tooltip("โหมดของ tether — TetherAction เป็นคนตั้งตอน spawn")]
+    public TetherMode mode = TetherMode.Far;
+    [Tooltip("ใช้เมื่อ mode = Close · ตอนนี้ทำแค่ OnTimeout")]
+    public CloseFailMode closeFailMode = CloseFailMode.OnTimeout;
+
     [Header("Tether Settings")]
-    [Tooltip("ระยะขั้นต่ำที่ต้องวิ่งห่างกัน (เมตร)")]
+    [Tooltip("Far = ระยะที่ต้องวิ่งห่างให้สายขาด · Close = ระยะที่ห้ามเกิน · Leash = รัศมีที่ห้ามออก — ส่งให้ client วาดวง")]
     public float requiredDistance = 8f;
-    [Tooltip("เวลาที่ให้วิ่งแยก (วินาที)")]
+    [Tooltip("ความยาวของกลไก (วินาที) — ส่งให้ client ผ่าน ClientRpc")]
     public float duration         = 6f;
-    [Tooltip("ดาเมจที่รับถ้าไม่แยกทัน")]
+    [Tooltip("ดาเมจที่รับเมื่อพลาด — server-only · Leash ไม่ใช้")]
     public float failDamage       = 40f;
+    [Tooltip("Far เท่านั้น: ถ้าตอนผูกห่างกันเกิน requiredDistance อยู่แล้ว ต้องวิ่งห่างเพิ่มอีกเท่านี้ถึงจะแตก — server-only")]
+    public float minSeparationGain = 2f;
+
+    [Header("Leash")]
+    // แรงดึงต้องชนะความเร็ววิ่งอย่างชัดเจน ไม่งั้นผู้เล่นวิ่งสวนกลับออกไปได้พอๆ กับที่ถูกดึงเข้า
+    // แล้วจะรู้สึกเหมือน "ไม่มีอะไรเกิดขึ้น" · ระยะที่ดึงได้ต่อรอบ = leashPullSpeed × leashPullDuration
+    [Tooltip("ความเร็วที่ดึงผู้เล่นกลับเข้าหา anchor (หน่วย/วินาที) — server-only")]
+    public float leashPullSpeed    = 12f;
+    [Tooltip("แต่ละครั้งที่ดึง กินเวลากี่วินาที — ต้องน้อยกว่า leashPullInterval ไม่งั้นผู้เล่นจะคุมตัวเองไม่ได้เลย")]
+    public float leashPullDuration = 0.28f;
+    [Tooltip("เว้นกี่วินาทีถึงดึงอีกครั้ง — กัน RPC ท่วมและเว้นจังหวะให้ผู้เล่นคุมตัวเองได้")]
+    public float leashPullInterval = 0.45f;
 
     [Header("Visual")]
-    [Tooltip("สีสาย tether ปกติ")]
+    [Tooltip("สีสายโหมด Far — ฟ้า = ต้องวิ่งออกห่าง")]
     public Color tetherColor     = new Color(0f, 1f, 1f, 0.9f);
-    [Tooltip("สีเมื่อใกล้หมดเวลา")]
+    [Tooltip("สีสายโหมด Close — เขียว = ต้องอยู่ใกล้")]
+    public Color closeColor      = new Color(0.2f, 1f, 0.35f, 0.9f);
+    [Tooltip("สีสายโหมด Leash — ส้ม = ห้ามออกนอกวง")]
+    public Color leashColor      = new Color(1f, 0.6f, 0.1f, 0.9f);
+    [Tooltip("สีเมื่อใกล้หมดเวลา (เฉพาะโหมดที่มีบทลงโทษ)")]
     public Color urgentColor     = new Color(1f, 0.2f, 0.2f, 1f);
     [Tooltip("ความหนาสาย")]
     public float lineWidth       = 0.12f;
 
-    [Header("Solo Mode (Pillar)")]
-    [Tooltip("สีเสา anchor ในโหมด solo")]
+    [Header("Pillar Anchor")]
+    [Tooltip("สีเสา anchor")]
     public Color pillarColor  = new Color(0.7f, 0.75f, 0.85f, 1f);
     [Tooltip("ความสูงเสา (เมตร)")]
     public float pillarHeight = 3f;
     [Tooltip("รัศมีเสา (เมตร)")]
     public float pillarRadius = 0.5f;
+    [Tooltip("จำนวนด้านของวงรัศมีในโหมด Leash — สูงขึ้น = วงกลมเนียนขึ้น")]
+    public int   leashRingSegments = 48;
+
+    [Header("Countdown (แบบ Rabbit and Steel)")]
+    [Tooltip("วงหดที่จุดกึ่งกลางสาย บอกเวลาที่เหลือ — อ่านได้โดยไม่ต้องละสายตาจากตัวละคร")]
+    public bool  showCountdownRing = true;
+    [Tooltip("รัศมีวงตอนเริ่ม (เมตร) — หดจนเป็น 0 ตอนหมดเวลา")]
+    public float countdownRingRadius = 1.1f;
 
     // ── Server-side state ─────────────────────────────────────────────────
-    private ulong     clientIdA   = ulong.MaxValue;
-    private ulong     clientIdB   = ulong.MaxValue;
-    private float     timer       = 0f;
-    private bool      resolved    = false;
-    private bool      soloMode    = false;
+    private ulong clientIdA = ulong.MaxValue;
+    private ulong clientIdB = ulong.MaxValue;
+    private float timer     = 0f;
+    private bool  resolved  = false;
+    private float breakDistance;        // requiredDistance ที่ปรับตามระยะเริ่มต้นแล้ว (Far เท่านั้น)
+    private bool  anchorStartedDead;    // anchor เป็นศพตอนผูก → ถ้าฟื้นระหว่างทางต้องปล่อยผ่าน
+    private float lastPullTime = -99f;  // Leash: กันดึงถี่เกิน
+
+    // ── Shared (server + client) ──────────────────────────────────────────
+    private bool pillarAnchor;          // anchor เป็นเสา (transform.position) ไม่ใช่ผู้เล่นอีกคน
 
     // ── Client-side visual ────────────────────────────────────────────────
     private LineRenderer lineRenderer;
@@ -63,89 +100,156 @@ public class BossTether : NetworkBehaviour
     private Transform    playerBTransform;
     private bool         clientInitialized;
     private GameObject   pillarVisual;
+    private GameObject   ringVisual;
+    private GameObject   countdownVisual;
+    private LineRenderer countdownRing;
+    private Material     lineMaterial;    // สร้างเองด้วย new Material() → ต้องลบเอง
+    private Material     pillarMaterial;
+    private Material     ringMaterial;
+    private Material     countdownMaterial;
     private float        clientTimer;     // ขึ้นทุก client (ใช้คำนวณ remaining สำหรับ urgent flash)
 
     // ── Entry Points (Server calls this right after Spawn) ────────────────
+    // TetherAction ตั้ง mode / closeFailMode / ค่าตัวเลขบน component ให้ก่อนแล้ว
 
-    /// <summary>โหมด co-op — tether ระหว่างผู้เล่น 2 คน</summary>
+    /// <summary>anchor เป็นผู้เล่นอีกคน · playerB เป็นศพได้เฉพาะโหมด Close</summary>
     public void Activate(ulong playerA, ulong playerB)
     {
-        soloMode  = false;
-        clientIdA = playerA;
-        clientIdB = playerB;
-        SetPlayersClientRpc(playerA, playerB);
+        pillarAnchor = false;
+        clientIdA    = playerA;
+        clientIdB    = playerB;
+        NormalizeUnimplemented();
+
+        anchorStartedDead = IsClientDead(playerB);
+        ResolveBreakDistance(GetPlayerTransform(playerA), GetPlayerTransform(playerB)?.position);
+        LogActivation(playerA, playerB);
+        InitTetherClientRpc(playerA, playerB, duration, requiredDistance, (int)mode, false);
     }
 
-    /// <summary>โหมด solo — tether ระหว่างผู้เล่น 1 คนกับเสา anchor (= transform.position)</summary>
-    public void ActivateSolo(ulong playerA)
+    /// <summary>anchor เป็นเสาที่ตำแหน่งของ tether เอง — ใช้ตอนไม่มีผู้เล่นคนอื่นให้ผูก และใช้กับ Leash</summary>
+    public void ActivateOnPillar(ulong playerA)
     {
-        soloMode  = true;
-        clientIdA = playerA;
-        clientIdB = ulong.MaxValue;
-        SetSoloPlayerClientRpc(playerA);
+        pillarAnchor = true;
+        clientIdA    = playerA;
+        clientIdB    = ulong.MaxValue;
+        NormalizeUnimplemented();
+
+        anchorStartedDead = false;   // เสาไม่มีวันฟื้น
+        ResolveBreakDistance(GetPlayerTransform(playerA), transform.position);
+        LogActivation(playerA, ulong.MaxValue);
+        InitTetherClientRpc(playerA, ulong.MaxValue, duration, requiredDistance, (int)mode, true);
     }
 
-    /// <summary>ไม่มี player → ข้ามทันที</summary>
-    public void SkipTether()
+    /// <summary>
+    /// โหมดที่ยังไม่ได้ทำต้อง**ดังเสมอ** แล้ว fallback ไปของที่ทำแล้ว
+    /// ถ้าปล่อยเงียบ designer จะเจอ tether ที่ spawn ขึ้นมาแล้วไม่ทำอะไร แล้วอ่านว่าเป็นบั๊ก
+    /// เรียกก่อนส่ง ClientRpc เสมอ เพื่อให้ client ได้ mode ที่ normalize แล้ว
+    /// </summary>
+    /// <summary>
+    /// พ่นค่าที่ใช้จริงลง log — ค่าพวกนี้มาจาก asset ทับ prefab ทีหลัง เปิด Inspector ดูตอนรันไม่เห็นของจริง
+    /// เวลากลไก "เหมือนไม่ทำงาน" ข้อแรกที่ต้องรู้คือ mode กับระยะที่ตั้งไว้จริงคือเท่าไหร่
+    /// </summary>
+    void LogActivation(ulong playerA, ulong playerB)
     {
-        if (NetworkObject.IsSpawned) NetworkObject.Despawn(true);
-        else Destroy(gameObject);
+        string anchor = pillarAnchor ? "เสา" : $"Client {playerB}";
+        Debug.Log($"[BossTether] {mode} · Client {playerA} ↔ {anchor} · " +
+                  $"requiredDistance={requiredDistance} · duration={duration}");
+
+        if (mode == TetherMode.Leash)
+        {
+            float perPull = leashPullSpeed * leashPullDuration;
+            Debug.Log($"[BossTether] Leash: รัศมี {requiredDistance} m · ดึงกลับ {perPull:0.0} m ทุก {leashPullInterval} วิ");
+        }
+    }
+
+    void NormalizeUnimplemented()
+    {
+        if (mode == TetherMode.Transferable)
+        {
+            Debug.LogWarning("[BossTether] TetherMode.Transferable ยังไม่ได้ทำ (ADR-002) — ใช้ Far แทน");
+            mode = TetherMode.Far;
+        }
+
+        if (mode == TetherMode.Close && closeFailMode != CloseFailMode.OnTimeout)
+        {
+            Debug.LogWarning($"[BossTether] CloseFailMode.{closeFailMode} ยังไม่ได้ทำ (ADR-002) — ใช้ OnTimeout แทน");
+            closeFailMode = CloseFailMode.OnTimeout;
+        }
+    }
+
+    /// <summary>
+    /// Far เท่านั้น — ถ้าตอนผูกบังเอิญห่างกันเกิน requiredDistance อยู่แล้ว tether จะแตกฟรีตั้งแต่เฟรมแรก
+    /// (เกิดง่ายมากเมื่อ requiredDistance สูงและสนามกว้าง) ยกเกณฑ์ให้ต้องวิ่งห่างเพิ่มจริงๆ
+    /// เคสปกติที่เริ่มใกล้กัน breakDistance = requiredDistance เท่าเดิม
+    /// Close/Leash ใช้ requiredDistance ตรงๆ — เริ่มห่างอยู่แล้วไม่ใช่การได้เปรียบ
+    /// </summary>
+    void ResolveBreakDistance(Transform tA, Vector3? anchorPos)
+    {
+        breakDistance = requiredDistance;
+        if (mode != TetherMode.Far || tA == null || !anchorPos.HasValue) return;
+
+        float startDistance = Vector3.Distance(tA.position, anchorPos.Value);
+        if (startDistance >= requiredDistance)
+            breakDistance = startDistance + minSeparationGain;
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
+    // enum ส่งเป็น int แล้ว cast กลับ — ตาม TelegraphZone.InitClientRpc
     [ClientRpc]
-    void SetPlayersClientRpc(ulong pA, ulong pB)
+    void InitTetherClientRpc(ulong pA, ulong pB, float dur, float reqDist, int modeInt, bool pillar)
     {
-        soloMode    = false;
-        clientIdA   = pA;
-        clientIdB   = pB;
-        clientTimer = 0f;
+        mode             = (TetherMode)modeInt;
+        pillarAnchor     = pillar;
+        clientIdA        = pA;
+        clientIdB        = pB;
+        // prefab default ไม่ตรงกับค่าที่ action ใช้ — ต้องรับมาจาก server ทั้งคู่
+        duration         = dur;
+        requiredDistance = reqDist;
+        clientTimer      = 0f;
+
         SetupLineRenderer();
+        // Leash วาดวงบนพื้นบอกขอบรัศมี ไม่ใช่เสา — เสาจะไปโผล่ทับตัวผู้เล่นพอดี
+        // และสิ่งที่ผู้เล่นต้องเห็นคือ "ขอบ" ไม่ใช่ "จุดกึ่งกลาง"
+        if (mode == TetherMode.Leash) SetupLeashRing();
+        else if (pillar)              SetupPillarVisual();
+        if (showCountdownRing) SetupCountdownRing();
         FindPlayerTransforms();
         clientInitialized = true;
 
-        // แจ้ง local player ที่ถูก tether
+        // แจ้งเฉพาะ local player ที่ถูกผูก
         ulong myId = NetworkManager.Singleton.LocalClientId;
-        if (myId == pA || myId == pB)
-        {
-            GameHUD.Instance
-                ?.ShowAnnouncement("🔗 TETHER! วิ่งออกจากกัน!", new Color(0f, 1f, 1f));
-        }
+        if (myId == pA || (!pillar && myId == pB))
+            GameHUD.Instance?.ShowAnnouncement(AnnouncementText(), BaseLineColor());
     }
 
-    [ClientRpc]
-    void SetSoloPlayerClientRpc(ulong pA)
+    string AnnouncementText() => mode switch
     {
-        soloMode    = true;
-        clientIdA   = pA;
-        clientIdB   = ulong.MaxValue;
-        clientTimer = 0f;
-        SetupLineRenderer();
-        SetupPillarVisual();
-        FindPlayerTransforms();
-        clientInitialized = true;
+        TetherMode.Close => pillarAnchor ? "🔗 TETHER! อยู่ใกล้เสาไว้!" : "🔗 TETHER! อยู่ใกล้กันไว้!",
+        TetherMode.Leash => "⛓ LEASH! ห้ามออกนอกวง!",
+        _                => pillarAnchor ? "🔗 TETHER! วิ่งออกจากเสา!" : "🔗 TETHER! วิ่งออกจากกัน!",
+    };
 
-        // แจ้ง local player ถ้าโดน tether
-        ulong myId = NetworkManager.Singleton.LocalClientId;
-        if (myId == pA)
-        {
-            GameHUD.Instance
-                ?.ShowAnnouncement("🔗 TETHER! วิ่งออกจากเสา!", new Color(0f, 1f, 1f));
-        }
-    }
+    /// <summary>สีสายตามโหมด — ภาษาสีแบบ FF14: ฟ้า = ต้องออก · เขียว = ต้องเข้า · ส้ม = ห้ามออกนอกวง</summary>
+    Color BaseLineColor() => mode switch
+    {
+        TetherMode.Close => closeColor,
+        TetherMode.Leash => leashColor,
+        _                => tetherColor,
+    };
+
+    /// <summary>Leash ไม่มีบทลงโทษตอนหมดเวลา การกระพริบเตือนจึงหลอกผู้เล่น</summary>
+    bool HasTimeoutPenalty() => mode != TetherMode.Leash;
 
     [ClientRpc]
-    void TetherBrokenClientRpc()
+    void TetherSucceededClientRpc()
     {
-        GameHUD.Instance
-            ?.ShowAnnouncement("✅ TETHER BROKEN!", Color.green);
+        GameHUD.Instance?.ShowAnnouncement("✅ TETHER BROKEN!", Color.green);
     }
 
     [ClientRpc]
     void TetherFailedClientRpc()
     {
-        GameHUD.Instance
-            ?.ShowAnnouncement("💥 TETHER EXPLODED!", Color.red);
+        GameHUD.Instance?.ShowAnnouncement("💥 TETHER EXPLODED!", Color.red);
     }
 
     // ── Server Update ──────────────────────────────────────────────────────
@@ -155,35 +259,102 @@ public class BossTether : NetworkBehaviour
 
         timer += Time.deltaTime;
 
-        // ตรวจระยะ
         Transform tA = GetPlayerTransform(clientIdA);
-        Vector3?  anchorPos = soloMode
+        Vector3? anchorPos = pillarAnchor
             ? (Vector3?)transform.position
             : GetPlayerTransform(clientIdB)?.position;
 
-        if (tA != null && anchorPos.HasValue)
+        // anchor ที่เป็นศพตอนผูก แล้วฟื้นระหว่างกลไก — playermove.Respawn จะ teleport ศพ
+        // ไปหา "ผู้เล่นที่รอดคนแรกในลิสต์" ซึ่งอาจไม่ใช่คนที่ถูกผูก anchor เลยกระโดดข้ามสนาม
+        // ปล่อยผ่านไปเลย ไม่งั้นคนเป็นแพ้ทั้งที่ไม่ได้ทำอะไรผิด
+        if (anchorStartedDead && !IsClientDead(clientIdB))
         {
-            float dist = Vector3.Distance(tA.position, anchorPos.Value);
-            if (dist >= requiredDistance)
-            {
-                resolved = true;
-                TetherBrokenClientRpc();
-                StartCoroutine(DespawnDelayed(0.5f));
-                return;
-            }
+            Succeed("anchor ฟื้นระหว่าง tether");
+            return;
         }
 
-        // หมดเวลา
-        if (timer >= duration)
+        bool  hasDist = tA != null && anchorPos.HasValue;
+        float dist    = hasDist ? Vector3.Distance(tA.position, anchorPos.Value) : 0f;
+
+        switch (mode)
         {
-            resolved = true;
-            if (soloMode)
-                DealSoloFailDamage(tA);
-            else
-                DealFailDamage(tA, GetPlayerTransform(clientIdB));
-            TetherFailedClientRpc();
-            StartCoroutine(DespawnDelayed(0.5f));
+            case TetherMode.Far:
+                if (hasDist && dist >= breakDistance) { Succeed("แยกออกจากกันสำเร็จ"); return; }
+                break;
+
+            case TetherMode.Close:
+                // CloseFailMode.OnTimeout — ไม่ลงโทษระหว่างทาง เพื่อให้แยกกันหลบ AoE ได้
+                break;
+
+            case TetherMode.Leash:
+                if (hasDist && dist > requiredDistance) PullBackToAnchor(tA, anchorPos.Value);
+                break;
         }
+
+        if (timer < duration) return;
+
+        resolved = true;
+        switch (mode)
+        {
+            case TetherMode.Close:
+                // anchor หายไปเลย (หลุดเกม) ไม่ลงโทษ — ผู้เล่นทำอะไรไม่ได้อยู่แล้ว
+                if (hasDist && dist > requiredDistance) Fail("หมดเวลาแล้วยังห่างกัน");
+                else                                    Succeed("อยู่ใกล้กันจนหมดเวลา");
+                break;
+
+            case TetherMode.Leash:
+                Succeed("หมดเวลา leash");   // ไม่มีดาเมจ
+                break;
+
+            default:   // Far
+                Fail("หมดเวลาแล้วสายยังไม่ขาด");
+                break;
+        }
+    }
+
+    // ── Resolve ───────────────────────────────────────────────────────────
+    void Succeed(string reason)
+    {
+        resolved = true;
+        TetherSucceededClientRpc();
+        Debug.Log($"[BossTether] ✅ {mode} — {reason}");
+        StartCoroutine(DespawnDelayed(0.5f));
+    }
+
+    void Fail(string reason)
+    {
+        resolved = true;
+
+        // TakeDamage เช็ค isDead ให้อยู่แล้ว ยิงใส่ศพจึงไม่มีผล
+        GetPlayerTransform(clientIdA)?.GetComponent<playermove>()?.TakeDamage(failDamage);
+        if (!pillarAnchor)
+            GetPlayerTransform(clientIdB)?.GetComponent<playermove>()?.TakeDamage(failDamage);
+
+        TetherFailedClientRpc();
+        Debug.Log($"[BossTether] 💥 {mode} — {reason} · ดาเมจ {failDamage}");
+        StartCoroutine(DespawnDelayed(0.5f));
+    }
+
+    /// <summary>
+    /// Leash — ดึงกลับด้วยทางเดียวกับ knockback ที่มีอยู่ (playermove.ApplyKnockbackClientRpc)
+    /// การเคลื่อนที่เป็น owner-authoritative (owner เขียน rb.linearVelocity เอง) server จึง
+    /// clamp ตำแหน่งตรงๆ ไม่ได้ — จะสู้กับ owner แล้วยางยืด · ดู ADR-002 Decision 2
+    /// เว้นจังหวะระหว่างการดึงเพื่อให้ผู้เล่นยังคุมตัวเองได้บ้าง ไม่กลายเป็นกำแพงล่องหน
+    /// </summary>
+    void PullBackToAnchor(Transform tA, Vector3 anchor)
+    {
+        if (Time.time - lastPullTime < leashPullInterval) return;
+        lastPullTime = Time.time;
+
+        Vector3 dir = anchor - tA.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) return;
+
+        var pm = tA.GetComponent<playermove>();
+        if (pm == null) return;
+
+        pm.ApplyKnockbackClientRpc(dir.normalized * leashPullSpeed, leashPullDuration);
+        Debug.Log($"[BossTether] ⛓ ดึง Client {clientIdA} กลับ — ห่าง {dir.magnitude:0.0}/{requiredDistance} m");
     }
 
     // ── Client Visual Update ───────────────────────────────────────────────
@@ -196,42 +367,71 @@ public class BossTether : NetworkBehaviour
 
         // หา transforms ถ้ายังไม่ได้
         if (playerATransform == null) FindPlayerTransforms();
-        if (!soloMode && playerBTransform == null) FindPlayerTransforms();
+        if (!pillarAnchor && playerBTransform == null) FindPlayerTransforms();
 
-        bool missing = playerATransform == null || (!soloMode && playerBTransform == null);
+        bool missing = playerATransform == null || (!pillarAnchor && playerBTransform == null);
         if (missing)
         {
             lineRenderer.enabled = false;
+            if (countdownRing != null) countdownRing.enabled = false;
             return;
         }
 
         lineRenderer.enabled = true;
         lineRenderer.SetPosition(0, playerATransform.position + Vector3.up * 1f);
 
-        Vector3 endPos = soloMode
+        Vector3 endPos = pillarAnchor
             ? transform.position + Vector3.up * 1f
             : playerBTransform.position + Vector3.up * 1f;
         lineRenderer.SetPosition(1, endPos);
 
-        // กระพริบแดงเมื่อเหลือน้อยกว่า 2 วินาที
+        // กระพริบแดงเมื่อเหลือน้อยกว่า 2 วินาที — เฉพาะโหมดที่หมดเวลาแล้วเจ็บจริง
+        Color baseCol = BaseLineColor();
         float remaining = duration - clientTimer;
-        bool  urgent    = remaining < 2f;
+        bool  urgent    = HasTimeoutPenalty() && remaining < 2f;
         Color col       = urgent
-            ? Color.Lerp(urgentColor, tetherColor, Mathf.Sin(Time.time * 10f) * 0.5f + 0.5f)
-            : tetherColor;
+            ? Color.Lerp(urgentColor, baseCol, Mathf.Sin(Time.time * 10f) * 0.5f + 0.5f)
+            : baseCol;
         lineRenderer.startColor = col;
         lineRenderer.endColor   = col;
+
+        // วงหดที่กึ่งกลางสาย — ใช้กับทุกโหมดรวม Leash เพราะบอก "อีกนานแค่ไหนกลไกจะจบ"
+        if (countdownRing != null)
+        {
+            Vector3 mid = (lineRenderer.GetPosition(0) + endPos) * 0.5f;
+            float remaining01 = duration > 0.0001f ? 1f - Mathf.Clamp01(clientTimer / duration) : 0f;
+            UpdateCountdownRing(mid, remaining01, col);
+        }
     }
 
     // ── Visual Setup ──────────────────────────────────────────────────────
+    /// <summary>
+    /// หักล้าง scale ของ prefab แม่ออกจากลูก
+    ///
+    /// `BossTether.prefab` root มี scale (0.5, 1.5, 0.5) ติดมา ทำให้วงที่วาดด้วยรัศมี
+    /// `requiredDistance` หดเหลือครึ่งเดียวบนแกน XZ — ผู้เล่นวิ่งพ้นวงที่เห็นแต่ยังไม่พ้นระยะจริง
+    /// เลยไม่ถูกดึงกลับ กลไกดูเหมือนพัง
+    ///
+    /// หักล้างที่โค้ดแทนการแก้ prefab เพราะจะได้ถูกต้องต่อให้มีคนไปเปลี่ยน scale ทีหลัง
+    /// </summary>
+    static void NeutralizeParentScale(Transform child, Vector3 parentLossyScale)
+    {
+        child.localScale = new Vector3(
+            Mathf.Abs(parentLossyScale.x) < 0.0001f ? 1f : 1f / parentLossyScale.x,
+            Mathf.Abs(parentLossyScale.y) < 0.0001f ? 1f : 1f / parentLossyScale.y,
+            Mathf.Abs(parentLossyScale.z) < 0.0001f ? 1f : 1f / parentLossyScale.z);
+    }
+
     void SetupLineRenderer()
     {
+        Color baseCol = BaseLineColor();
+
         lineRenderer = gameObject.AddComponent<LineRenderer>();
         lineRenderer.positionCount  = 2;
         lineRenderer.startWidth     = lineWidth;
         lineRenderer.endWidth       = lineWidth;
-        lineRenderer.startColor     = tetherColor;
-        lineRenderer.endColor       = tetherColor;
+        lineRenderer.startColor     = baseCol;
+        lineRenderer.endColor       = baseCol;
         lineRenderer.useWorldSpace  = true;
         lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
@@ -241,10 +441,101 @@ public class BossTether : NetworkBehaviour
                   ?? Shader.Find("Unlit/Color");
         if (shader != null)
         {
-            var mat = new Material(shader);
-            mat.color = tetherColor;
-            lineRenderer.sharedMaterial = mat;
+            lineMaterial = new Material(shader) { color = baseCol };
+            lineRenderer.sharedMaterial = lineMaterial;
         }
+    }
+
+    /// <summary>
+    /// Leash — วงบนพื้นรัศมี requiredDistance บอกขอบเขตที่ห้ามออก
+    /// กลไกนี้เล่นไม่ได้เลยถ้าไม่เห็นขอบ จึงต้องส่ง requiredDistance ข้ามมาฝั่ง client ด้วย
+    /// (เป็นเหตุผลเดียวที่ค่านี้ไม่ใช่ server-only แล้ว)
+    /// </summary>
+    void SetupLeashRing()
+    {
+        int segments = Mathf.Max(8, leashRingSegments);
+
+        ringVisual = new GameObject("LeashRing");
+        ringVisual.transform.SetParent(transform, worldPositionStays: false);
+        ringVisual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
+        NeutralizeParentScale(ringVisual.transform, transform.lossyScale);
+
+        var ring = ringVisual.AddComponent<LineRenderer>();
+        ring.positionCount     = segments;
+        ring.loop              = true;
+        ring.useWorldSpace     = false;
+        ring.startWidth        = lineWidth;
+        ring.endWidth          = lineWidth;
+        ring.startColor        = leashColor;
+        ring.endColor          = leashColor;
+        ring.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        for (int i = 0; i < segments; i++)
+        {
+            float a = (i / (float)segments) * Mathf.PI * 2f;
+            ring.SetPosition(i, new Vector3(Mathf.Cos(a) * requiredDistance, 0f, Mathf.Sin(a) * requiredDistance));
+        }
+
+        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default")
+                  ?? Shader.Find("Unlit/Color");
+        if (shader != null)
+        {
+            ringMaterial = new Material(shader) { color = leashColor };
+            ring.sharedMaterial = ringMaterial;
+        }
+    }
+
+    /// <summary>
+    /// วงหดที่จุดกึ่งกลางสาย — ภาษาเวลาแบบ Rabbit and Steel
+    /// ของเดิมสื่อเวลาด้วย "สายแดงตอนเหลือ &lt; 2 วิ" ซึ่งเป็น binary อ่านไม่ออกว่าเหลือเท่าไหร่
+    /// วงหดบอกเวลาต่อเนื่องและอยู่ในสายตาพอดี ไม่ต้องเหลือบไปมองมุมจอ
+    /// </summary>
+    void SetupCountdownRing()
+    {
+        int segments = 32;
+
+        countdownVisual = new GameObject("TetherCountdown");
+        countdownVisual.transform.SetParent(transform, worldPositionStays: true);
+        NeutralizeParentScale(countdownVisual.transform, transform.lossyScale);
+
+        countdownRing = countdownVisual.AddComponent<LineRenderer>();
+        countdownRing.positionCount     = segments;
+        countdownRing.loop              = true;
+        countdownRing.useWorldSpace     = false;
+        countdownRing.startWidth        = lineWidth * 0.8f;
+        countdownRing.endWidth          = lineWidth * 0.8f;
+        countdownRing.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default")
+                  ?? Shader.Find("Unlit/Color");
+        if (shader != null)
+        {
+            countdownMaterial = new Material(shader) { color = BaseLineColor() };
+            countdownRing.sharedMaterial = countdownMaterial;
+        }
+    }
+
+    /// <summary>วาดวงหดใหม่ทุกเฟรมตามเวลาที่เหลือ — เรียกจาก LateUpdate</summary>
+    void UpdateCountdownRing(Vector3 midPoint, float remaining01, Color col)
+    {
+        if (countdownRing == null) return;
+
+        countdownVisual.transform.position = midPoint;
+        countdownVisual.transform.rotation = Quaternion.identity;
+
+        float r = countdownRingRadius * Mathf.Clamp01(remaining01);
+        int segments = countdownRing.positionCount;
+        for (int i = 0; i < segments; i++)
+        {
+            float a = (i / (float)segments) * Mathf.PI * 2f;
+            countdownRing.SetPosition(i, new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r));
+        }
+
+        countdownRing.startColor = col;
+        countdownRing.endColor   = col;
+        countdownRing.enabled    = r > 0.02f;
     }
 
     void SetupPillarVisual()
@@ -253,8 +544,17 @@ public class BossTether : NetworkBehaviour
         pillarVisual.name = "TetherPillar";
         pillarVisual.transform.SetParent(transform, worldPositionStays: false);
         // Cylinder primitive's mesh height is 2 units, so scale.y = height/2
-        pillarVisual.transform.localPosition = new Vector3(0f, pillarHeight * 0.5f, 0f);
-        pillarVisual.transform.localScale    = new Vector3(pillarRadius * 2f, pillarHeight * 0.5f, pillarRadius * 2f);
+        // หาร lossyScale ของ prefab ออกด้วย ไม่งั้นเสาถูกบีบ 0.5 แล้วยืดสูง 1.5 ตาม root
+        Vector3 inv = transform.lossyScale;
+        inv = new Vector3(
+            Mathf.Abs(inv.x) < 0.0001f ? 1f : 1f / inv.x,
+            Mathf.Abs(inv.y) < 0.0001f ? 1f : 1f / inv.y,
+            Mathf.Abs(inv.z) < 0.0001f ? 1f : 1f / inv.z);
+
+        pillarVisual.transform.localPosition = new Vector3(0f, pillarHeight * 0.5f * inv.y, 0f);
+        pillarVisual.transform.localScale    = new Vector3(pillarRadius * 2f * inv.x,
+                                                           pillarHeight * 0.5f * inv.y,
+                                                           pillarRadius * 2f * inv.z);
         Destroy(pillarVisual.GetComponent<Collider>());
 
         var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
@@ -263,9 +563,8 @@ public class BossTether : NetworkBehaviour
         var rend = pillarVisual.GetComponent<Renderer>();
         if (shader != null)
         {
-            var mat = new Material(shader);
-            mat.color = pillarColor;
-            rend.sharedMaterial = mat;
+            pillarMaterial = new Material(shader) { color = pillarColor };
+            rend.sharedMaterial = pillarMaterial;
         }
         else if (rend != null)
         {
@@ -290,7 +589,7 @@ public class BossTether : NetworkBehaviour
         if (playerATransform == null && NetworkManager.Singleton.ConnectedClients.TryGetValue(clientIdA, out var cA))
             playerATransform = cA.PlayerObject?.transform;
 
-        if (!soloMode && playerBTransform == null
+        if (!pillarAnchor && playerBTransform == null
             && NetworkManager.Singleton.ConnectedClients.TryGetValue(clientIdB, out var cB))
             playerBTransform = cB.PlayerObject?.transform;
     }
@@ -302,17 +601,10 @@ public class BossTether : NetworkBehaviour
         return client?.PlayerObject?.transform;
     }
 
-    void DealFailDamage(Transform tA, Transform tB)
+    bool IsClientDead(ulong clientId)
     {
-        tA?.GetComponent<playermove>()?.TakeDamage(failDamage);
-        tB?.GetComponent<playermove>()?.TakeDamage(failDamage);
-        Debug.Log($"[BossTether] 💥 Tether failed — dealt {failDamage} dmg to both players");
-    }
-
-    void DealSoloFailDamage(Transform tA)
-    {
-        tA?.GetComponent<playermove>()?.TakeDamage(failDamage);
-        Debug.Log($"[BossTether] 💥 Solo tether failed — dealt {failDamage} dmg to player");
+        var pm = GetPlayerTransform(clientId)?.GetComponent<playermove>();
+        return pm != null && pm.isDead.Value;
     }
 
     IEnumerator DespawnDelayed(float delay)
@@ -323,10 +615,23 @@ public class BossTether : NetworkBehaviour
     }
 
     // ── Cleanup ───────────────────────────────────────────────────────────
-    public override void OnNetworkDespawn()
+    // Material ที่ new เองไม่ถูกเก็บกวาดพร้อม GameObject — บอสยิง tether หลายรอบต่อเกม
+    // ถ้าไม่ลบเองจะสะสมไปเรื่อยๆ · ใช้ OnDestroy เพราะรันแน่ทั้ง despawn ปกติและตอนปิดฉาก
+    void OnDestroy()
     {
-        base.OnNetworkDespawn();
-        if (pillarVisual) Destroy(pillarVisual);
-        pillarVisual = null;
+        if (pillarVisual)      Destroy(pillarVisual);
+        if (ringVisual)        Destroy(ringVisual);
+        if (countdownVisual)   Destroy(countdownVisual);
+        if (lineMaterial)      Destroy(lineMaterial);
+        if (pillarMaterial)    Destroy(pillarMaterial);
+        if (ringMaterial)      Destroy(ringMaterial);
+        if (countdownMaterial) Destroy(countdownMaterial);
+        pillarVisual      = null;
+        ringVisual        = null;
+        countdownVisual   = null;
+        lineMaterial      = null;
+        pillarMaterial    = null;
+        ringMaterial      = null;
+        countdownMaterial = null;
     }
 }

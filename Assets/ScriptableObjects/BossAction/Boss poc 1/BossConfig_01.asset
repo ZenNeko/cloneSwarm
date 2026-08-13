@@ -45,6 +45,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db85f99b7c0ff8f4985fa92ae291db31, type: 3}
   m_Name: BossConfig_01
   m_EditorClassIdentifier: Assembly-CSharp::BossEncounterConfig
+  arena: {fileID: 11400000, guid: a7f3c21e94b5d4e4b8c06f19d2e75a3c, type: 2}
+  rolls:
+  - rollName: mirror
+    kind: 4
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: spin
+    kind: 2
+    optionCount: 4
+    excludePrevious: 1
+  - rollName: quadrant
+    kind: 1
+    optionCount: 4
+    excludePrevious: 1
+  - rollName: victim
+    kind: 3
+    optionCount: 4
+    excludePrevious: 1
+  - rollName: order
+    kind: 6
+    optionCount: 4
+    excludePrevious: 0
   phases:
   - transitionHealthPct: 0.75
     invincibilityDuration: 1.5

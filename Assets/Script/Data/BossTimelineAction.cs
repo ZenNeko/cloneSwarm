@@ -67,6 +67,11 @@ public class BossTimelineAction : BossAction
     {
         if (actionDelay > 0f) yield return new WaitForSeconds(actionDelay);
 
+        // AttackLoop roll ให้เฉพาะ action ระดับบนสุด — คลิปในนี้รันผ่าน StartCoroutine ตรงๆ
+        // ถ้าไม่ roll ให้ คลิปจะ Peek ได้ -1 ตลอดและ roll ทั้งระบบจะไร้ผล
+        // roll ครั้งเดียวต่อ rollName เพื่อให้ทุกคลิปในชุดเดียวกันได้ค่าตรงกัน
+        RollForSubActions(runner, EnumerateClipActions());
+
         float duration = GetTimelineDuration();
         foreach (var track in tracks)
         {
@@ -81,6 +86,17 @@ public class BossTimelineAction : BossAction
         if (waitForTimelineEnd && duration > 0f)
         {
             yield return new WaitForSeconds(duration);
+        }
+    }
+
+    private IEnumerable<BossAction> EnumerateClipActions()
+    {
+        if (tracks == null) yield break;
+        foreach (var track in tracks)
+        {
+            if (track?.clips == null) continue;
+            foreach (var clip in track.clips)
+                if (clip?.action != null) yield return clip.action;
         }
     }
 
