@@ -135,23 +135,26 @@ public class TelegraphZone : NetworkBehaviour
     private MaterialPropertyBlock mpb;
     private Vector3        visualBaseScale = Vector3.one;
 
-    /// <summary>
-    /// ความหนาของ zone เป็น**หน่วยโลก** — จุดเดียวที่กำหนดเรื่องนี้ ใช้ทั้งทาง prefab และ primitive
-    ///
-    /// ยึดทรงกระบอกเป็นมาตรฐาน: ทุกทรงหนาเท่ากันและ**จัดกึ่งกลางที่ระดับ Y เดียวกัน**
-    /// zone เกิดที่ Y ของบอส (~1 เหนือพื้น) ก้อนหนา 2 จึงกิน Y 0..2 — ขอบล่างแตะพื้นพอดี
-    /// ซึ่งเป็นขอบที่วาดตรงตำแหน่งจริง ต่างจากแผ่นบางลอยที่เหลื่อมทั้งแผ่นตามมุมกล้อง
-    ///
-    /// mesh แต่ละตัวสูงไม่เท่ากันที่ scale 1 จึงต้องหารก่อนใช้ — ดู ScaleY()
-    /// </summary>
-    private const float ZoneThickness = 2f;
+    [Header("Zone Shape")]
+    [Tooltip("ความหนาของ zone เป็นหน่วยโลก — ใช้ทุกทรง ทั้งทาง prefab และ primitive\n\n" +
+             "zone เกิดที่ Y ของบอส (~1 เหนือพื้น) ค่า 2 จึงทำให้ก้อนกิน Y 0..2 ขอบล่างแตะพื้นพอดี\n" +
+             "• สูงขึ้น = บังฉากมากขึ้น มองไม่เห็นบอสกับสิ่งที่อยู่ในเขต\n" +
+             "• บางลง = ไม่บัง แต่แผ่นจะลอยเหนือพื้นและเหลื่อมจากจุดจริงราว (ความสูงที่ลอย × 0.5)\n" +
+             "  ตามมุมกล้อง (offset 0,10,-5 เอียงจากแนวดิ่ง ~26.6°)\n" +
+             "  ถ้าจะทำบาง ควรเรียก ObjectivePlacement.SnapToGround ตอน spawn ด้วย")]
+    [Min(0.01f)] public float zoneThickness = 2f;
 
-    /// <summary>
-    /// แปลงความหนาหน่วยโลกเป็น scale.y ของ mesh นั้นๆ
-    /// Unity Cylinder สูง 2 ที่ scale 1 · Cube สูง 1 — ถ้าใส่ค่าเดียวกันทั้งคู่ Line จะบางกว่าครึ่งหนึ่ง
-    /// </summary>
-    private const float ScaleYCylinder = ZoneThickness * 0.5f;   // 2 units tall mesh
-    private const float ScaleYCube     = ZoneThickness;          // 1 unit tall mesh
+    [Tooltip("เลื่อนภาพขึ้น/ลงตามแกน Y (หน่วยโลก) — ไม่กระทบดาเมจเลย\n\n" +
+             "hit test ทุกตัว (IsInCircle/IsInLine/IsInDonut/IsInCone) คิดบนระนาบ XZ ล้วน\n" +
+             "ค่านี้จึงเป็นการจัดตำแหน่งภาพอย่างเดียว ปรับได้อิสระโดยไม่ทำให้เขตอันตรายเพี้ยน\n\n" +
+             "zone เกิดที่ Y ของบอสซึ่งอยู่สูงจากพื้นราว 1 หน่วย (BossManager วางที่ Y ของผู้เล่น\n" +
+             "และ pivot ผู้เล่นอยู่กลางแคปซูลสูง 2) — ใส่ -1 จะดึงภาพลงไปนอนบนพื้นพอดี")]
+    public float visualYOffset = 0f;
+
+    // mesh แต่ละตัวสูงไม่เท่ากันที่ scale 1 — Unity Cylinder สูง 2 · Cube สูง 1
+    // ถ้าใส่ค่าเดียวกันทั้งคู่ Line จะบางกว่าครึ่งหนึ่ง
+    private float ScaleYCylinder => zoneThickness * 0.5f;
+    private float ScaleYCube     => zoneThickness;
 
     // ── Server-side params (set before Spawn, read via InitClientRpc) ─────
     [HideInInspector] public AoEType aoeType         = AoEType.Circle;
@@ -444,16 +447,17 @@ public class TelegraphZone : NetworkBehaviour
     {
         // เลือก prefab ตาม AoEType (Cross reuse Line)
         //
-        // **Donut ยังใช้ torus ไปก่อน** — แผนคือเปลี่ยนไปใช้ `circlePrefab` (จานแบน) แล้วเจาะรู
-        // ด้วย `_InnerRadius` ในสูตร เพราะ torus อบรูกับความหนาแถบมากับ mesh ปรับ innerRadius
-        // เท่าไหร่ภาพก็ไม่ขยับ และแถบวงบางๆ ไม่ตรงกับ `IsInDonut` ที่คิดเป็น annulus ตัน
+        // **Donut ใช้จานเต็มของ Circle เป็นวงนอก** ไม่ใช่ torus — เพราะ torus อบทั้งรูตรงกลาง
+        // และความหนาแถบมากับ mesh ปรับ `innerRadius` เท่าไหร่ภาพก็ไม่ขยับ และแถบวงบางๆ ของมัน
+        // ไม่ตรงกับ `IsInDonut` ที่คิดอันตรายเป็น annulus ตันตั้งแต่ innerRadius ถึง radius
         //
-        // แต่สลับได้ **ก็ต่อเมื่อ shader มี `_InnerRadius` แล้วเท่านั้น** — ถ้าสลับก่อน
-        // จะได้จานตันไม่มีรูเลย ซึ่งแย่กว่า torus รูผิดขนาด · สลับพร้อมกับตอนต่อโหนดในกราฟ
+        // วงในที่ปลอดภัยวาดเป็นจานสีปลอดภัยทับลงไป (ดู safe zone ด้านล่าง) ขนาดผูกกับ
+        // `innerRadius` ตรงๆ — ขอบเขตที่เห็นจึงตรงกับ hit test เป๊ะทุกอัตราส่วน
+        // ยังไม่ใช่รูทะลุจริง ซึ่งต้องเพิ่ม `_InnerRadius` ในกราฟ (ดู §10 ของ handoff)
         GameObject prefab = aoeType switch
         {
             AoEType.Circle => circlePrefab,
-            AoEType.Donut  => donutPrefab,
+            AoEType.Donut  => circlePrefab,
             AoEType.Line   => linePrefab,
             AoEType.Cross  => linePrefab,     // Cross ใช้ Line prefab (arm 1)
             _              => null,
@@ -461,7 +465,7 @@ public class TelegraphZone : NetworkBehaviour
         if (prefab == null) return false;
 
         visual = Instantiate(prefab, transform);
-        visual.transform.localPosition = Vector3.zero;
+        visual.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
         visual.transform.localRotation = Quaternion.identity;
 
         // ── Scale Mapping (XZ = ขนาดจริง · Y = แบนติดพื้นเสมอ) ──
@@ -484,11 +488,14 @@ public class TelegraphZone : NetworkBehaviour
         if (aoeType == AoEType.Cross)
         {
             arm2 = Instantiate(linePrefab, transform);
-            arm2.transform.localPosition = Vector3.zero;
+            arm2.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
             arm2.transform.localRotation = Quaternion.identity;
             arm2.transform.localScale    = new Vector3(lineLength, ScaleYCube, lineWidth);
         }
 
+        // วงในของโดนัทเป็น**รูทะลุจริง** เจาะที่สาย alpha ของ shader ด้วย `_InnerRadius`
+        // ไม่ใช่จานสีทับ — เคยลองทางนั้นแล้วไม่ได้ผล เพราะวัตถุโปร่งแสงวาดทับกันได้
+        // แต่ลบของที่อยู่ข้างล่างไม่ได้ ฟ้าจางบนแดงเข้มจึงยังอ่านว่าแดง
         // ส่ง params เข้า VFX Graph (ถ้ามี)
         var vfx = visual.GetComponent<UnityEngine.VFX.VisualEffect>();
         if (vfx != null)
@@ -565,17 +572,22 @@ public class TelegraphZone : NetworkBehaviour
         {
             var r = visualRenderers[i];
             if (r == null) continue;
+            KillShadows(r);
             var sharedMat = r.sharedMaterial;
             if (sharedMat == null) continue;
 
             r.GetPropertyBlock(mpb);
 
 
-            // Donut: รูตรงกลางเป็นสัดส่วนของรัศมีนอก · 0 = ไม่เจาะ (shader มี guard)
+            // Donut: รูตรงกลางเป็นสัดส่วนของรัศมีนอก
+            //
+            // ทรงอื่นดัน **-1 ไม่ใช่ 0** โดยตั้งใจ — ทำให้ (length - (-1)) x halfX ใหญ่เสมอ
+            // สูตร min() ในกราฟจึงคืนระยะเดิม โดยไม่ต้องมี guard ในกราฟเลย
+            // ถ้าดัน 0 ทุกวงกลมจะมีจุดขอบขนาด _OutlineWidth อยู่กลางวง
             if (sharedMat.HasProperty("_InnerRadius"))
                 mpb.SetFloat("_InnerRadius",
                              aoeType == AoEType.Donut && radius > 0.0001f
-                                 ? Mathf.Clamp01(innerRadius / radius) : 0f);
+                                 ? Mathf.Clamp01(innerRadius / radius) : -1f);
 
             if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", warn);
             if (sharedMat.HasProperty("_DangerColor"))  mpb.SetColor("_DangerColor",  danger);
@@ -603,6 +615,24 @@ public class TelegraphZone : NetworkBehaviour
 
             r.SetPropertyBlock(mpb);
         }
+
+        // วงในที่ปลอดภัยของ Donut — ไม่ได้อยู่ใน visualRenderers จึงไม่ได้สีจากลูปข้างบน
+        // ถ้าไม่ดันสีให้ มันจะใช้สีจาก material ซึ่งเป็นสีเตือน แล้วอ่านออกมาว่า "ตรงนี้ก็อันตราย"
+        // ซึ่งกลับความหมายของกลไกโดนัททั้งอัน
+        foreach (var r in safeZoneRenderers)
+        {
+            if (r == null) continue;
+            KillShadows(r);
+            var sharedMat = r.sharedMaterial;
+            if (sharedMat == null) continue;
+
+            r.GetPropertyBlock(mpb);
+            if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", safeZoneColor);
+            if (sharedMat.HasProperty("_DangerColor"))  mpb.SetColor("_DangerColor",  safeZoneColor);
+            if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", safeZoneColor);
+            if (sharedMat.HasProperty("_OutlineShape")) mpb.SetFloat("_OutlineShape", 1f);
+            r.SetPropertyBlock(mpb);
+        }
     }
 
     /// <summary>
@@ -612,6 +642,22 @@ public class TelegraphZone : NetworkBehaviour
     /// สำรอง (URP/Lit) ที่ `GetWarningMaterial()` ปั้นเอง — ตัวหลังไม่มี property พวกนี้เลย
     /// การ set ลง MaterialPropertyBlock ที่ shader ไม่รู้จักไม่ error แต่ก็ทำให้ debug ยากขึ้นเปล่าๆ
     /// </summary>
+    /// <summary>
+    /// telegraph เป็นสัญญาณบอกเขต ไม่ใช่วัตถุในฉาก — ไม่ควรทอดเงาลงพื้น
+    ///
+    /// ตั้งที่นี่จุดเดียวเพราะ renderer จาก**ทั้งสองเส้นทาง**ไหลผ่านมาที่นี่หมด
+    /// (ทาง prefab เงาติดมากับ prefab · ทาง primitive Unity ตั้ง On มาให้เป็นค่าเริ่มต้น)
+    /// เดิมปิดไว้ที่เดียวคือ CreateConePrimitive ทรงอื่นจึงทอดเงาทั้งหมด
+    ///
+    /// ปิด receiveShadows ด้วย — ไม่งั้นเงาตึกจะพาดทับ zone ทำให้สีที่บอกระดับอันตราย
+    /// เข้มขึ้นโดยไม่มีความหมาย ซึ่งเป็นสัญญาณลวงแบบเดียวกับที่พยายามกำจัดมาตลอด
+    /// </summary>
+    static void KillShadows(Renderer r)
+    {
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows    = false;
+    }
+
     void SetIfPresent(Material sharedMat, string prop, float value)
     {
         if (sharedMat.HasProperty(prop)) mpb.SetFloat(prop, value);
@@ -1014,21 +1060,21 @@ public class TelegraphZone : NetworkBehaviour
             case AoEType.Circle:
                 visual = new GameObject("Visual_Circle");
                 visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
                 CreateCylinderPrimitive(visual.transform, Vector3.zero, Quaternion.identity, radius * 2f);
                 break;
 
             case AoEType.Line:
                 visual = new GameObject("Visual_Line");
                 visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
                 CreateLinePrimitive(visual.transform, Vector3.zero, Quaternion.identity, lineWidth, lineLength);
                 break;
 
             case AoEType.Cross:
                 visual = new GameObject("Visual_Cross");
                 visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
                 CreateLinePrimitive(visual.transform, Vector3.zero, Quaternion.identity,          lineWidth, lineLength);
                 CreateLinePrimitive(visual.transform, Vector3.zero, Quaternion.Euler(0f, 90f, 0f), lineWidth, lineLength);
                 break;
@@ -1036,7 +1082,7 @@ public class TelegraphZone : NetworkBehaviour
             case AoEType.Donut:
                 visual = new GameObject("Visual_Donut");
                 visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
                 // outer danger ring
                 CreateCylinderPrimitive(visual.transform, Vector3.zero, Quaternion.identity, radius * 2f);
                 // inner safe zone — teal, slightly higher to avoid z-fighting
@@ -1047,7 +1093,7 @@ public class TelegraphZone : NetworkBehaviour
             case AoEType.Cone:
                 visual = new GameObject("Visual_Cone");
                 visual.transform.SetParent(transform);
-                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localPosition = new Vector3(0f, visualYOffset, 0f);
                 // ปั้นที่ Ø1 (รัศมี 0.5) ตาม prefab convention แล้วขยายด้วย transform
                 // shader วัดระยะขอบจากตำแหน่ง object space เทียบ Ø1 — ถ้าปั้นที่รัศมีจริง
                 // Length จะเกิน 1 ทั้งใบ Step ติด 1 หมด แล้วกรวยจะกลายเป็นสีขอบทั้งอัน
@@ -1186,7 +1232,12 @@ public class TelegraphZone : NetworkBehaviour
 
         // safe zone (Donut center) — สีคงที่ ไม่กระพริบ
         foreach (var r in safeZoneRenderers)
-            if (r) ApplyTelegraphState(r, 0f, safeZoneColor, ringCol);   // safe zone fill=0 ตลอด
+            // ใช้ progress เดียวกับวงนอก **ไม่ใช่ 0**
+            // `_FillProgress` คุมความทึบ ไม่ใช่แค่ตัวไล่สี — ตรึงไว้ที่ 0 แล้ววงในจะโปร่งจนหายไป
+            // เหลือแต่จานแดงวงนอก อ่านออกมาเป็นวงกลมตัน ไม่ใช่โดนัท
+            // สีไม่ไล่ไปทางอันตรายอยู่แล้วเพราะ _WarningColor กับ _DangerColor ถูกตั้งเป็น
+            // safeZoneColor ทั้งคู่ใน PushShaderColors
+            if (r) ApplyTelegraphState(r, progress, safeZoneColor, safeZoneColor);
     }
 
     /// <summary>
