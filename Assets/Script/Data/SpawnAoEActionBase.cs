@@ -48,20 +48,48 @@ public abstract class SpawnAoEActionBase : BossAction
     public Color telegraphWarningColor = new Color(1f, 0.64f, 0.024f, 0.5f);
     [Tooltip("สีตอนใกล้ระเบิด")]
     public Color telegraphDangerColor  = new Color(1f, 0f, 0.099f, 0.85f);
+    [Tooltip("ทับสีขอบแยกจากสีพื้น — ปิด = ขอบใช้สีอันตรายของหมวดเดียวกัน (Gaze ขอบม่วง Stack ขอบฟ้า)\n" +
+             "แยก gate จากสีพื้นเพราะคนละเจตนา: ทับสีพื้น = ท่าหลุดจากภาษาสีกลาง · ทับสีขอบ = แค่ให้ขอบเด่นบนพื้นบางแบบ")]
+    public bool  overrideTelegraphOutlineColor = false;
+    [Tooltip("สีแถบขอบ")]
+    public Color telegraphOutlineColor = Color.white;
 
     [Header("Telegraph Effects  (ปกติไม่ต้องแตะ)")]
-    // ความแรงปกติมาจาก material — ช่องนี้ไว้ทำท่าที่จงใจให้เงียบกว่าหรือดังกว่าปกติ
+    // หน้าตาปกติมาจาก material — ช่องนี้ไว้ทำท่าที่จงใจให้เงียบกว่าหรือดังกว่าปกติ
     // เช่นท่าที่ยิงรัวๆ ควรลด blink ลง ไม่งั้นจอกะพริบจนอ่านอะไรไม่ออก
-    [Tooltip("ทับความแรงเอฟเฟกต์จาก material — ใช้เฉพาะท่าพิเศษ")]
+    //
+    // **ค่า default ทุกช่องตรงกับ Mat_Tele_Universal** — ติ๊กเปิดแล้วหน้าตายังเหมือนเดิม
+    // จนกว่าจะลงมือปรับจริง · ถ้าไม่ทำแบบนี้ การติ๊กเปิดเพื่อแก้ค่าเดียวจะเผลอรีเซ็ตอีกสิบค่า
+    //
+    // ข้อยกเว้น — asset ที่สร้างก่อน 2026-08-12 เก็บ `ringAmount: 1` / `ringSpeed: 2` ไว้แล้ว
+    // (ค่า default เดิมของโค้ด) Unity จะไม่เขียนทับให้ · ถ้าจะเปิด override บน asset เก่า
+    // ให้ตั้งสองช่องนี้เป็น 3 / 1 เองเพื่อให้ตรงกับ material
+    [Tooltip("ทับหน้าตา telegraph ทั้งชุดจาก material — ใช้เฉพาะท่าพิเศษ")]
     public bool  overrideTelegraphEffects = false;
     [Tooltip("จังหวะเต้นของ alpha · 0 = ปิด")]
     [Range(0f, 2f)] public float pulseAmount = 1f;
     [Tooltip("การกระพริบ · 0 = ปิด")]
     [Range(0f, 2f)] public float blinkAmount = 1f;
     [Tooltip("ความสว่างของวงที่ไหลออก · 0 = ปิด")]
-    [Range(0f, 3f)] public float ringAmount = 1f;
-    [Tooltip("ความเร็ววง (เมตร/วินาที)")]
-    [Min(0f)] public float ringSpeed = 2f;
+    // เพดานเดิมคือ 3 ซึ่งพอดีกับค่าที่ material ตั้งไว้ — สไลเดอร์จะติดสุดตั้งแต่ค่า default
+    // ขยายเป็น 5 ให้มีที่ให้ดันขึ้นได้จริง
+    [Range(0f, 5f)] public float ringAmount = 3f;
+    [Tooltip("ความเร็ววง (เมตร/วินาที) · shader คูณ (1 + FillProgress) ให้เร็วขึ้นเองเมื่อใกล้ระเบิด")]
+    [Min(0f)] public float ringSpeed = 1f;
+    [Tooltip("ความถี่ pulse (รอบ/วินาที)")]
+    [Min(0f)] public float pulseSpeed = 4f;
+    [Tooltip("ระยะห่างระหว่างวง (เมตร) · ยิ่งน้อยยิ่งถี่")]
+    [Min(0.01f)] public float ringSpacing = 1.5f;
+    [Tooltip("ความหนาของแต่ละวง (เมตร)")]
+    [Min(0f)] public float ringWidth = 0.15f;
+    [Tooltip("ความหนาแถบขอบ (เมตร)")]
+    [Min(0f)] public float outlineWidth = 0.15f;
+    [Tooltip("ความเรืองของขอบ")]
+    [Min(0f)] public float edgeGlow = 1.5f;
+    [Tooltip("ความคมของขอบ · สูง = ขอบชัดเป็นเส้น · ต่ำ = ฟุ้ง")]
+    [Min(0f)] public float edgeStrength = 2f;
+    [Tooltip("ความทึบรวมของ zone · ลดลงเมื่อมีหลาย zone ซ้อนกันจนอ่านพื้นไม่ออก")]
+    [Range(0f, 1f)] public float baseAlpha = 1f;
 
     [Header("FFXIV Special Settings")]
     [Tooltip("เปิดให้ท่าโจมตีรูปแบบนี้วิ่งตามล่าผู้เล่นเป้าหมาย (Chase)")]
@@ -182,11 +210,20 @@ public abstract class SpawnAoEActionBase : BossAction
                 zone.overrideColors = overrideTelegraphColors;
                 zone.overrideWarningColor = telegraphWarningColor;
                 zone.overrideDangerColor  = telegraphDangerColor;
+                zone.overrideOutlineColorFlag = overrideTelegraphOutlineColor;
+                zone.overrideOutlineColor     = telegraphOutlineColor;
                 zone.overrideEffects      = overrideTelegraphEffects;
                 zone.overridePulseAmount  = pulseAmount;
                 zone.overrideBlinkAmount  = blinkAmount;
                 zone.overrideRingAmount   = ringAmount;
                 zone.overrideRingSpeed    = ringSpeed;
+                zone.overridePulseSpeed   = pulseSpeed;
+                zone.overrideRingSpacing  = ringSpacing;
+                zone.overrideRingWidth    = ringWidth;
+                zone.overrideOutlineWidth = outlineWidth;
+                zone.overrideEdgeGlow     = edgeGlow;
+                zone.overrideEdgeStrength = edgeStrength;
+                zone.overrideBaseAlpha    = baseAlpha;
 
                 if (followCaster && runner != null)
                 {

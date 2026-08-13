@@ -94,11 +94,22 @@ public class SpawnAoEActionEditor : Editor
         var dangerCol   = serializedObject.FindProperty("telegraphDangerColor");
         bool useOverrideColors = overrideCol != null && overrideCol.boolValue;
 
+        var overrideOutline = serializedObject.FindProperty("overrideTelegraphOutlineColor");
+        var outlineCol      = serializedObject.FindProperty("telegraphOutlineColor");
+        bool useOverrideOutlineColor = overrideOutline != null && overrideOutline.boolValue;
+
         var overrideFx = serializedObject.FindProperty("overrideTelegraphEffects");
         var fxPulse    = serializedObject.FindProperty("pulseAmount");
         var fxBlink    = serializedObject.FindProperty("blinkAmount");
         var fxRing     = serializedObject.FindProperty("ringAmount");
         var fxSpeed    = serializedObject.FindProperty("ringSpeed");
+        var fxPulseSpd = serializedObject.FindProperty("pulseSpeed");
+        var fxSpacing  = serializedObject.FindProperty("ringSpacing");
+        var fxRingW    = serializedObject.FindProperty("ringWidth");
+        var fxOutlineW = serializedObject.FindProperty("outlineWidth");
+        var fxGlow     = serializedObject.FindProperty("edgeGlow");
+        var fxEdge     = serializedObject.FindProperty("edgeStrength");
+        var fxAlpha    = serializedObject.FindProperty("baseAlpha");
         bool useOverrideFx = overrideFx != null && overrideFx.boolValue;
 
         bool ffxivActive = useChase
@@ -228,6 +239,20 @@ public class SpawnAoEActionEditor : Editor
             }
             if (it.propertyPath is "telegraphWarningColor" or "telegraphDangerColor") continue;
 
+            // สีขอบเป็นคนละ gate กับสีพื้น — ยุบเป็นบรรทัดเดียวเหมือนกัน
+            if (it.propertyPath == "overrideTelegraphOutlineColor")
+            {
+                EditorGUILayout.PropertyField(overrideOutline, true);
+                if (useOverrideOutlineColor)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(outlineCol, true);
+                    EditorGUI.indentLevel--;
+                }
+                continue;
+            }
+            if (it.propertyPath == "telegraphOutlineColor") continue;
+
             if (it.propertyPath == "overrideTelegraphEffects")
             {
                 EditorGUILayout.Space(4);
@@ -235,18 +260,35 @@ public class SpawnAoEActionEditor : Editor
                 if (useOverrideFx)
                 {
                     EditorGUI.indentLevel++;
+                    EditorGUILayout.LabelField("ความแรง", EditorStyles.miniBoldLabel);
                     EditorGUILayout.PropertyField(fxPulse, true);
                     EditorGUILayout.PropertyField(fxBlink, true);
                     EditorGUILayout.PropertyField(fxRing, true);
+
+                    EditorGUILayout.LabelField("จังหวะ", EditorStyles.miniBoldLabel);
                     EditorGUILayout.PropertyField(fxSpeed, true);
+                    EditorGUILayout.PropertyField(fxPulseSpd, true);
+
+                    EditorGUILayout.LabelField("ขนาด (เมตร)", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.PropertyField(fxSpacing, true);
+                    EditorGUILayout.PropertyField(fxRingW, true);
+                    EditorGUILayout.PropertyField(fxOutlineW, true);
+
+                    EditorGUILayout.LabelField("ขอบ / ความทึบ", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.PropertyField(fxGlow, true);
+                    EditorGUILayout.PropertyField(fxEdge, true);
+                    EditorGUILayout.PropertyField(fxAlpha, true);
                     EditorGUI.indentLevel--;
                     EditorGUILayout.HelpBox(
-                        "ทับความแรงจาก material — ท่าที่ยิงรัวควรลด blink ลง ไม่งั้นจอกะพริบจนอ่านไม่ออก",
+                        "ทับหน้าตาจาก material ทั้งชุด — ท่าที่ยิงรัวควรลด blink ลง ไม่งั้นจอกะพริบจนอ่านไม่ออก\n" +
+                        "ช่องหน่วยเมตรจะคงความหนาเท่ากันไม่ว่าวงจะใหญ่แค่ไหน",
                         MessageType.Info);
                 }
                 continue;
             }
-            if (it.propertyPath is "pulseAmount" or "blinkAmount" or "ringAmount" or "ringSpeed") continue;
+            if (it.propertyPath is "pulseAmount" or "blinkAmount" or "ringAmount" or "ringSpeed"
+                or "pulseSpeed" or "ringSpacing" or "ringWidth" or "outlineWidth"
+                or "edgeGlow" or "edgeStrength" or "baseAlpha") continue;
 
             bool hide = it.propertyPath switch
             {

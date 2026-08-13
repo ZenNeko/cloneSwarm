@@ -39,16 +39,17 @@ Material:
     m_Ints: []
     m_Floats:
     - _BaseAlpha: 1
-    - _ConeAngle: 360
+    - _BlinkAmount: 1
     - _EdgeGlow: 1.5
     - _FillProgress: 0.2
-    - _InnerRadius: 0
     - _OutlineShape: 0
     - _OutlineWidth: 0.15
     - _PulseSpeed: 4
     - _QueueControl: 0
-    - _SweepAmount: 3
-    - _SweepWidth: 0.15
+    - _RingAmount: 3
+    - _RingSpacing: 1.5
+    - _RingSpeed: 1
+    - _RingWidth: 0.15
     m_Colors:
     - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

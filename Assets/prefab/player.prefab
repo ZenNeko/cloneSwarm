@@ -57,6 +57,7 @@ GameObject:
   - component: {fileID: -4709983444148486069}
   - component: {fileID: 3446993503979069558}
   - component: {fileID: -2969182571492405703}
+  - component: {fileID: 8811223344556677889}
   m_Layer: 0
   m_Name: player
   m_TagString: Player
@@ -375,6 +376,11 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+  limitCutNumber:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   respawnCountdown:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -645,8 +651,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatusManager
   ShowTopMostFoldoutHeaderGroup: 1
-  telegraphPrefab: {fileID: 0}
+  telegraphPrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
   Statuses:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
+--- !u!114 &8811223344556677889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353199761178665806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aea7b3d3e36c01744abcc6023c6384c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldNumberTag
+  heightOffset: 2.4
+  fontSize: 6
+  color: {r: 1, g: 0.95, b: 0.3, a: 1}
+  outlineColor: {r: 0, g: 0, b: 0, a: 1}

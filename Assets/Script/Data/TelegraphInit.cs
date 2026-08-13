@@ -39,12 +39,27 @@ public struct TelegraphInit : INetworkSerializable
     public UnityEngine.Color warningColor;
     public UnityEngine.Color dangerColor;
 
-    /// <summary>ความแรงเอฟเฟกต์ที่ action สั่งมาต่อท่า — false = ใช้ค่าบน material</summary>
+    /// <summary>
+    /// สีขอบแยกอิสระ — false = ขอบใช้สีอันตรายของหมวดเดียวกัน (พฤติกรรมเดิม)
+    /// แยก gate ออกจาก overrideColors เพราะสองอย่างนี้คนละเจตนา:
+    /// ทับสีพื้น = ท่าหลุดจากภาษาสีกลาง · ทับสีขอบ = แค่ให้ขอบเด่นขึ้นบนพื้นบางแบบ
+    /// </summary>
+    public bool         overrideOutlineColor;
+    public UnityEngine.Color outlineColor;
+
+    /// <summary>หน้าตาทั้งชุดที่ action สั่งมาต่อท่า — false = ใช้ค่าบน material ทั้งหมด</summary>
     public bool  overrideEffects;
     public float pulseAmount;      // จังหวะเต้นของ alpha
     public float blinkAmount;      // การกระพริบ
     public float ringAmount;       // ความสว่างของวงที่ไหลออก
     public float ringSpeed;        // ความเร็ววง (เมตร/วินาที)
+    public float pulseSpeed;       // ความถี่ pulse (รอบ/วินาที)
+    public float ringSpacing;      // ระยะห่างระหว่างวง (เมตร)
+    public float ringWidth;        // ความหนาวง (เมตร)
+    public float outlineWidth;     // ความหนาแถบขอบ (เมตร)
+    public float edgeGlow;         // ความเรืองของขอบ
+    public float edgeStrength;     // ความคมของขอบ
+    public float baseAlpha;        // ความทึบรวมของ zone
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
@@ -68,10 +83,19 @@ public struct TelegraphInit : INetworkSerializable
         s.SerializeValue(ref overrideColors);
         s.SerializeValue(ref warningColor);
         s.SerializeValue(ref dangerColor);
+        s.SerializeValue(ref overrideOutlineColor);
+        s.SerializeValue(ref outlineColor);
         s.SerializeValue(ref overrideEffects);
         s.SerializeValue(ref pulseAmount);
         s.SerializeValue(ref blinkAmount);
         s.SerializeValue(ref ringAmount);
         s.SerializeValue(ref ringSpeed);
+        s.SerializeValue(ref pulseSpeed);
+        s.SerializeValue(ref ringSpacing);
+        s.SerializeValue(ref ringWidth);
+        s.SerializeValue(ref outlineWidth);
+        s.SerializeValue(ref edgeGlow);
+        s.SerializeValue(ref edgeStrength);
+        s.SerializeValue(ref baseAlpha);
     }
 }

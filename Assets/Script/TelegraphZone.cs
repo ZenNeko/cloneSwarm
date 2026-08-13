@@ -74,6 +74,48 @@ public class TelegraphZone : NetworkBehaviour
         return slotColors[Mathf.Abs(slot) % slotColors.Length];
     }
 
+    // ── Ring / Edge กลาง ──────────────────────────────────────────────────
+    // ล้อโครงเดียวกับ Telegraph Colors ข้างบน: ค่ากลางอยู่ตรงนี้ · action ทับรายท่าได้
+    // ผ่าน SpawnAoEActionBase.overrideTelegraphEffects (ดู ResolveEffects)
+    //
+    // **ค่าพวกนี้ทับค่าบน Mat_Tele_Universal เสมอ** — ตั้งแต่ย้ายมาเป็นค่ากลางที่นี่
+    // ช่อง _Ring*/_Edge*/_BaseAlpha บน material กลายเป็นค่าที่ไม่มีผล ปรับแล้วจะไม่เห็นอะไรเปลี่ยน
+    // (default ด้านล่างคัดมาจาก material ตอนย้าย ของที่เห็นอยู่จึงไม่เปลี่ยน)
+    [Header("Telegraph Rings / Edge")]
+    [Tooltip("จังหวะเต้นของ alpha · 0 = ปิด")]
+    [Range(0f, 2f)] public float pulseAmount = 1f;
+    [Tooltip("ความถี่ pulse (รอบ/วินาที)")]
+    [Min(0f)] public float pulseSpeed = 4f;
+    [Tooltip("การกระพริบ · 0 = ปิด")]
+    [Range(0f, 2f)] public float blinkAmount = 1f;
+    [Tooltip("ความสว่างของวงที่ไหลออก · 0 = ปิด")]
+    [Range(0f, 5f)] public float ringAmount = 3f;
+    [Tooltip("ความเร็ววง (เมตร/วินาที) · shader คูณ (1 + FillProgress) ให้เร็วขึ้นเองเมื่อใกล้ระเบิด")]
+    [Min(0f)] public float ringSpeed = 1f;
+    [Tooltip("ระยะห่างระหว่างวง (เมตร) · ยิ่งน้อยยิ่งถี่")]
+    [Min(0.01f)] public float ringSpacing = 1.5f;
+    [Tooltip("ความหนาของแต่ละวง (เมตร)")]
+    [Min(0f)] public float ringWidth = 0.15f;
+    [Tooltip("ความหนาแถบขอบ (เมตร)")]
+    [Min(0f)] public float outlineWidth = 0.15f;
+    [Tooltip("ความเรืองของขอบ")]
+    [Min(0f)] public float edgeGlow = 1.5f;
+    [Tooltip("ความคมของขอบ · สูง = ขอบชัดเป็นเส้น · ต่ำ = ฟุ้ง")]
+    [Min(0f)] public float edgeStrength = 2f;
+    [Tooltip("ความทึบรวมของ zone")]
+    [Range(0f, 1f)] public float baseAlpha = 1f;
+
+    // สีของ ring กับแถบขอบ — shader ย้อมสองอย่างนี้ด้วย `_OutlineColor` ตัวเดียวกัน
+    // (ตรวจจากกราฟ: _OutlineColor แตกไปทั้ง Lerp ของขอบ และสาย Multiply ของ ring)
+    // เดิมเซ็ตเป็นสีอันตรายค้างไว้ ring จึงแดงตั้งแต่วินาทีแรก ต่างจากพื้นวงที่ค่อยๆ เปลี่ยน
+    [Tooltip("ให้สี ring/ขอบ ตามหมวดกลไก (Gaze ม่วง · Stack ฟ้า · Chase ชมพู) แล้วไล่ warning→danger เอง\n" +
+             "ปิด = ใช้สองสีด้านล่างแทน — จะเสียสัญญาณว่าท่านี้เป็นหมวดไหน")]
+    public bool  ringFollowsCategory = true;
+    [Tooltip("สี ring/ขอบ ตอนเริ่ม (ใช้เมื่อปิด ringFollowsCategory)")]
+    public Color ringWarningColor = new Color(1f, 0.64f, 0.024f, 1f);
+    [Tooltip("สี ring/ขอบ ตอนใกล้ระเบิด (ใช้เมื่อปิด ringFollowsCategory)")]
+    public Color ringDangerColor  = new Color(1f, 0f, 0.099f, 1f);
+
     [Header("Audio (Optional)")]
     [Tooltip("เสียงเตือนตอน telegraph เริ่ม (one-shot)")]
     public AudioClip warningClip;
@@ -92,6 +134,24 @@ public class TelegraphZone : NetworkBehaviour
     private static Material cachedFallbackMaterial;
     private MaterialPropertyBlock mpb;
     private Vector3        visualBaseScale = Vector3.one;
+
+    /// <summary>
+    /// ความหนาของ zone เป็น**หน่วยโลก** — จุดเดียวที่กำหนดเรื่องนี้ ใช้ทั้งทาง prefab และ primitive
+    ///
+    /// ยึดทรงกระบอกเป็นมาตรฐาน: ทุกทรงหนาเท่ากันและ**จัดกึ่งกลางที่ระดับ Y เดียวกัน**
+    /// zone เกิดที่ Y ของบอส (~1 เหนือพื้น) ก้อนหนา 2 จึงกิน Y 0..2 — ขอบล่างแตะพื้นพอดี
+    /// ซึ่งเป็นขอบที่วาดตรงตำแหน่งจริง ต่างจากแผ่นบางลอยที่เหลื่อมทั้งแผ่นตามมุมกล้อง
+    ///
+    /// mesh แต่ละตัวสูงไม่เท่ากันที่ scale 1 จึงต้องหารก่อนใช้ — ดู ScaleY()
+    /// </summary>
+    private const float ZoneThickness = 2f;
+
+    /// <summary>
+    /// แปลงความหนาหน่วยโลกเป็น scale.y ของ mesh นั้นๆ
+    /// Unity Cylinder สูง 2 ที่ scale 1 · Cube สูง 1 — ถ้าใส่ค่าเดียวกันทั้งคู่ Line จะบางกว่าครึ่งหนึ่ง
+    /// </summary>
+    private const float ScaleYCylinder = ZoneThickness * 0.5f;   // 2 units tall mesh
+    private const float ScaleYCube     = ZoneThickness;          // 1 unit tall mesh
 
     // ── Server-side params (set before Spawn, read via InitClientRpc) ─────
     [HideInInspector] public AoEType aoeType         = AoEType.Circle;
@@ -125,13 +185,25 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public Color   overrideWarningColor = Color.yellow;
     [HideInInspector] public Color   overrideDangerColor  = Color.red;
 
-    // ความแรงเอฟเฟกต์ที่ action สั่งมาเป็นรายท่า — ทับค่าบน material
+    // สีขอบแยกอิสระจากสีพื้น — ไม่ override = ขอบใช้สีอันตรายของหมวดเดียวกัน (พฤติกรรมเดิม)
+    [HideInInspector] public bool    overrideOutlineColorFlag;
+    [HideInInspector] public Color   overrideOutlineColor = Color.white;
+
+    // หน้าตาทั้งชุดที่ action สั่งมาเป็นรายท่า — ทับค่าบน material
     // ไม่ override = ไม่ดันเข้า shader เลย material จึงคุมเองทั้งหมด
+    // ค่า default ตรงกับ Mat_Tele_Universal เพื่อให้ติ๊กเปิดแล้วหน้าตายังเหมือนเดิมจนกว่าจะลงมือปรับ
     [HideInInspector] public bool    overrideEffects;
-    [HideInInspector] public float   overridePulseAmount = 1f;
-    [HideInInspector] public float   overrideBlinkAmount = 1f;
-    [HideInInspector] public float   overrideRingAmount  = 1f;
-    [HideInInspector] public float   overrideRingSpeed   = 2f;
+    [HideInInspector] public float   overridePulseAmount  = 1f;
+    [HideInInspector] public float   overrideBlinkAmount  = 1f;
+    [HideInInspector] public float   overrideRingAmount   = 3f;
+    [HideInInspector] public float   overrideRingSpeed    = 1f;
+    [HideInInspector] public float   overridePulseSpeed   = 4f;
+    [HideInInspector] public float   overrideRingSpacing  = 1.5f;
+    [HideInInspector] public float   overrideRingWidth    = 0.15f;
+    [HideInInspector] public float   overrideOutlineWidth = 0.15f;
+    [HideInInspector] public float   overrideEdgeGlow     = 1.5f;
+    [HideInInspector] public float   overrideEdgeStrength = 2f;
+    [HideInInspector] public float   overrideBaseAlpha    = 1f;
 
     /// <summary>
     /// ลำดับความสำคัญของสี — ColorMatch ต้องชนะทุกอย่างเพราะสีคือ**เงื่อนไขของกลไก**
@@ -267,11 +339,20 @@ public class TelegraphZone : NetworkBehaviour
             overrideColors      = overrideColors,
             warningColor        = overrideWarningColor,
             dangerColor         = overrideDangerColor,
+            overrideOutlineColor = overrideOutlineColorFlag,
+            outlineColor        = overrideOutlineColor,
             overrideEffects     = overrideEffects,
             pulseAmount         = overridePulseAmount,
             blinkAmount         = overrideBlinkAmount,
             ringAmount          = overrideRingAmount,
             ringSpeed           = overrideRingSpeed,
+            pulseSpeed          = overridePulseSpeed,
+            ringSpacing         = overrideRingSpacing,
+            ringWidth           = overrideRingWidth,
+            outlineWidth        = overrideOutlineWidth,
+            edgeGlow            = overrideEdgeGlow,
+            edgeStrength        = overrideEdgeStrength,
+            baseAlpha           = overrideBaseAlpha,
         });
     }
 
@@ -300,11 +381,20 @@ public class TelegraphZone : NetworkBehaviour
         overrideColors        = init.overrideColors;
         overrideWarningColor  = init.warningColor;
         overrideDangerColor   = init.dangerColor;
+        overrideOutlineColorFlag = init.overrideOutlineColor;
+        overrideOutlineColor  = init.outlineColor;
         overrideEffects       = init.overrideEffects;
         overridePulseAmount   = init.pulseAmount;
         overrideBlinkAmount   = init.blinkAmount;
         overrideRingAmount    = init.ringAmount;
         overrideRingSpeed     = init.ringSpeed;
+        overridePulseSpeed    = init.pulseSpeed;
+        overrideRingSpacing   = init.ringSpacing;
+        overrideRingWidth     = init.ringWidth;
+        overrideOutlineWidth  = init.outlineWidth;
+        overrideEdgeGlow      = init.edgeGlow;
+        overrideEdgeStrength  = init.edgeStrength;
+        overrideBaseAlpha     = init.baseAlpha;
         totalWarning          = init.warningDuration;
         elapsed               = 0f;
         initialized           = true;
@@ -353,6 +443,13 @@ public class TelegraphZone : NetworkBehaviour
     bool TrySpawnVfxPrefab()
     {
         // เลือก prefab ตาม AoEType (Cross reuse Line)
+        //
+        // **Donut ยังใช้ torus ไปก่อน** — แผนคือเปลี่ยนไปใช้ `circlePrefab` (จานแบน) แล้วเจาะรู
+        // ด้วย `_InnerRadius` ในสูตร เพราะ torus อบรูกับความหนาแถบมากับ mesh ปรับ innerRadius
+        // เท่าไหร่ภาพก็ไม่ขยับ และแถบวงบางๆ ไม่ตรงกับ `IsInDonut` ที่คิดเป็น annulus ตัน
+        //
+        // แต่สลับได้ **ก็ต่อเมื่อ shader มี `_InnerRadius` แล้วเท่านั้น** — ถ้าสลับก่อน
+        // จะได้จานตันไม่มีรูเลย ซึ่งแย่กว่า torus รูผิดขนาด · สลับพร้อมกับตอนต่อโหนดในกราฟ
         GameObject prefab = aoeType switch
         {
             AoEType.Circle => circlePrefab,
@@ -367,13 +464,17 @@ public class TelegraphZone : NetworkBehaviour
         visual.transform.localPosition = Vector3.zero;
         visual.transform.localRotation = Quaternion.identity;
 
-        // ── 3D Scale Mapping (XZ plane — Y stays at prefab's design height) ──
+        // ── Scale Mapping (XZ = ขนาดจริง · Y = แบนติดพื้นเสมอ) ──
+        // hit test ทุกตัวคิดบนระนาบ XZ ล้วน แต่เดิม Y ถูกตั้งเป็น 1 ทำให้ Cylinder สูง 2 หน่วยจริง
+        // กล้องอยู่ที่ offset (0,10,-5) เอียงจากแนวดิ่ง ~26.6° (tan ≈ 0.5) ขอบบนของก้อนจึง
+        // เหลื่อมจากรอยเท้าราว สูง × 0.5 — วงสูง 2 หน่วยคลาด ~1 เมตร เทียบกับรัศมี 3–5 เมตร
+        // ผู้เล่นตัดสินจากขอบที่เห็น แต่ดาเมจตัดสินจากรอยเท้า · แบนแล้วสองอย่างนี้ทับกันสนิท
         Vector3 s = aoeType switch
         {
-            AoEType.Circle => new Vector3(radius * 2f, 1f, radius * 2f),
-            AoEType.Donut  => new Vector3(radius * 2f, 1f, radius * 2f),
-            AoEType.Line   => new Vector3(lineWidth,   1f, lineLength),
-            AoEType.Cross  => new Vector3(lineWidth,   1f, lineLength),   // arm 1
+            AoEType.Circle => new Vector3(radius * 2f, ScaleYCylinder, radius * 2f),
+            AoEType.Donut  => new Vector3(radius * 2f, ScaleYCylinder, radius * 2f),
+            AoEType.Line   => new Vector3(lineWidth,   ScaleYCube,     lineLength),
+            AoEType.Cross  => new Vector3(lineWidth,   ScaleYCube,     lineLength),   // arm 1
             _              => Vector3.one,
         };
         visual.transform.localScale = s;
@@ -385,7 +486,7 @@ public class TelegraphZone : NetworkBehaviour
             arm2 = Instantiate(linePrefab, transform);
             arm2.transform.localPosition = Vector3.zero;
             arm2.transform.localRotation = Quaternion.identity;
-            arm2.transform.localScale    = new Vector3(lineLength, 1f, lineWidth);
+            arm2.transform.localScale    = new Vector3(lineLength, ScaleYCube, lineWidth);
         }
 
         // ส่ง params เข้า VFX Graph (ถ้ามี)
@@ -397,7 +498,9 @@ public class TelegraphZone : NetworkBehaviour
         }
 
         // เก็บ renderer ทั้งหมด (visual + arm2) เพื่อให้ Update() ปรับสี warning→danger ได้
-        // + ส่ง shader-graph params (Donut)
+        // Cross วาดสองกล่องทับกัน = union ตรงกับ hit test อยู่แล้ว · ที่ผิดคือเส้นขอบตกแต่ง
+        // ที่พาดกลางเขต ซึ่งตัดออกจากขอบเขตงานแล้ว (ดู ADR-005)
+
         CollectRenderersAndApplyShaderParams(visual);
         if (arm2 != null) CollectRenderersAndApplyShaderParams(arm2);
 
@@ -412,6 +515,14 @@ public class TelegraphZone : NetworkBehaviour
             GameHUD.Instance?.ShowAnnouncement($"Stand in the {colorName} circle!", uiColor);
         }
     }
+
+    /// <summary>
+    /// ครึ่งขนาดของแขนอีกข้าง (หน่วยเมตร) เรียงคู่กับ `visualRenderers`
+    ///
+    /// Cross เป็นทรงเดียวที่ renderer สองตัวต้องได้ค่าคนละชุด — แขนแต่ละข้างต้องรู้ขนาด
+    /// ของอีกข้างถึงจะคิด `max(dOwn, dSibling)` เพื่อลบเส้นขอบด้านในออกได้
+    /// (0,0) = ไม่มีพี่น้อง ซึ่งทำให้ dSibling ≤ 0 เสมอ สูตรจึงกลับไปเป็น dOwn เฉยๆ
+    /// </summary>
 
     void CollectRenderersAndApplyShaderParams(GameObject root)
     {
@@ -450,30 +561,89 @@ public class TelegraphZone : NetworkBehaviour
         // Line/Cross เป็นกล่องสี่เหลี่ยม ต้องใช้ระยะแบบเหลี่ยม ไม่งั้นขอบจะโค้งบนกล่อง
         float outlineShape = aoeType is AoEType.Line or AoEType.Cross ? 0f : 1f;
 
-        foreach (var r in visualRenderers)
+        for (int i = 0; i < visualRenderers.Count; i++)
         {
+            var r = visualRenderers[i];
             if (r == null) continue;
             var sharedMat = r.sharedMaterial;
             if (sharedMat == null) continue;
 
             r.GetPropertyBlock(mpb);
+
+
+            // Donut: รูตรงกลางเป็นสัดส่วนของรัศมีนอก · 0 = ไม่เจาะ (shader มี guard)
+            if (sharedMat.HasProperty("_InnerRadius"))
+                mpb.SetFloat("_InnerRadius",
+                             aoeType == AoEType.Donut && radius > 0.0001f
+                                 ? Mathf.Clamp01(innerRadius / radius) : 0f);
+
             if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", warn);
             if (sharedMat.HasProperty("_DangerColor"))  mpb.SetColor("_DangerColor",  danger);
-            // ขอบใช้สีอันตรายของหมวดเดียวกัน — Gaze ขอบม่วง Stack ขอบฟ้า ตามพื้นวง
-            if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", danger);
+            // สีเริ่มต้นของ ring/ขอบ ที่ progress = 0 · Update() จะไล่ต่อเองทุกเฟรม
+            // ตั้งตรงนี้ด้วยเพื่อไม่ให้เฟรมแรกโผล่มาเป็นสีอันตรายก่อนแล้วค่อยกระโดดกลับ
+            if (sharedMat.HasProperty("_OutlineColor"))
+                mpb.SetColor("_OutlineColor", ResolveRingColor(0f));
             if (sharedMat.HasProperty("_OutlineShape")) mpb.SetFloat("_OutlineShape", outlineShape);
 
-            // ไม่ override = ไม่แตะเลย ปล่อยให้ค่าบน material ทำงาน
-            if (overrideEffects)
-            {
-                if (sharedMat.HasProperty("_PulseAmount")) mpb.SetFloat("_PulseAmount", overridePulseAmount);
-                if (sharedMat.HasProperty("_BlinkAmount")) mpb.SetFloat("_BlinkAmount", overrideBlinkAmount);
-                if (sharedMat.HasProperty("_SweepAmount")) mpb.SetFloat("_SweepAmount", overrideRingAmount);
-                if (sharedMat.HasProperty("_RingSpeed"))   mpb.SetFloat("_RingSpeed",   overrideRingSpeed);
-            }
+            // ── หน้าตาวง/ขอบ — ดันเสมอ เหมือนที่ทำกับสี ──
+            // ค่ากลางอยู่บน prefab ตัวนี้ · action ทับเป็นรายท่าได้ · โครงเดียวกับ ResolveColors()
+            // เดิมตอนไม่ override จะไม่แตะ shader เลยแล้วปล่อยให้ material คุม — เปลี่ยนแล้ว
+            // เพราะ "ค่ากลาง" ต้องอยู่ที่เดียว ถ้าปล่อยสองทางจะเดาไม่ออกว่าอันไหนชนะ
+            SetIfPresent(sharedMat, "_PulseAmount",  Fx(overridePulseAmount,  pulseAmount));
+            SetIfPresent(sharedMat, "_PulseSpeed",   Fx(overridePulseSpeed,   pulseSpeed));
+            SetIfPresent(sharedMat, "_BlinkAmount",  Fx(overrideBlinkAmount,  blinkAmount));
+            SetIfPresent(sharedMat, "_RingAmount",   Fx(overrideRingAmount,   ringAmount));
+            SetIfPresent(sharedMat, "_RingSpeed",    Fx(overrideRingSpeed,    ringSpeed));
+            SetIfPresent(sharedMat, "_RingSpacing",  Fx(overrideRingSpacing,  ringSpacing));
+            SetIfPresent(sharedMat, "_RingWidth",    Fx(overrideRingWidth,    ringWidth));
+            SetIfPresent(sharedMat, "_OutlineWidth", Fx(overrideOutlineWidth, outlineWidth));
+            SetIfPresent(sharedMat, "_EdgeGlow",     Fx(overrideEdgeGlow,     edgeGlow));
+            SetIfPresent(sharedMat, "_EdgeStrength", Fx(overrideEdgeStrength, edgeStrength));
+            SetIfPresent(sharedMat, "_BaseAlpha",    Fx(overrideBaseAlpha,    baseAlpha));
 
             r.SetPropertyBlock(mpb);
         }
+    }
+
+    /// <summary>
+    /// ดันค่าเข้า mpb เฉพาะเมื่อ material มี property นั้นจริง
+    ///
+    /// เช็คก่อนเสมอเพราะ zone ตัวเดียวกันถูกใช้กับทั้ง `TelegraphUniversal` และ material
+    /// สำรอง (URP/Lit) ที่ `GetWarningMaterial()` ปั้นเอง — ตัวหลังไม่มี property พวกนี้เลย
+    /// การ set ลง MaterialPropertyBlock ที่ shader ไม่รู้จักไม่ error แต่ก็ทำให้ debug ยากขึ้นเปล่าๆ
+    /// </summary>
+    void SetIfPresent(Material sharedMat, string prop, float value)
+    {
+        if (sharedMat.HasProperty(prop)) mpb.SetFloat(prop, value);
+    }
+
+    /// <summary>
+    /// เลือกระหว่างค่าที่ action สั่งมากับค่ากลางบน prefab — คู่กับ `ResolveColors()`
+    /// gate เดียวคุมทั้งชุด ไม่ใช่รายช่อง เพื่อให้ designer อ่านออกว่า "ท่านี้คุมหน้าตาเองทั้งหมด"
+    /// ไม่ใช่ "ท่านี้คุมบางช่อง ที่เหลือมาจากไหนไม่รู้"
+    /// </summary>
+    float Fx(float fromAction, float central) => overrideEffects ? fromAction : central;
+
+    /// <summary>
+    /// สี ring + แถบขอบ ณ วินาทีนี้ — ไล่ warning→danger ตาม progress
+    ///
+    /// ทำ lerp ฝั่ง C# เพราะ shader ย้อม ring ด้วย `_OutlineColor` ตัวเดียวซึ่งไม่มีคู่สีของตัวเอง
+    /// (พื้นวงมี `_WarningColor`/`_DangerColor` ให้ shader lerp เองอยู่แล้ว แต่ ring ไม่มี)
+    /// ถ้าอยากให้ ring แยกสีจากขอบได้จริง ต้องเพิ่มคู่สีในกราฟ — ดู §10 ของ handoff
+    ///
+    /// ลำดับ: action สั่งสีตายตัว > ตามหมวดกลไก > คู่สีกลางบน prefab
+    /// ตามหมวดเป็นค่าตั้งต้นเพราะขอบเป็นตัวบอกว่าท่านี้คือหมวดไหน — ทิ้งไปแล้วสัญญาณหาย
+    /// </summary>
+    Color ResolveRingColor(float progress)
+    {
+        if (overrideOutlineColorFlag) return overrideOutlineColor;
+
+        if (ringFollowsCategory)
+        {
+            var (warn, danger) = ResolveColors();
+            return Color.Lerp(warn, danger, progress);
+        }
+        return Color.Lerp(ringWarningColor, ringDangerColor, progress);
     }
 
     [ClientRpc]
@@ -922,7 +1092,7 @@ public class TelegraphZone : NetworkBehaviour
 
         var go = new GameObject("ConeFan");
         go.transform.SetParent(parent);
-        go.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+        go.transform.localPosition = Vector3.zero;
         go.transform.localRotation = Quaternion.identity;
 
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -948,7 +1118,7 @@ public class TelegraphZone : NetworkBehaviour
         go.transform.SetParent(parent);
         go.transform.localPosition = localPos;
         go.transform.localRotation = localRot;
-        go.transform.localScale    = new Vector3(diameter, 0.02f, diameter);
+        go.transform.localScale    = new Vector3(diameter, ScaleYCylinder, diameter);
         Destroy(go.GetComponent<Collider>());
         var r = go.GetComponent<Renderer>();
         if (r)
@@ -964,7 +1134,7 @@ public class TelegraphZone : NetworkBehaviour
         go.transform.SetParent(parent);
         go.transform.localPosition = localPos;
         go.transform.localRotation = localRot;
-        go.transform.localScale    = new Vector3(diameter, 0.02f, diameter);
+        go.transform.localScale    = new Vector3(diameter, ScaleYCylinder, diameter);
         Destroy(go.GetComponent<Collider>());
         var r = go.GetComponent<Renderer>();
         if (r) { r.sharedMaterial = GetWarningMaterial(); visualRenderers.Add(r); }
@@ -976,7 +1146,7 @@ public class TelegraphZone : NetworkBehaviour
         go.transform.SetParent(parent);
         go.transform.localPosition = localPos;
         go.transform.localRotation = localRot;
-        go.transform.localScale    = new Vector3(width, 0.02f, length);
+        go.transform.localScale    = new Vector3(width, ScaleYCube, length);
         Destroy(go.GetComponent<Collider>());
         var r = go.GetComponent<Renderer>();
         if (r) { r.sharedMaterial = GetWarningMaterial(); visualRenderers.Add(r); }
@@ -1008,12 +1178,15 @@ public class TelegraphZone : NetworkBehaviour
         Color fallbackCol = new Color(baseColor.r * dim, baseColor.g * dim, baseColor.b * dim,
                                       baseColor.a * dim);
 
+        // สี ring/ขอบ ไล่ตาม progress — ต้องอัปเดตทุกเฟรมเพราะ shader ไม่มีคู่สีของ ring ให้ lerp เอง
+        Color ringCol = ResolveRingColor(progress);
+
         foreach (var r in visualRenderers)
-            if (r) ApplyTelegraphState(r, progress, fallbackCol);
+            if (r) ApplyTelegraphState(r, progress, fallbackCol, ringCol);
 
         // safe zone (Donut center) — สีคงที่ ไม่กระพริบ
         foreach (var r in safeZoneRenderers)
-            if (r) ApplyTelegraphState(r, 0f, safeZoneColor);   // safe zone fill=0 ตลอด
+            if (r) ApplyTelegraphState(r, 0f, safeZoneColor, ringCol);   // safe zone fill=0 ตลอด
     }
 
     /// <summary>
@@ -1021,7 +1194,7 @@ public class TelegraphZone : NetworkBehaviour
     /// • Shader Graph (TelegraphUniversal) → drive _FillProgress, ปล่อยให้ shader lerp _WarningColor→_DangerColor เอง
     /// • Standard/URP fallback              → set _BaseColor/_Color จากค่า fallbackColor ที่ C# คำนวณ
     /// </summary>
-    void ApplyTelegraphState(Renderer r, float progress, Color fallbackColor)
+    void ApplyTelegraphState(Renderer r, float progress, Color fallbackColor, Color ringColor)
     {
         var sharedMat = r.sharedMaterial;
         if (sharedMat == null) return;
@@ -1033,6 +1206,9 @@ public class TelegraphZone : NetworkBehaviour
         if (sharedMat.HasProperty("_FillProgress"))
         {
             mpb.SetFloat("_FillProgress", progress);
+            // พื้นวง shader lerp เองจาก _WarningColor/_DangerColor แต่ ring/ขอบ ไม่มีคู่สี
+            // จึงต้องป้อนสีที่ lerp แล้วเข้าไปเองทุกเฟรม
+            if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", ringColor);
             r.SetPropertyBlock(mpb);
             return;
         }
