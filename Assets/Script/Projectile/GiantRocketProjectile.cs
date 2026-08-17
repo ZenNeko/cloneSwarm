@@ -16,6 +16,7 @@ public class GiantRocketProjectile : NetworkBehaviour
     [HideInInspector] public float explosionRadius;
     [HideInInspector] public string weaponName = "Unknown";
     [HideInInspector] public PlayerWeaponManager weaponManager;
+    [HideInInspector] public bool  isCrit;
 
     public float maxBonusMultiplier = 2f;
 
@@ -67,7 +68,7 @@ public class GiantRocketProjectile : NetworkBehaviour
 
             float missingFrac = Mathf.Clamp01(1f - enemy.GetHealthPercent());
             float finalDamage = baseDamage * (1f + missingFrac * maxBonusMultiplier);
-            enemy.EnemyTakeDamage(finalDamage);
+            enemy.EnemyTakeDamage(finalDamage, isCrit);
             if (weaponManager != null)
             {
                 weaponManager.RegisterWeaponDamage(weaponName, finalDamage);

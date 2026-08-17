@@ -15,14 +15,12 @@ public enum ColorMatchCenterMode
 }
 
 [CreateAssetMenu(fileName = "ColorMatchAoEAction", menuName = "Boss/Actions/ColorMatchAoEAction")]
-public class ColorMatchAoEAction : BossAction
+public class ColorMatchAoEAction : SpawnAoEActionBase
 {
     [Header("Color Match Settings")]
     public float radius = 3f;
-    public float warningDuration = 3.5f;
-    public float damage = 99f; // High damage for failing
-    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab")]
-    public string detonateVfxKey = "";
+    // warningDuration / damage / detonateVfx ใช้ตัวที่สืบทอดมาจาก SpawnAoEActionBase แล้ว
+    // (เดิม field ซ้ำอยู่ที่นี่ — ย้ายไปรวมจุดเดียวตาม ADR-005 debt #3)
 
     [Tooltip("ระยะจากจุดศูนย์กลางถึงวงที่จะเกิด — 0 = วงทุกใบซ้อนกันที่จุดศูนย์กลางพอดี")]
     public float spawnRadius = 6f;
@@ -31,11 +29,15 @@ public class ColorMatchAoEAction : BossAction
     [Tooltip("Boss = ตามตัวบอส · Arena = จุดยึดในสนาม · EachPlayer = รอบตัวผู้เล่นแต่ละคน")]
     public ColorMatchCenterMode centerMode = ColorMatchCenterMode.Boss;
 
-    [Tooltip("ใช้เมื่อ centerMode = Arena · ต้องมี BossEncounterConfig.arena ด้วย")]
-    public ArenaAnchor arenaAnchor = ArenaAnchor.Center;
+    // arenaAnchor / arenaDistanceScale (centerMode = Arena) ใช้ตัวที่สืบทอดมาจาก
+    // SpawnAoEActionBase แล้ว — ชื่อ/ชนิดตรงกับที่เคยประกาศซ้ำไว้ที่นี่พอดี ค่าเดิมบน asset จึงยังอยู่ครบ
 
-    [Tooltip("ใช้เมื่อ centerMode = Arena · 1 = ขอบสนาม · 0.5 = ครึ่งทาง (Center ไม่สนค่านี้)")]
-    public float arenaDistanceScale = 1f;
+    protected override AoEType GetAoEType() => AoEType.Circle;
+
+    protected override void ConfigureTelegraphZone(TelegraphZone zone)
+    {
+        zone.radius = radius;
+    }
 
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
@@ -66,7 +68,7 @@ public class ColorMatchAoEAction : BossAction
             Vector2 randCircle = Random.insideUnitCircle.normalized * spawnRadius;
             Vector3 spawnPos = center + new Vector3(randCircle.x, 0.1f, randCircle.y);
 
-            SpawnColoredZone(spawnPos, telegraphPrefab, p.id, runner as BossController);
+            SpawnColoredZone(spawnPos, telegraphPrefab, p.id, runner);
         }
     }
 
@@ -86,49 +88,35 @@ public class ColorMatchAoEAction : BossAction
         return ArenaAnchors.Resolve(arena, arenaAnchor, arenaDistanceScale);
     }
 
-    private void SpawnColoredZone(Vector3 position, GameObject telegraphPrefab, ulong clientId, BossController boss)
+    private void SpawnColoredZone(Vector3 position, GameObject telegraphPrefab, ulong clientId, NetworkBehaviour runner)
     {
-        var go = Instantiate(telegraphPrefab, position, Quaternion.identity);
-        var zone = go.GetComponent<TelegraphZone>();
-        var no = go.GetComponent<NetworkObject>();
-
-        if (zone != null && no != null)
+        // ต้องตั้ง isColorMatch/requiredClientId "ก่อน" Spawn — ไม่งั้น client จะเห็นค่า default
+        // วูบหนึ่งเฟรมก่อนค่าจริงตามมา (ดู SpawnZoneAt.preSpawnConfigure)
+        var zone = SpawnZoneAt(runner, telegraphPrefab, position, Quaternion.identity, z =>
         {
-            zone.aoeType = AoEType.Circle;
-            zone.radius = radius;
-            zone.warningDuration = warningDuration;
-            zone.damage = damage;
-            zone.detonateVfxKey = detonateVfxKey;
+            z.isColorMatch.Value = true;
+            z.requiredClientId.Value = clientId;
+        });
 
-            zone.isColorMatch.Value = true;
-            zone.requiredClientId.Value = clientId;
+        if (zone == null) return;
 
-            no.Spawn(true);
-            boss?.RegisterMechanic(no);
-            zone.BroadcastInit();
+        // แจ้งผู้เล่นว่าต้องเข้าวงสีอะไร
+        int slot = PlayerSlotRegistry.Instance != null
+            ? PlayerSlotRegistry.Instance.GetSlot(clientId) : -1;
+        if (slot < 0) slot = (int)(clientId % 4);
 
-            // แจ้งผู้เล่นว่าต้องเข้าวงสีอะไร
-            int slot = PlayerSlotRegistry.Instance != null
-                ? PlayerSlotRegistry.Instance.GetSlot(clientId) : -1;
-            if (slot < 0) slot = (int)(clientId % 4);
-
-            string colorName = slot switch
-            {
-                0 => "RED",
-                1 => "BLUE",
-                2 => "GREEN",
-                _ => "YELLOW"
-            };
-
-            // อ่านสีจาก palette เดียวกับที่ zone ใช้ทาวง — เดิม hardcode ซ้ำสองที่
-            // ถ้าเพี้ยนจากกันเมื่อไหร่ HUD จะบอกสีนึงแต่วงเป็นอีกสี กลไกพังแบบหาสาเหตุยาก
-            Color uiColor = zone.GetSlotColor(slot);
-
-            zone.NotifyColorClientRpc(clientId, colorName, uiColor);
-        }
-        else
+        string colorName = slot switch
         {
-            Destroy(go);
-        }
+            0 => "RED",
+            1 => "BLUE",
+            2 => "GREEN",
+            _ => "YELLOW"
+        };
+
+        // อ่านสีจาก palette เดียวกับที่ zone ใช้ทาวง — เดิม hardcode ซ้ำสองที่
+        // ถ้าเพี้ยนจากกันเมื่อไหร่ HUD จะบอกสีนึงแต่วงเป็นอีกสี กลไกพังแบบหาสาเหตุยาก
+        Color uiColor = zone.GetSlotColor(slot);
+
+        zone.NotifyColorClientRpc(clientId, colorName, uiColor);
     }
 }

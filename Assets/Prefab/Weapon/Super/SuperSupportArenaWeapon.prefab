@@ -57,7 +57,7 @@ MonoBehaviour:
   hitVolume: 0.6
   pitchVariance: 0.05
   pillarPrefab: {fileID: 4651553569606056895, guid: 38b13a61f9361304cac9b80abafa7f27, type: 3}
-  arenaDuration: 1000
+  arenaDuration: 15
   damageBuff: 0.2
   moveSpeedBuff: 0.2
   abilityHaste: 20

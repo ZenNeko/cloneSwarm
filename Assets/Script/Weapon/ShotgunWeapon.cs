@@ -25,8 +25,9 @@ public class ShotgunWeapon : WeaponBase
     public float spreadAngle = 40f;
 
     [Header("Blunderbuss Super")]
-    [Tooltip("true = กระสุนระเบิด AoE เมื่อถึงศัตรู (ใช้สำหรับ Super version)")]
+    [Tooltip("true = กระสุนแต่ละนัดระเบิดเป็นวงตรงจุดที่ชน (ใช้สำหรับ Super version)")]
     public bool  explodeOnHit    = false;
+    [Tooltip("รัศมีระเบิดของกระสุนแต่ละนัด — ใช้เมื่อ explodeOnHit เปิด")]
     public float explosionRadius = 2.5f;
 
     protected override void OnFire(WeaponLevelData ld)
@@ -34,24 +35,18 @@ public class ShotgunWeapon : WeaponBase
         Vector3 pos = transform.position + Vector3.up * 0.5f;
         Vector3 dir = GetAimDirection();
 
-        // damage แบ่งต่อ pellet แต่ขั้นต่ำ 1
-        float dmgPerPellet = Mathf.Max(1f, ld.damage / Mathf.Max(1, ld.projectileCount));
-        float pelletDmg    = RollDamage(dmgPerPellet, out bool isCrit);
+        float pelletDmg = RollDamage(ld.damage, out bool isCrit);
 
-        if (explodeOnHit)
-        {
-            // Blunderbuss: ยิง 1 กระสุนหนัก → ระเบิด AoE บนเป้าหมาย
-            // สร้างเป็น grenade ที่บินตรง แต่ระเบิดทันทีที่ชน
-            float dmg = RollDamage(ld.damage, out bool isBlastCrit);
-            var targetPos = pos + dir * ld.range;
-            ThrowGrenade(pos, targetPos, dmg, explosionRadius, fuseTime: 0.05f, isCrit: isBlastCrit);
-        }
-        else
-        {
-            FireProjectile(pos, dir, pelletDmg, ld.projectileSpeed,
-                ld.projectileCount,
-                spreadAngle / Mathf.Max(1, ld.projectileCount - 1),
-                isCrit: isCrit);
-        }
+        // Blunderbuss = ลูกซองที่กระสุนทุกนัดระเบิดตรงจุดที่ชน
+        //
+        // เดิมสาขานี้โยน "ระเบิดโค้ง" ไปที่ pos + dir * range ซึ่งผิดจากที่ออกแบบไว้สามชั้น:
+        // บินโค้งสูง 1.5 ม. · ใช้เวลาเกือบวินาทีกว่าจะถึง · และบินไปสุดระยะเสมอไม่ว่าศัตรู
+        // จะยืนประชิดแค่ไหน เพราะ GrenadeProjectile ไม่มีการตรวจการชนเลยสักบรรทัด
+        // ตอนนี้ยิง pellet ตามปกติแล้วให้แต่ละนัดระเบิดตอนกระทบจริง
+        FireProjectile(pos, dir, pelletDmg, ld.projectileSpeed,
+            ld.projectileCount,
+            spreadAngle / Mathf.Max(1, ld.projectileCount - 1),
+            isCrit: isCrit,
+            explosionRadius: explodeOnHit ? explosionRadius : 0f);
     }
 }

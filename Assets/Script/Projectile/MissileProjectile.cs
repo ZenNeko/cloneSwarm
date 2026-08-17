@@ -22,6 +22,7 @@ public class MissileProjectile : NetworkBehaviour
     [HideInInspector] public float explosionRadius;
     [HideInInspector] public string weaponName = "Unknown";
     [HideInInspector] public PlayerWeaponManager weaponManager;
+    [HideInInspector] public bool  isCrit;
 
     private ulong     targetNetId;
     private Transform targetTransform;
@@ -116,7 +117,7 @@ public class MissileProjectile : NetworkBehaviour
             var enemy = c.GetComponent<Enemy>();
             if (enemy != null)
             {
-                enemy.EnemyTakeDamage(damage);
+                enemy.EnemyTakeDamage(damage, isCrit);
                 if (weaponManager != null)
                 {
                     weaponManager.RegisterWeaponDamage(weaponName, damage);

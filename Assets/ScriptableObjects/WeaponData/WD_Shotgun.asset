@@ -13,49 +13,53 @@ MonoBehaviour:
   m_Name: WD_Shotgun
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Shotgun
-  description: Shotgun
+  description: "\u0E22\u0E34\u0E07\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E01\u0E23\u0E30\u0E08\u0E32\u0E22\u0E40\u0E1B\u0E47\u0E19\u0E27\u0E07\u0E44\u0E1B\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E40\u0E25\u0E47\u0E07 \u0E22\u0E34\u0E48\u0E07\u0E1B\u0E23\u0E30\u0E0A\u0E34\u0E14\u0E22\u0E34\u0E48\u0E07\u0E40\u0E02\u0E49\u0E32\u0E2B\u0E25\u0E32\u0E22\u0E19\u0E31\u0E14"
   icon: {fileID: 21300000, guid: 5164bcccada554e459e5771ccf6bb84d, type: 3}
   tier: 0
   prefab: {fileID: 5546056588423154064, guid: 18e0b400db2998d47b755f5e76ed5975, type: 3}
-  aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 8074367145943022193, guid: d5effb961510faa458b89651ea468b1c, type: 3}
+  aimMode: 4
+  randomNearCandidates: 2
   levels:
-  - damage: 12
+  - damage: 22
     cooldown: 1.2
     projectileCount: 4
-    range: 7
-    projectileSpeed: 12
+    range: 12
+    projectileSpeed: 20
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 14
+  - damage: 24
     cooldown: 1.1
     projectileCount: 4
-    range: 7
-    projectileSpeed: 12
+    range: 12
+    projectileSpeed: 20
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 16
+  - damage: 26
     cooldown: 1
     projectileCount: 5
-    range: 8
+    range: 12
     projectileSpeed: 13
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 18
+  - damage: 28
     cooldown: 0.95
     projectileCount: 5
-    range: 8
-    projectileSpeed: 13
+    range: 12
+    projectileSpeed: 20
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 22
+  - damage: 32
     cooldown: 0.85
-    projectileCount: 6
-    range: 9
-    projectileSpeed: 13
+    projectileCount: 7
+    range: 12
+    projectileSpeed: 20
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 11400000, guid: 302e2e6066f554a4289860f34c12f9f8, type: 2}
   superConditions:
   - conditionType: 0

@@ -808,7 +808,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 350436432}
   m_Enabled: 1
-  serializedVersion: 12
+  serializedVersion: 13
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 0.67
@@ -860,7 +860,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShadowRadius: 0
+  m_ShapeRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -3175,6 +3175,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: PS_VoidMagic_Projectile
       objectReference: {fileID: 0}
+    - target: {fileID: 6127724416276516745, guid: a17f8c4356d68904fad7ea086bd4befc, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7573879230899411400, guid: a17f8c4356d68904fad7ea086bd4befc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1
@@ -3236,6 +3240,10 @@ PrefabInstance:
     - target: {fileID: 1483174815389054247, guid: 490853341ba59b04db8c79263e70f347, type: 3}
       propertyPath: m_Name
       value: PS_NatureMagic_Projectile
+      objectReference: {fileID: 0}
+    - target: {fileID: 1483174815389054247, guid: 490853341ba59b04db8c79263e70f347, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2919621501235782502, guid: 490853341ba59b04db8c79263e70f347, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4489,6 +4497,10 @@ PrefabInstance:
     - target: {fileID: 1186733052419325546, guid: 4b4dce8cb3d83bc4bb5d5db9b9bc8272, type: 3}
       propertyPath: m_Name
       value: PS_WaterMagic_Projectile
+      objectReference: {fileID: 0}
+    - target: {fileID: 1186733052419325546, guid: 4b4dce8cb3d83bc4bb5d5db9b9bc8272, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3200300699505829931, guid: 4b4dce8cb3d83bc4bb5d5db9b9bc8272, type: 3}
       propertyPath: m_LocalPosition.x

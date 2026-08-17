@@ -145,9 +145,9 @@ public abstract class AbilityBase : MonoBehaviour
         manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.abilityName : "Unknown");
     }
 
-    protected void DropMine(Vector3 position, float damage, float triggerRadius)
+    protected void DropMine(Vector3 position, float damage, float triggerRadius, bool isCrit = false)
     {
-        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.abilityName : "Unknown");
+        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.abilityName : "Unknown", isCrit);
     }
 
     protected void SpawnStickyRocket(Vector3 spawnPos, Vector3 direction, float damage, float speed, float explosionRadius)
@@ -155,14 +155,14 @@ public abstract class AbilityBase : MonoBehaviour
         manager.SpawnStickyRocketServerRpc(spawnPos, direction, damage, speed, explosionRadius, data != null ? data.abilityName : "Unknown");
     }
 
-    protected void SpawnGiantRocket(Vector3 spawnPos, Vector3 direction, float baseDamage, float speed, float maxRange, float explosionRadius)
+    protected void SpawnGiantRocket(Vector3 spawnPos, Vector3 direction, float baseDamage, float speed, float maxRange, float explosionRadius, bool isCrit = false)
     {
-        manager.SpawnGiantRocketServerRpc(spawnPos, direction, baseDamage, speed, maxRange, explosionRadius, data != null ? data.abilityName : "Unknown");
+        manager.SpawnGiantRocketServerRpc(spawnPos, direction, baseDamage, speed, maxRange, explosionRadius, data != null ? data.abilityName : "Unknown", isCrit);
     }
 
-    protected void SpawnMissiles(Vector3[] spawnPositions, ulong[] targetNetIds, float damage, float explosionRadius)
+    protected void SpawnMissiles(Vector3[] spawnPositions, ulong[] targetNetIds, float damage, float explosionRadius, bool isCrit = false)
     {
-        manager.SpawnMissilesServerRpc(spawnPositions, targetNetIds, damage, explosionRadius, data != null ? data.abilityName : "Unknown");
+        manager.SpawnMissilesServerRpc(spawnPositions, targetNetIds, damage, explosionRadius, data != null ? data.abilityName : "Unknown", isCrit);
     }
 
     protected void SpawnFunnels(Vector3 center, int count, float orbitRadius, float laserDamage, float laserCooldown, float attackRange, float lifetime, ulong ownerClientId, int beamCount = 1)

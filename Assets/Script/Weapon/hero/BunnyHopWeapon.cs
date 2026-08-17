@@ -146,6 +146,10 @@ public class BunnyHopWeapon : WeaponBase
         Vector3 center     = transform.position;
         int     aoeHitCount = (_isSuper && bigSlash) ? 2 : 1;
 
+        // นับศัตรูในวง **ก่อน** ตี — ตัวที่ตายจากหมัดนี้ต้องถูกนับด้วย
+        // ถ้านับหลังตี ตัวที่ตายจะหลุดจากการนับ กลายเป็นยิ่งฆ่าเก่งยิ่งได้โล่น้อย
+        int enemiesHit = FindAllEnemiesInRange(radius).Length;
+
         // ── AoE radial 360° รอบตัว — ทุก cast ────────────────────────────
         // Damage เรียกตาม aoeHitCount (Super double hit) แต่ VFX แสดง 1 ครั้งพอ
         for (int i = 0; i < aoeHitCount; i++)
@@ -154,9 +158,11 @@ public class BunnyHopWeapon : WeaponBase
         ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────────────
-        float shieldAmount = damage * shieldPercent
-                           * Mathf.Max(1f, FindAllEnemiesInRange(radius).Length);
-        manager.AddShieldServerRpc(shieldAmount);
+        // ไม่โดนใครเลย = ไม่ได้โล่ · เดิมคูณด้วย Mathf.Max(1f, count) ซึ่งตรึงตัวคูณขั้นต่ำไว้ที่ 1
+        // ทำให้ร่ายลอยๆ กลางที่โล่งก็ได้โล่ทุกครั้ง ทั้งที่กลไกคือ "โล่จากดาเมจที่ตีออกไป"
+        // (WeaponBase ร่ายเองตามคูลดาวน์ไม่สนว่ามีเป้าหรือไม่ จึงกลายเป็นโล่ฟรีตลอดเวลา)
+        if (enemiesHit > 0)
+            manager.AddShieldServerRpc(damage * shieldPercent * enemiesHit);
 
         // ── Exile Bonus: Projectile radial 360° (ทุก cast เมื่อ Exile active) ──
         if (exileActive)

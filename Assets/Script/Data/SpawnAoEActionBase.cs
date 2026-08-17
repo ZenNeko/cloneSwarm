@@ -34,9 +34,9 @@ public abstract class SpawnAoEActionBase : BossAction
     [Header("Telegraph Properties")]
     public float warningDuration = 2.5f;
     public float damage = 25f;
-    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab\n" +
+    [Tooltip("VFX ตอนระเบิด (ADR-006 — ลาก VFXAsset ตรงๆ แทน string key เดิม) · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab\n" +
              "telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม ถ้าไม่ตั้งตรงนี้ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด")]
-    public string detonateVfxKey = "";
+    public VFXAsset detonateVfx;
 
     [Header("Telegraph Colors  (ปกติไม่ต้องแตะ)")]
     // สีปกติมาจาก palette บน TelegraphZone prefab ตามหมวดกลไก (Gaze / Stack / Chase / default)
@@ -186,61 +186,98 @@ public abstract class SpawnAoEActionBase : BossAction
                 rot = rollTf.Apply(rot);
             }
 
-            var go = Instantiate(telegraphPrefab, pos, rot);
-            var zone = go.GetComponent<TelegraphZone>();
-            var no = go.GetComponent<NetworkObject>();
-
-            if (zone != null && no != null)
-            {
-                zone.aoeType = GetAoEType();
-                zone.scaleStart = scaleStart;
-                zone.scaleEnd = scaleEnd;
-                zone.sweepDegreesPerSecond = sweepDegreesPerSecond;
-                zone.warningDuration = warningDuration;
-                zone.damage = damage;
-                zone.isChasing = isChasing;
-                zone.isRotatingChase = isRotatingChase;
-                zone.isStackMarker = isStackMarker;
-                zone.isGaze = isGaze;
-                zone.knockbackMode = knockbackMode;
-                zone.knockbackDistance = knockbackDistance;
-                zone.knockbackDuration = knockbackDuration;
-                zone.knockbackFixedDirection = knockbackFixedDirection;
-                zone.detonateVfxKey = detonateVfxKey;
-                zone.overrideColors = overrideTelegraphColors;
-                zone.overrideWarningColor = telegraphWarningColor;
-                zone.overrideDangerColor  = telegraphDangerColor;
-                zone.overrideOutlineColorFlag = overrideTelegraphOutlineColor;
-                zone.overrideOutlineColor     = telegraphOutlineColor;
-                zone.overrideEffects      = overrideTelegraphEffects;
-                zone.overridePulseAmount  = pulseAmount;
-                zone.overrideBlinkAmount  = blinkAmount;
-                zone.overrideRingAmount   = ringAmount;
-                zone.overrideRingSpeed    = ringSpeed;
-                zone.overridePulseSpeed   = pulseSpeed;
-                zone.overrideRingSpacing  = ringSpacing;
-                zone.overrideRingWidth    = ringWidth;
-                zone.overrideOutlineWidth = outlineWidth;
-                zone.overrideEdgeGlow     = edgeGlow;
-                zone.overrideEdgeStrength = edgeStrength;
-                zone.overrideBaseAlpha    = baseAlpha;
-
-                if (followCaster && runner != null)
-                {
-                    zone.casterNetworkObject = runner.NetworkObject;
-                }
-
-                ConfigureTelegraphZone(zone);
-
-                no.Spawn(true);
-                (runner as BossController)?.RegisterMechanic(no);
-                zone.BroadcastInit();
-            }
-            else
-            {
-                Destroy(go);
-            }
+            SpawnZoneAt(runner, telegraphPrefab, pos, rot);
         }
+    }
+
+    /// <summary>
+    /// สร้าง TelegraphZone หนึ่งลูกตรงตำแหน่ง/มุมที่กำหนดตรงๆ — ใช้เมื่อ subclass มี logic หาตำแหน่งเอง
+    /// ไม่ผ่าน GetSpawnPositions()/targetingMode (เช่น KeepMovingAction ยิงตามจุดที่ผู้เล่นยืนนิ่ง,
+    /// LimitCutAction ยิงตามคิวเลข, ColorMatchAoEAction ยิงตามผู้เล่นแต่ละคน)
+    ///
+    /// รวม plumbing ที่เดิมเคย copy-paste ในทุก subclass (Instantiate/GetComponent/คัดลอกคุณสมบัติ
+    /// telegraph ทั้งชุด/Spawn/RegisterMechanic/BroadcastInit) ไว้จุดเดียว — subclass ที่เรียกจุดนี้
+    /// จะได้ผลตอบรับ scaleStart/scaleEnd/knockback/สี/effect override ครบเหมือนกับ SpawnOneWave ด้วย
+    /// (เดิมสามตัวนี้ตั้งได้แค่ warningDuration/damage/detonateVfx เท่านั้น)
+    ///
+    /// หมายเหตุ: **ไม่** ผ่าน RollTransform ให้ตำแหน่ง — ตำแหน่งพวกนี้มาจาก logic เฉพาะของ mechanic
+    /// (ตำแหน่งผู้เล่นจริง ณ ขณะนั้น) การพลิก/หมุนแบบ roll เชิงพื้นที่จะทำให้วงไปเกิดผิดที่จากที่ mechanic ตั้งใจ
+    /// ถ้าต้องการ roll เชิงพื้นที่ ผู้เรียกต้องแปลงตำแหน่งเองก่อนส่งเข้ามา (ดู SpawnOneWave)
+    /// </summary>
+    /// <param name="preSpawnConfigure">เรียกหลัง ConfigureTelegraphZone แต่ก่อน Spawn — ใช้ตั้งค่า
+    /// NetworkVariable ที่ต้องถูกต้องตั้งแต่ snapshot แรกที่ client เห็น (เช่น ColorMatch ต้องตั้งสี
+    /// ก่อนยิง Spawn ไม่งั้น client จะเห็นค่า default วูบหนึ่งเฟรมก่อนค่าจริงตามมา)</param>
+    protected TelegraphZone SpawnZoneAt(NetworkBehaviour runner, GameObject telegraphPrefab, Vector3 pos, Quaternion rot, System.Action<TelegraphZone> preSpawnConfigure = null)
+    {
+        if (telegraphPrefab == null) return null;
+
+        var go = Instantiate(telegraphPrefab, pos, rot);
+        var zone = go.GetComponent<TelegraphZone>();
+        var no = go.GetComponent<NetworkObject>();
+
+        if (zone == null || no == null)
+        {
+            Destroy(go);
+            return null;
+        }
+
+        zone.aoeType = GetAoEType();
+        zone.scaleStart = scaleStart;
+        zone.scaleEnd = scaleEnd;
+        zone.sweepDegreesPerSecond = sweepDegreesPerSecond;
+        zone.warningDuration = warningDuration;
+        zone.damage = damage;
+        zone.isChasing = isChasing;
+        zone.isRotatingChase = isRotatingChase;
+        zone.isStackMarker = isStackMarker;
+        zone.isGaze = isGaze;
+        zone.knockbackMode = knockbackMode;
+        zone.knockbackDistance = knockbackDistance;
+        zone.knockbackDuration = knockbackDuration;
+        zone.knockbackFixedDirection = knockbackFixedDirection;
+        zone.detonateVfxId = ResolveVfxId(detonateVfx);
+        zone.overrideColors = overrideTelegraphColors;
+        zone.overrideWarningColor = telegraphWarningColor;
+        zone.overrideDangerColor  = telegraphDangerColor;
+        zone.overrideOutlineColorFlag = overrideTelegraphOutlineColor;
+        zone.overrideOutlineColor     = telegraphOutlineColor;
+        zone.overrideEffects      = overrideTelegraphEffects;
+        zone.overridePulseAmount  = pulseAmount;
+        zone.overrideBlinkAmount  = blinkAmount;
+        zone.overrideRingAmount   = ringAmount;
+        zone.overrideRingSpeed    = ringSpeed;
+        zone.overridePulseSpeed   = pulseSpeed;
+        zone.overrideRingSpacing  = ringSpacing;
+        zone.overrideRingWidth    = ringWidth;
+        zone.overrideOutlineWidth = outlineWidth;
+        zone.overrideEdgeGlow     = edgeGlow;
+        zone.overrideEdgeStrength = edgeStrength;
+        zone.overrideBaseAlpha    = baseAlpha;
+
+        if (followCaster && runner != null)
+        {
+            zone.casterNetworkObject = runner.NetworkObject;
+        }
+
+        ConfigureTelegraphZone(zone);
+        preSpawnConfigure?.Invoke(zone);
+
+        no.Spawn(true);
+        (runner as BossController)?.RegisterMechanic(no);
+        zone.BroadcastInit();
+
+        return zone;
+    }
+
+    /// <summary>
+    /// แปลง VFXAsset เป็น id เสถียร (ADR-006) ผ่าน VFXDatabase ที่ NetworkedVFXPool ถืออยู่
+    /// asset == null → GetIdForAsset คืน -1 อยู่แล้ว (เทียบเท่า "ไม่มี VFX" ของทางเดิม) ไม่ต้องเช็คซ้ำ
+    /// -1 ก็คืนเมื่อหา NetworkedVFXPool/vfxDatabase ไม่เจอ (ยังไม่ spawn ในฉากนี้ ฯลฯ)
+    /// </summary>
+    private static int ResolveVfxId(VFXAsset asset)
+    {
+        var db = NetworkedVFXPool.Instance != null ? NetworkedVFXPool.Instance.vfxDatabase : null;
+        return db != null ? db.GetIdForAsset(asset) : -1;
     }
 
     private List<Vector3> GetSpawnPositions(NetworkBehaviour runner)

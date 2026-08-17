@@ -3,7 +3,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-public enum AimMode { AutoNearest, MouseAim, PlayerMovement, Random }
+/// <summary>
+/// โหมดเล็งของอาวุธ · **ค่าใหม่ต้องต่อท้ายเสมอ ห้ามแทรกกลาง** — WeaponData เก็บเป็น int
+/// การแทรกกลางจะทำให้ aimMode ของ asset ทุกตัวเลื่อนไปคนละโหมดโดยไม่มีอะไรเตือน
+/// </summary>
+public enum AimMode { AutoNearest, MouseAim, PlayerMovement, Random, RandomNear }
 
 /// <summary>
 /// Base class สำหรับทุก weapon script
@@ -157,7 +161,8 @@ public abstract class WeaponBase : MonoBehaviour
         bool  piercing  = false,
         float maxRange  = -1f,
         bool  isCrit    = false,
-        Transform target = null)
+        Transform target = null,
+        float explosionRadius = 0f)
     {
         var pool   = NetworkedVFXPool.Instance;
         var prefab = GetProjectilePrefab();
@@ -174,7 +179,7 @@ public abstract class WeaponBase : MonoBehaviour
 
         manager.FireProjectileServerRpc(
             pos, dir, damage, speed, count, spreadDeg,
-            piercing, projId, maxRange, isCrit, data != null ? data.weaponName : "Unknown", targetId);
+            piercing, projId, maxRange, isCrit, data != null ? data.weaponName : "Unknown", targetId, explosionRadius);
     }
 
     protected void FireMelee(Vector3 center, float radius, float damage, bool isCrit = false, float knockbackForce = 0f, Vector3 knockbackDir = default)
@@ -207,17 +212,22 @@ public abstract class WeaponBase : MonoBehaviour
         manager.SpawnBoomerangServerRpc(spawnPos, direction, damage, speed, maxRange, isCrit, data != null ? data.weaponName : "Unknown", projId);
     }
 
-    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false, bool isCrit = false)
+    /// <summary>
+    /// clusterSettings — ปล่อยว่างไว้ได้ (default = overrideProjectile false) แปลว่าใช้ค่าบน
+    /// prefab ลูกระเบิดตามเดิม · อาวุธที่อยากคุมค่า cluster จากตัวเองให้ส่งเข้ามา
+    /// </summary>
+    protected void ThrowGrenade(Vector3 spawnPos, Vector3 targetPos, float damage, float radius, float fuseTime = 1.5f, bool cluster = false, bool isCrit = false,
+                                GrenadeClusterSettings clusterSettings = default)
     {
         var pool   = NetworkedVFXPool.Instance;
         var prefab = GetProjectilePrefab();
         int projId = pool != null && prefab != null ? pool.GetProjectileId(prefab) : -1;
-        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.weaponName : "Unknown", projId, isCrit);
+        manager.ThrowGrenadeServerRpc(spawnPos, targetPos, damage, radius, fuseTime, cluster, data != null ? data.weaponName : "Unknown", projId, isCrit, clusterSettings);
     }
 
-    protected void DropMine(Vector3 position, float damage, float triggerRadius)
+    protected void DropMine(Vector3 position, float damage, float triggerRadius, bool isCrit = false)
     {
-        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.weaponName : "Unknown");
+        manager.DropMineServerRpc(position, damage, triggerRadius, data != null ? data.weaponName : "Unknown", isCrit);
     }
 
     protected void SpawnStickyRocket(Vector3 spawnPos, Vector3 direction, float damage, float speed, float explosionRadius)
@@ -390,8 +400,65 @@ public abstract class WeaponBase : MonoBehaviour
         return nearest;
     }
 
+    /// <summary>
+    /// สุ่มเป้าจากศัตรูที่ใกล้ที่สุด N ตัว — อยู่กึ่งกลางระหว่าง AutoNearest กับ Random
+    ///
+    /// เจตนา: กระจายดาเมจไม่ให้กระจุกที่ตัวเดียว แต่ไม่เสียนัดไปกับตัวที่อยู่สุดขอบระยะ
+    /// เลือกกำหนดเป็น "จำนวนตัว" ไม่ใช่ "รัศมีที่แคบลง" เพราะจำนวนศัตรูในเกมนี้แกว่งมาก —
+    /// ถ้าใช้รัศมี พฤติกรรมตอนต้นเกมกับตอนศัตรูล้นจอจะกลายเป็นคนละอย่างกันไปเลย
+    ///
+    /// คัดแบบ insertion เข้าบัฟเฟอร์ขนาด N ที่ใช้ซ้ำ — ไม่เรียงทั้งลิสต์และไม่จองหน่วยความจำต่อนัด
+    /// (เมธอดนี้ถูกเรียกทุกครั้งที่อาวุธยิง ซึ่งในเกมแนวนี้คือหลายครั้งต่อวินาทีต่ออาวุธ)
+    /// </summary>
+    private Transform[] _nearBuf;
+    private float[]     _nearDistSq;
+
+    protected Transform FindRandomNearEnemy(float range, int candidates)
+    {
+        int k = Mathf.Max(1, candidates);
+        if (_nearBuf == null || _nearBuf.Length < k)
+        {
+            _nearBuf    = new Transform[k];
+            _nearDistSq = new float[k];
+        }
+
+        int filled = 0;
+        foreach (var c in PlayerWeaponManager.OverlapEnemy(transform.position, range))
+        {
+            if (c == null) continue;
+
+            float d   = (c.transform.position - transform.position).sqrMagnitude;
+            int   pos = filled < k ? filled : -1;
+
+            if (pos < 0)
+            {
+                if (d >= _nearDistSq[k - 1]) continue;   // ไกลกว่าตัวท้ายสุดที่เก็บไว้ — ข้าม
+                pos = k - 1;
+            }
+
+            while (pos > 0 && _nearDistSq[pos - 1] > d)
+            {
+                _nearDistSq[pos] = _nearDistSq[pos - 1];
+                _nearBuf[pos]    = _nearBuf[pos - 1];
+                pos--;
+            }
+
+            _nearDistSq[pos] = d;
+            _nearBuf[pos]    = c.transform;
+            if (filled < k) filled++;
+        }
+
+        return filled == 0 ? null : _nearBuf[Random.Range(0, filled)];
+    }
+
     protected Transform FindTargetEnemy(float range)
     {
+        if (aimMode == AimMode.RandomNear)
+        {
+            int k = data != null ? data.randomNearCandidates : 3;
+            return FindRandomNearEnemy(range, k);
+        }
+
         if (aimMode == AimMode.Random)
         {
             var cols = PlayerWeaponManager.OverlapEnemy(transform.position, range);

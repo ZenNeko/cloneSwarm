@@ -17,7 +17,11 @@ MonoBehaviour:
   castTime: 0
   rollName: 
   cooldownAfter: 8
+  mode: 0
+  closeFailMode: 0
   tetherDistance: 20
   tetherDuration: 8
   tetherFailDamage: 50
   tetherSoloSpawnOffset: 3
+  leashScope: 0
+  leashAnchorOffset: 0

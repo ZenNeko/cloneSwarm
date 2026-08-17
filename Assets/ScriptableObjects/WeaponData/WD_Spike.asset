@@ -13,15 +13,16 @@ MonoBehaviour:
   m_Name: WD_Spike
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Spike
-  description: Spike
+  description: "\u0E22\u0E34\u0E07\u0E2B\u0E19\u0E32\u0E21\u0E41\u0E2B\u0E25\u0E21\u0E17\u0E30\u0E25\u0E38\u0E28\u0E31\u0E15\u0E23\u0E39 \u0E41\u0E25\u0E30\u0E40\u0E14\u0E49\u0E07\u0E2A\u0E30\u0E17\u0E49\u0E2D\u0E19\u0E01\u0E31\u0E1A\u0E01\u0E33\u0E41\u0E1E\u0E07\u0E27\u0E34\u0E48\u0E07\u0E15\u0E48\u0E2D\u0E44\u0E1B\u0E44\u0E14\u0E49\u0E2D\u0E35\u0E01"
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 80500625944189811, guid: 55e63764678885f449b5e8231abb470b, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 20
     cooldown: 2
-    projectileCount: 10
+    projectileCount: 3
     range: 30
     projectileSpeed: 14
     radius: 2.5
@@ -29,7 +30,7 @@ MonoBehaviour:
     piercing: 1
   - damage: 25
     cooldown: 1.9
-    projectileCount: 10
+    projectileCount: 6
     range: 30
     projectileSpeed: 12
     radius: 2.8
@@ -37,12 +38,12 @@ MonoBehaviour:
     piercing: 1
   - damage: 30
     cooldown: 1.7
-    projectileCount: 10
+    projectileCount: 9
     range: 30
     projectileSpeed: 12
     radius: 3.1
     duration: 0
-    piercing: 0
+    piercing: 1
   - damage: 35
     cooldown: 1.6
     projectileCount: 12
@@ -50,15 +51,15 @@ MonoBehaviour:
     projectileSpeed: 12
     radius: 3.4
     duration: 0
-    piercing: 0
+    piercing: 1
   - damage: 40
     cooldown: 1.5
-    projectileCount: 12
+    projectileCount: 15
     range: 30
     projectileSpeed: 12
     radius: 3.8
     duration: 0
-    piercing: 0
+    piercing: 1
   superVersion: {fileID: 11400000, guid: 48224c55f25a979488b12f81a8bd0481, type: 2}
   superConditions:
   - conditionType: 0

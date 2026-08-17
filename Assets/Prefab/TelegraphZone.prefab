@@ -128,7 +128,7 @@ MonoBehaviour:
   knockbackFixedDirection: {x: 0, y: 0, z: 1}
   isRotatingChase: 0
   casterNetworkObject: {fileID: 0}
-  detonateVfxKey: 
+  detonateVfxId: -1
   coneAngle: 90
   overrideColors: 0
   overrideWarningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

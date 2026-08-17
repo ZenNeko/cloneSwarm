@@ -70,8 +70,8 @@ public class TrainProjectile : NetworkBehaviour
 
         // 2. คำนวณความเสียหายแบบ AoE บนเซิร์ฟเวอร์
         float expDmg = damage * 0.5f; // ดาเมจระเบิดตามหลังเป็น 50% ของดาเมจชนตรงๆ
-        var mask = LayerMask.GetMask("Enemy");
-        foreach (var c in Physics.OverlapSphere(position, explosionRadius, mask))
+        // ใช้ OverlapEnemy แทน OverlapSphere ตรงๆ — กัน enemy ที่มีหลาย Collider โดนดาเมจซ้ำ
+        foreach (var c in PlayerWeaponManager.OverlapEnemy(position, explosionRadius))
         {
             var enemy = c.GetComponent<Enemy>();
             if (enemy != null)

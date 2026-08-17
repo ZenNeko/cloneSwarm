@@ -13,53 +13,52 @@ MonoBehaviour:
   m_Name: WD_Boomerang
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Boomerang
-  description: "\u0E02\u0E27\u0E49\u0E32\u0E07 projectile \u0E43\u0E2A\u0E48 \u0E28\u0E31\u0E04\u0E23\u0E39\u0E17\u0E35\u0E48\u0E43\u0E01\u0E25\u0E49
-    \u0E41\u0E25\u0E49\u0E27\u0E08\u0E30\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E17\u0E35\u0E48\u0E04\u0E38\u0E13"
+  description: "\u0E02\u0E27\u0E49\u0E32\u0E07 projectile \u0E43\u0E2A\u0E48 \u0E28\u0E31\u0E04\u0E23\u0E39\u0E17\u0E35\u0E48\u0E43\u0E01\u0E25\u0E49 \u0E41\u0E25\u0E49\u0E27\u0E08\u0E30\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E17\u0E35\u0E48\u0E04\u0E38\u0E13"
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 5993201688506033904, guid: 68e9b37e85365db44b48625513869dc2, type: 3}
   aimMode: 0
   levels:
-  - damage: 20
+  - damage: 25
     cooldown: 1
     projectileCount: 1
     range: 8
     projectileSpeed: 12
     radius: 0
-    piercing: 0
-    levelUpText: 
-  - damage: 22
+    duration: 0
+    piercing: 1
+  - damage: 28
     cooldown: 1
     projectileCount: 2
     range: 8
     projectileSpeed: 13
     radius: 0
-    piercing: 0
-    levelUpText: 
-  - damage: 24
+    duration: 0
+    piercing: 1
+  - damage: 31
     cooldown: 1
     projectileCount: 2
     range: 8
     projectileSpeed: 14
     radius: 0
-    piercing: 0
-    levelUpText: 
-  - damage: 26
+    duration: 0
+    piercing: 1
+  - damage: 34
     cooldown: 1
     projectileCount: 3
     range: 8
     projectileSpeed: 14
     radius: 0
-    piercing: 0
-    levelUpText: 
-  - damage: 28
+    duration: 0
+    piercing: 1
+  - damage: 37
     cooldown: 1
     projectileCount: 4
     range: 8
     projectileSpeed: 15
     radius: 0
-    piercing: 0
-    levelUpText: 
+    duration: 0
+    piercing: 1
   superVersion: {fileID: 11400000, guid: c5a4a137eee152243a36cc412d127855, type: 2}
   superConditions:
   - conditionType: 0

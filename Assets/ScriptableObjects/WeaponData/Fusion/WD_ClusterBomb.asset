@@ -13,21 +13,20 @@ MonoBehaviour:
   m_Name: WD_ClusterBomb
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Cluster Bomb
-  description: Cluster Bomb
+  description: "\u0E1F\u0E34\u0E27\u0E0A\u0E31\u0E19 Blunderbuss + Splitter Bomb \u2014 \u0E22\u0E34\u0E07\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E01\u0E23\u0E30\u0E08\u0E32\u0E22\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14 \u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E15\u0E32\u0E22\u0E41\u0E15\u0E01\u0E40\u0E1B\u0E47\u0E19\u0E25\u0E39\u0E01\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E15\u0E48\u0E2D"
   icon: {fileID: 0}
   tier: 2
   prefab: {fileID: 2534804657557489891, guid: 9d22da100dff5e74aafe8c2af83336ee, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 0}
   levels:
   - damage: 100
     cooldown: 2.5
     projectileCount: 2
     range: 14
     projectileSpeed: 18
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 200

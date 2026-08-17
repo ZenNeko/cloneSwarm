@@ -1,4 +1,3 @@
-using Unity.Collections;
 using Unity.Netcode;
 
 /// <summary>
@@ -31,8 +30,10 @@ public struct TelegraphInit : INetworkSerializable
     public bool isGaze;
     public bool isRotatingChase;
 
-    /// <summary>key ใน VFXDatabase สำหรับ VFX ตอนระเบิด — ว่าง = ใช้ detonateVfxPrefab บน prefab</summary>
-    public FixedString32Bytes detonateVfxKey;
+    /// <summary>id ใน VFXDatabase.assets สำหรับ VFX ตอนระเบิด (ADR-006) — -1 = ใช้ detonateVfxPrefab บน prefab
+    /// เดิมเป็น FixedString32Bytes (32 ไบต์) ย้ายมาเป็น int (4 ไบต์) เพราะ id เสถียรข้ามเครื่องแล้ว
+    /// (ดู VFXDatabase.assets / VFXAsset)</summary>
+    public int detonateVfxId;
 
     /// <summary>สีที่ action สั่งมาต่อท่า — false = ใช้ palette บน TelegraphZone prefab</summary>
     public bool         overrideColors;
@@ -79,7 +80,7 @@ public struct TelegraphInit : INetworkSerializable
         s.SerializeValue(ref isStackMarker);
         s.SerializeValue(ref isGaze);
         s.SerializeValue(ref isRotatingChase);
-        s.SerializeValue(ref detonateVfxKey);
+        s.SerializeValue(ref detonateVfxId);
         s.SerializeValue(ref overrideColors);
         s.SerializeValue(ref warningColor);
         s.SerializeValue(ref dangerColor);

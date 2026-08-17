@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WD_Molotov
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Molotov
-  description: Molotov
+  description: "\u0E02\u0E27\u0E49\u0E32\u0E07\u0E02\u0E27\u0E14\u0E44\u0E1F\u0E25\u0E07\u0E1E\u0E37\u0E49\u0E19 \u0E17\u0E34\u0E49\u0E07\u0E1E\u0E37\u0E49\u0E19\u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E34\u0E07\u0E40\u0E1C\u0E32\u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E22\u0E37\u0E19\u0E2D\u0E22\u0E39\u0E48\u0E15\u0E48\u0E2D\u0E40\u0E19\u0E37\u0E48\u0E2D\u0E07"
   icon: {fileID: 21300000, guid: 8ac11d7646215274d83fe508f65cdc05, type: 3}
   tier: 0
   prefab: {fileID: 1676939352408279352, guid: 351630a4f81eaf142835b9fec71198f1, type: 3}

@@ -19,7 +19,7 @@ MonoBehaviour:
   mode: 0
   statType: 6
   valuePerLevel: 100
-  costPerLevel: 0000000000000000000000002003000040060000i
+  costPerLevel: 64000000c8000000900100002003000040060000i
   category: 1
   sortOrder: 1
   tintColor: {r: 0.2901961, g: 0.87058824, b: 0.5019608, a: 1}

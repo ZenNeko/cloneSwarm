@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
   m_Name: WD_Vortex
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  weaponName: Vortex
-  description: Vortex
+  weaponName: Vortex Flame
+  description: "\u0E1E\u0E48\u0E19\u0E2A\u0E32\u0E22\u0E44\u0E1F\u0E2B\u0E21\u0E38\u0E19\u0E27\u0E19\u0E23\u0E2D\u0E1A\u0E15\u0E31\u0E27\u0E15\u0E48\u0E2D\u0E40\u0E19\u0E37\u0E48\u0E2D\u0E07 \u0E08\u0E33\u0E19\u0E27\u0E19\u0E2A\u0E32\u0E22\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E02\u0E36\u0E49\u0E19\u0E15\u0E32\u0E21\u0E23\u0E30\u0E14\u0E31\u0E1A"
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 9013770106347817692, guid: 5b56c64ad2bd2c043b8d1d3abab21855, type: 3}
   aimMode: 0
   levels:
-  - damage: 20
+  - damage: 25
     cooldown: 1
     projectileCount: 1
     range: 10
@@ -27,7 +27,7 @@ MonoBehaviour:
     radius: 0
     duration: 0
     piercing: 0
-  - damage: 20
+  - damage: 26
     cooldown: 1
     projectileCount: 1
     range: 8
@@ -35,25 +35,25 @@ MonoBehaviour:
     radius: 0
     duration: 0
     piercing: 0
-  - damage: 20
+  - damage: 27
     cooldown: 1
-    projectileCount: 1
+    projectileCount: 2
     range: 8
     projectileSpeed: 12
     radius: 0
     duration: 0
     piercing: 0
-  - damage: 20
+  - damage: 28
     cooldown: 1
-    projectileCount: 1
+    projectileCount: 2
     range: 8
     projectileSpeed: 12
     radius: 0
     duration: 0
     piercing: 0
-  - damage: 20
+  - damage: 29
     cooldown: 1
-    projectileCount: 1
+    projectileCount: 2
     range: 8
     projectileSpeed: 12
     radius: 0

@@ -13,49 +13,53 @@ MonoBehaviour:
   m_Name: WD_Laser
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Laser
-  description: Laser
+  description: "\u0E22\u0E34\u0E07\u0E25\u0E33\u0E41\u0E2A\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E41\u0E19\u0E27\u0E15\u0E23\u0E07 \u0E42\u0E14\u0E19\u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E38\u0E01\u0E15\u0E31\u0E27\u0E17\u0E35\u0E48\u0E02\u0E27\u0E32\u0E07\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07"
   icon: {fileID: 21300000, guid: 9cf3ac0b624168545975e8923bfe94e3, type: 3}
   tier: 0
   prefab: {fileID: 5642432581615302053, guid: 5335a55d0549be6428b5c1a04d51b261, type: 3}
   aimMode: 1
-  arcAngle: 360
-  projectilePrefab: {fileID: 4913074562992064063, guid: 3c556c1709c300249b70eb88824d9394, type: 3}
+  randomNearCandidates: 3
   levels:
   - damage: 35
     cooldown: 2
     projectileCount: 1
     range: 16
     projectileSpeed: 25
+    radius: 0
+    duration: 0
     piercing: 1
-    levelUpText: 
   - damage: 45
     cooldown: 1.8
     projectileCount: 1
     range: 20
     projectileSpeed: 25
+    radius: 0
+    duration: 0
     piercing: 1
-    levelUpText: 
-  - damage: 58
+  - damage: 55
     cooldown: 1.6
     projectileCount: 1
     range: 24
     projectileSpeed: 26
+    radius: 0
+    duration: 0
     piercing: 1
-    levelUpText: 
-  - damage: 75
+  - damage: 65
     cooldown: 1.4
     projectileCount: 2
     range: 26
     projectileSpeed: 26
+    radius: 0
+    duration: 0
     piercing: 1
-    levelUpText: 
-  - damage: 89
+  - damage: 80
     cooldown: 1
     projectileCount: 2
     range: 28
     projectileSpeed: 28
+    radius: 0
+    duration: 0
     piercing: 1
-    levelUpText: 
   superVersion: {fileID: 11400000, guid: bb37c6397e1b3864089c22cfa0300e46, type: 2}
   superConditions:
   - conditionType: 0

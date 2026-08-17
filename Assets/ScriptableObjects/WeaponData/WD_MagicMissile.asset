@@ -13,14 +13,15 @@ MonoBehaviour:
   m_Name: WD_MagicMissile
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: MagicMissile
-  description: MagicMissile123
+  description: "\u0E22\u0E34\u0E07\u0E25\u0E39\u0E01\u0E28\u0E23\u0E19\u0E33\u0E27\u0E34\u0E16\u0E35\u0E44\u0E25\u0E48\u0E15\u0E32\u0E21\u0E28\u0E31\u0E15\u0E23\u0E39 \u0E17\u0E33\u0E43\u0E2B\u0E49\u0E40\u0E1B\u0E49\u0E32\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E14\u0E34\u0E19\u0E0A\u0E49\u0E32\u0E25\u0E07\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E42\u0E14\u0E19"
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 5870177359670468093, guid: c90117d6cb2c6654c9fcd99a70cf197f, type: 3}
-  aimMode: 3
+  aimMode: 4
+  randomNearCandidates: 2
   levels:
   - damage: 25
-    cooldown: 2
+    cooldown: 3
     projectileCount: 5
     range: 10
     projectileSpeed: 12
@@ -28,7 +29,7 @@ MonoBehaviour:
     duration: 0
     piercing: 0
   - damage: 30
-    cooldown: 1.8
+    cooldown: 2.8
     projectileCount: 2
     range: 11
     projectileSpeed: 13
@@ -36,7 +37,7 @@ MonoBehaviour:
     duration: 0
     piercing: 0
   - damage: 35
-    cooldown: 1.6
+    cooldown: 2.6
     projectileCount: 3
     range: 12
     projectileSpeed: 14
@@ -44,7 +45,7 @@ MonoBehaviour:
     duration: 0
     piercing: 0
   - damage: 45
-    cooldown: 1.4
+    cooldown: 2.4
     projectileCount: 3
     range: 13
     projectileSpeed: 15
@@ -52,7 +53,7 @@ MonoBehaviour:
     duration: 0
     piercing: 0
   - damage: 55
-    cooldown: 1.2
+    cooldown: 2.2
     projectileCount: 4
     range: 14
     projectileSpeed: 16

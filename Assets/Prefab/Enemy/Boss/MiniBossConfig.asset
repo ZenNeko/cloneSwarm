@@ -22,8 +22,12 @@ MonoBehaviour:
     clips:
     - action: {fileID: 11400000, guid: a65568856861b1c4fba2f0ebd0dd4163, type: 2}
       startTime: 0
-    - action: {fileID: 11400000, guid: a008a0904d44a9049a94e3a5eefc0797, type: 2}
-      startTime: 6
+    - action: {fileID: 2821339960625966555}
+      startTime: 9
+    - action: {fileID: 11400000, guid: 6994e9e14cb197e45a425b841c7274c4, type: 2}
+      startTime: 4
+    - action: {fileID: 11400000, guid: 6994e9e14cb197e45a425b841c7274c4, type: 2}
+      startTime: 13
   waitForTimelineEnd: 1
   extraTailTime: 0
 --- !u!114 &11400000
@@ -64,3 +68,48 @@ MonoBehaviour:
   - prefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
     count: 10
     scatterRadius: 2
+--- !u!114 &2821339960625966555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a755acb3800c348a3fa0db9e0bc561, type: 3}
+  m_Name: AoE_Boss_Cross
+  m_EditorClassIdentifier: Assembly-CSharp::CrossAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 50
+  detonateVfxKey: 
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 75
+  lineWidth: 6

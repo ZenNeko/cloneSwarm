@@ -13,49 +13,52 @@ MonoBehaviour:
   m_Name: WD_LightningChain
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: LightningChain
-  description: LightningChain
+  description: "\u0E1B\u0E25\u0E48\u0E2D\u0E22\u0E2A\u0E32\u0E22\u0E1F\u0E49\u0E32\u0E43\u0E2A\u0E48\u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E40\u0E25\u0E37\u0E2D\u0E14\u0E21\u0E32\u0E01\u0E17\u0E35\u0E48\u0E2A\u0E38\u0E14 \u0E41\u0E25\u0E49\u0E27\u0E01\u0E23\u0E30\u0E42\u0E14\u0E14\u0E15\u0E48\u0E2D\u0E44\u0E1B\u0E22\u0E31\u0E07\u0E15\u0E31\u0E27\u0E16\u0E31\u0E14\u0E44\u0E1B\u0E40\u0E1B\u0E47\u0E19\u0E17\u0E2D\u0E14\u0E46"
   icon: {fileID: 21300000, guid: 2467fd7f0af6c4e42a5ff3cdcb943bef, type: 3}
   tier: 0
   prefab: {fileID: 6862445844675460321, guid: ed6e631ca8068134c80d82d64974a89b, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 7131401307255788800, guid: 4d9a3b35b3bc07649b697df7fb497b6d, type: 3}
   levels:
   - damage: 25
     cooldown: 1.8
     projectileCount: 2
     range: 15
     projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 32
+  - damage: 30
     cooldown: 1.6
     projectileCount: 2
     range: 16
     projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 40
+  - damage: 35
     cooldown: 1.4
     projectileCount: 3
     range: 17
     projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 50
+  - damage: 40
     cooldown: 1.2
     projectileCount: 3
     range: 18
     projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
-  - damage: 60
+  - damage: 45
     cooldown: 1
     projectileCount: 4
     range: 22
     projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 11400000, guid: 84700ba28e6339644b518a87cdd51f86, type: 2}
   superConditions:
   - conditionType: 0

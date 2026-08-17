@@ -68,9 +68,17 @@ public class WeaponData : ScriptableObject
     public GameObject prefab;
 
     [Header("Targeting")]
-    [Tooltip("AutoNearest = ล็อกศัตรูที่ใกล้ที่สุดอัตโนมัติ\n" +
-             "MouseAim    = เล็งตามตำแหน่งเมาส์ของผู้เล่น")]
+    [Tooltip("AutoNearest    = ล็อกศัตรูที่ใกล้ที่สุดอัตโนมัติ\n" +
+             "MouseAim       = เล็งตามตำแหน่งเมาส์ของผู้เล่น\n" +
+             "PlayerMovement = ยิงไปทางที่กำลังเดิน\n" +
+             "Random         = สุ่มจากศัตรูทุกตัวในระยะ (ไกลแค่ไหนก็มีสิทธิ์)\n" +
+             "RandomNear     = สุ่มจากศัตรูที่ใกล้ที่สุด N ตัว — ดู randomNearCandidates")]
     public AimMode aimMode = AimMode.AutoNearest;
+
+    [Tooltip("ใช้เมื่อ aimMode = RandomNear — สุ่มจากศัตรูที่ใกล้ที่สุดกี่ตัว\n" +
+             "1 = เท่ากับ AutoNearest · ค่าสูงๆ = เข้าใกล้ Random\n" +
+             "กำหนดเป็นจำนวนตัว ไม่ใช่ระยะ เพื่อให้พฤติกรรมคงที่ทั้งตอนศัตรูบางและตอนศัตรูล้นจอ")]
+    [Min(1)] public int randomNearCandidates = 3;
 
     // NOTE: VFX + SFX fields ย้ายไปอยู่บน weapon prefab (WeaponBase) แล้ว
     //   VFX → weaponVfxType, secondaryVfxType

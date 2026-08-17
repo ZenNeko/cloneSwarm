@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: WD_SplitSpike
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: SplitSpikeWeapon
-  description: SplitSpikeWeapon
+  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Spike \u2014 \u0E40\u0E21\u0E37\u0E48\u0E2D\u0E40\u0E14\u0E49\u0E07\u0E01\u0E31\u0E1A\u0E01\u0E33\u0E41\u0E1E\u0E07\u0E08\u0E30\u0E41\u0E22\u0E01\u0E23\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E2D\u0E07\u0E2B\u0E19\u0E32\u0E21\u0E40\u0E09\u0E35\u0E22\u0E07\u0E2D\u0E2D\u0E01"
   icon: {fileID: 21300000, guid: 54d2a43caa5691c40b3c7ae3ad3d605c, type: 3}
   tier: 1
   prefab: {fileID: 2993357391548470966, guid: 6baeb5b1a3c104342b354c7442f9f629, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 60
     cooldown: 1.5
@@ -26,7 +27,7 @@ MonoBehaviour:
     projectileSpeed: 12
     radius: 3.8
     duration: 0
-    piercing: 0
+    piercing: 1
   superVersion: {fileID: 0}
   superConditions: []
   weight: 150

@@ -18,6 +18,7 @@ public class StickyRocketProjectile : NetworkBehaviour
     [HideInInspector] public float explosionRadius;
     [HideInInspector] public string weaponName = "Unknown";
     [HideInInspector] public PlayerWeaponManager weaponManager;
+    [HideInInspector] public bool  isCrit;
 
     [Tooltip("VFX ที่แสดงเมื่อระเบิด — prefab กำหนดใน NetworkedVFXPool.vfxTypeMappings")]
     [VFXKey]
@@ -65,7 +66,7 @@ public class StickyRocketProjectile : NetworkBehaviour
             var enemy = c.GetComponent<Enemy>();
             if (enemy != null)
             {
-                enemy.EnemyTakeDamage(damage);
+                enemy.EnemyTakeDamage(damage, isCrit);
                 if (weaponManager != null)
                 {
                     weaponManager.RegisterWeaponDamage(weaponName, damage);

@@ -70,7 +70,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: dce3a789f595f224a85f5cf4f2e6667d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -133,6 +133,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -157,12 +158,18 @@ MonoBehaviour:
   radius: 0
   fuseTime: 0
   cluster: 0
+  isCrit: 0
   targetPos: {x: 0, y: 0, z: 0}
   weaponManager: {fileID: 0}
+  weaponName: Unknown
   explosionVfxPrefab: {fileID: 0}
+  clusterProjectilePrefab: {fileID: 0}
   clusterPellets: 8
   clusterDmgPercent: 0.4
   clusterProjSpeed: 14
+  clusterSpreadRadius: 3
+  clusterChildRadius: 2
+  clusterChildFuse: 0.6
 --- !u!54 &-2964717408273864033
 Rigidbody:
   m_ObjectHideFlags: 0

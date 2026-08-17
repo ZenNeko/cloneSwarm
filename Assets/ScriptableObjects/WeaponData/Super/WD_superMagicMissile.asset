@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: WD_superMagicMissile
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: superMagicMissile
-  description: superMagicMissile
+  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Magic Missile \u2014 \u0E22\u0E34\u0E07\u0E16\u0E35\u0E48\u0E02\u0E36\u0E49\u0E19 \u0E41\u0E25\u0E30\u0E21\u0E35\u0E42\u0E2D\u0E01\u0E32\u0E2A\u0E41\u0E0A\u0E48\u0E41\u0E02\u0E47\u0E07\u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E42\u0E14\u0E19"
   icon: {fileID: 0}
   tier: 1
   prefab: {fileID: 5870177359670468093, guid: 2ec13aba4bd1c91418a03b77ff27986d, type: 3}
-  aimMode: 0
+  aimMode: 3
+  randomNearCandidates: 2
   levels:
   - damage: 75
     cooldown: 1
@@ -25,8 +26,8 @@ MonoBehaviour:
     range: 16
     projectileSpeed: 18
     radius: 2
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 100

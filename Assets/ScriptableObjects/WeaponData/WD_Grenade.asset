@@ -17,45 +17,48 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 0d2ded9d59528834ca2edde13e8717a1, type: 3}
   tier: 0
   prefab: {fileID: 2175207568025715613, guid: 0795629bd4364eb4d9a8fed3d02839d9, type: 3}
-  aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 8283745978487869945, guid: 6911da433647dd241b94eb3b28b3dd51, type: 3}
+  aimMode: 3
   levels:
   - damage: 50
     cooldown: 3
     projectileCount: 1
     range: 10
     projectileSpeed: 0
+    radius: 3
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 65
     cooldown: 2.7
     projectileCount: 1
     range: 11
     projectileSpeed: 0
+    radius: 3
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 82
     cooldown: 2.5
     projectileCount: 2
     range: 12
     projectileSpeed: 0
+    radius: 3
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 100
     cooldown: 2.3
     projectileCount: 2
     range: 13
     projectileSpeed: 0
+    radius: 3
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 125
     cooldown: 2
     projectileCount: 3
     range: 14
     projectileSpeed: 0
+    radius: 3
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 11400000, guid: afc0e65b3612c1647a9e3bd5f6ece9d4, type: 2}
   superConditions:
   - conditionType: 0

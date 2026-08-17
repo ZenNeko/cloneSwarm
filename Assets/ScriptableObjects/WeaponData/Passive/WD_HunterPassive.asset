@@ -12,22 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 343f560385999774c9ecf6029a5181e9, type: 3}
   m_Name: WD_HunterPassive
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  weaponName: 
-  description: 
+  weaponName: Hunter Passive
+  description: "\u0E17\u0E38\u0E01 50 \u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E15\u0E35\u0E42\u0E14\u0E19 \u0E2A\u0E31\u0E48\u0E07\u0E22\u0E34\u0E07\u0E2D\u0E32\u0E27\u0E38\u0E18\u0E17\u0E38\u0E01\u0E0A\u0E34\u0E49\u0E19\u0E17\u0E35\u0E48\u0E1E\u0E01\u0E2D\u0E22\u0E39\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E01\u0E31\u0E19\u0E17\u0E31\u0E19\u0E17\u0E35"
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 4688751792051821304, guid: 6967f5e7ef96e1542989803a7036db08, type: 3}
   aimMode: 0
-  projectilePrefab: {fileID: 0}
-  hitVfxPrefab: {fileID: 0}
   levels:
   - damage: 0
     cooldown: 1
     projectileCount: 0
     range: 0
     projectileSpeed: 0
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 100

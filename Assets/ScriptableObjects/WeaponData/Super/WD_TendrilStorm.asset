@@ -13,21 +13,21 @@ MonoBehaviour:
   m_Name: WD_TendrilStorm
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: TendrilStorm
-  description: TendrilStorm
+  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Lance \u2014 \u0E41\u0E17\u0E07\u0E2B\u0E19\u0E27\u0E14\u0E2B\u0E25\u0E31\u0E01\u0E44\u0E1B\u0E02\u0E49\u0E32\u0E07\u0E2B\u0E19\u0E49\u0E32 \u0E41\u0E25\u0E49\u0E27\u0E41\u0E15\u0E01\u0E41\u0E02\u0E19\u0E07\u0E1E\u0E34\u0E48\u0E21\u0E44\u0E1B\u0E17\u0E31\u0E48\u0E27\u0E17\u0E38\u0E01\u0E17\u0E34\u0E28"
   icon: {fileID: -779411195, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 1
   prefab: {fileID: 8378742293110232923, guid: 45cd5e43f55ffe94f9497155fa4a9d27, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 0}
+  randomNearCandidates: 3
   levels:
   - damage: 90
     cooldown: 0.4
     projectileCount: 0
     range: 12
     projectileSpeed: 0
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 150
