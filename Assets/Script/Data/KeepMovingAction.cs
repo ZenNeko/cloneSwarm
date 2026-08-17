@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "KeepMovingAction", menuName = "Boss/Actions/KeepMovingAction")]
-public class KeepMovingAction : BossAction
+public class KeepMovingAction : SpawnAoEActionBase
 {
     [Header("Keep Moving Settings")]
     [Tooltip("ระยะเวลาที่ใช้ mechanic นี้ (วินาที)")]
@@ -14,10 +14,15 @@ public class KeepMovingAction : BossAction
 
     [Header("Punishment Telegraph (Circle)")]
     public float radius = 2f;
-    public float warningDuration = 1f;
-    public float damage = 40f;
-    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน telegraph prefab")]
-    public string detonateVfxKey = "";
+    // warningDuration / damage / detonateVfx ใช้ตัวที่สืบทอดมาจาก SpawnAoEActionBase แล้ว
+    // (เดิม field ซ้ำอยู่ที่นี่ — ย้ายไปรวมจุดเดียวตาม ADR-005 debt #3)
+
+    protected override AoEType GetAoEType() => AoEType.Circle;
+
+    protected override void ConfigureTelegraphZone(TelegraphZone zone)
+    {
+        zone.radius = radius;
+    }
 
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
@@ -64,7 +69,7 @@ public class KeepMovingAction : BossAction
                         if (doCheck)
                         {
                             float dist = Vector3.Distance(currentPos, lastCheckPositions[cid]);
-                            
+
                             // ถ้าเคลื่อนที่น้อยกว่า 0.1 เมตรใน 0.25 วินาที ถือว่าหยุดนิ่ง (ความเร็ว < 0.4 m/s)
                             if (dist < 0.1f)
                             {
@@ -74,13 +79,13 @@ public class KeepMovingAction : BossAction
                             {
                                 idleTimers[cid] = 0f;
                             }
-                            
+
                             lastCheckPositions[cid] = currentPos;
 
                             if (idleTimers[cid] >= allowedIdleTime)
                             {
                                 idleTimers[cid] = 0f; // รีเซ็ตเพื่อไม่ให้สปอว์นซ้ำรัวๆ
-                                SpawnPunishment(currentPos, telegraphPrefab, runner as BossController);
+                                SpawnZoneAt(runner, telegraphPrefab, currentPos, Quaternion.identity);
                             }
                         }
                     }
@@ -89,30 +94,6 @@ public class KeepMovingAction : BossAction
 
             timer += Time.deltaTime;
             yield return null;
-        }
-    }
-
-    private void SpawnPunishment(Vector3 position, GameObject telegraphPrefab, BossController boss)
-    {
-        var go = Instantiate(telegraphPrefab, position, Quaternion.identity);
-        var zone = go.GetComponent<TelegraphZone>();
-        var no = go.GetComponent<NetworkObject>();
-
-        if (zone != null && no != null)
-        {
-            zone.aoeType = AoEType.Circle;
-            zone.radius = radius;
-            zone.warningDuration = warningDuration;
-            zone.damage = damage;
-            zone.detonateVfxKey = detonateVfxKey;
-
-            no.Spawn(true);
-            boss?.RegisterMechanic(no);
-            zone.BroadcastInit();
-        }
-        else
-        {
-            Destroy(go);
         }
     }
 }

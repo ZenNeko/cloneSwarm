@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ public class MineObject : NetworkBehaviour
     [HideInInspector] public float triggerRadius = 1.5f;
     [HideInInspector] public string weaponName = "Unknown";
     [HideInInspector] public PlayerWeaponManager weaponManager;
+    [HideInInspector] public bool  isCrit;
 
     [Header("Settings")]
     public float lifetime   = 15f;   // หมดอายุ (วินาที)
@@ -29,6 +31,9 @@ public class MineObject : NetworkBehaviour
     private float checkTimer;
     private bool  exploded;
     private static readonly Collider[] _overlapBuffer = new Collider[64];
+    // reuse ตัวเดียวข้าม mine ทุกลูก + เคลียร์ก่อนใช้ทุกครั้ง — กัน enemy ที่มีหลาย Collider
+    // (เช่น TargetDummy) โดนดาเมจซ้ำ โดยไม่เพิ่ม garbage ต่อเฟรมเหมือนที่ OverlapSphereNonAlloc ตั้งใจไว้เดิม
+    private static readonly HashSet<Enemy> _hitEnemies = new HashSet<Enemy>();
 
     void Update()
     {
@@ -57,18 +62,20 @@ public class MineObject : NetworkBehaviour
 
         var mask = LayerMask.GetMask("Enemy");
         int count = Physics.OverlapSphereNonAlloc(transform.position, triggerRadius * 2f, _overlapBuffer, mask);
+
+        // pass ดาเมจจริง — ต้อง de-dup ต่อ Enemy (ไม่ใช่ต่อ Collider) ก่อนตี
+        _hitEnemies.Clear();
         for (int i = 0; i < count; i++)
         {
             var c = _overlapBuffer[i];
             if (c == null) continue;
             var enemy = c.GetComponent<Enemy>();
-            if (enemy != null)
+            if (enemy == null || !_hitEnemies.Add(enemy)) continue;
+
+            enemy.EnemyTakeDamage(damage, isCrit);
+            if (weaponManager != null)
             {
-                enemy.EnemyTakeDamage(damage);
-                if (weaponManager != null)
-                {
-                    weaponManager.RegisterWeaponDamage(weaponName, damage);
-                }
+                weaponManager.RegisterWeaponDamage(weaponName, damage);
             }
         }
 

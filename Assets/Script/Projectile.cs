@@ -9,6 +9,10 @@ public class Projectile : NetworkBehaviour
     public float   maxRange = 20f;
     public bool    piercing = false;   // ถ้า true = ไม่ destroy เมื่อชน enemy
 
+    [HideInInspector]
+    [Tooltip("อาวุธเป็นคนตั้งตอนยิง · > 0 = ระเบิดเป็นวงตรงจุดที่ชน แทนการตีเฉพาะตัวที่ชน")]
+    public float explosionRadius = 0f;
+
     [Header("VFX")]
     [Tooltip("VFX ที่แสดงเมื่อ projectile ชน\nกำหนด prefab ใน VFXDatabase")]
     [FormerlySerializedAs("hitVFX")]
@@ -71,17 +75,47 @@ public class Projectile : NetworkBehaviour
         if (!IsServer || !NetworkObject.IsSpawned) return;
         if (!other.CompareTag("Enemy")) return;
 
-        var enemy = other.GetComponent<Enemy>();
-        if (enemy != null)
+        if (explosionRadius > 0f)
         {
-            enemy.EnemyTakeDamage(damage, isCrit);
-            if (ownerManager != null)
+            // ระเบิดแทนการตีตัวเดียว — ตัวที่ชนอยู่ในรัศมีอยู่แล้วจึงโดนด้วย
+            // ไม่ตีตรงซ้ำเพื่อไม่ให้ตัวที่ชนกินดาเมจสองเด้ง
+            ExplodeOnImpact();
+        }
+        else
+        {
+            var enemy = other.GetComponent<Enemy>();
+            if (enemy != null)
             {
-                ownerManager.RegisterWeaponDamage(weaponName, damage);
+                enemy.EnemyTakeDamage(damage, isCrit);
+                if (ownerManager != null)
+                {
+                    ownerManager.RegisterWeaponDamage(weaponName, damage);
+                }
             }
         }
         ShowHitVfxClientRpc(transform.position, isCrit, hitVFX);
         if (!piercing) SafeDespawn();
+    }
+
+    /// <summary>
+    /// AoE ตอนกระสุนกระทบ — server เท่านั้น (OnTriggerEnter ถูก gate ไว้แล้ว)
+    ///
+    /// ใช้กับกระสุนที่ต้อง "ระเบิดตรงที่ชน" เช่น Blunderbuss · ต่างจากการโยนระเบิดโค้ง
+    /// ตรงที่จุดระเบิดมาจากการชนจริง ไม่ใช่พิกัดที่คำนวณไว้ล่วงหน้า
+    ///
+    /// ใช้ OverlapEnemy ที่ de-dup ต่อ Enemy ให้แล้ว — ศัตรูที่มี collider หลายตัวจึงไม่กินสองเด้ง
+    /// </summary>
+    void ExplodeOnImpact()
+    {
+        Vector3 center = transform.position;
+        foreach (var c in PlayerWeaponManager.OverlapEnemy(center, explosionRadius))
+        {
+            var e = c.GetComponent<Enemy>();
+            if (e == null) continue;
+
+            e.EnemyTakeDamage(damage, isCrit);
+            if (ownerManager != null) ownerManager.RegisterWeaponDamage(weaponName, damage);
+        }
     }
 
     void SafeDespawn()

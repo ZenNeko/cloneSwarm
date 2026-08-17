@@ -66,6 +66,14 @@ public class NetworkedVFXPool : MonoBehaviour
     private readonly Dictionary<int, Queue<GameObject>> _pools        = new();
     private readonly Dictionary<GameObject, int>        _projToId     = new();
 
+    // ── ADR-006: VFXAsset id space ──────────────────────────────────────
+    // vfxDatabase.assets ใช้ id เดียวกับ index ในลิสต์ (0, 1, 2, ...) ซึ่งชนกับ
+    // id ของ vfxDatabase.entries (legacy) ได้ถ้าใช้ dictionary ร่วมกันตรงๆ
+    // จึง offset id ฝั่ง asset ขึ้นไปไกลๆ ก่อนใช้เป็น key ภายในของ _pools/_stats
+    // เพื่อ "ยืม" โครงสร้าง pool/recursion-guard เดิมได้ทั้งชุดโดยไม่ต้องแยกคลาส
+    // PlayById(int id) รับ id แบบดิบ (ไม่บวก offset) แล้วบวกเองก่อนใช้งานภายใน
+    private const int ASSET_POOL_ID_BASE = 1_000_000;
+
     // ─── Diagnostics ─────────────────────────────────────────────────────
     /// <summary>สถิติต่อ pool — ใช้ตอบว่า "key ไหนตั้งไว้น้อยเกิน" หลังเล่นจบรอบ</summary>
     public class PoolStats
@@ -147,7 +155,36 @@ public class NetworkedVFXPool : MonoBehaviour
             Debug.LogWarning("[VFXPool] VFXDatabase is null or empty!");
         }
 
+        // ── VFXAsset list pools (ADR-006 — ทางใหม่ id เสถียรข้ามเครื่อง) ───────
+        // id = index ใน vfxDatabase.assets ตรงๆ · offset ด้วย ASSET_POOL_ID_BASE
+        // ก่อนใช้เป็น key ภายในกัน id ชนกับ pool ของ entries (legacy) ด้านบน
+        int assetPoolsBuilt = 0;
+        if (vfxDatabase != null && vfxDatabase.assets != null)
+        {
+            for (int i = 0; i < vfxDatabase.assets.Count; i++)
+            {
+                var a = vfxDatabase.assets[i];
+                if (a == null || a.prefab == null) continue; // ช่องว่าง — validator (Assets/Editor) เป็นคนเตือนแยก
 
+                int poolId = ASSET_POOL_ID_BASE + i;
+                int size = Mathf.Max(minPoolSize, Mathf.CeilToInt(a.poolSize * poolSizeMultiplier));
+
+                var q = new Queue<GameObject>(size);
+                for (int j = 0; j < size; j++)
+                    q.Enqueue(CreateInstance(a.prefab));
+                _pools[poolId] = q;
+
+                _stats[poolId] = new PoolStats
+                {
+                    key          = $"[VFXAsset#{i}] {a.name}",
+                    authored     = a.poolSize,
+                    configured   = size,
+                    live         = size,
+                    skipReparent = a.prefab.GetComponentInChildren<NetworkObject>(true) != null,
+                };
+                assetPoolsBuilt++;
+            }
+        }
 
         // ── Projectile registry ───────────────────────────────────────
         for (int i = 0; i < projectilePrefabs.Count; i++)
@@ -156,7 +193,7 @@ public class NetworkedVFXPool : MonoBehaviour
 
         int databaseCount = (vfxDatabase != null && vfxDatabase.entries != null) ? vfxDatabase.entries.Count : 0;
         Debug.Log($"[VFXPool] Built {_pools.Count} VFX pools " +
-                  $"({databaseCount} type-mapped), " +
+                  $"({databaseCount} type-mapped, {assetPoolsBuilt} VFXAsset-mapped), " +
                   $"{_projToId.Count} projectile entries");
     }
 
@@ -250,8 +287,10 @@ public class NetworkedVFXPool : MonoBehaviour
     /// <summary>
     /// เล่น VFX จาก key string — ใช้โดย VFXFactory.Play() และ weapon scripts โดยตรง
     /// direction = ทิศที่ VFX หันหน้าไป (สำหรับ VFX Graph / mesh-based VFX)
+    /// color = null (ค่า default) → ไม่แตะสีของ prefab เลย พฤติกรรมเดิมทุกประการ (ADR-006 Action Item 7)
+    ///         ใส่ค่ามา → tint prefab เดียวกันเป็นสีต่างกันได้ ไม่ต้องสร้าง asset แยกตามสี
     /// </summary>
-    public void PlayByName(string key, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    public void PlayByName(string key, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f, Color? color = null)
     {
         if (string.IsNullOrEmpty(key) || key == "None") return;
         if (!_keyToPoolId.TryGetValue(key, out int id))
@@ -259,13 +298,36 @@ public class NetworkedVFXPool : MonoBehaviour
             Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}' — กำหนดใน VFXDatabase");
             return;
         }
-        PlayFromPool(id, pos, scale, direction, arcAngle, roll);
+        PlayFromPool(id, pos, scale, direction, arcAngle, roll, color);
+    }
+
+    /// <summary>
+    /// เล่น VFX จาก VFXAsset id (ADR-006 — ทางใหม่ id เสถียรข้ามเครื่อง แทน string key)
+    /// id มาจาก "index ใน VFXDatabase.assets" เท่านั้น (ดู VFXDatabase.GetIdForAsset) —
+    /// -1 = ไม่มี VFX (เทียบเท่า key ว่างของ PlayByName ตาม ADR-006 §3)
+    /// เตรียมไว้ให้เฟสถัดไป (TelegraphInit.detonateVfxId ฯลฯ) เรียกใช้
+    /// </summary>
+    public void PlayById(int id, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f, Color? color = null)
+    {
+        if (id < 0) return;
+        if (vfxDatabase == null || vfxDatabase.assets == null || id >= vfxDatabase.assets.Count)
+        {
+            Debug.LogWarning($"[VFXPool] PlayById: id {id} อยู่นอกขอบเขต VFXDatabase.assets");
+            return;
+        }
+        int poolId = ASSET_POOL_ID_BASE + id;
+        if (!_pools.ContainsKey(poolId))
+        {
+            Debug.LogWarning($"[VFXPool] PlayById: id {id} ไม่มี pool (prefab ว่าง หรือช่องว่างใน VFXDatabase.assets)");
+            return;
+        }
+        PlayFromPoolCore(poolId, pos, Vector3.one * scale, direction, arcAngle, roll, useUniformScale: true, uniformScale: scale, color: color);
     }
 
     /// <summary>
     /// Overload: pass non-uniform Vector3 scale — ใช้สำหรับ Telegraph Line/Cross/Cone ที่ scale แต่ละแกนต่างกัน
     /// </summary>
-    public void PlayByName3D(string key, Vector3 pos, Vector3 scale3D, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    public void PlayByName3D(string key, Vector3 pos, Vector3 scale3D, Vector3 direction = default, float arcAngle = 360f, float roll = 0f, Color? color = null)
     {
         if (string.IsNullOrEmpty(key) || key == "None") return;
         if (!_keyToPoolId.TryGetValue(key, out int id))
@@ -273,11 +335,23 @@ public class NetworkedVFXPool : MonoBehaviour
             Debug.LogWarning($"[VFXPool] ไม่พบ mapping สำหรับ VFX key '{key}'");
             return;
         }
-        PlayFromPool3D(id, pos, scale3D, direction, arcAngle, roll);
+        PlayFromPool3D(id, pos, scale3D, direction, arcAngle, roll, color);
     }
 
     /// <summary>คืน true ถ้ามี prefab assign สำหรับ key นี้ใน pool</summary>
     public bool HasMapping(string key) => !string.IsNullOrEmpty(key) && _keyToPoolId.ContainsKey(key);
+
+    /// <summary>
+    /// คืน designedRadius ของ VFXAsset ตาม id (ADR-006) — เทียบเท่า GetDesignedRadius(string) ฝั่งเก่า
+    /// -1 = ไม่พบ id | 0 = fixed size (ไม่ควร scale)
+    /// </summary>
+    public float GetDesignedRadiusById(int id)
+    {
+        if (id < 0) return -1f;
+        if (vfxDatabase == null || vfxDatabase.assets == null || id >= vfxDatabase.assets.Count) return -1f;
+        var a = vfxDatabase.assets[id];
+        return a != null ? a.designedRadius : -1f;
+    }
 
     /// <summary>
     /// Spawn beam (LineRenderer) จาก from → to แล้วคืน pool หลัง duration
@@ -374,18 +448,18 @@ public class NetworkedVFXPool : MonoBehaviour
     }
 
     /// <summary>Internal: 3D scale variant — ใช้โดย PlayByName3D</summary>
-    void PlayFromPool3D(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll)
+    void PlayFromPool3D(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, Color? color = null)
     {
-        PlayFromPoolCore(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale: false, uniformScale: 1f);
+        PlayFromPoolCore(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale: false, uniformScale: 1f, color: color);
     }
 
     /// <summary>
     /// เล่น VFX จาก pool บน client ที่เรียก (ถูกเรียกจาก ClientRpc ใน PlayerWeaponManager)
     /// direction = ทิศที่ VFX หันหน้าไป — ใช้กับ Slash/Melee VFX Graph
     /// </summary>
-    public void PlayFromPool(int poolId, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    public void PlayFromPool(int poolId, Vector3 pos, float scale = 1f, Vector3 direction = default, float arcAngle = 360f, float roll = 0f, Color? color = null)
     {
-        PlayFromPoolCore(poolId, pos, Vector3.one * scale, direction, arcAngle, roll, useUniformScale: true, uniformScale: scale);
+        PlayFromPoolCore(poolId, pos, Vector3.one * scale, direction, arcAngle, roll, useUniformScale: true, uniformScale: scale, color: color);
     }
 
     // ── Recursion guard ──────────────────────────────────────────────────
@@ -395,7 +469,7 @@ public class NetworkedVFXPool : MonoBehaviour
     [System.NonSerialized] int _playDepth;
     const int MAX_PLAY_DEPTH = 8;
 
-    void PlayFromPoolCore(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale)
+    void PlayFromPoolCore(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale, Color? color = null)
     {
         if (poolId < 0) return;
         if (!_pools.TryGetValue(poolId, out var q)) return;
@@ -407,11 +481,11 @@ public class NetworkedVFXPool : MonoBehaviour
             return;
         }
         _playDepth++;
-        try { PlayFromPoolCoreImpl(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale, uniformScale, q); }
+        try { PlayFromPoolCoreImpl(poolId, pos, scale3D, direction, arcAngle, roll, useUniformScale, uniformScale, q, color); }
         finally { _playDepth--; }
     }
 
-    void PlayFromPoolCoreImpl(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale, Queue<GameObject> q)
+    void PlayFromPoolCoreImpl(int poolId, Vector3 pos, Vector3 scale3D, Vector3 direction, float arcAngle, float roll, bool useUniformScale, float uniformScale, Queue<GameObject> q, Color? color = null)
     {
         GameObject srcPrefab = GetPrefabForId(poolId);
         GameObject go = Rent(poolId, q);
@@ -431,6 +505,12 @@ public class NetworkedVFXPool : MonoBehaviour
         Vector3 prefabScale = srcPrefab != null ? srcPrefab.transform.localScale : Vector3.one;
         go.transform.localScale = Vector3.Scale(scale3D, prefabScale);
         go.SetActive(true);
+
+        // ── Tint (ADR-006 Action Item 7) ──────────────────────────────────
+        // ต้องตั้งก่อน Play() เพื่อให้อนุภาคที่ spawn รอบแรกได้สีนี้ด้วย
+        // เรียกทุกครั้งแม้ color == null — instance มาจาก pool ใช้ซ้ำ ถ้าไม่คืนค่า
+        // ตัวที่เคยถูก tint แดงจะโผล่มาแดงค้างในครั้งถัดไปที่ไม่ได้ส่งสีมา
+        ApplyColorTint(go, srcPrefab, color);
 
         // ── Play: VFX Graph หรือ ParticleSystem ──────────────────────────
         // ต้องค้นลง child ด้วย ไม่ใช่ GetComponent เฉพาะ root — VFX Graph บาง prefab
@@ -463,8 +543,76 @@ public class NetworkedVFXPool : MonoBehaviour
         StartCoroutine(ReturnToPool(go, poolId, CalcTTL(go, poolId)));
     }
 
+    /// <summary>
+    /// Tint VFX instance เป็นสีที่กำหนด (ADR-006 Action Item 7) — กันไม่ให้ต้องสร้าง
+    /// asset แยกตามสีเช่น Detonate_Fire_Purple / Detonate_Fire_Blue
+    ///
+    /// ลองชื่อ exposed property ที่ VFX Graph มักตั้งไว้คุมสี ("Color" / "TintColor" / "MainColor")
+    /// ถ้า prefab ไม่มี property เหล่านี้และไม่มี ParticleSystem เลย → ไม่ทำอะไรเงียบๆ ไม่ error
+    ///
+    /// **ต้องเรียกทุกครั้งที่ยืม instance ออกจาก pool ไม่ใช่เฉพาะตอนมีสี** — instance ถูกใช้ซ้ำ
+    /// สีที่ tint ไว้รอบก่อนติดอยู่กับตัว object ไม่ได้หายไปตอนคืน pool
+    /// color == null → คืนค่าที่ prefab เขียนไว้เดิม ซึ่งคือพฤติกรรมก่อนมี ADR-006 ทุกประการ
+    ///
+    /// `srcPrefab` ต้องเป็น prefab ต้นทางของ `go` (instance สร้างจาก Instantiate ตัวนี้)
+    /// ลำดับ component ใน GetComponentsInChildren จึงตรงกันดัชนีต่อดัชนี
+    /// </summary>
+    void ApplyColorTint(GameObject go, GameObject srcPrefab, Color? color)
+    {
+        var vfxGraphs    = go.GetComponentsInChildren<VisualEffect>(true);
+        var srcVfxGraphs = srcPrefab != null ? srcPrefab.GetComponentsInChildren<VisualEffect>(true) : null;
+
+        for (int i = 0; i < vfxGraphs.Length; i++)
+        {
+            var vfxGraph = vfxGraphs[i];
+            // หาว่า graph ตัวนี้เปิด property ชื่อไหนไว้ให้คุมสี — ไม่มีเลยก็ข้าม
+            string prop = vfxGraph.HasVector4("Color")     ? "Color"
+                        : vfxGraph.HasVector4("TintColor") ? "TintColor"
+                        : vfxGraph.HasVector4("MainColor") ? "MainColor"
+                        : null;
+            if (prop == null) continue;
+
+            if (color.HasValue)
+            {
+                vfxGraph.SetVector4(prop, color.Value);
+            }
+            else if (srcVfxGraphs != null && i < srcVfxGraphs.Length)
+            {
+                // คืนค่าที่ prefab เขียนไว้ — ถ้าไม่ทำ instance ที่เคยถูก tint จะค้างสีเดิม
+                vfxGraph.SetVector4(prop, srcVfxGraphs[i].GetVector4(prop));
+            }
+        }
+
+        // startColor คุมสีของอนุภาคที่ spawn ใหม่หลังจากนี้ — ต้องตั้งก่อน ps.Play()
+        var particles    = go.GetComponentsInChildren<ParticleSystem>(true);
+        var srcParticles = srcPrefab != null ? srcPrefab.GetComponentsInChildren<ParticleSystem>(true) : null;
+
+        for (int i = 0; i < particles.Length; i++)
+        {
+            var main = particles[i].main;
+
+            if (color.HasValue)
+            {
+                main.startColor = color.Value;
+            }
+            else if (srcParticles != null && i < srcParticles.Length)
+            {
+                // คืนเป็น MinMaxGradient ทั้งก้อน ไม่ใช่ Color เดี่ยว — prefab อาจตั้งเป็น
+                // gradient หรือสุ่มระหว่างสองสีไว้ ซึ่งการ tint ครั้งก่อนยุบทิ้งไปแล้ว
+                main.startColor = srcParticles[i].main.startColor;
+            }
+        }
+    }
+
     GameObject GetPrefabForId(int poolId)
     {
+        if (poolId >= ASSET_POOL_ID_BASE)
+        {
+            int idx = poolId - ASSET_POOL_ID_BASE;
+            if (vfxDatabase != null && vfxDatabase.assets != null && idx >= 0 && idx < vfxDatabase.assets.Count)
+                return vfxDatabase.assets[idx]?.prefab;
+            return null;
+        }
         if (vfxDatabase != null && poolId >= 0 && poolId < vfxDatabase.entries.Count)
             return vfxDatabase.entries[poolId]?.prefab;
         return null;
@@ -473,7 +621,16 @@ public class NetworkedVFXPool : MonoBehaviour
     float CalcTTL(GameObject go, int poolId = -1)
     {
         // fixedDuration จาก Inspector — ใช้เมื่อกำหนดไว้ (VFX Graph)
-        if (vfxDatabase != null && poolId >= 0 && poolId < vfxDatabase.entries.Count)
+        if (poolId >= ASSET_POOL_ID_BASE)
+        {
+            int idx = poolId - ASSET_POOL_ID_BASE;
+            if (vfxDatabase != null && vfxDatabase.assets != null && idx >= 0 && idx < vfxDatabase.assets.Count)
+            {
+                var a = vfxDatabase.assets[idx];
+                if (a != null && a.fixedDuration > 0f) return a.fixedDuration;
+            }
+        }
+        else if (vfxDatabase != null && poolId >= 0 && poolId < vfxDatabase.entries.Count)
         {
             float fd = vfxDatabase.entries[poolId].fixedDuration;
             if (fd > 0f) return fd;

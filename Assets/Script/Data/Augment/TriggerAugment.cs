@@ -47,8 +47,8 @@ public class TriggerAugment : AugmentData
     public float duration = 3f;
 
     [Header("Presentation")]
-    [Tooltip("VFX key ใน NetworkedVFXPool ที่เล่นตอน trigger ทำงาน — เว้นว่าง/None = ไม่เล่น")]
-    public string vfxKeyOnTrigger = "";
+    [Tooltip("VFX ที่เล่นตอน trigger ทำงาน (ADR-006 — ลาก VFXAsset ตรงๆ แทน string key เดิม) — ว่าง = ไม่เล่น")]
+    public VFXAsset vfxOnTrigger;
 
     /// <summary>ลงทะเบียนกับ manager — manager เป็นคนคอย tick และเรียก Fire ให้</summary>
     public override void OnAcquire(PlayerAugmentManager ctx)

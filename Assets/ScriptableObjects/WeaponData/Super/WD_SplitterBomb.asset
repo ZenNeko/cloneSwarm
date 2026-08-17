@@ -13,19 +13,21 @@ MonoBehaviour:
   m_Name: WD_SplitterBomb
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: splitter bomb
-  description: splitter bomb
+  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Grenade \u2014 \u0E27\u0E32\u0E07\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E2B\u0E25\u0E32\u0E22\u0E25\u0E39\u0E01\u0E23\u0E2D\u0E1A\u0E15\u0E31\u0E27 \u0E41\u0E15\u0E48\u0E25\u0E30\u0E25\u0E39\u0E01\u0E41\u0E15\u0E01\u0E40\u0E1B\u0E47\u0E19\u0E25\u0E39\u0E01\u0E22\u0E48\u0E2D\u0E22\u0E2D\u0E35\u0E01\u0E0A\u0E31\u0E49\u0E19"
   icon: {fileID: 21300000, guid: e710c08c54e56c346a7039b9be7ccedd, type: 3}
   tier: 1
   prefab: {fileID: 3857138112386556378, guid: 8e0cc9655a9459344886bfd474ad1c4b, type: 3}
-  aimMode: 0
+  aimMode: 4
+  randomNearCandidates: 3
   levels:
-  - damage: 120
-    cooldown: 2.5
+  - damage: 130
+    cooldown: 2
     projectileCount: 3
-    range: 6
+    range: 14
     projectileSpeed: 0
+    radius: 3
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 150

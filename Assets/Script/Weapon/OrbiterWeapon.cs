@@ -46,6 +46,12 @@ public class OrbiterWeapon : WeaponBase
     [Tooltip("เวลาที่ enemy แต่ละตัวต้องรอก่อนถูก orb เดิมตีอีก (กัน multi-hit ต่อรอบ)")]
     public float perEnemyHitCooldown = 0.5f;
 
+    [Header("Knockback")]
+    [Tooltip("ระยะผลักศัตรูออกจากตัวผู้เล่นต่อการโดน 1 ครั้ง (หน่วยเมตร) — 0 = ไม่ผลัก\n" +
+             "เป็นการเลื่อนตำแหน่งทันที ไม่ใช่แรงทางฟิสิกส์ และถูกใช้ซ้ำทุกครั้งที่ orb ตีโดน\n" +
+             "(ทุก perEnemyHitCooldown วินาทีต่อศัตรูหนึ่งตัว) ตั้งสูงเกินจะกลายเป็นดันจนเข้าไม่ถึงตัว")]
+    public float knockbackForce = 0.6f;
+
     [Header("Two Rings Settings")]
     [Tooltip("เปิดใช้งาน 2 วงโคจร (สำหรับ Star Ring หรืออาวุธซูเปอร์)")]
     public bool useTwoRings = false;
@@ -72,6 +78,55 @@ public class OrbiterWeapon : WeaponBase
 
     // ป้องกัน multi-hit: enemyInstanceID → unscaledTime ที่จะ hit ได้อีก
     private readonly Dictionary<int, float> _hitCooldowns = new();
+
+    // ── ค่าที่ใช้จริง: WeaponData มาก่อน ค่าบน prefab เป็นตัวสำรอง ───────────────
+    //
+    // เดิมอาวุธนี้อ่านจาก WeaponData แค่ damage / projectileCount / range เท่านั้น
+    // ส่วน cooldown / duration / radius ถูกทิ้งทั้งหมดแล้วไปใช้ค่าบน prefab แทน
+    // ผลคือ level curve ที่ designer ไล่ไว้ใน WD ไม่มีผลกับเกม (เช่น WD_Orbiter ไล่ cooldown
+    // 1.5→0.5 และ duration 5→10 แต่เกมใช้ 8 กับ 5 คงที่ทุกเลเวล) และสเตต Ability Haste
+    // กับการ์ด/talent ที่เพิ่มจำนวนกระสุนก็ไม่มีผลเลย
+    //
+    // กติกา: ถ้า WD ตั้งค่าไว้ (> 0) ใช้ค่านั้น · ไม่ได้ตั้ง (0) ค่อยตกมาใช้ค่าบน prefab
+    // เป็นรูปแบบเดียวกับที่ SupportArenaWeapon ใช้อยู่แล้ว (ld.duration > 0 ? ld.duration : arenaDuration)
+    // สำคัญกับ radius เป็นพิเศษ — WD ทุกเลเวลตั้ง radius: 0 ถ้าเอามาใช้ตรงๆ orb จะตีไม่โดนอะไรเลย
+
+    private WeaponLevelData Ld => data != null ? data.GetLevelData(currentLevel) : new WeaponLevelData();
+    private PlayerStatManager Sm => manager != null ? manager.statManager : null;
+
+    /// <summary>วินาทีระหว่างการร่ายแต่ละรอบ — รับผลจาก Ability Haste ด้วย (เดิมไม่รับเลย)</summary>
+    private float EffectiveSummonCooldown
+    {
+        get
+        {
+            float baseVal = Ld.cooldown > 0f ? Ld.cooldown : summonCooldown;
+            return baseVal * (Sm != null ? Sm.GetCooldownMultiplier() : 1f);
+        }
+    }
+
+    /// <summary>วินาทีที่ orb อยู่ต่อรอบ — คูณ Duration stat เหมือนเดิม</summary>
+    private float EffectiveActiveDuration
+    {
+        get
+        {
+            float baseVal = Ld.duration > 0f ? Ld.duration : activeDuration;
+            return baseVal * (Sm != null ? Sm.GetDurationMultiplier() : 1f);
+        }
+    }
+
+    /// <summary>รัศมีตรวจชนรอบ orb — คูณ Area stat เหมือนเดิม</summary>
+    private float EffectiveOrbHitRadius
+    {
+        get
+        {
+            float baseVal = Ld.radius > 0f ? Ld.radius : orbHitRadius;
+            return baseVal * (Sm != null ? Sm.GetAreaMultiplier() : 1f);
+        }
+    }
+
+    /// <summary>จำนวน orb วงใน — รวมโบนัสจากสเตต/talent/augment ที่เพิ่มจำนวนกระสุน (เดิมไม่รวม)</summary>
+    private int EffectiveInnerOrbCount
+        => Mathf.Max(1, Ld.projectileCount + (Sm != null ? Sm.GetBonusProjectileCount() : 0));
 
     // ── Init ───────────────────────────────────────────────────────────────
     protected override void OnInit()
@@ -122,7 +177,7 @@ public class OrbiterWeapon : WeaponBase
     void TickInactive()
     {
         summonTimer += Time.deltaTime;
-        if (summonTimer >= summonCooldown)
+        if (summonTimer >= EffectiveSummonCooldown)
         {
             summonTimer = 0f;
             Summon();
@@ -131,14 +186,16 @@ public class OrbiterWeapon : WeaponBase
 
     void Summon()
     {
-        float durationMult = manager.statManager != null ? manager.statManager.GetDurationMultiplier() : 1f;
-        activeTimer  = activeDuration * durationMult;
+        // สร้าง orb ใหม่ทุกรอบ — จำนวนอาจเปลี่ยนกลางเกมจากการ์ด/talent ที่เพิ่มจำนวนกระสุน
+        // เดิม RebuildOrbs ถูกเรียกแค่ตอน OnInit/OnLevelUp การ์ดเพิ่มกระสุนจึงไม่มีผล
+        // จนกว่าจะอัปเลเวลอาวุธนี้พอดี
+        RebuildOrbs();
+
+        activeTimer   = EffectiveActiveDuration;
         hitCheckTimer = 0f;
-        isActive     = true;
+        isActive      = true;
         _hitCooldowns.Clear();
         SetOrbsVisible(true);
-        int totalOrbs = innerOrbs.Count + outerOrbs.Count;
-        Debug.Log($"[Orbiter] ✨ Summoned — {totalOrbs} orbs (Inner: {innerOrbs.Count}, Outer: {outerOrbs.Count}), active {activeTimer:F1}s, hitRadius={orbHitRadius}");
     }
 
     void Deactivate()
@@ -147,19 +204,17 @@ public class OrbiterWeapon : WeaponBase
         SetOrbsVisible(false);
         summonTimer = 0f;
         manager.HideRemoteOrbsServerRpc();
-        Debug.Log($"[Orbiter] 💤 Deactivated — next summon in {summonCooldown:F0}s");
+        Debug.Log($"[Orbiter] 💤 Deactivated — next summon in {EffectiveSummonCooldown:F1}s");
     }
 
     // ── Damage on Contact ─────────────────────────────────────────────────
     void CheckHits()
     {
-        var ld         = data.GetLevelData(currentLevel);
         var sm         = manager.statManager;
         float dmgMult  = sm != null ? sm.GetPowerMultiplier() : 1f;
-        float areaMult = sm != null ? sm.GetAreaMultiplier() : 1f;
-        float baseDmg  = ld.damage * dmgMult;
+        float baseDmg  = Ld.damage * dmgMult;
         float now      = Time.time;
-        float radius   = orbHitRadius * areaMult;
+        float radius   = EffectiveOrbHitRadius;
 
         // ลบ entry ที่หมดอายุ (กัน dictionary โต)
         if (_hitCooldowns.Count > 32)
@@ -182,12 +237,13 @@ public class OrbiterWeapon : WeaponBase
 
     private void CheckOrbCollision(Transform orb, float radius, float baseDmg, float now)
     {
-        var hits = Physics.OverlapSphere(orb.position, radius);
+        // ใช้ helper กลางแทน Physics.OverlapSphere ดิบ — ได้ layer mask (เดิมกวาดทุก collider
+        // ในรัศมีทั้งกำแพง ผู้เล่น ของเก็บ แล้วค่อยกรองด้วย tag) และได้ตัวกันศัตรูซ้ำมาด้วย
+        var hits = PlayerWeaponManager.OverlapEnemy(orb.position, radius);
         if (hits.Length == 0) return;
 
         foreach (var c in hits)
         {
-            if (!c.CompareTag("Enemy")) continue;
             var e = c.GetComponent<Enemy>();
             if (e == null) continue;
 
@@ -197,9 +253,28 @@ public class OrbiterWeapon : WeaponBase
 
             float dmg = RollDamage(baseDmg, out bool isCrit);
 
+            // ── ทิศผลัก: ออกจากตัวผู้เล่น ไม่ใช่ออกจาก orb ─────────────────
+            // วงโคจรทำหน้าที่เป็นกำแพงรอบตัว การผลักออกจากศูนย์กลางจึงอ่านง่ายที่สุด
+            // (ถ้าอยากได้ความรู้สึก "เหวี่ยงตามวง" ให้ใช้ทิศสัมผัสวงแทน — คนละบุคลิก)
+            //
+            // **ต้องส่งทิศเข้าไปเอง** — FireMelee ที่นี่ใช้ตำแหน่งศัตรูเป็น center เพื่อตีทีละตัว
+            // ถ้าปล่อย knockbackDir เป็น default ฝั่ง server จะคำนวณ (enemy.position - center)
+            // ได้เวกเตอร์ศูนย์พอดี แล้ว guard ของมันจะข้ามการผลักไปเงียบๆ
+            Vector3 kbDir = Vector3.zero;
+            if (knockbackForce > 0f)
+            {
+                kbDir = e.transform.position - transform.position;
+                kbDir.y = 0f;
+                // ศัตรูยืนทับผู้เล่นพอดี — ใช้ทิศจาก orb แทน กันเคสที่ผลักไม่ออกเลย
+                if (kbDir.sqrMagnitude < 0.0001f)
+                {
+                    kbDir = e.transform.position - orb.position;
+                    kbDir.y = 0f;
+                }
+            }
+
             // ตีเฉพาะตัวที่ชน — No more AoE explode
-            FireMelee(e.transform.position, 0.5f, dmg, isCrit);
-            Debug.Log($"[Orbiter] 💥 Hit enemy {e.name} — dmg {dmg:F0}");
+            FireMelee(e.transform.position, 0.5f, dmg, isCrit, knockbackForce, kbDir);
         }
     }
 
@@ -257,7 +332,7 @@ public class OrbiterWeapon : WeaponBase
 
     private void RebuildOrbs()
     {
-        int targetInnerCount = data.GetLevelData(currentLevel).projectileCount;
+        int targetInnerCount = EffectiveInnerOrbCount;
         int targetOuterCount = useTwoRings ? Mathf.RoundToInt(targetInnerCount * outerOrbRatio) : 0;
 
         // 1. Maintain inner orbs list

@@ -66,7 +66,7 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
 
         float maxRange     = ld.range * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
         float radius       = explosionRadius * (manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f);
-        float baseDmg      = RollDamage(ld.damage, out bool _);
+        float baseDmg      = RollDamage(ld.damage, out bool isCrit);
 
         Vector3 playerPos  = transform.position;
         Vector3 spawnPos   = playerPos + Vector3.up * 0.5f;
@@ -79,7 +79,7 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
         float dynamicRange  = Mathf.Clamp(toMouse.magnitude, 0.5f, maxRange);
         Vector3 direction   = toMouse.sqrMagnitude > 0.001f ? toMouse.normalized : transform.forward;
 
-        SpawnGiantRocket(spawnPos, direction, baseDmg, rocketSpeed, dynamicRange, radius);
+        SpawnGiantRocket(spawnPos, direction, baseDmg, rocketSpeed, dynamicRange, radius, isCrit);
         Debug.Log($"[GiantRocket] FIRED dir={direction:F2} range={dynamicRange:F1} dmg={baseDmg:F0}");
     }
 

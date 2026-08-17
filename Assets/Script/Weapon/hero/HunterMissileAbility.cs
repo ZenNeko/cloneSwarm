@@ -73,7 +73,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         float radius = explosionRadius * (manager.statManager != null
             ? manager.statManager.GetAreaMultiplier() : 1f);
         float dmg = RollDamage(ld.damage * (manager.statManager != null
-            ? manager.statManager.GetPowerMultiplier() : 1f), out bool _);
+            ? manager.statManager.GetPowerMultiplier() : 1f), out bool isCrit);
 
         // หา enemy — base missileCount + bonus จาก ProjectileCount stat
         int totalCount = missileCount + (manager.statManager != null
@@ -102,7 +102,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
             targetNetIds[i] = netObj != null ? netObj.NetworkObjectId : 0;
         }
 
-        SpawnMissiles(spawnPositions, targetNetIds, dmg, radius);
+        SpawnMissiles(spawnPositions, targetNetIds, dmg, radius, isCrit);
         Debug.Log($"[HunterMissile] 🚀 FIRED {targets.Count} missiles dmg={dmg:F0} radius={radius:F1}");
     }
 

@@ -864,6 +864,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -902,6 +903,7 @@ MonoBehaviour:
   onDeath:
     m_PersistentCalls:
       m_Calls: []
+  deathVfx: {fileID: 0}
   expReward: 10
   expOrbPrefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
   netHealth:
@@ -909,6 +911,11 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 20
+  netMaxHealth:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 30
   serverInvincible: 0
 --- !u!114 &8100466704917301950
 MonoBehaviour:
@@ -922,11 +929,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c57fb8cd85061141aefb45bd061d614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRanged
-  preferredDist: 8
+  preferredDist: 5
   retreatDist: 6
   projectilePrefab: {fileID: 7311686904495137203, guid: e2c8c882eaccac44cb1e8baf6fa82141, type: 3}
   shotDamage: 20
-  shotSpeed: 7
+  shotSpeed: 10
   shotRange: 20
   shotCount: 1
   spreadAngle: 1
@@ -978,7 +985,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 116
   m_CollisionDetection: 0
 --- !u!1 &8758181374162907003
 GameObject:

@@ -230,8 +230,11 @@ public class PlayerAugmentManager : NetworkBehaviour
                 break;
         }
 
-        if (!string.IsNullOrEmpty(def.vfxKeyOnTrigger) && def.vfxKeyOnTrigger != "None")
-            NetworkedVFXPool.Instance?.PlayByName(def.vfxKeyOnTrigger, transform.position);
+        if (def.vfxOnTrigger != null && NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.vfxDatabase != null)
+        {
+            int id = NetworkedVFXPool.Instance.vfxDatabase.GetIdForAsset(def.vfxOnTrigger);
+            NetworkedVFXPool.Instance.PlayById(id, transform.position);
+        }
     }
 
     /// <summary>บวกค่าเข้า field ชั่วคราว แล้วคืนค่าเดิมเมื่อหมดเวลา (บวก/ลบเป็นคู่เสมอ)</summary>

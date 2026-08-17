@@ -13,16 +13,34 @@ MonoBehaviour:
   m_Name: AoE_Boss_Circle_Chasing
   m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
   actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
   cooldownAfter: 0
   targetingMode: 1
   targetOffset: {x: 0, y: 0, z: 0}
-  warningDuration: 2
-  damage: 50
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 3
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 20
+  detonateVfxKey: 
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
   isChasing: 1
   followCaster: 0
   isRotatingChase: 0
   isStackMarker: 0
   isGaze: 0
-  knockbackForce: 0
+  knockbackMode: 0
+  knockbackDistance: 0
   knockbackDuration: 0.2
-  radius: 3.5
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 5

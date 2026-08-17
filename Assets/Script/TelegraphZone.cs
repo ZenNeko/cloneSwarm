@@ -14,6 +14,63 @@ using UnityEngine;
 /// </summary>
 public class TelegraphZone : NetworkBehaviour
 {
+    /// <summary>
+    /// รวม shader property name ของ TelegraphZone ไว้ที่เดียว — เดิมยิงด้วย string ดิบกว่า 30 จุด
+    /// ในไฟล์นี้ พิมพ์ผิดจุดเดียวพังเงียบทั้งชุด (บั๊กคลาสเดียวกับ `_SweepAmount` ที่เจอมาก่อน)
+    ///
+    /// `Shader.PropertyToID` แฮชครั้งเดียวตอน static init แล้วใช้ int ทุกจุด — เร็วกว่า string
+    /// compare ทุกเฟรมด้วย แต่ประโยชน์หลักคือ typo กลายเป็น "สะกดผิดที่นี่ที่เดียว" แทนที่จะกระจาย
+    ///
+    /// `GraphPropertyNames` เป็นแหล่งความจริงเดียวที่ `TelegraphShaderValidator`
+    /// (Assets/Editor/TelegraphShaderValidator.cs) อ่านไปเช็คกับ shader จริง — ไม่พิมพ์ชื่อซ้ำอีกที่
+    /// </summary>
+    public static class ShaderIDs
+    {
+        // ── 17 property จริงบน Assets/Shader/TelegraphUniversal.shadergraph ──
+        // (ยืนยันจากไฟล์กราฟจริงเมื่อ 2026-08-13 — ทั้งหมด live ใช้งานจริง ไม่มีตัวไหนตาย)
+        public static readonly int FillProgress  = Shader.PropertyToID("_FillProgress");
+        public static readonly int InnerRadius   = Shader.PropertyToID("_InnerRadius");
+        public static readonly int WarningColor  = Shader.PropertyToID("_WarningColor");
+        public static readonly int DangerColor   = Shader.PropertyToID("_DangerColor");
+        public static readonly int OutlineColor  = Shader.PropertyToID("_OutlineColor");
+        public static readonly int OutlineShape  = Shader.PropertyToID("_OutlineShape");
+        public static readonly int PulseAmount   = Shader.PropertyToID("_PulseAmount");
+        public static readonly int PulseSpeed    = Shader.PropertyToID("_PulseSpeed");
+        public static readonly int BlinkAmount   = Shader.PropertyToID("_BlinkAmount");
+        public static readonly int RingAmount    = Shader.PropertyToID("_RingAmount");
+        public static readonly int RingSpeed     = Shader.PropertyToID("_RingSpeed");
+        public static readonly int RingSpacing   = Shader.PropertyToID("_RingSpacing");
+        public static readonly int RingWidth     = Shader.PropertyToID("_RingWidth");
+        public static readonly int OutlineWidth  = Shader.PropertyToID("_OutlineWidth");
+        public static readonly int EdgeGlow      = Shader.PropertyToID("_EdgeGlow");
+        public static readonly int EdgeStrength  = Shader.PropertyToID("_EdgeStrength");
+        public static readonly int BaseAlpha     = Shader.PropertyToID("_BaseAlpha");
+
+        // ── property ของ material สำรอง (URP/Lit, Standard) ที่ GetWarningMaterial() ปั้นเอง ──
+        // คนละ shader กับ TelegraphUniversal ทั้งหมด — ห้ามเอาไปเช็คกับ shader ด้านบน (false positive)
+        public static readonly int BaseColor     = Shader.PropertyToID("_BaseColor");
+        public static readonly int Color         = Shader.PropertyToID("_Color");
+        public static readonly int TintColor     = Shader.PropertyToID("_TintColor");
+        public static readonly int EmissionColor = Shader.PropertyToID("_EmissionColor");
+        public static readonly int Surface       = Shader.PropertyToID("_Surface");
+        public static readonly int Blend         = Shader.PropertyToID("_Blend");
+        public static readonly int Mode          = Shader.PropertyToID("_Mode");
+
+        /// <summary>ชื่อดิบของ 17 property บน TelegraphUniversal — ตัวเดียวที่ validator อ่าน</summary>
+        public static readonly string[] GraphPropertyNames =
+        {
+            "_FillProgress", "_InnerRadius", "_WarningColor", "_DangerColor",
+            "_OutlineColor", "_OutlineShape", "_PulseAmount", "_PulseSpeed",
+            "_BlinkAmount", "_RingAmount", "_RingSpeed", "_RingSpacing",
+            "_RingWidth", "_OutlineWidth", "_EdgeGlow", "_EdgeStrength", "_BaseAlpha",
+        };
+
+        /// <summary>ชื่อของ material สำรอง (URP/Lit, Standard) — แยกไว้ให้ validator ไม่เอาไปเช็คผิด shader</summary>
+        public static readonly string[] FallbackMaterialPropertyNames =
+        {
+            "_BaseColor", "_Color", "_TintColor", "_EmissionColor", "_Surface", "_Blend", "_Mode",
+        };
+    }
 
     [Header("3D Visual Prefabs — ออกแบบ scale=1 ให้มีขนาดมาตรฐาน 1 unit")]
     [Tooltip("Disc Ø1 unit (Cylinder/Plane นอนบน XZ)\n" +
@@ -178,8 +235,9 @@ public class TelegraphZone : NetworkBehaviour
     [HideInInspector] public NetworkObject casterNetworkObject;
 
     // VFX ตอนระเบิดแบบต่อ action — telegraph prefab มีตัวเดียวใช้ร่วมทั้งเกม
-    // ถ้าไม่มีช่องนี้ ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด · ว่าง = ใช้ detonateVfxPrefab บน prefab
-    [HideInInspector] public string  detonateVfxKey = "";
+    // ถ้าไม่มีช่องนี้ ทุก AoE จะระเบิดหน้าตาเหมือนกันหมด · -1 = ใช้ detonateVfxPrefab บน prefab
+    // ADR-006: เดิมเป็น string key ย้ายมาเป็น id เสถียร (VFXDatabase.assets index)
+    [HideInInspector] public int     detonateVfxId = -1;
 
     [HideInInspector] public float   coneAngle = 90f;    // Cone: มุมกางทั้งหมด (องศา)
 
@@ -338,7 +396,7 @@ public class TelegraphZone : NetworkBehaviour
             isStackMarker       = isStackMarker,
             isGaze              = isGaze,
             isRotatingChase     = isRotatingChase,
-            detonateVfxKey      = detonateVfxKey ?? "",
+            detonateVfxId       = detonateVfxId,
             overrideColors      = overrideColors,
             warningColor        = overrideWarningColor,
             dangerColor         = overrideDangerColor,
@@ -380,7 +438,7 @@ public class TelegraphZone : NetworkBehaviour
         isStackMarker         = init.isStackMarker;
         isGaze                = init.isGaze;
         isRotatingChase       = init.isRotatingChase;
-        detonateVfxKey        = init.detonateVfxKey.ToString();
+        detonateVfxId         = init.detonateVfxId;
         overrideColors        = init.overrideColors;
         overrideWarningColor  = init.warningColor;
         overrideDangerColor   = init.dangerColor;
@@ -547,7 +605,7 @@ public class TelegraphZone : NetworkBehaviour
             r.GetPropertyBlock(mpb);
 
             // เริ่ม fill ที่ 0 (กันค่าค้างจาก material asset)
-            if (sharedMat.HasProperty("_FillProgress")) mpb.SetFloat("_FillProgress", 0f);
+            if (sharedMat.HasProperty(ShaderIDs.FillProgress)) mpb.SetFloat(ShaderIDs.FillProgress, 0f);
 
             r.SetPropertyBlock(mpb);
         }
@@ -584,34 +642,34 @@ public class TelegraphZone : NetworkBehaviour
             // ทรงอื่นดัน **-1 ไม่ใช่ 0** โดยตั้งใจ — ทำให้ (length - (-1)) x halfX ใหญ่เสมอ
             // สูตร min() ในกราฟจึงคืนระยะเดิม โดยไม่ต้องมี guard ในกราฟเลย
             // ถ้าดัน 0 ทุกวงกลมจะมีจุดขอบขนาด _OutlineWidth อยู่กลางวง
-            if (sharedMat.HasProperty("_InnerRadius"))
-                mpb.SetFloat("_InnerRadius",
+            if (sharedMat.HasProperty(ShaderIDs.InnerRadius))
+                mpb.SetFloat(ShaderIDs.InnerRadius,
                              aoeType == AoEType.Donut && radius > 0.0001f
                                  ? Mathf.Clamp01(innerRadius / radius) : -1f);
 
-            if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", warn);
-            if (sharedMat.HasProperty("_DangerColor"))  mpb.SetColor("_DangerColor",  danger);
+            if (sharedMat.HasProperty(ShaderIDs.WarningColor)) mpb.SetColor(ShaderIDs.WarningColor, warn);
+            if (sharedMat.HasProperty(ShaderIDs.DangerColor))  mpb.SetColor(ShaderIDs.DangerColor,  danger);
             // สีเริ่มต้นของ ring/ขอบ ที่ progress = 0 · Update() จะไล่ต่อเองทุกเฟรม
             // ตั้งตรงนี้ด้วยเพื่อไม่ให้เฟรมแรกโผล่มาเป็นสีอันตรายก่อนแล้วค่อยกระโดดกลับ
-            if (sharedMat.HasProperty("_OutlineColor"))
-                mpb.SetColor("_OutlineColor", ResolveRingColor(0f));
-            if (sharedMat.HasProperty("_OutlineShape")) mpb.SetFloat("_OutlineShape", outlineShape);
+            if (sharedMat.HasProperty(ShaderIDs.OutlineColor))
+                mpb.SetColor(ShaderIDs.OutlineColor, ResolveRingColor(0f));
+            if (sharedMat.HasProperty(ShaderIDs.OutlineShape)) mpb.SetFloat(ShaderIDs.OutlineShape, outlineShape);
 
             // ── หน้าตาวง/ขอบ — ดันเสมอ เหมือนที่ทำกับสี ──
             // ค่ากลางอยู่บน prefab ตัวนี้ · action ทับเป็นรายท่าได้ · โครงเดียวกับ ResolveColors()
             // เดิมตอนไม่ override จะไม่แตะ shader เลยแล้วปล่อยให้ material คุม — เปลี่ยนแล้ว
             // เพราะ "ค่ากลาง" ต้องอยู่ที่เดียว ถ้าปล่อยสองทางจะเดาไม่ออกว่าอันไหนชนะ
-            SetIfPresent(sharedMat, "_PulseAmount",  Fx(overridePulseAmount,  pulseAmount));
-            SetIfPresent(sharedMat, "_PulseSpeed",   Fx(overridePulseSpeed,   pulseSpeed));
-            SetIfPresent(sharedMat, "_BlinkAmount",  Fx(overrideBlinkAmount,  blinkAmount));
-            SetIfPresent(sharedMat, "_RingAmount",   Fx(overrideRingAmount,   ringAmount));
-            SetIfPresent(sharedMat, "_RingSpeed",    Fx(overrideRingSpeed,    ringSpeed));
-            SetIfPresent(sharedMat, "_RingSpacing",  Fx(overrideRingSpacing,  ringSpacing));
-            SetIfPresent(sharedMat, "_RingWidth",    Fx(overrideRingWidth,    ringWidth));
-            SetIfPresent(sharedMat, "_OutlineWidth", Fx(overrideOutlineWidth, outlineWidth));
-            SetIfPresent(sharedMat, "_EdgeGlow",     Fx(overrideEdgeGlow,     edgeGlow));
-            SetIfPresent(sharedMat, "_EdgeStrength", Fx(overrideEdgeStrength, edgeStrength));
-            SetIfPresent(sharedMat, "_BaseAlpha",    Fx(overrideBaseAlpha,    baseAlpha));
+            SetIfPresent(sharedMat, ShaderIDs.PulseAmount,  Fx(overridePulseAmount,  pulseAmount));
+            SetIfPresent(sharedMat, ShaderIDs.PulseSpeed,   Fx(overridePulseSpeed,   pulseSpeed));
+            SetIfPresent(sharedMat, ShaderIDs.BlinkAmount,  Fx(overrideBlinkAmount,  blinkAmount));
+            SetIfPresent(sharedMat, ShaderIDs.RingAmount,   Fx(overrideRingAmount,   ringAmount));
+            SetIfPresent(sharedMat, ShaderIDs.RingSpeed,    Fx(overrideRingSpeed,    ringSpeed));
+            SetIfPresent(sharedMat, ShaderIDs.RingSpacing,  Fx(overrideRingSpacing,  ringSpacing));
+            SetIfPresent(sharedMat, ShaderIDs.RingWidth,    Fx(overrideRingWidth,    ringWidth));
+            SetIfPresent(sharedMat, ShaderIDs.OutlineWidth, Fx(overrideOutlineWidth, outlineWidth));
+            SetIfPresent(sharedMat, ShaderIDs.EdgeGlow,     Fx(overrideEdgeGlow,     edgeGlow));
+            SetIfPresent(sharedMat, ShaderIDs.EdgeStrength, Fx(overrideEdgeStrength, edgeStrength));
+            SetIfPresent(sharedMat, ShaderIDs.BaseAlpha,    Fx(overrideBaseAlpha,    baseAlpha));
 
             r.SetPropertyBlock(mpb);
         }
@@ -627,10 +685,10 @@ public class TelegraphZone : NetworkBehaviour
             if (sharedMat == null) continue;
 
             r.GetPropertyBlock(mpb);
-            if (sharedMat.HasProperty("_WarningColor")) mpb.SetColor("_WarningColor", safeZoneColor);
-            if (sharedMat.HasProperty("_DangerColor"))  mpb.SetColor("_DangerColor",  safeZoneColor);
-            if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", safeZoneColor);
-            if (sharedMat.HasProperty("_OutlineShape")) mpb.SetFloat("_OutlineShape", 1f);
+            if (sharedMat.HasProperty(ShaderIDs.WarningColor)) mpb.SetColor(ShaderIDs.WarningColor, safeZoneColor);
+            if (sharedMat.HasProperty(ShaderIDs.DangerColor))  mpb.SetColor(ShaderIDs.DangerColor,  safeZoneColor);
+            if (sharedMat.HasProperty(ShaderIDs.OutlineColor)) mpb.SetColor(ShaderIDs.OutlineColor, safeZoneColor);
+            if (sharedMat.HasProperty(ShaderIDs.OutlineShape)) mpb.SetFloat(ShaderIDs.OutlineShape, 1f);
             r.SetPropertyBlock(mpb);
         }
     }
@@ -658,7 +716,7 @@ public class TelegraphZone : NetworkBehaviour
         r.receiveShadows    = false;
     }
 
-    void SetIfPresent(Material sharedMat, string prop, float value)
+    void SetIfPresent(Material sharedMat, int prop, float value)
     {
         if (sharedMat.HasProperty(prop)) mpb.SetFloat(prop, value);
     }
@@ -706,10 +764,10 @@ public class TelegraphZone : NetworkBehaviour
         };
 
         // Detonate VFX (impact shockwave)
-        // key ต่อ action มาก่อน — ผ่าน pool ตาม convention #2
-        if (!string.IsNullOrEmpty(detonateVfxKey) && detonateVfxKey != "None")
+        // id ต่อ action มาก่อน (ADR-006) — ผ่าน pool ตาม convention #2
+        if (detonateVfxId >= 0)
         {
-            NetworkedVFXPool.Instance?.PlayByName(detonateVfxKey, transform.position, scale);
+            NetworkedVFXPool.Instance?.PlayById(detonateVfxId, transform.position, scale);
         }
         else if (detonateVfxPrefab != null)
         {
@@ -1007,48 +1065,33 @@ public class TelegraphZone : NetworkBehaviour
     /// </summary>
     float HitScale => scaleEnd > 0.0001f ? scaleEnd : 1f;
 
-    bool IsInCircle(Vector3 pos)
-    {
-        Vector2 d = new Vector2(pos.x - transform.position.x, pos.z - transform.position.z);
-        return d.magnitude <= radius * HitScale;
-    }
+    // ── Hit test — คณิตล้วนย้ายไป TelegraphGeometry (เทสได้แยกจาก MonoBehaviour) ──────────
+    // เมธอดตรงนี้เป็น thin wrapper ส่ง transform/HitScale ให้ TelegraphGeometry เท่านั้น
+    // พฤติกรรมต้องเหมือนเดิมทุกจุด — ดูคอมเมนต์ edge case เต็มๆ ใน TelegraphGeometry.cs
 
-    /// <summary>Cone: อยู่ในรัศมี **และ** อยู่ในมุมกางจากทิศที่ zone หันอยู่</summary>
-    bool IsInCone(Vector3 pos)
-    {
-        Vector3 d = pos - transform.position;
-        d.y = 0f;
+    /// <summary>วงกลม — ไม่มีคู่ในกราฟ (ดู TelegraphGeometry.IsInCircle)</summary>
+    bool IsInCircle(Vector3 pos) =>
+        TelegraphGeometry.IsInCircle(pos, transform.position, radius, HitScale);
 
-        float r = radius * HitScale;
-        if (d.sqrMagnitude > r * r) return false;
-        if (coneAngle >= 360f) return true;
-        if (d.sqrMagnitude < 0.0001f) return true;   // ยืนทับจุดยอดกรวย
+    /// <summary>Cone: อยู่ในรัศมี **และ** อยู่ในมุมกางจากทิศที่ zone หันอยู่ — ไม่มีคู่ในกราฟ (ดู TelegraphGeometry.IsInCone)</summary>
+    bool IsInCone(Vector3 pos) =>
+        TelegraphGeometry.IsInCone(pos, transform.position, transform.forward, radius, coneAngle, HitScale);
 
-        return Vector3.Angle(transform.forward, d) <= coneAngle * 0.5f;
-    }
+    /// <summary>เส้นตรง — ไม่มีคู่ในกราฟ นอกจาก _OutlineShape=0 (ขอบเหลี่ยม) (ดู TelegraphGeometry.IsInLine)</summary>
+    bool IsInLine(Vector3 pos) =>
+        TelegraphGeometry.IsInLine(pos, transform.position, transform.rotation, lineWidth, lineLength, HitScale);
 
-    bool IsInLine(Vector3 pos)
-    {
-        Vector3 local = Quaternion.Inverse(transform.rotation) * (pos - transform.position);
-        return Mathf.Abs(local.x) <= lineWidth * HitScale * 0.5f
-            && Mathf.Abs(local.z) <= lineLength * HitScale * 0.5f;
-    }
-
-    // Line ที่หมุน 90° (ใช้สำหรับ Cross)
+    /// <summary>Line ที่หมุน 90° (ใช้สำหรับ Cross) — โครงเดียวกับ IsInLine แค่หมุน rotation เพิ่ม</summary>
     bool IsInLineCross(Vector3 pos)
     {
         Quaternion rot90 = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
-        Vector3 local = Quaternion.Inverse(rot90) * (pos - transform.position);
-        return Mathf.Abs(local.x) <= lineWidth * HitScale * 0.5f
-            && Mathf.Abs(local.z) <= lineLength * HitScale * 0.5f;
+        return TelegraphGeometry.IsInLine(pos, transform.position, rot90, lineWidth, lineLength, HitScale);
     }
 
-    bool IsInDonut(Vector3 pos)
-    {
-        float dist = new Vector2(pos.x - transform.position.x,
-                                 pos.z - transform.position.z).magnitude;
-        return dist >= innerRadius * HitScale && dist <= radius * HitScale;
-    }
+    /// <summary>โดนัท (annulus) — **มีคู่ในกราฟจริง** ผ่าน _InnerRadius (ดู TelegraphGeometry.IsInDonut ที่มีรายละเอียดเต็ม
+    /// และ docs/telegraph-shader-crossref.md) — นี่คือกรณีที่ debt #8 ของ ADR-007 พูดถึง</summary>
+    bool IsInDonut(Vector3 pos) =>
+        TelegraphGeometry.IsInDonut(pos, transform.position, innerRadius, radius, HitScale);
 
     // ── Client Visual ──────────────────────────────────────────────────────
     void CreateVisual()
@@ -1254,23 +1297,23 @@ public class TelegraphZone : NetworkBehaviour
         r.GetPropertyBlock(mpb);
 
         // Path 1 — Shader Graph มี _FillProgress: ใช้ shader-side warning→danger lerp
-        if (sharedMat.HasProperty("_FillProgress"))
+        if (sharedMat.HasProperty(ShaderIDs.FillProgress))
         {
-            mpb.SetFloat("_FillProgress", progress);
+            mpb.SetFloat(ShaderIDs.FillProgress, progress);
             // พื้นวง shader lerp เองจาก _WarningColor/_DangerColor แต่ ring/ขอบ ไม่มีคู่สี
             // จึงต้องป้อนสีที่ lerp แล้วเข้าไปเองทุกเฟรม
-            if (sharedMat.HasProperty("_OutlineColor")) mpb.SetColor("_OutlineColor", ringColor);
+            if (sharedMat.HasProperty(ShaderIDs.OutlineColor)) mpb.SetColor(ShaderIDs.OutlineColor, ringColor);
             r.SetPropertyBlock(mpb);
             return;
         }
 
         // Path 2 — Fallback: เซ็ตสีตรงๆ ให้ shader ทั่วไป
-        if (sharedMat.HasProperty("_BaseColor")) mpb.SetColor("_BaseColor", fallbackColor);
-        if (sharedMat.HasProperty("_Color"))     mpb.SetColor("_Color",     fallbackColor);
-        if (sharedMat.HasProperty("_TintColor")) mpb.SetColor("_TintColor", fallbackColor);
-        if (sharedMat.HasProperty("_EmissionColor"))
+        if (sharedMat.HasProperty(ShaderIDs.BaseColor)) mpb.SetColor(ShaderIDs.BaseColor, fallbackColor);
+        if (sharedMat.HasProperty(ShaderIDs.Color))     mpb.SetColor(ShaderIDs.Color,     fallbackColor);
+        if (sharedMat.HasProperty(ShaderIDs.TintColor)) mpb.SetColor(ShaderIDs.TintColor, fallbackColor);
+        if (sharedMat.HasProperty(ShaderIDs.EmissionColor))
         {
-            mpb.SetColor("_EmissionColor", new Color(fallbackColor.r, fallbackColor.g, fallbackColor.b) * 1.5f);
+            mpb.SetColor(ShaderIDs.EmissionColor, new Color(fallbackColor.r, fallbackColor.g, fallbackColor.b) * 1.5f);
         }
 
         r.SetPropertyBlock(mpb);
@@ -1286,12 +1329,12 @@ public class TelegraphZone : NetworkBehaviour
                       ?? Shader.Find("Standard");
             cachedFallbackMaterial = new Material(shader);
 
-            cachedFallbackMaterial.SetFloat("_Surface", 1f);
-            cachedFallbackMaterial.SetFloat("_Blend",   0f);
+            cachedFallbackMaterial.SetFloat(ShaderIDs.Surface, 1f);
+            cachedFallbackMaterial.SetFloat(ShaderIDs.Blend,   0f);
             cachedFallbackMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             cachedFallbackMaterial.renderQueue = 3000;
 
-            cachedFallbackMaterial.SetFloat("_Mode", 3f);
+            cachedFallbackMaterial.SetFloat(ShaderIDs.Mode, 3f);
             cachedFallbackMaterial.EnableKeyword("_ALPHABLEND_ON");
 
             cachedFallbackMaterial.color = new Color(1f, 0.8f, 0f, 0.4f);

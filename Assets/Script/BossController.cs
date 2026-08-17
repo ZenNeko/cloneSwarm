@@ -167,9 +167,10 @@ public class BossController : NetworkBehaviour
         {
             GameHUD.Instance?.ShowAnnouncement(phase.announcementText, phase.announcementColor);
         }
-        if (!string.IsNullOrEmpty(phase.phaseVfxName))
+        if (phase.phaseVfx != null && NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.vfxDatabase != null)
         {
-            NetworkedVFXPool.Instance?.PlayByName(phase.phaseVfxName, transform.position);
+            int id = NetworkedVFXPool.Instance.vfxDatabase.GetIdForAsset(phase.phaseVfx);
+            NetworkedVFXPool.Instance.PlayById(id, transform.position);
         }
 
         if (phase.cameraShakeMagnitude > 0)

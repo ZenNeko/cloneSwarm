@@ -449,7 +449,15 @@ public class PlayerWeaponManager : NetworkBehaviour
         Debug.Log($"[WeaponManager] ➕ {data.weaponName} Lv{level + 1}");
     }
 
-    void RemoveWeapon(WeaponData data)
+    /// <summary>
+    /// ถอด weapon ออกจาก slot — **ฝั่งที่เรียกเท่านั้น ไม่ replicate ข้ามเน็ตเวิร์กเอง**
+    ///
+    /// ตัวที่ใช้ในเกมจริง (`ReplaceWeapon` / `FuseWeapons`) ยิง RPC ของตัวเองต่อท้ายอยู่แล้ว
+    /// เปิด public ให้ WeaponTestManager ล้างอาวุธก่อนติดตั้งตัวใหม่ได้ — ไม่งั้นพอทดสอบครบ
+    /// 6 ช่อง `AddWeapon` จะคืน false เงียบๆ แล้วปุ่มที่เหลือจะกดไม่ติดโดยไม่มีอะไรบอก
+    /// ถ้าเรียกจากที่อื่นนอกเหนือจากนี้ ต้องจัดการ replicate เอง
+    /// </summary>
+    public void RemoveWeapon(WeaponData data)
     {
         var slot = slots.Find(s => s.data == data);
         if (slot == null) return;
@@ -509,7 +517,8 @@ public class PlayerWeaponManager : NetworkBehaviour
         float damage, float projSpeed, int count, float spreadDeg,
         bool piercing = false, int projPrefabId = -1, float maxRange = -1f,
         bool isCrit = false, string weaponName = "Unknown",
-        ulong targetNetworkObjectId = 999999)
+        ulong targetNetworkObjectId = 999999,
+        float explosionRadius = 0f)
     {
         GameObject prefab = null;
         if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
@@ -566,6 +575,7 @@ public class PlayerWeaponManager : NetworkBehaviour
                 p.isCrit   = isCrit;
                 p.weaponName = weaponName;
                 p.ownerManager = this;
+                p.explosionRadius = explosionRadius;   // 0 = ตีเฉพาะตัวที่ชนตามปกติ
                 if (maxRange > 0f) p.maxRange = maxRange;
                 if (!string.IsNullOrEmpty(weaponVfx) && weaponVfx != "None")
                     p.hitVFX = weaponVfx;
@@ -754,19 +764,50 @@ public class PlayerWeaponManager : NetworkBehaviour
     }
 
     // ── Helper: หาศัตรูในรัศมี (Layer + Tag fallback) ─────────────────────
+    //
+    // **คืน collider ตัวเดียวต่อ Enemy หนึ่งตัวเสมอ**
+    //
+    // ศัตรูตัวหนึ่งมี collider ได้หลายตัวบน GameObject เดียวกัน (เช่น TargetDummy มี
+    // BoxCollider ที่เป็น trigger + SphereCollider ที่เป็นของแข็ง) และ Physics.queriesHitTriggers
+    // มีค่า default เป็น true ผลลัพธ์จึงมี collider ของศัตรูตัวเดิมโผล่มาหลายครั้ง
+    //
+    // ผู้เรียกทุกจุดวนลูปแล้วเรียก c.GetComponent<Enemy>() ซึ่งคืน Enemy ตัวเดียวกัน
+    // แล้วตี EnemyTakeDamage ซ้ำ — ดาเมจเข้าสองเท่า knockback ผลักสองเท่า และสถิติ DPS
+    // นับเกินจริงสองเท่า โดยไม่มีอะไรฟ้อง
+    //
+    // กรองที่นี่ที่เดียวเพราะมีผู้เรียกกว่าสิบจุด (melee / arc / line / mine / aura ฯลฯ)
+    // การไปไล่ใส่ตัวกันซ้ำทีละจุดคือเชิญให้มีจุดที่ลืม
     public static Collider[] OverlapEnemy(Vector3 center, float radius)
     {
         int mask = LayerMask.GetMask("Enemy");
         // ถ้าไม่มี Layer "Enemy" → scan ทุก layer แล้วกรองด้วย Tag
-        if (mask == 0)
+        Collider[] raw = mask == 0
+            ? Physics.OverlapSphere(center, radius)
+            : Physics.OverlapSphere(center, radius, mask);
+
+        var result = new System.Collections.Generic.List<Collider>(raw.Length);
+        // เก็บตัว Enemy ตรงๆ ใช้การเทียบ reference — ไม่ใช้ GetInstanceID()
+        // ซึ่ง Unity 6000.7 ประกาศเลิกใช้แล้ว (CS0619 นับเป็น error ในโปรเจกต์นี้)
+        var seen   = new System.Collections.Generic.HashSet<Enemy>();
+
+        foreach (var c in raw)
         {
-            var all     = Physics.OverlapSphere(center, radius);
-            var enemies = new System.Collections.Generic.List<Collider>();
-            foreach (var c in all)
-                if (c.CompareTag("Enemy")) enemies.Add(c);
-            return enemies.ToArray();
+            if (mask == 0 && !c.CompareTag("Enemy")) continue;
+
+            var e = c.GetComponent<Enemy>();
+            if (e == null)
+            {
+                // collider ที่ไม่มี Enemy บนตัวเอง (เช่น hitbox ลูก) ปล่อยผ่านไปตามเดิม
+                // ผู้เรียกจะ GetComponent ได้ null แล้วข้ามเอง — พฤติกรรมนี้ไม่เปลี่ยน
+                result.Add(c);
+                continue;
+            }
+
+            if (seen.Add(e))
+                result.Add(c);
         }
-        return Physics.OverlapSphere(center, radius, mask);
+
+        return result.ToArray();
     }
 
     // ── ServerRpc: Grenade (throw → AoE on land) ──────────────────────────
@@ -774,7 +815,8 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void ThrowGrenadeServerRpc(
         Vector3 spawnPos, Vector3 targetPos,
         float damage, float radius,
-        float fuseTime = 1.5f, bool cluster = false, string weaponName = "Unknown", int projPrefabId = -1, bool isCrit = false)
+        float fuseTime = 1.5f, bool cluster = false, string weaponName = "Unknown", int projPrefabId = -1, bool isCrit = false,
+        GrenadeClusterSettings clusterSettings = default)
     {
         var targetPrefab = grenadePrefab;
         if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
@@ -807,12 +849,41 @@ public class PlayerWeaponManager : NetworkBehaviour
         if (gp != null)
         {
             gp.damage    = damage;
-            gp.radius    = radius;
-            gp.fuseTime  = fuseTime;
+            // 0 = ให้ prefab ลูกระเบิดตัดสินเอง (ค่าที่ตั้งไว้บนตัวมัน)
+            // อาวุธเดิมทุกตัวส่งค่าไม่เป็นศูนย์อยู่แล้วจึงยังชนะเหมือนเดิม —
+            // เป็นทางให้ย้ายการตั้งค่าไปอยู่ที่ prefab ลูกทีละอาวุธโดยไม่กระทบตัวอื่น
+            // (รูปแบบเดียวกับ SupportArenaWeapon: ld.duration > 0 ? ld.duration : arenaDuration)
+            if (radius   > 0f) gp.radius   = radius;
+            if (fuseTime > 0f) gp.fuseTime = fuseTime;
             gp.cluster   = cluster;
+            gp.isCrit    = isCrit;
             gp.targetPos = targetPos;
             gp.weaponName = weaponName;
             gp.weaponManager = this;
+
+            // อาวุธคุมค่า cluster เองได้ — ไม่ส่งมาก็ใช้ค่าบน prefab ลูกระเบิดตามเดิม
+            if (clusterSettings.overrideProjectile)
+            {
+                gp.clusterPellets      = clusterSettings.pellets;
+                gp.clusterDmgPercent   = clusterSettings.dmgPercent;
+                gp.clusterProjSpeed    = clusterSettings.projSpeed;
+                gp.clusterSpreadRadius = clusterSettings.spreadRadius;
+                gp.clusterChildRadius  = clusterSettings.childRadius;
+                gp.clusterChildFuse    = clusterSettings.childFuse;
+            }
+
+            // ให้ระเบิดใช้ VFX ที่ตั้งไว้บน prefab อาวุธ ตามกฎใน CLAUDE.md ที่ว่า
+            // "VFX/SFX อยู่บน weapon prefab ไม่ใช่บน ScriptableObject"
+            // บล็อกแบบนี้เคยมีให้เฉพาะ MolotovProjectile ด้านล่าง ส่วนระเบิดถูกลืม —
+            // Grenade / Splitter Bomb / Cluster Bomb จึงแสดงเอฟเฟกต์ตัวเดียวกันหมดมาตลอด
+            // และการตั้ง weaponVfxType บน prefab อาวุธไม่เคยมีผลอะไรเลย
+            var gpSlot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
+            if (gpSlot != null && gpSlot.script != null
+                && !string.IsNullOrEmpty(gpSlot.script.weaponVfxType)
+                && gpSlot.script.weaponVfxType != "None")
+            {
+                gp.explosionVfxKey = gpSlot.script.weaponVfxType;
+            }
         }
         var mp = go.GetComponent<MolotovProjectile>();
         if (mp != null)
@@ -975,17 +1046,18 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     // ── ServerRpc: Drop Mine ──────────────────────────────────────────────
     [Rpc(SendTo.Server)]
-    public void DropMineServerRpc(Vector3 position, float damage, float triggerRadius, string weaponName = "Unknown")
+    public void DropMineServerRpc(Vector3 position, float damage, float triggerRadius, string weaponName = "Unknown", bool isCrit = false)
     {
         if (minePrefab == null) return;
         var go = Instantiate(minePrefab, position, Quaternion.identity);
         var m  = go.GetComponent<MineObject>();
-        if (m != null) 
-        { 
-            m.damage = damage; 
-            m.triggerRadius = triggerRadius; 
+        if (m != null)
+        {
+            m.damage = damage;
+            m.triggerRadius = triggerRadius;
             m.weaponName = weaponName;
             m.weaponManager = this;
+            m.isCrit = isCrit;
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
     }
@@ -994,7 +1066,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void SpawnMissilesServerRpc(
         Vector3[] spawnPositions, ulong[] targetNetIds,
-        float damage, float explosionRadius, string weaponName = "Unknown")
+        float damage, float explosionRadius, string weaponName = "Unknown", bool isCrit = false)
     {
         if (missilePrefab == null) return;
         int count = Mathf.Min(spawnPositions.Length, targetNetIds.Length);
@@ -1008,6 +1080,7 @@ public class PlayerWeaponManager : NetworkBehaviour
                 mp.Init(targetNetIds[i], damage, explosionRadius);
                 mp.weaponName = weaponName;
                 mp.weaponManager = this;
+                mp.isCrit = isCrit;
             }
             go.GetComponent<NetworkObject>()?.Spawn(true);
         }
@@ -1037,14 +1110,23 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void AddShieldServerRpc(float amount)
     {
-        playerMove?.AddShield(amount);
+        if (playerMove == null) return;
+
+        // amount และตัวตั้งของมัน (damage × shieldPercent × จำนวนศัตรู) คำนวณบน client ทั้งคู่
+        // (ดู BunnyHopWeapon.cs / StormBunnyWeapon.cs) — ต้องกันค่าติดลบ/NaN แล้ว clamp เพดานก่อนเชื่อ
+        // เพดานอิง maxHealth จริง (โตตาม talent/augment) แทนเลขคงที่ 1000 แบบที่ PlayerAugmentManager
+        // ใช้กับ Second Wind — เจตนาเดียวกัน แค่เพดานลอยตามผู้เล่นแทนค่าคงที่ (ADR-008 D3)
+        if (float.IsNaN(amount) || amount <= 0f) return;
+        amount = Mathf.Clamp(amount, 0f, playerMove.maxHealth);
+
+        playerMove.AddShield(amount);
     }
 
     // ── ServerRpc: Sticky Rocket (Gunner Q mode) ──────────────────────────
     [Rpc(SendTo.Server)]
     public void SpawnStickyRocketServerRpc(
         Vector3 spawnPos, Vector3 direction,
-        float damage, float speed, float explosionRadius, string weaponName = "Unknown")
+        float damage, float speed, float explosionRadius, string weaponName = "Unknown", bool isCrit = false)
     {
         if (stickyRocketPrefab == null) return;
         Quaternion stickyRot = Quaternion.LookRotation(direction) * stickyRocketPrefab.transform.localRotation;
@@ -1058,6 +1140,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             sr.explosionRadius = explosionRadius;
             sr.weaponName      = weaponName;
             sr.weaponManager   = this;
+            sr.isCrit          = isCrit;
             sr.InitDirection(direction);
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
@@ -1068,7 +1151,7 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void SpawnGiantRocketServerRpc(
         Vector3 spawnPos, Vector3 direction,
         float baseDamage, float speed,
-        float maxRange, float explosionRadius, string weaponName = "Unknown")
+        float maxRange, float explosionRadius, string weaponName = "Unknown", bool isCrit = false)
     {
         if (giantRocketPrefab == null) return;
 
@@ -1090,6 +1173,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             gr.explosionRadius = explosionRadius;
             gr.weaponName      = weaponName;
             gr.weaponManager   = this;
+            gr.isCrit          = isCrit;
             gr.InitDirection(spawnPos, dir);
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
@@ -1417,7 +1501,7 @@ public class PlayerWeaponManager : NetworkBehaviour
             if (firstHitEnemy != null && chainTargets > 0)
             {
                 Vector3 startChainPos = firstHitEnemy.transform.position + Vector3.up * 0.8f;
-                FireLightningChainServerSide(startChainPos, firstHitEnemy, mask, hitPositions, chainTargets, chainDamage, chainRadius, weaponName, beamVfx);
+                FireLightningChainServerSide(startChainPos, firstHitEnemy, mask, hitPositions, chainTargets, chainDamage, chainRadius, weaponName, beamVfx, isCrit);
             }
         }
 
@@ -1431,7 +1515,7 @@ public class PlayerWeaponManager : NetworkBehaviour
 
     private void FireLightningChainServerSide(
         Vector3 startPos, Enemy firstEnemy, int mask, List<Vector3> hitPositions,
-        int chainTargets, float chainDamage, float chainRadius, string weaponName, string weaponVfx)
+        int chainTargets, float chainDamage, float chainRadius, string weaponName, string weaponVfx, bool isCrit = false)
     {
         var hitSet = new HashSet<int>();
         hitSet.Add(firstEnemy.GetId());
@@ -1449,7 +1533,7 @@ public class PlayerWeaponManager : NetworkBehaviour
 
             BroadcastBeamClientRpc(prevPos, targetPos, weaponVfx, "None");
 
-            next.EnemyTakeDamage(curDmg);
+            next.EnemyTakeDamage(curDmg, isCrit);
             RegisterWeaponDamage(weaponName, curDmg);
             hitPositions.Add(next.transform.position);
             hitSet.Add(next.GetId());

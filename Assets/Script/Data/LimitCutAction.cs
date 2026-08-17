@@ -14,7 +14,7 @@ using UnityEngine;
 /// `rollName` แบบ `RollKind.Order` จะสลับลำดับคนทุกครั้ง — คนเดิมไม่ได้เลข 1 ตลอด
 /// </summary>
 [CreateAssetMenu(fileName = "LimitCutAction", menuName = "Boss/Actions/LimitCutAction")]
-public class LimitCutAction : BossAction
+public class LimitCutAction : SpawnAoEActionBase
 {
     [Header("Limit Cut")]
     [Tooltip("เวลาที่ให้ดูเลขก่อนเลข 1 จะระเบิด (วินาที)")]
@@ -24,10 +24,15 @@ public class LimitCutAction : BossAction
 
     [Header("Telegraph ของแต่ละเลข")]
     public float radius = 4f;
-    public float warningDuration = 1.2f;
-    public float damage = 35f;
-    [Tooltip("VFX ตอนระเบิด — key ใน VFXDatabase · ว่าง = ใช้ detonateVfxPrefab บน prefab")]
-    public string detonateVfxKey = "";
+    // warningDuration / damage / detonateVfx ใช้ตัวที่สืบทอดมาจาก SpawnAoEActionBase แล้ว
+    // (เดิม field ซ้ำอยู่ที่นี่ — ย้ายไปรวมจุดเดียวตาม ADR-005 debt #3)
+
+    protected override AoEType GetAoEType() => AoEType.Circle;
+
+    protected override void ConfigureTelegraphZone(TelegraphZone zone)
+    {
+        zone.radius = radius;
+    }
 
     public override float GetEditorDuration()
         => actionDelay + readTime + perNumberDelay * 4f + warningDuration;
@@ -80,7 +85,7 @@ public class LimitCutAction : BossAction
             // คนที่ตายระหว่างคิวยังต้องกินเวลาช่องของตัวเอง ไม่งั้นจังหวะที่คนอื่นนับไว้จะเพี้ยน
             if (pm != null && !pm.isDead.Value)
             {
-                SpawnNumberZone(pm.transform.position, telegraphPrefab, boss);
+                SpawnZoneAt(runner, telegraphPrefab, pm.transform.position, Quaternion.identity);
                 pm.limitCutNumber.Value = 0;
             }
 
@@ -92,28 +97,5 @@ public class LimitCutAction : BossAction
         // กันเลขค้างบนหัวถ้ามีใครหลุดคิวไป
         foreach (var pm in players)
             if (pm != null) pm.limitCutNumber.Value = 0;
-    }
-
-    private void SpawnNumberZone(Vector3 pos, GameObject telegraphPrefab, BossController boss)
-    {
-        var go = Instantiate(telegraphPrefab, pos, Quaternion.identity);
-        var zone = go.GetComponent<TelegraphZone>();
-        var no = go.GetComponent<NetworkObject>();
-
-        if (zone == null || no == null)
-        {
-            Destroy(go);
-            return;
-        }
-
-        zone.aoeType         = AoEType.Circle;
-        zone.radius          = radius;
-        zone.warningDuration = warningDuration;
-        zone.damage          = damage;
-        zone.detonateVfxKey  = detonateVfxKey;
-
-        no.Spawn(true);
-        boss?.RegisterMechanic(no);
-        zone.BroadcastInit();
     }
 }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VFXDatabase
   entries:
   - key: HitEffect
-    prefab: {fileID: 3077343761403282166, guid: f78aaaec3b393e24ca74cd6de8194347, type: 3}
+    prefab: {fileID: 4503612902121041701, guid: 5a936c83b1746f14f9100db745e94f04, type: 3}
     poolSize: 600
     designedRadius: 0
     fixedDuration: 0
@@ -101,7 +101,7 @@ MonoBehaviour:
   - key: Stormcaller_AOE
     prefab: {fileID: 4748681987041982144, guid: be86a8ab229119d44bcf02c7ea449804, type: 3}
     poolSize: 55
-    designedRadius: 0.9
+    designedRadius: 3
     fixedDuration: 0
   - key: VFX_Lance
     prefab: {fileID: 7606818437225425609, guid: b83adfd580e0da94c89241146c13bdc2, type: 3}
@@ -116,7 +116,7 @@ MonoBehaviour:
   - key: AOE_ThunderRail
     prefab: {fileID: 4748681987041982144, guid: 64629f77884aed642a4e905a6b5ba0a0, type: 3}
     poolSize: 80
-    designedRadius: 0.9
+    designedRadius: 3
     fixedDuration: 0
   - key: BigAOEBome
     prefab: {fileID: 4748681987041982144, guid: 1e9c209764f16b148a34080ebdbf4c15, type: 3}
@@ -128,3 +128,32 @@ MonoBehaviour:
     poolSize: 5
     designedRadius: 3
     fixedDuration: 0
+  - key: AOE_ICEMiss
+    prefab: {fileID: 4748681987041982144, guid: ccd96e11e8942d24a9a37f7db3017227, type: 3}
+    poolSize: 5
+    designedRadius: 3
+    fixedDuration: 0
+  assets:
+  - {fileID: 11400000, guid: bcaaf0b8831bcfc449d7f4a925d8dcb3, type: 2}
+  - {fileID: 11400000, guid: 8a42b16c39815274d83bf6cfe052722a, type: 2}
+  - {fileID: 11400000, guid: dade4859158560e44ae635780f76335c, type: 2}
+  - {fileID: 11400000, guid: 79da7f2d0f9de824caf51fec08e1082a, type: 2}
+  - {fileID: 11400000, guid: c51a78dd7f3bb284bbd793c7aa556e0a, type: 2}
+  - {fileID: 11400000, guid: 49956c4f991ab01449cf131423bcc593, type: 2}
+  - {fileID: 11400000, guid: f1fa5fb98156f8f4cb7fdd0c65393453, type: 2}
+  - {fileID: 11400000, guid: 37a0b9578ab8bfd40adf79ebf8a6e306, type: 2}
+  - {fileID: 11400000, guid: e387a6c3659e9b645b00e3acb2215798, type: 2}
+  - {fileID: 11400000, guid: d022134e86903694880f990b8ca16b72, type: 2}
+  - {fileID: 11400000, guid: 4be59b0dc5b583a4cbf06e7ee09cc634, type: 2}
+  - {fileID: 11400000, guid: 84919300a198a1345a4e95df37c0e36d, type: 2}
+  - {fileID: 11400000, guid: 1a2d5a6f4252f284e9ee21b940c4650c, type: 2}
+  - {fileID: 11400000, guid: 90621e3d7c328d143b7e915b9932e7e4, type: 2}
+  - {fileID: 11400000, guid: aa7c090078248484c8fa8508e6305b9c, type: 2}
+  - {fileID: 11400000, guid: 034e6317fd82e9249b21b98e584a78a3, type: 2}
+  - {fileID: 11400000, guid: 54f3532c8ff1818438b65b42d8ba01d7, type: 2}
+  - {fileID: 11400000, guid: 96e93dfccd1cddc419da47386943ea31, type: 2}
+  - {fileID: 11400000, guid: 35a461213c3fe7044833502b38446b4f, type: 2}
+  - {fileID: 11400000, guid: 9216ff8df52dc2743b7c033640e02ed2, type: 2}
+  - {fileID: 11400000, guid: be392373cc5851e4cb14342a7878850d, type: 2}
+  - {fileID: 11400000, guid: c3d09c6af2b9f264fa88c2e93a87a465, type: 2}
+  - {fileID: 11400000, guid: 4e79eb581639e3c4e9c407726aa96eb7, type: 2}

@@ -63,14 +63,19 @@ public class StormBunnyWeapon : BunnyHopWeapon
         Vector3 center      = transform.position;
         int     aoeHitCount = (IsSuper && bigSlash) ? 2 : 1;
 
+        // นับศัตรูในวง **ก่อน** ตี — ตัวที่ตายจากหมัดนี้ต้องถูกนับด้วย
+        // ถ้านับหลังตี ตัวที่ตายจะหลุดจากการนับ กลายเป็นยิ่งฆ่าเก่งยิ่งได้โล่น้อย
+        int enemiesHit = FindAllEnemiesInRange(radius).Length;
+
         for (int i = 0; i < aoeHitCount; i++)
             FireMelee(center, radius, damage, isCrit);
         ShowVfx(ResolveHitVfx("MeteorAoE"), center, radius, isAttackHit: false);
 
         // ── Shield ────────────────────────────────────────────────
-        float shieldAmount = damage * shieldPercent
-                           * Mathf.Max(1f, FindAllEnemiesInRange(radius).Length);
-        manager.AddShieldServerRpc(shieldAmount);
+        // ไม่โดนใครเลย = ไม่ได้โล่ · เดิมคูณด้วย Mathf.Max(1f, count) ซึ่งตรึงตัวคูณขั้นต่ำไว้ที่ 1
+        // ทำให้ร่ายลอยๆ กลางที่โล่งก็ได้โล่ทุกครั้ง ทั้งที่กลไกคือ "โล่จากดาเมจที่ตีออกไป"
+        if (enemiesHit > 0)
+            manager.AddShieldServerRpc(damage * shieldPercent * enemiesHit);
 
         // ── Chain Lightning ที่จุดลงจอด ───────────────────────────
         StartCoroutine(ChainLightningFromLanding(center, damage, isCrit));
@@ -121,18 +126,17 @@ public class StormBunnyWeapon : BunnyHopWeapon
     {
         yield return new WaitForSeconds(exileChainDelay);
 
-        int   mask    = LayerMask.GetMask("Enemy");
         float miniDmg = damage * exileMiniDmgRatio;
 
         // หา enemy ทั้งหมดที่ยังอยู่ใน radius (ที่โดน projectile/wind slash)
-        var cols   = Physics.OverlapSphere(center, radius + 4f, mask);
-        var hitSet = new HashSet<int>();
+        // เดิมกันซ้ำเองด้วย HashSet<int> (GetId()) — ย้ายไปใช้ PlayerWeaponManager.OverlapEnemy
+        // ซึ่ง de-dup ต่อ Enemy (reference) ให้แล้วเป็นกลไกกลาง ไม่ต้องมี workaround ซ้อนที่นี่
+        var cols = PlayerWeaponManager.OverlapEnemy(center, radius + 4f);
 
         foreach (var c in cols)
         {
             var e = c.GetComponent<Enemy>();
-            if (e == null || hitSet.Contains(e.GetId())) continue;
-            hitSet.Add(e.GetId());
+            if (e == null) continue;
 
             Vector3 prevPos = e.transform.position + Vector3.up * 0.5f;
 

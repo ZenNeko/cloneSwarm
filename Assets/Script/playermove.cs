@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
@@ -23,9 +24,10 @@ public class playermove : NetworkBehaviour
     public NetworkVariable<float> netShieldHP = new NetworkVariable<float>(
         0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    // ใช้เฉพาะบน Server สำหรับ decay interpolation
-    private float shieldAtLastAdd = 0f;
-    private float shieldAddTime   = -999f;
+    // ── Shield layers (ADR-008 D1) ──────────────────────────────────────────
+    // list ของชั้นโล่ฝั่ง server เท่านั้น — netShieldHP.Value คือผลรวม replicate ให้ HUD/absorb เหมือนเดิม
+    // คณิตล้วนอยู่ใน ShieldStack.cs (แยกไฟล์เพื่อเทสได้แบบเดียวกับ TelegraphGeometry)
+    private readonly List<ShieldLayer> _shieldLayers = new List<ShieldLayer>();
 
     // ── Network State ─────────────────────────────────────────────────────
     public NetworkVariable<float> netHealth       = new(100f,  NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -116,14 +118,14 @@ public class playermove : NetworkBehaviour
         if (IsServer && totalRegen > 0f && netHealth.Value < maxHealth)
             netHealth.Value = Mathf.Min(netHealth.Value + totalRegen * Time.deltaTime, maxHealth);
 
-        // Shield decay — depletes to 0 over shieldDuration * Duration stat (Server only)
-        if (IsServer && netShieldHP.Value > 0f)
+        // Shield decay (Server only) — ลบรายเฟรมต่อชั้นผ่าน ShieldStack.Tick (ADR-008 D2)
+        // ไม่ใช่ Lerp จาก snapshot แบบเดิม — ของเดิมเขียนทับการหักดาเมจของ TakeDamage เพราะคำนวณ
+        // ค่าสัมบูรณ์จาก shieldAtLastAdd ทุกเฟรม ตอนนี้ Absorb (TakeDamage) กับ Tick (ที่นี่) ต่างคน
+        // ต่างลบจาก amount ตรงๆ บวก/ลบกันได้ไม่ว่าใครมาก่อนมาหลัง
+        if (IsServer && _shieldLayers.Count > 0)
         {
-            float durationMult      = _statManager?.GetDurationMultiplier() ?? 1f;
-            float effectiveDuration = shieldDuration * durationMult;
-            float elapsed           = Time.time - shieldAddTime;
-            netShieldHP.Value = elapsed >= effectiveDuration ? 0f
-                              : Mathf.Lerp(shieldAtLastAdd, 0f, elapsed / effectiveDuration);
+            ShieldStack.Tick(_shieldLayers, Time.deltaTime, Time.time);
+            netShieldHP.Value = ShieldStack.Sum(_shieldLayers);
         }
     }
 
@@ -180,12 +182,12 @@ public class playermove : NetworkBehaviour
         var sm = GetComponent<PlayerStatManager>();
         if (sm != null) amount = Mathf.Max(1f, amount - sm.GetArmorValue());
 
-        // Shield absorption
-        if (netShieldHP.Value > 0f)
+        // Shield absorption — ดูดจากชั้นใกล้หมดอายุก่อน (ADR-008 D1) ผ่าน ShieldStack.Absorb
+        // amount ที่คืนมาคือดาเมจที่เหลือหลังโล่ดูดไม่ไหว (overkill) — ไม่แตะ netShieldHP.Value ตรงๆ อีกต่อไป
+        if (_shieldLayers.Count > 0)
         {
-            float absorbed = Mathf.Min(netShieldHP.Value, amount);
-            netShieldHP.Value -= absorbed;
-            amount            -= absorbed;
+            amount = ShieldStack.Absorb(_shieldLayers, amount, Time.time);
+            netShieldHP.Value = ShieldStack.Sum(_shieldLayers);
             if (amount <= 0f) return;
         }
 
@@ -314,13 +316,51 @@ public class playermove : NetworkBehaviour
     }
     
 
-    /// <summary>เพิ่ม shield — เรียกจาก ServerRpc เท่านั้น</summary>
-    public void AddShield(float amount)
+    /// <summary>
+    /// เพิ่ม shield เป็นชั้นใหม่ — เรียกจาก ServerRpc เท่านั้น (server-authoritative)
+    /// พารามิเตอร์ default ให้พฤติกรรมเหมือนเดิมทุกจุดกับตอนที่ยังเป็นตัวเลขเดียว:
+    /// decays=true (สลายต่อเนื่องแบบเดิม), duration = shieldDuration * Duration stat ตอนที่เรียก,
+    /// sourceId = ShieldSourceId.Unassigned (สแตกเป็นชั้นใหม่เสมอ ไม่ไป replace ชั้นเดิม)
+    /// เรียกเปลี่ยนพฤติกรรมได้ผ่าน param ที่เหลือ — เช่น decays=false สำหรับโล่แบบ Immortal Shieldbow
+    /// </summary>
+    public void AddShield(float amount, bool decays = true, float duration = -1f, int sourceId = ShieldSourceId.Unassigned)
     {
         if (!IsServer) return;
-        netShieldHP.Value += amount;
-        shieldAtLastAdd    = netShieldHP.Value;
-        shieldAddTime      = Time.time;
+        if (!ShieldStack.IsValidAmount(amount)) return;
+
+        float effectiveDuration = duration > 0f ? duration : GetEffectiveShieldDuration();
+        ShieldStack.Add(_shieldLayers, amount, effectiveDuration, decays, sourceId, Time.time);
+        netShieldHP.Value = ShieldStack.Sum(_shieldLayers);
+    }
+
+    /// <summary>
+    /// รีเฟรชชั้นโล่ที่มี sourceId นี้อยู่แล้ว (แทนที่ amount/duration/expiry) แทนการสแตกซ้อนไม่จำกัด
+    /// ถ้ายังไม่มีชั้นของ sourceId นี้ → สร้างใหม่ให้เหมือน AddShield ครั้งแรก
+    /// ใช้กับแหล่งที่ตั้งใจให้ "ยืนอยู่ในโซนแล้วต่ออายุ" ไม่ใช่พอกไปเรื่อยๆ เช่น Support Arena (ADR-008 D5)
+    /// sourceId ต้องไม่ใช่ ShieldSourceId.Unassigned — นั่นคือ id ของแหล่งที่ตั้งใจให้สแตกอิสระ
+    /// </summary>
+    public void RefreshShield(int sourceId, float amount, bool decays = true, float duration = -1f)
+    {
+        if (!IsServer) return;
+        if (!ShieldStack.IsValidAmount(amount)) return;
+        if (sourceId == ShieldSourceId.Unassigned)
+        {
+            Debug.LogWarning("[playermove] RefreshShield ถูกเรียกด้วย ShieldSourceId.Unassigned — " +
+                              "ต้องใช้ id เฉพาะแหล่ง ไม่งั้นจะไป replace ชั้นของแหล่งอื่นที่ไม่ได้ตั้ง sourceId โดยไม่ตั้งใจ");
+            return;
+        }
+
+        float effectiveDuration = duration > 0f ? duration : GetEffectiveShieldDuration();
+        ShieldStack.Refresh(_shieldLayers, sourceId, amount, effectiveDuration, decays, Time.time);
+        netShieldHP.Value = ShieldStack.Sum(_shieldLayers);
+    }
+
+    /// <summary>shieldDuration คูณ Duration stat ณ ขณะที่เรียก — ค่านี้ถูก "ตรึง" ไว้ในตัวชั้นเอง
+    /// (ShieldLayer.duration) ตอนสร้าง/รีเฟรช ไม่ได้อ่านสดทุกเฟรมเหมือนโค้ดเดิมอีกต่อไป (ADR-008 D2)</summary>
+    private float GetEffectiveShieldDuration()
+    {
+        float durationMult = _statManager?.GetDurationMultiplier() ?? 1f;
+        return shieldDuration * durationMult;
     }
 
     /// <summary>Temporary move speed bonus (additive %) — จาก Blade of Exile</summary>

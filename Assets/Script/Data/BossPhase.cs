@@ -26,9 +26,8 @@ public class BossPhase
     public string announcementText = "";
     [Tooltip("สีข้อความประกาศ")]
     public Color announcementColor = Color.white;
-    [VFXKey]
-    [Tooltip("VFX จาก NetworkedVFXPool ที่เล่นตำแหน่งบอสตอนเข้า Phase นี้ (เว้นว่าง = ไม่เล่น)")]
-    public string phaseVfxName = "";
+    [Tooltip("VFX ที่เล่นตำแหน่งบอสตอนเข้า Phase นี้ (ADR-006 — ลาก VFXAsset ตรงๆ แทน string key เดิม) — ว่าง = ไม่เล่น")]
+    public VFXAsset phaseVfx;
 
     [Tooltip("รายการท่าโจมตีประจำ Phase นี้ (ทำงานเรียงตามลำดับ หรือปล่อยคู่ขนาน)")]
     public List<BossAction> actions = new List<BossAction>();

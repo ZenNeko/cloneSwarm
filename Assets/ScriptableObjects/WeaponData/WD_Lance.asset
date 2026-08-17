@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WD_Lance
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Lance
-  description: Lance
+  description: "\u0E41\u0E17\u0E07\u0E2B\u0E19\u0E27\u0E14\u0E1E\u0E38\u0E48\u0E07\u0E15\u0E23\u0E07\u0E44\u0E1B\u0E02\u0E49\u0E32\u0E07\u0E2B\u0E19\u0E49\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E41\u0E19\u0E27\u0E22\u0E32\u0E27 \u0E23\u0E30\u0E14\u0E31\u0E1A\u0E2A\u0E39\u0E07\u0E2A\u0E38\u0E14\u0E1C\u0E25\u0E31\u0E01\u0E28\u0E31\u0E15\u0E23\u0E39\u0E01\u0E23\u0E30\u0E40\u0E14\u0E47\u0E19"
   icon: {fileID: 862182946, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 0
   prefab: {fileID: 6389398472447319881, guid: 5ca2e091993985649b28abfdd9556c6d, type: 3}
@@ -25,40 +25,40 @@ MonoBehaviour:
     range: 2.8
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 58
     cooldown: 1.6
     projectileCount: 1
     range: 3.2
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 73
     cooldown: 1.4
     projectileCount: 1
     range: 3.6
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 90
     cooldown: 1.2
     projectileCount: 1
     range: 4
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 110
     cooldown: 1
     projectileCount: 1
     range: 4
     projectileSpeed: 0
     radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 11400000, guid: 1d795b8f00ffba544893c924b31a9771, type: 2}
   superConditions:
   - conditionType: 0

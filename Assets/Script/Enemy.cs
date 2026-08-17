@@ -56,6 +56,11 @@ public class Enemy : NetworkBehaviour
     public float maxHealth = 30f;
     public UnityEvent onDeath;
 
+    [Header("VFX")]
+    [Tooltip("VFX ตอนตาย (ADR-006) — ว่าง = fallback ไปใช้ VFXDatabase.entries key \"EnemyDeath\" ตัวเดิม\n" +
+             "(prefab ทุกตัวที่ยังไม่ตั้งช่องนี้จะเห็นเตือนใน Console ครั้งเดียว — ต้องให้ designer ลากใส่ทีหลัง)")]
+    public VFXAsset deathVfx;
+
     [Header("Experience")]
     public float     expReward   = 10f;
     public GameObject expOrbPrefab;
@@ -584,12 +589,34 @@ public class Enemy : NetworkBehaviour
         NetworkedVFXPool.Instance?.PlayDamageNumber(pos, damage, isCrit);
     }
 
+    /// <summary>เตือนครั้งเดียวทั้งเกม (ไม่ใช่ต่อ instance) — enemy ตายเป็นร้อยตัวต่อรอบ
+    /// เตือนทุกครั้งจะถล่ม Console จนอ่านอะไรไม่ออก (ADR-006)</summary>
+    private static bool _warnedMissingDeathVfx;
+
     [ClientRpc]
     void NotifyDeathClientRpc(Vector3 deathPos)
     {
         OnAnyEnemyDied?.Invoke();
         OnAnyEnemyDiedAt?.Invoke(deathPos);
-        NetworkedVFXPool.Instance?.PlayByName("EnemyDeath", deathPos);
+
+        // ADR-006: ลาก VFXAsset ตรงๆ ได้แล้ว — แต่ Enemy อยู่บน prefab จำนวนมาก field ใหม่
+        // จะเป็น null บนทุก prefab ที่ยังไม่ได้แก้ไข ต้อง fallback ไปทาง string key เดิมไม่งั้น
+        // VFX ตายจะหายไปเงียบๆ ทั้งเกมจนกว่า designer จะไล่เติมให้ครบ
+        if (deathVfx != null && NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.vfxDatabase != null)
+        {
+            int id = NetworkedVFXPool.Instance.vfxDatabase.GetIdForAsset(deathVfx);
+            NetworkedVFXPool.Instance.PlayById(id, deathPos);
+        }
+        else
+        {
+            if (!_warnedMissingDeathVfx)
+            {
+                _warnedMissingDeathVfx = true;
+                Debug.LogWarning($"[Enemy] '{name}' ไม่ได้ตั้ง deathVfx (ADR-006) — ใช้ VFXDatabase.entries key \"EnemyDeath\" ตัวเดิมไปก่อน · " +
+                                  "เตือนครั้งเดียวทั้งเกม ไม่ใช่ต่อตัว — ต้องให้ designer ไล่เติม deathVfx บน prefab enemy ทุกตัว");
+            }
+            NetworkedVFXPool.Instance?.PlayByName("EnemyDeath", deathPos);
+        }
     }
 
     public float GetHealthPercent() => netMaxHealth.Value > 0f ? netHealth.Value / netMaxHealth.Value : 0f;

@@ -22,10 +22,39 @@ MonoBehaviour:
     clips:
     - action: {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
       startTime: 0
-    - action: {fileID: 11400000, guid: 50973767a0e3ab446b5a18c7de9547da, type: 2}
-      startTime: 4
+    - action: {fileID: -3729593960924732028}
+      startTime: 4.1
+    - action: {fileID: 6905806424393476747}
+      startTime: 21
+    - action: {fileID: 11400000, guid: 1e7195cafe331f44fa9818d8d1c29912, type: 2}
+      startTime: 16
   waitForTimelineEnd: 1
   extraTailTime: 0
+--- !u!114 &-3729593960924732028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 584f040d0ffaafc418ad76aab4ec8266, type: 3}
+  m_Name: TetherAction_2
+  m_EditorClassIdentifier: Assembly-CSharp::TetherAction
+  actionDelay: 2
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 3
+  mode: 0
+  closeFailMode: 0
+  tetherDistance: 20
+  tetherDuration: 8
+  tetherFailDamage: 50
+  tetherSoloSpawnOffset: 3
+  leashScope: 2
+  leashAnchorOffset: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,3 +93,79 @@ MonoBehaviour:
   - prefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
     count: 10
     scatterRadius: 2
+--- !u!114 &6905806424393476747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 584f040d0ffaafc418ad76aab4ec8266, type: 3}
+  m_Name: TetherAction_3
+  m_EditorClassIdentifier: Assembly-CSharp::TetherAction
+  actionDelay: 2
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 3
+  mode: 1
+  closeFailMode: 0
+  tetherDistance: 20
+  tetherDuration: 8
+  tetherFailDamage: 50
+  tetherSoloSpawnOffset: 3
+  leashScope: 2
+  leashAnchorOffset: 2
+--- !u!114 &7204809399430210616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f8e298e6b8f6a64990055cdc221654b, type: 3}
+  m_Name: Phase2_Timeline
+  m_EditorClassIdentifier: Assembly-CSharp::BossTimelineAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  tracks:
+  - trackName: Main
+    clips:
+    - action: {fileID: 11400000, guid: 10919155d3c1fc243b6ed676b79778a1, type: 2}
+      startTime: 7.4
+    - action: {fileID: 11400000, guid: 10919155d3c1fc243b6ed676b79778a1, type: 2}
+      startTime: 11.900001
+  waitForTimelineEnd: 1
+  extraTailTime: 0
+--- !u!114 &9137735223014551562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 584f040d0ffaafc418ad76aab4ec8266, type: 3}
+  m_Name: TetherAction
+  m_EditorClassIdentifier: Assembly-CSharp::TetherAction
+  actionDelay: 2
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 3
+  mode: 2
+  closeFailMode: 0
+  tetherDistance: 20
+  tetherDuration: 8
+  tetherFailDamage: 50
+  tetherSoloSpawnOffset: 3
+  leashScope: 0
+  leashAnchorOffset: 2

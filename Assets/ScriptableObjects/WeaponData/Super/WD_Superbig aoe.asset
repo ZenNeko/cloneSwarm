@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WD_Superbig aoe
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Superbig aoe
-  description: Superbig aoe
+  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Big AoE \u2014 \u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E22\u0E31\u0E01\u0E29\u0E4C\u0E2D\u0E31\u0E1B\u0E40\u0E01\u0E23\u0E14 EXP \u0E17\u0E35\u0E48\u0E15\u0E01\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E27\u0E07 \u0E41\u0E25\u0E30\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E14\u0E32\u0E40\u0E21\u0E08\u0E43\u0E2B\u0E49\u0E17\u0E31\u0E49\u0E07\u0E17\u0E35\u0E21\u0E0A\u0E31\u0E48\u0E27\u0E04\u0E23\u0E39\u0E48"
   icon: {fileID: 0}
   tier: 1
   prefab: {fileID: 3841381784855616787, guid: 6fd70f68a92e69948b105d654b932068, type: 3}

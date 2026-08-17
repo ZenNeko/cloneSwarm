@@ -309,12 +309,15 @@ public class FunnelObject : NetworkBehaviour
             Vector3 dir    = Quaternion.Euler(0f, angle, 0f) * baseDir;
 
             // beam กลาง (angle≈0) รับประกัน hit target โดยตรง
+            // หมายเหตุ crit: Funnel laser ไม่มี RollDamage ต้นทาง (HunterUltimate.Activate() คำนวณ
+            // funnelDmg ตรงๆ ไม่เคยทอย crit) — isCrit: false ตรงนี้จึงสอดคล้องกับโหมด
+            // Thunder Rail / Plasma Whip / Railgun ด้านบนที่ hardcode isCrit ไว้เป็น false เหมือนกัน
             if (i == (beamCount - 1) / 2)
             {
                 var enemy = target.GetComponent<Enemy>();
                 if (enemy != null)
                 {
-                    enemy.EnemyTakeDamage(laserDamage);
+                    enemy.EnemyTakeDamage(laserDamage, false);
                     weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
                 }
             }
@@ -329,7 +332,7 @@ public class FunnelObject : NetworkBehaviour
                     var enemy = h.collider.GetComponent<Enemy>();
                     if (enemy != null)
                     {
-                        enemy.EnemyTakeDamage(laserDamage);
+                        enemy.EnemyTakeDamage(laserDamage, false);
                         weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
                     }
                 }
@@ -345,7 +348,7 @@ public class FunnelObject : NetworkBehaviour
                         var enemy = h.collider.GetComponent<Enemy>();
                         if (enemy != null)
                         {
-                            enemy.EnemyTakeDamage(laserDamage);
+                            enemy.EnemyTakeDamage(laserDamage, false);
                             weaponManager?.RegisterWeaponDamage(weaponName, laserDamage);
                         }
                     }

@@ -13,21 +13,20 @@ MonoBehaviour:
   m_Name: WD_OrbitalCannon
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Orbital Cannon
-  description: Orbital Cannon
+  description: "\u0E1F\u0E34\u0E27\u0E0A\u0E31\u0E19 Magnum + Star Ring \u2014 \u0E25\u0E39\u0E01\u0E41\u0E01\u0E49\u0E27\u0E27\u0E19\u0E23\u0E2D\u0E1A\u0E15\u0E31\u0E27\u0E41\u0E25\u0E30\u0E22\u0E34\u0E07\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E43\u0E2A\u0E48\u0E28\u0E31\u0E15\u0E23\u0E39\u0E43\u0E01\u0E25\u0E49\u0E2A\u0E38\u0E14\u0E44\u0E1B\u0E14\u0E49\u0E27\u0E22"
   icon: {fileID: 0}
   tier: 2
   prefab: {fileID: 3790255292531837531, guid: fd20acf7437f3db4ebe4793eaedd1ad1, type: 3}
   aimMode: 0
-  arcAngle: 360
-  projectilePrefab: {fileID: 0}
   levels:
   - damage: 80
     cooldown: 0.8
     projectileCount: 4
     range: 5
     projectileSpeed: 18
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 200

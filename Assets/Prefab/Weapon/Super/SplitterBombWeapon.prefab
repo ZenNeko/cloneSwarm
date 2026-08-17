@@ -49,12 +49,21 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: GrenadeExplosion
-  secondaryVfxType: None
+  weaponVfxType: MeteorAoE
+  secondaryVfxType: MeteorAoE
   fireSfx: []
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
+  projectilePrefab: {fileID: 8283745978487869945, guid: 024284f286d5ed349afff3ad0576271b, type: 3}
   explosionRadius: 3
-  fuseTime: 1.2
+  fuseTime: 1.5
+  clusterSettings:
+    overrideProjectile: 1
+    pellets: 8
+    dmgPercent: 0.8
+    projSpeed: 6
+    spreadRadius: 5
+    childRadius: 1.5
+    childFuse: 1

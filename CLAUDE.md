@@ -48,8 +48,8 @@ Weapons and abilities are **child GameObjects** instantiated under the player fr
 
 Game content lives in `Assets/Script/Data/` and `Assets/ScriptableObjects/`. Code reads SOs at runtime; designers tune assets in-Editor without recompiling.
 
-- **WeaponData** (`Assets/Script/Data/WeaponData/`) — identity, prefab, aim mode, 5 levels of `WeaponLevelData`, Super upgrade conditions, card-pool weight, character exclusivity
-- **AbilityData** (`Assets/Script/Data/AbilityData/`) — Q/E slot, prefab, levels
+- **WeaponData** (`Assets/ScriptableObjects/WeaponData/`, with `Hero/` `Super/` `Fusion/` `Passive/` subfolders) — identity, prefab, aim mode, 5 levels of `WeaponLevelData`, Super upgrade conditions, card-pool weight, character exclusivity
+- **AbilityData** (`Assets/ScriptableObjects/AbilityData/`) — Q/E slot, prefab, levels
 - **CharacterData** — hero definition (starting weapon, passive, abilities)
 - **StatData** — player stat definitions
 - **BossEncounterConfig** — list of `BossPhase` (HP threshold, invincibility, enrage timer, `BossAction` list) + attack timing + drop tables. `MiniBossConfig` is a legacy empty alias of it

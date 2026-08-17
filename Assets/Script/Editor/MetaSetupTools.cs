@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using CloneSwarm.Meta;
+using Unity.Netcode;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
@@ -14,10 +16,15 @@ using UnityEngine;
 /// </summary>
 public static class MetaSetupTools
 {
-    const string TalentDir     = "Assets/Script/Data/Talent";
+    // path ต้องตรงกับที่ asset อยู่จริง — ถ้าไม่ตรง LoadAssetAtPath จะคืน null แล้วโค้ดจะ
+    // "สร้างใหม่" ทับความจริง กลายเป็น talent ซ้ำทั้งชุด + MetaDatabase สองอัน
+    // (เคยเป็นแบบนั้นจริงตอนย้ายโฟลเดอร์ไป ScriptableObjects แล้วลืมแก้ตรงนี้ — 2026-08-13)
+    const string TalentDir     = "Assets/ScriptableObjects/Talent";
     const string AugmentDir    = "Assets/Script/Data/Augment/Definitions";
-    const string ResourcesDir  = "Assets/Resources";
+    const string ResourcesDir  = "Assets/ScriptableObjects/Resources";
     const string DatabasePath  = ResourcesDir + "/MetaDatabase.asset";
+
+    const string GameplayScene = "Assets/GameScenes/SampleScene.unity";
 
     [MenuItem("Tools/Clone Swarm/Meta/Create Default Talents + Database")]
     public static void CreateDefaults()
@@ -170,6 +177,61 @@ public static class MetaSetupTools
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[MetaSetup] ✅ สร้าง sample augments แล้ว — รัน 'Create Default Talents + Database' อีกครั้งเพื่อลงทะเบียนเข้า MetaDatabase");
+    }
+
+    /// <summary>
+    /// ต่อ RunRewardTracker เข้า SampleScene — คอมโพเนนต์นี้คือตัวที่จ่ายทองตอนจบเกม
+    ///
+    /// โค้ดฝั่งรางวัลครบมานานแล้ว (GameTimeline ยิง OnGameWon/OnGameLost → RunRewardTracker
+    /// คำนวณ → GrantRewardClientRpc → MetaProgression.RecordRunResult) แต่ **ไม่เคยมีใคร
+    /// วางคอมโพเนนต์ลงซีน** ทั้งเส้นทางจึงเงียบสนิท ผู้เล่นจบเกมแล้วไม่ได้ทองสักเหรียญ
+    /// และไม่มี error ให้เห็นด้วยเพราะไม่มีอะไรผิด — แค่ไม่มีใครฟัง event
+    ///
+    /// ต้องอยู่ GameObject เดียวกับ GameTimeline เพราะต้องการ NetworkObject ที่อยู่ในซีน
+    /// (RunRewardTracker เป็น NetworkBehaviour ต้องมี NetworkObject บน GameObject เดียวกัน)
+    ///
+    /// รันซ้ำได้ปลอดภัย — ถ้ามีอยู่แล้วจะไม่เพิ่มซ้ำ
+    /// </summary>
+    [MenuItem("Tools/Clone Swarm/Meta/Wire RunRewardTracker into SampleScene")]
+    public static void WireRunRewardTracker()
+    {
+        var scene = EditorSceneManager.OpenScene(GameplayScene, OpenSceneMode.Single);
+        if (!scene.IsValid())
+        {
+            Debug.LogError($"[MetaSetup] เปิดซีนไม่ได้: {GameplayScene}");
+            return;
+        }
+
+        var timeline = Object.FindFirstObjectByType<GameTimeline>(FindObjectsInactive.Include);
+        if (timeline == null)
+        {
+            Debug.LogError($"[MetaSetup] ไม่พบ GameTimeline ใน {GameplayScene} — " +
+                           "RunRewardTracker ต้องอยู่ GameObject เดียวกับมัน");
+            return;
+        }
+
+        var go = timeline.gameObject;
+
+        // NetworkBehaviour ที่ไม่มี NetworkObject จะไม่ถูก spawn และ ClientRpc จะไม่ทำงาน
+        if (go.GetComponent<NetworkObject>() == null)
+        {
+            Debug.LogError($"[MetaSetup] '{go.name}' ไม่มี NetworkObject — " +
+                           "หยุดก่อน ไม่เพิ่มคอมโพเนนต์ให้ เพราะ RunRewardTracker จะไม่ทำงานอยู่ดี");
+            return;
+        }
+
+        if (go.GetComponent<RunRewardTracker>() != null)
+        {
+            Debug.Log($"[MetaSetup] '{go.name}' มี RunRewardTracker อยู่แล้ว — ไม่ต้องทำอะไร");
+            return;
+        }
+
+        go.AddComponent<RunRewardTracker>();
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+
+        Debug.Log($"[MetaSetup] ✅ เพิ่ม RunRewardTracker ลงบน '{go.name}' และเซฟซีนแล้ว — " +
+                  "จบเกมแล้วจะได้ทองตามสูตรใน MetaDatabase");
     }
 
     [MenuItem("Tools/Clone Swarm/Meta/Open Save File Folder")]

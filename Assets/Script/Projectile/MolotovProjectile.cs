@@ -60,7 +60,9 @@ public class MolotovProjectile : NetworkBehaviour
         pos.y += arcHeight * Mathf.Sin(t * Mathf.PI);
         transform.position = pos;
 
-        if (timer >= travelTime)
+        // ระเบิดหลังถึงที่หมายแล้วหน่วงอีก fuseTime — เดิมอ่านแค่ travelTime
+        // fuseTime จึงเป็นฟิลด์ตายเหมือนกันกับใน GrenadeProjectile (บั๊กเดียวกันถูกคัดลอกมาสองที่)
+        if (timer >= travelTime + fuseTime)
         {
             timer = float.MaxValue;
             Explode();
@@ -70,8 +72,9 @@ public class MolotovProjectile : NetworkBehaviour
     void Explode()
     {
         // 1. ดาเมจแรกระเบิดลงพื้น
-        var mask = LayerMask.GetMask("Enemy");
-        foreach (var c in Physics.OverlapSphere(targetPos, radius, mask))
+        // ใช้ OverlapEnemy แทน OverlapSphere ตรงๆ — กัน enemy ที่มีหลาย Collider (เช่น TargetDummy)
+        // โดนดาเมจซ้ำจากการ query เจอ collider มากกว่าหนึ่งชิ้นของตัวเดียวกัน
+        foreach (var c in PlayerWeaponManager.OverlapEnemy(targetPos, radius))
         {
             var enemy = c.GetComponent<Enemy>();
             if (enemy != null)

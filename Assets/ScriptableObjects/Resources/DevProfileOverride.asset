@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b4aa19450d947544a9ff4d1bfa08ffe, type: 3}
   m_Name: DevProfileOverride
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.DevProfileOverride
-  applyOnPlay: 1
-  gold: 10000
-  alsoSetLifetimeGold: 1
+  applyOnPlay: 0
+  gold: 100000
+  alsoSetLifetimeGold: 0

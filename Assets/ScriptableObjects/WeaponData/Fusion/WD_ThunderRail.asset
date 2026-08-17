@@ -13,21 +13,20 @@ MonoBehaviour:
   m_Name: WD_ThunderRail
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: ThunderRail
-  description: ThunderRail
+  description: "\u0E1F\u0E34\u0E27\u0E0A\u0E31\u0E19 Stormcaller + Railgun \u2014 \u0E25\u0E33\u0E41\u0E2A\u0E07\u0E40\u0E08\u0E32\u0E30\u0E17\u0E30\u0E25\u0E38\u0E17\u0E35\u0E48\u0E41\u0E15\u0E01\u0E2A\u0E32\u0E22\u0E1F\u0E49\u0E32\u0E15\u0E48\u0E2D \u0E41\u0E25\u0E30\u0E17\u0E34\u0E49\u0E07\u0E27\u0E07\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E44\u0E27\u0E49\u0E15\u0E32\u0E21\u0E17\u0E32\u0E07"
   icon: {fileID: 21300000, guid: 1fe784c0346a64742a9ab94ab0dd7617, type: 3}
   tier: 2
   prefab: {fileID: 7113804128767203424, guid: 4dce628dc08b4d14f9016a2fe7ca1e60, type: 3}
   aimMode: 1
-  arcAngle: 360
-  projectilePrefab: {fileID: 0}
   levels:
   - damage: 400
     cooldown: 1
     projectileCount: 4
     range: 60
     projectileSpeed: 12
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 0}
   superConditions: []
   weight: 200
