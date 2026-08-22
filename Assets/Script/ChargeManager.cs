@@ -93,12 +93,30 @@ public class ChargeManager : MonoBehaviour, IHUDPassiveBar
             OnChargeChanged?.Invoke(Mathf.Clamp01(CurrentCharge / MaxCharge));
         }
 
-        if (CurrentCharge >= MaxCharge)
+        if (CurrentCharge < MaxCharge) return;
+
+        // เช็กด้วย != ของ Unity ไม่ใช่ ?. ของ C#
+        // ?. เทียบ reference null ล้วน ส่วน object ที่ถูก Destroy แล้วไม่ใช่ reference null
+        // ReplaceWeapon (อัปเป็น Super) ทำลายอาวุธเก่าทิ้ง แล้ว FindWeapon โพลทุก 1 วินาที
+        // จึงมีหน้าต่างที่ weapon ชี้ของที่ตายแล้ว — ?. จะเรียกเมธอดต่อแล้วไปตายที่ transform ข้างใน
+        if (weapon != null)
         {
+            // ล้างหลอดเฉพาะตอนที่ยิงออกไปจริง — ของเดิมล้างก่อนเช็ก weapon
+            // ช่วง 0.5 วิแรกหลัง spawn และหน้าต่างตอนอัปเป็น Super หา weapon ไม่เจอ
+            // หลอดที่เต็มจะถูกทิ้งเปล่าโดยไม่มีอะไรฟ้อง ผู้เล่นเดินครบระยะแล้วไม่มีอะไรเกิดขึ้น
             CurrentCharge = 0f;
             FireCount++;
             OnChargeChanged?.Invoke(0f);
-            weapon?.FireOnCharge(FireCount);
+            weapon.FireOnCharge(FireCount);
+            return;
         }
+
+        // ยังหาอาวุธไม่เจอ — คาหลอดไว้เต็ม รอ FindWeapon รอบถัดไป (InvokeRepeating ทุก 1 วิ)
+        // ตั้งใจไม่เรียก FindWeapon ตรงนี้: ตัวละครที่ไม่มี BunnyHop เลยจะเข้าเงื่อนไขนี้ทุกเฟรม
+        // (ChargeManager อยู่บน player prefab ที่ทุกตัวละครใช้ร่วมกัน) กลายเป็น
+        // GetComponentInChildren รายเฟรมตลอดทั้งรัน
+        //
+        // clamp ด้วยเหตุผลเดียวกัน — กันค่าโตไม่จำกัดจากการเดินสะสมตลอด 15 นาที
+        CurrentCharge = MaxCharge;
     }
 }

@@ -66,8 +66,8 @@ MonoBehaviour:
   exileProjectileRangeMult: 7
   runicMaxRange: 12
   shieldPercent: 0.4
-  _isSuper: 0
   evenCastRadiusMult: 1.3
+  secondBlastDelay: 1
   knockBackForce: 1.5
   moveSpeedPerLevel:
   - 0.05

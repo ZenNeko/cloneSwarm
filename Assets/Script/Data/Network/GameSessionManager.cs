@@ -150,6 +150,23 @@ public class GameSessionManager : MonoBehaviour
         spawnHooked = true;
         nm.SceneManager.OnLoadEventCompleted  += OnSceneLoadEventCompleted;
         nm.SceneManager.OnSynchronizeComplete += OnClientSynchronizeComplete;
+
+        // ครอบเส้นทาง "เปิดซีนเกมตรงๆ แล้ว StartHost" ซึ่งสองอีเวนต์ข้างบนไม่ยิงเลย
+        // เพราะซีนเปิดอยู่แล้ว ไม่ได้ถูก NGO โหลด — เกิดกับ WeaponTestScene ที่มี AutoHost
+        // และกับใครก็ตามที่กด Play ในซีนเกมโดยไม่ผ่านเมนู
+        nm.OnClientConnectedCallback += OnClientConnectedInGameplayScene;
+    }
+
+    /// <summary>
+    /// client เชื่อมต่อขณะที่อยู่ในซีนเกมอยู่แล้ว → spawn ให้เลย
+    /// ในซีนเมนูจะถูกข้าม ซึ่งเป็นหัวใจของการเลื่อน spawn ไปหลังเลือกตัวละคร
+    /// </summary>
+    void OnClientConnectedInGameplayScene(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+        if (SceneManager.GetActiveScene().name == menuSceneName) return;
+        SpawnPlayerIfMissing(clientId);
     }
 
     void OnServerStopped(bool _) => UnhookPlayerSpawnEvents();
@@ -160,7 +177,10 @@ public class GameSessionManager : MonoBehaviour
         spawnHooked = false;
 
         var nm = NetworkManager.Singleton;
-        if (nm == null || nm.SceneManager == null) return;   // ตายไปพร้อม SceneManager แล้ว
+        if (nm == null) return;
+        nm.OnClientConnectedCallback -= OnClientConnectedInGameplayScene;
+
+        if (nm.SceneManager == null) return;   // ตายไปพร้อม SceneManager แล้ว
         nm.SceneManager.OnLoadEventCompleted  -= OnSceneLoadEventCompleted;
         nm.SceneManager.OnSynchronizeComplete -= OnClientSynchronizeComplete;
     }

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: WD_Blunderbuss
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Blunderbuss
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Shotgun \u2014 \u0E23\u0E27\u0E21\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E40\u0E1B\u0E47\u0E19\u0E19\u0E31\u0E14\u0E2B\u0E19\u0E31\u0E01\u0E19\u0E31\u0E14\u0E40\u0E14\u0E35\u0E22\u0E27 \u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E40\u0E1B\u0E47\u0E19\u0E27\u0E07\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E01\u0E23\u0E30\u0E17\u0E1A"
+  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Shotgun \u2014 \u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19 \u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E40\u0E1B\u0E47\u0E19\u0E27\u0E07\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E01\u0E23\u0E30\u0E17\u0E1A"
   icon: {fileID: 21300000, guid: 861b564bdcac1974ab21bfdbc412056e, type: 3}
   tier: 1
-  prefab: {fileID: 5546056588423154064, guid: 18e0b400db2998d47b755f5e76ed5975, type: 3}
+  prefab: {fileID: 5546056588423154064, guid: 13c4420a151b4cf4695da146a57699ab, type: 3}
   aimMode: 0
   randomNearCandidates: 3
   levels:

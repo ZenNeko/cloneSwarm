@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7745234514379789895}
   - component: {fileID: 5466361702325869091}
   m_Layer: 0
-  m_Name: ShotgunWeapon
+  m_Name: BlunderbussWeapon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -49,7 +49,7 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: None
+  weaponVfxType: MeteorAoE
   secondaryVfxType: None
   fireSfx:
   - {fileID: 8300000, guid: 09f634dfafc05604580f9f42bc32ce14, type: 3}
@@ -63,5 +63,5 @@ MonoBehaviour:
   pitchVariance: 0.05
   projectilePrefab: {fileID: 1367524025346344, guid: 14406e5cebb68b34197c5520ac996829, type: 3}
   spreadAngle: 30
-  explodeOnHit: 0
+  explodeOnHit: 1
   explosionRadius: 2.5

@@ -21,12 +21,12 @@ MonoBehaviour:
   randomNearCandidates: 2
   levels:
   - damage: 120
-    cooldown: 2.5
+    cooldown: 1.6
     projectileCount: 3
-    range: 6
-    projectileSpeed: 0
-    radius: 0
-    duration: 0
+    range: 12
+    projectileSpeed: 12
+    radius: 3.5
+    duration: 5
     piercing: 0
   superVersion: {fileID: 0}
   superConditions: []
