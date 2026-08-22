@@ -38,6 +38,19 @@ public abstract class AbilityBase : MonoBehaviour
 
     protected LayerMask enemyLayer;
 
+    // ── VFX (Per-Ability Prefab) ──────────────────────────────────────────
+    // มิเรอร์ WeaponBase: VFX เป็นของ prefab ไม่ใช่ของ AbilityData
+    // (stat เป็นข้อมูลร่วม การนำเสนอเป็นของ prefab — ดู CLAUDE.md §VFX system)
+    // default "None" = ability เดิมทุกตัวพฤติกรรมไม่เปลี่ยน จนกว่าจะมีคนตั้งค่าใน Inspector
+    [Header("VFX (Per-Ability Prefab)")]
+    [Tooltip("VFX หลักของ ability - เลือกจาก key ใน VFXDatabase - None = ไม่แสดง ปล่อยให้ script ตัดสินใจเอง - HitEffect / CritHitEffect ของศัตรู Enemy.cs จัดการเอง ไม่ต้องตั้งที่นี่")]
+    [VFXKey]
+    public string abilityVfxType = "None";
+
+    [Tooltip("VFX รอง (optional) — ability ที่มี VFX 2 จังหวะ เช่น Valor: ทุบพื้น + Wind Slash")]
+    [VFXKey]
+    public string secondaryVfxType = "None";
+
     // ── Scene-based gating (auto disable in MenuScene/lobby) ──────────────
     // Ability subclass override Update เอง → ไม่มีจุดเดียว patch ได้
     // วิธีนี้: ใช้ `enabled` property → Unity ไม่เรียก Update ของ component นี้
@@ -168,6 +181,41 @@ public abstract class AbilityBase : MonoBehaviour
     protected void SpawnFunnels(Vector3 center, int count, float orbitRadius, float laserDamage, float laserCooldown, float attackRange, float lifetime, ulong ownerClientId, int beamCount = 1)
     {
         manager.SpawnFunnelsServerRpc(center, count, orbitRadius, laserDamage, laserCooldown, attackRange, lifetime, ownerClientId, beamCount, data != null ? data.abilityName : "Unknown");
+    }
+
+    // ── VFX Helpers (มิเรอร์ WeaponBase) ─────────────────────────────────
+    /// <summary>คืน abilityVfxType ถ้าตั้งไว้ ไม่งั้นใช้ fallback ที่ script กำหนด</summary>
+    protected string ResolveVfx(string fallback)
+        => (!string.IsNullOrEmpty(abilityVfxType) && abilityVfxType != "None") ? abilityVfxType : fallback;
+
+    /// <summary>คืน secondaryVfxType ถ้าตั้งไว้ ไม่งั้นใช้ fallback</summary>
+    protected string ResolveSecondaryVfx(string fallback)
+        => (!string.IsNullOrEmpty(secondaryVfxType) && secondaryVfxType != "None") ? secondaryVfxType : fallback;
+
+    /// <summary>
+    /// scale VFX ตามรัศมีจริงเทียบกับรัศมีที่ prefab ถูกออกแบบมา — 1f ถ้า pool ยังไม่พร้อม
+    /// หรือ VFX ตัวนั้นตั้ง designedRadius = 0 (fixed size)
+    /// </summary>
+    protected float ComputeVfxScale(string key, float actualRange)
+    {
+        var pool = NetworkedVFXPool.Instance;
+        if (pool == null) return 1f;
+        float designed = pool.GetDesignedRadius(key);
+        if (designed <= 0f) return 1f;
+        return actualRange / designed;
+    }
+
+    /// <summary>
+    /// กระจาย VFX ให้ทุก client ผ่าน pool — ห้าม Instantiate เองตาม CLAUDE.md §VFX
+    /// actualRange = 0 → scale 1f | > 0 → auto scale จากรัศมีจริง
+    /// </summary>
+    protected void ShowVfx(string key, Vector3 pos, float actualRange = 0f,
+                           Vector3 direction = default, float arcAngle = 360f, float roll = 0f)
+    {
+        if (string.IsNullOrEmpty(key) || key == "None") return;
+        if (manager == null) return;
+        float scale = actualRange > 0f ? ComputeVfxScale(key, actualRange) : 1f;
+        manager.BroadcastVfxTypeServerRpc(pos, key, scale, direction, arcAngle, roll);
     }
 
     // ── SFX Helpers (delegate to SoundManager) ───────────────────────────

@@ -1643,6 +1643,7 @@ public class PlayerWeaponManager : NetworkBehaviour
         }
     }
 
+
     public override void OnDestroy()
     {
         if (NetworkedVFXPool.Instance != null)

@@ -114,6 +114,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
@@ -152,9 +153,15 @@ MonoBehaviour:
   onDeath:
     m_PersistentCalls:
       m_Calls: []
+  deathVfx: {fileID: 0}
   expReward: 10
   expOrbPrefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
   netHealth:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 30
+  netMaxHealth:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0

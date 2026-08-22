@@ -4,8 +4,15 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Valor — Riven's Q ability  (AbilityBase — ไม่ใช่ WeaponBase)
-/// กด Q → Dash หาศัตรูที่ใกล้ที่สุด + AoE damage at landing
-/// เมื่อ Blade of Exile active → Wind Slash radial เพิ่มเติม
+/// กด Q → Dash ไปในทิศที่เล็ง ลงจอดแล้วทุบพื้น สร้างดาเมจ + stun ในวง
+
+///
+/// อิงสเปกต้นทาง:
+///   RANGE = EFFECT RADIUS  → ระยะ dash เท่ากับรัศมี AoE ทั้งคู่มาจาก AbilityData.range
+///                            ต่างกันตรง AoE คูณ Area stat ส่วนระยะ dash ไม่คูณ
+///   SPEED = ตั้งใจไม่ทำตามสเปก — dash ใช้เวลาคงที่ (dashDuration) ไม่ผูกกับ MoveSpeed
+///           ผูกแล้ว dash ยืดเป็น ~0.6 วิ และ stat/บัฟความเร็วจะไปเปลี่ยนจังหวะสกิลด้วย
+///   STUN  = 2 วิ (× Duration stat)
 ///
 /// AbilityData (cooldown, damage, range) อยู่ใน AbilityData asset
 /// </summary>
@@ -16,11 +23,12 @@ public class ValorWeapon : AbilityBase, IHUDAbility
     public Key activateKey = Key.Q;
 
     [Header("Dash")]
-    public float dashDistance = 5f;
+    [Tooltip("เวลาที่ใช้ dash (วินาที) — คงที่ ไม่ผูกกับ MoveSpeed - ระยะทางมาจาก AbilityData.range")]
     public float dashDuration = 0.12f;
 
-    [Header("Wind Slash (during Exile)")]
-    public int windSlashCount = 4;
+    [Header("Stun")]
+    [Tooltip("วินาทีที่ศัตรูในวงถูกหยุด — คูณ Duration stat")]
+    public float stunDuration = 2f;
 
     // ── Cooldown state ────────────────────────────────────────────────────
     public bool  IsOnCooldown      { get; private set; }
@@ -31,7 +39,6 @@ public class ValorWeapon : AbilityBase, IHUDAbility
     public static event System.Action<ValorWeapon, float> OnCooldownChanged;
     public static event System.Action<ValorWeapon>        OnActivated;
 
-    private ChargeManager chargeManager;
     private bool          isDashing;
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
@@ -42,11 +49,6 @@ public class ValorWeapon : AbilityBase, IHUDAbility
     public float  ActiveMax        => 0f;
 
     // ── Init ──────────────────────────────────────────────────────────────
-    protected override void OnInit()
-    {
-        chargeManager = manager.GetComponent<ChargeManager>();
-    }
-
     // ── Update — input + cooldown tick ────────────────────────────────────
     void Update()
     {
@@ -85,7 +87,11 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         OnActivated?.Invoke(this);
 
         float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
-        float range = ld.range * areaMult;
+
+        // สเปกต้นทาง: RANGE กับ EFFECT RADIUS เป็นเลขเดียวกัน (250) แต่มีแค่ EFFECT RADIUS
+        // ที่ติดป้าย "× Area" — ระยะ dash จึงอ่าน ld.range ดิบ ส่วนวง AoE คูณ Area stat
+        float dashDist = ld.range;
+        float range    = ld.range * areaMult;
 
         // ทิศ dash = ทิศที่ผู้เล่นกด input อยู่
         // fallback → ทิศหาศัตรูที่ใกล้สุด → transform.forward
@@ -102,56 +108,62 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         }
 
         float damage = RollDamage(ld.damage, out bool isCrit);
-        StartCoroutine(DashAndBlast(dir, range, damage, isCrit));
+        StartCoroutine(DashAndBlast(dir, dashDist, range, damage, isCrit));
     }
 
     // ── Dash coroutine ────────────────────────────────────────────────────
-    IEnumerator DashAndBlast(Vector3 dir, float radius, float damage, bool isCrit)
+    IEnumerator DashAndBlast(Vector3 dir, float dashDist, float radius, float damage, bool isCrit)
     {
         isDashing = true;
 
         var pm = manager.playerMove;
         var rb = pm?.GetComponent<Rigidbody>();
-        if (rb != null && pm != null)
+
+        // try/finally: ธงทั้งสองตัวต้องถูกคืนค่าทุกทางออก ไม่ใช่แค่ทางที่วิ่งจนจบ
+        // playermove.isDashing ที่ค้าง true = ขยับไม่ได้ถาวร (FixedUpdate ปล่อยให้ dash คุมเอง)
+        // isDashing ในตัวเองที่ค้าง = กด Q ไม่ติดอีกเลยทั้งรัน
+        try
         {
-            pm.isDashing      = true;
-            rb.linearVelocity  = Vector3.zero;
-
-            Vector3 startPos  = rb.position;
-            Vector3 endPos    = startPos + dir * dashDistance;
-            float   elapsed   = 0f;
-
-            while (elapsed < dashDuration)
+            if (rb != null && pm != null)
             {
-                elapsed += Time.deltaTime;
-                float t  = Mathf.SmoothStep(0f, 1f, elapsed / dashDuration);
-                rb.MovePosition(Vector3.Lerp(startPos, endPos, t));
-                yield return new WaitForFixedUpdate();
+                pm.isDashing      = true;
+                rb.linearVelocity  = Vector3.zero;
+
+                Vector3 startPos  = rb.position;
+                Vector3 endPos    = startPos + dir * dashDist;
+                float   elapsed   = 0f;
+
+                while (elapsed < dashDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t  = Mathf.SmoothStep(0f, 1f, elapsed / dashDuration);
+                    rb.MovePosition(Vector3.Lerp(startPos, endPos, t));
+                    yield return new WaitForFixedUpdate();
+                }
+
+                rb.MovePosition(endPos);
+                rb.linearVelocity  = Vector3.zero;
             }
+            else yield return null;
 
-            rb.MovePosition(endPos);
-            rb.linearVelocity  = Vector3.zero;
-            pm.isDashing = false;
+            FireMelee(transform.position, radius, damage, isCrit);
+
+            // VFX ทุบพื้น — scale ตามรัศมีจริง เลือก key ได้ที่ abilityVfxType บน Valor_Weapon.prefab
+            // fallback เป็น "None" เพราะยังไม่มี VFX ประจำตัว = เงียบจนกว่า designer จะเลือก
+            ShowVfx(ResolveVfx("None"), transform.position, radius);
+
+            // Stun — วงเดียวกับ AoE · Enemy.ApplyFreeze หยุด velocity + ยิง NotifyFreezeClientRpc
+            // ให้เห็นผลบนทุกเครื่องอยู่แล้ว จึงไม่ต้องกระจาย VFX เพิ่มเอง
+            if (stunDuration > 0f)
+            {
+                float durMult = manager.statManager != null ? manager.statManager.GetDurationMultiplier() : 1f;
+                manager.ApplyFreezeToEnemiesServerRpc(transform.position, radius, stunDuration * durMult);
+            }
         }
-        else yield return null;
-
-        FireMelee(transform.position, radius, damage, isCrit);
-
-        // Wind Slash — เฉพาะตอน Blade of Exile active
-        if (chargeManager != null && chargeManager.IsExileActive)
+        finally
         {
-            float areaMult = manager.statManager != null ? manager.statManager.GetAreaMultiplier() : 1f;
-            float windDmg  = damage * 0.8f;
-            float maxRange = data.GetLevelData(currentLevel).range * areaMult * 2f;
-            for (int i = 0; i < windSlashCount; i++)
-            {
-                float   angle    = i * (360f / windSlashCount);
-                Vector3 slashDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-                FireRaycast(transform.position, slashDir, windDmg, maxRange,
-                                             isCrit: isCrit);
-            }
+            if (pm != null) pm.isDashing = false;
+            isDashing = false;
         }
-
-        isDashing = false;
     }
 }

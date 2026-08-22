@@ -60,10 +60,19 @@ MonoBehaviour:
   fireVolume: 0.6
   hitVolume: 0.6
   pitchVariance: 0.2
+  projectilePrefab: {fileID: 3992335139775719314, guid: 20419f2d0e1b52740a613cfa170a4c4c, type: 3}
   dashDistance: 5
   dashDuration: 0.15
   exileProjectileRangeMult: 7
   runicMaxRange: 12
-  shieldPercent: 0.25
+  shieldPercent: 0.4
   _isSuper: 0
+  evenCastRadiusMult: 1.3
+  knockBackForce: 1.5
+  moveSpeedPerLevel:
+  - 0.05
+  - 0.1
+  - 0.15
+  - 0.2
+  - 0.25
   exileAoeMult: 1.5

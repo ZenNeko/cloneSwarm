@@ -27,7 +27,7 @@ MonoBehaviour:
     projectileSpeed: 0
     radius: 0
     duration: 0
-    piercing: 0
+    piercing: 1
   superVersion: {fileID: 0}
   superConditions: []
   weight: 150

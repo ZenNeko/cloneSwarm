@@ -15,7 +15,7 @@ MonoBehaviour:
   characterName: Gunner
   description: "\u0E19\u0E31\u0E01\u0E22\u0E34\u0E07\u0E1B\u0E37\u0E19 \u0E40\u0E0A\u0E35\u0E48\u0E22\u0E27\u0E0A\u0E32\u0E0D\u0E2D\u0E32\u0E27\u0E38\u0E18\u0E23\u0E30\u0E22\u0E30\u0E44\u0E01\u0E25"
   portrait: {fileID: 0}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d0591002486aeec4c994d5d39ce80101, type: 3}
   baseHealth: 100
   baseMoveSpeed: 5
   unlockedByDefault: 0

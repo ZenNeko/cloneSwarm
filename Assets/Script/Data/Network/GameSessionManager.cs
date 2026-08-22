@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Blocks.Sessions.Common;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -25,6 +26,10 @@ public class GameSessionManager : MonoBehaviour
     [Header("Scenes")]
     [Tooltip("รายชื่อ Scene ที่ Host สามารถเลือกได้ (ต้องอยู่ใน Build Settings)")]
     public string[] availableScenes = { "SampleScene" };
+
+    [Header("Player Spawn")]
+    [Tooltip("ชื่อซีนเมนู/ล็อบบี้ — ซีนนี้จะไม่ spawn player เพราะยังเลือกตัวละครไม่เสร็จ")]
+    public string menuSceneName = "MenuScene";
 
     // ── Static Events สำหรับ game code subscribe ─────────────────────────
     /// <summary>ข้อความสถานะ — UI subscribe แทนที่จะให้ manager ไปยุ่งกับ Text</summary>
@@ -64,11 +69,29 @@ public class GameSessionManager : MonoBehaviour
         // ถ้า session มีอยู่แล้วก่อน Start (เช่น reload scene)
         if (sessionObserver.Session != null)
             OnSessionAdded(sessionObserver.Session);
+
+        // ต้องทำก่อน StartHost ครั้งแรก — เรียกที่นี่เพราะ Start ของซีนเมนูวิ่งก่อนกด PLAY เสมอ
+        DisableAutoPlayerSpawn();
+
+        var nm = NetworkManager.Singleton;
+        if (nm != null)
+        {
+            nm.OnServerStarted += OnServerStarted;
+            nm.OnServerStopped += OnServerStopped;
+        }
     }
 
     void OnDestroy()
     {
         UnsubscribeSession();
+
+        var nm = NetworkManager.Singleton;
+        if (nm != null)
+        {
+            nm.OnServerStarted -= OnServerStarted;
+            nm.OnServerStopped -= OnServerStopped;
+        }
+        UnhookPlayerSpawnEvents();
 
         if (sessionObserver != null)
         {
@@ -76,6 +99,118 @@ public class GameSessionManager : MonoBehaviour
             sessionObserver.AddingSessionFailed -= OnAddingFailed;
             sessionObserver.Dispose();
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Player spawn — เลื่อนจาก "ตอน connect" มาเป็น "ตอนซีนเกมโหลดเสร็จ"
+    //
+    // NGO spawn PlayerPrefab ทันทีที่ host/client เชื่อมต่อ ซึ่งเกิดใน MenuScene ตอนกด PLAY
+    // (MenuManager.OnPlayClicked → StartHost) คือ *ก่อน* ผู้เล่นเลือกตัวละคร
+    // PlayerVisual.OnNetworkSpawn / PlayerWeaponManager.OnNetworkSpawn จึงอ่าน
+    // CharacterSelectUI.SelectedCharacter ได้แต่ค่า default แล้วล็อกค้างไปตลอด —
+    // player object เป็น dynamic NetworkObject ไม่ถูกทำลายตอนเปลี่ยนซีน `_charIndex`
+    // เลยติดค่าเดิมข้ามไปถึงซีนเกม เลือกตัวละครทีหลังก็ไม่มีผล
+    //
+    // แก้ที่ต้นเหตุ: ปิด auto-spawn แล้ว spawn เองหลังซีนเกมโหลดเสร็จ ตอนนั้น
+    // SelectedCharacter เป็นค่าจริงแล้ว ทั้งโมเดล อาวุธ และ base stats จึงถูกตั้งแต่แรก
+    // ไม่ต้องมีทางรื้อ-แล้ว-ใส่ใหม่
+    // ═══════════════════════════════════════════════════════════════════════
+    private GameObject playerPrefab;      // cache ไว้ก่อนถอดออกจาก NetworkConfig
+    private bool       spawnHooked;
+
+    void DisableAutoPlayerSpawn()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || nm.NetworkConfig == null)
+        {
+            Debug.LogError("[Session] ไม่พบ NetworkManager ตอน Start — ปิด auto-spawn player ไม่ได้");
+            return;
+        }
+
+        if (nm.NetworkConfig.PlayerPrefab == null)
+        {
+            // ปิดไปแล้วรอบก่อน (NetworkManager เป็น DontDestroyOnLoad อยู่ข้ามซีน)
+            // แต่ถ้า playerPrefab หลุดไปด้วยจะไม่มีอะไร spawn เลย — ดังกว่าเงียบ
+            if (playerPrefab == null)
+                Debug.LogError("[Session] NetworkConfig.PlayerPrefab ว่างและไม่มี cache — " +
+                               "จะไม่มี player ถูก spawn เลย · ตรวจ NetworkManager prefab");
+            return;
+        }
+
+        playerPrefab = nm.NetworkConfig.PlayerPrefab;
+        nm.NetworkConfig.PlayerPrefab = null;
+        Debug.Log($"[Session] ปิด NGO auto-spawn player แล้ว — จะ spawn '{playerPrefab.name}' เองหลังซีนเกมโหลดเสร็จ");
+    }
+
+    void OnServerStarted()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || nm.SceneManager == null || spawnHooked) return;
+
+        spawnHooked = true;
+        nm.SceneManager.OnLoadEventCompleted  += OnSceneLoadEventCompleted;
+        nm.SceneManager.OnSynchronizeComplete += OnClientSynchronizeComplete;
+    }
+
+    void OnServerStopped(bool _) => UnhookPlayerSpawnEvents();
+
+    void UnhookPlayerSpawnEvents()
+    {
+        if (!spawnHooked) return;
+        spawnHooked = false;
+
+        var nm = NetworkManager.Singleton;
+        if (nm == null || nm.SceneManager == null) return;   // ตายไปพร้อม SceneManager แล้ว
+        nm.SceneManager.OnLoadEventCompleted  -= OnSceneLoadEventCompleted;
+        nm.SceneManager.OnSynchronizeComplete -= OnClientSynchronizeComplete;
+    }
+
+    /// <summary>ทุกคนโหลดซีนเสร็จพร้อมกัน — เส้นทางปกติของการเริ่มรัน (server อยู่ใน list ด้วย)</summary>
+    void OnSceneLoadEventCompleted(string sceneName, LoadSceneMode mode,
+                                   List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        if (sceneName == menuSceneName) return;
+
+        foreach (var id in clientsCompleted)
+            SpawnPlayerIfMissing(id);
+    }
+
+    /// <summary>
+    /// late join — client เข้ามาหลังรันเริ่มแล้ว จึง sync ซีนเสร็จคนละจังหวะกับ
+    /// OnLoadEventCompleted ที่ผ่านไปนานแล้ว ต้อง spawn ให้แยก
+    /// </summary>
+    void OnClientSynchronizeComplete(ulong clientId)
+    {
+        if (SceneManager.GetActiveScene().name == menuSceneName) return;
+        SpawnPlayerIfMissing(clientId);
+    }
+
+    void SpawnPlayerIfMissing(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer) return;
+
+        if (playerPrefab == null)
+        {
+            Debug.LogError($"[Session] ไม่มี playerPrefab — spawn ให้ client {clientId} ไม่ได้");
+            return;
+        }
+
+        // reconnect / เรียกซ้ำจากสองเส้นทาง — NGO อาจคืน player object เดิมมาแล้ว
+        if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
+            return;
+
+        var go = Instantiate(playerPrefab);
+        var no = go.GetComponent<NetworkObject>();
+        if (no == null)
+        {
+            Debug.LogError($"[Session] '{playerPrefab.name}' ไม่มี NetworkObject — spawn player ไม่ได้");
+            Destroy(go);
+            return;
+        }
+
+        no.SpawnAsPlayerObject(clientId);
+        Debug.Log($"[Session] spawn player ให้ client {clientId} แล้ว");
     }
 
     // ── Session Observer Events ───────────────────────────────────────────

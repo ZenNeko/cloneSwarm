@@ -6,7 +6,9 @@ using UnityEngine.InputSystem;
 /// กด E → เปิด Exile Mode
 ///   • +50% move speed (tempMoveSpeedBonus)
 ///   • Charge rate ×2 ผ่าน ChargeManager.IsExileActive
-///   • ValorWeapon จะยิง Wind Slash เพิ่มเมื่อ active
+///
+/// Wind Slash ถูกถอดออก — สเปกต้นทางมี แต่โปรเจกต์นี้ใช้ projectile burst ของ Bunny Hop
+/// เป็นโบนัส Exile แทน สองอย่างเป็นการกระจายรัศมีรอบตัวเหมือนกัน ซ้อนกันแล้วอ่านไม่ออก
 /// หลังหมดเวลา → cooldown ก่อนใช้ได้อีก
 ///
 /// AbilityData.levels[n].cooldown = cooldown หลัง exile หมด

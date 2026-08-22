@@ -611,7 +611,7 @@ MonoBehaviour:
   maxSpeed: 5
   speedSmoothTime: 0.1
   faceMoveDirection: 1
-  rotateSpeed: 1440
+  rotateSpeed: 713
 --- !u!114 &-4709983444148486069
 MonoBehaviour:
   m_ObjectHideFlags: 0

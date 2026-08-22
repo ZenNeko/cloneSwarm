@@ -30,7 +30,6 @@ public class CharacterCardUI : MonoBehaviour
 
     private Color selectedColor = new Color(0.3f, 0.7f, 1f);
     private Color normalColor   = new Color(0.2f, 0.2f, 0.25f, 1f);
-    private bool  isSelected;
     private bool  isLocked;
 
     // ── Init ──────────────────────────────────────────────────────────────
@@ -70,12 +69,12 @@ public class CharacterCardUI : MonoBehaviour
         }
 
         SetLocked(!CloneSwarm.Meta.MetaProgression.IsCharacterUnlocked(cd), cd.unlockCost);
-        SetSelected(false);
+        // ไม่ตั้งสถานะเลือกที่นี่ — ผู้เรียกสั่ง SetSelected ด้วยค่าจริงต่อทันทีเสมอ
+        // ตั้ง false ทิ้งไว้ก่อนทำให้การ์ดใบกลางกะพริบเป็นสีปกติหนึ่งเฟรมตอนถูกผูกใหม่
     }
 
     public void SetSelected(bool on)
     {
-        isSelected = on;
         if (bgImage != null)
             bgImage.color = on ? selectedColor : normalColor;
     }
@@ -93,5 +92,4 @@ public class CharacterCardUI : MonoBehaviour
             iconImage.color = locked ? lockedIconTint : Color.white;
     }
 
-    public bool IsLocked => isLocked;
 }

@@ -47,7 +47,14 @@ MonoBehaviour:
   data: {fileID: 0}
   currentLevel: 0
   manager: {fileID: 0}
+  castSfx: []
+  hitSfx: []
+  castVolume: 0.8
+  hitVolume: 0.7
+  pitchVariance: 0.05
+  abilityVfxType: MeteorAoE
+  secondaryVfxType: None
   activateKey: 31
-  dashDistance: 4
   dashDuration: 0.12
+  stunDuration: 2
   windSlashCount: 4
