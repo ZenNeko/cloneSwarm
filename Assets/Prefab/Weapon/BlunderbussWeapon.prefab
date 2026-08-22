@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5546056588423154064
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7745234514379789895}
+  - component: {fileID: 5466361702325869091}
+  m_Layer: 0
+  m_Name: BlunderbussWeapon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7745234514379789895
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5546056588423154064}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5466361702325869091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5546056588423154064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7036b9ee42abd2b4eba8442fb8c185e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShotgunWeapon
+  data: {fileID: 0}
+  currentLevel: 0
+  manager: {fileID: 0}
+  aimMode: 0
+  tempCooldownMult: 1
+  weaponVfxType: MeteorAoE
+  secondaryVfxType: None
+  fireSfx:
+  - {fileID: 8300000, guid: 09f634dfafc05604580f9f42bc32ce14, type: 3}
+  - {fileID: 8300000, guid: e519c4fde7ab1f84ea9f746ca19d019d, type: 3}
+  - {fileID: 8300000, guid: 7debb51e057f0e344b32d86d7d52ac4e, type: 3}
+  - {fileID: 8300000, guid: 4a821215bc5c10c4badf539751d438a7, type: 3}
+  - {fileID: 8300000, guid: d978c6f69d73a8d4f9b882424edd111a, type: 3}
+  hitSfx: []
+  fireVolume: 0.7
+  hitVolume: 0.6
+  pitchVariance: 0.05
+  projectilePrefab: {fileID: 1367524025346344, guid: 14406e5cebb68b34197c5520ac996829, type: 3}
+  spreadAngle: 30
+  explodeOnHit: 1
+  explosionRadius: 2.5

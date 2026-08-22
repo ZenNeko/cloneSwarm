@@ -18,8 +18,9 @@ MonoBehaviour:
   tier: 1
   prefab: {fileID: 3857138112386556378, guid: 950823958297c3a43b26329fea12d592, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
-  - damage: 20
+  - damage: 32
     cooldown: 1
     projectileCount: 4
     range: 10

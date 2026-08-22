@@ -20,11 +20,11 @@ MonoBehaviour:
   aimMode: 0
   randomNearCandidates: 3
   levels:
-  - damage: 20
-    cooldown: 1
+  - damage: 50
+    cooldown: 2
     projectileCount: 2
-    range: 20
-    projectileSpeed: 12
+    range: 30
+    projectileSpeed: 0
     radius: 0
     duration: 0
     piercing: 0

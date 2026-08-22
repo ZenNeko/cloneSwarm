@@ -10,35 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
-  m_Name: AD_Valor
+  m_Name: AD_Riven_Valor
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: Valor
   description: Valor
   icon: {fileID: 517294093, guid: 16698972bcdfa8747b4011d9f7cc9bc2, type: 3}
+  slotType: 0
   prefab: {fileID: 4645848536509420378, guid: c73e3b13730b0db40bdb03efd78c5158, type: 3}
   levels:
   - damage: 80
     cooldown: 8
     duration: 0
     range: 4
-    levelUpText: 
-  - damage: 95
-    cooldown: 7.5
-    duration: 0
-    range: 5
-    levelUpText: 
-  - damage: 110
-    cooldown: 7
-    duration: 0
-    range: 6
-    levelUpText: 
-  - damage: 125
-    cooldown: 6.5
-    duration: 0
-    range: 7
-    levelUpText: 
-  - damage: 140
-    cooldown: 6
-    duration: 0
-    range: 8
     levelUpText: 

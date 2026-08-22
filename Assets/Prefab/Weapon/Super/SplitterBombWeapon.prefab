@@ -58,7 +58,7 @@ MonoBehaviour:
   pitchVariance: 0.05
   projectilePrefab: {fileID: 8283745978487869945, guid: 024284f286d5ed349afff3ad0576271b, type: 3}
   explosionRadius: 3
-  fuseTime: 1.5
+  fuseTime: 1
   clusterSettings:
     overrideProjectile: 1
     pellets: 8
@@ -66,4 +66,4 @@ MonoBehaviour:
     projSpeed: 6
     spreadRadius: 5
     childRadius: 1.5
-    childFuse: 1
+    childFuse: 0.7

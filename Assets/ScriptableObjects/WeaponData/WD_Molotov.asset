@@ -18,6 +18,7 @@ MonoBehaviour:
   tier: 0
   prefab: {fileID: 1676939352408279352, guid: 351630a4f81eaf142835b9fec71198f1, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 25
     cooldown: 2.4
@@ -25,7 +26,7 @@ MonoBehaviour:
     range: 10
     projectileSpeed: 12
     radius: 2.5
-    duration: 0
+    duration: 2
     piercing: 0
   - damage: 32
     cooldown: 2.2
@@ -33,7 +34,7 @@ MonoBehaviour:
     range: 10
     projectileSpeed: 12
     radius: 2.8
-    duration: 0
+    duration: 2
     piercing: 0
   - damage: 40
     cooldown: 2
@@ -41,7 +42,7 @@ MonoBehaviour:
     range: 10
     projectileSpeed: 12
     radius: 3
-    duration: 0
+    duration: 3
     piercing: 0
   - damage: 49
     cooldown: 1.8
@@ -49,7 +50,7 @@ MonoBehaviour:
     range: 10
     projectileSpeed: 12
     radius: 3.2
-    duration: 0
+    duration: 3
     piercing: 0
   - damage: 62
     cooldown: 1.6
@@ -57,7 +58,7 @@ MonoBehaviour:
     range: 10
     projectileSpeed: 12
     radius: 3.5
-    duration: 0
+    duration: 3
     piercing: 0
   superVersion: {fileID: 11400000, guid: 1f7aab15c8f308b48989848016512ccd, type: 2}
   superConditions:

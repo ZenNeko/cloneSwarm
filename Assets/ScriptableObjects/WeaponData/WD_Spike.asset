@@ -21,8 +21,8 @@ MonoBehaviour:
   randomNearCandidates: 3
   levels:
   - damage: 20
-    cooldown: 2
-    projectileCount: 3
+    cooldown: 2.2
+    projectileCount: 8
     range: 30
     projectileSpeed: 14
     radius: 2.5
@@ -30,7 +30,7 @@ MonoBehaviour:
     piercing: 1
   - damage: 25
     cooldown: 1.9
-    projectileCount: 6
+    projectileCount: 10
     range: 30
     projectileSpeed: 12
     radius: 2.8
@@ -38,7 +38,7 @@ MonoBehaviour:
     piercing: 1
   - damage: 30
     cooldown: 1.7
-    projectileCount: 9
+    projectileCount: 12
     range: 30
     projectileSpeed: 12
     radius: 3.1
@@ -46,7 +46,7 @@ MonoBehaviour:
     piercing: 1
   - damage: 35
     cooldown: 1.6
-    projectileCount: 12
+    projectileCount: 14
     range: 30
     projectileSpeed: 12
     radius: 3.4
@@ -54,7 +54,7 @@ MonoBehaviour:
     piercing: 1
   - damage: 40
     cooldown: 1.5
-    projectileCount: 15
+    projectileCount: 16
     range: 30
     projectileSpeed: 12
     radius: 3.8

@@ -157,9 +157,18 @@ public class playermove : NetworkBehaviour
         if (isDashing || isKnockedBack) return;   // ปล่อยให้ dash หรือ knockback ควบคุม position เอง
 
         Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y);
-        var   sm            = IsOwner ? _statManager : null;
-        float effectiveSpeed = moveSpeed * (sm != null ? sm.GetMoveSpeedMultiplier() : 1f) * (1f + tempMoveSpeedBonus);
+        float effectiveSpeed = GetEffectiveMoveSpeed();
         rb.linearVelocity = new Vector3(movement.x * effectiveSpeed, rb.linearVelocity.y, movement.z * effectiveSpeed);
+    }
+
+    /// <summary>
+    /// ความเร็วเดินจริงหลังคูณ stat และบัฟชั่วคราว — สกิลที่อิง "% ของ move speed"
+    /// (เช่น Valor dash) ต้องอ่านจากที่นี่ ไม่ใช่คำนวณสูตรซ้ำเอง
+    /// </summary>
+    public float GetEffectiveMoveSpeed()
+    {
+        var sm = _statManager;
+        return moveSpeed * (sm != null ? sm.GetMoveSpeedMultiplier() : 1f) * (1f + tempMoveSpeedBonus);
     }
 
     // ── Input (New Input System) ──────────────────────────────────────────

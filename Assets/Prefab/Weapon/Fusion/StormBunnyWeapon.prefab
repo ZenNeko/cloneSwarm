@@ -49,21 +49,28 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: -1
-  weaponVfxKey: None
-  secondaryVfxType: -1
-  secondaryVfxKey: None
+  weaponVfxType: None
+  secondaryVfxType: None
   fireSfx: []
   hitSfx: []
   fireVolume: 0.7
   hitVolume: 0.6
   pitchVariance: 0.05
+  projectilePrefab: {fileID: 0}
   dashDistance: 4
   dashDuration: 0.15
   exileProjectileRangeMult: 2
   runicMaxRange: 12
   shieldPercent: 0.25
   _isSuper: 0
+  evenCastRadiusMult: 1
+  knockBackForce: 1.5
+  moveSpeedPerLevel:
+  - 0.05
+  - 0.1
+  - 0.15
+  - 0.2
+  - 0.25
   exileAoeMult: 1.5
   chainCount: 4
   chainRadius: 8

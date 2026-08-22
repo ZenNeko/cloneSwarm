@@ -33,6 +33,14 @@ public class LobbyUI : MonoBehaviour
     public TextMeshProUGUI mapNameLabel;
     public TextMeshProUGUI difficultyLabel;
 
+    [Header("Selection Preview (ในแท็บ Lobby)")]
+    [Tooltip("ปุ่มพาไปแท็บ MAP — ปิดการกดอัตโนมัติถ้าไม่ใช่ host เพราะ SetMapServerRpc รับเฉพาะ host")]
+    public Button mapButton;
+    [Tooltip("ภาพพรีวิวแมพที่เลือกอยู่ — อ่านจาก LobbyState ไม่ใช่จาก RunSetup เพื่อให้ตรงกับที่ server ถืออยู่")]
+    public Image mapImage;
+    [Tooltip("ภาพตัวละครของผู้เล่นเครื่องนี้ — ใช้ portrait ถ้ามี ไม่มีก็ icon")]
+    public Image characterImage;
+
     [Header("Invite & Network Controls")]
     public Button inviteButton;
     [Tooltip("ป้ายบนปุ่ม Invite — หลังสร้างห้องจะกลายเป็นรหัสห้อง กดแล้วคัดลอก")]
@@ -77,6 +85,11 @@ public class LobbyUI : MonoBehaviour
         if (lobbyJoinButton != null)
         {
             lobbyJoinButton.onClick.AddListener(OnLobbyJoinClicked);
+        }
+
+        if (mapButton != null)
+        {
+            mapButton.onClick.AddListener(OnMapButtonClicked);
         }
     }
 
@@ -243,6 +256,14 @@ public class LobbyUI : MonoBehaviour
         Debug.Log("[DBG-lobby7] เรียก Refresh() ท้าย OnInviteClicked แล้ว");
     }
 
+    /// <summary>ปุ่มแมพในแท็บ Lobby — พาไปแท็บ MAP ที่มี carousel เลือกแมพจริง</summary>
+    private void OnMapButtonClicked()
+    {
+        // TabBar.Select ปฏิเสธแท็บที่ visible = false อยู่แล้ว ซึ่งเป็นกรณีของ client
+        // (Refresh ตั้ง SetTabVisible("map", lobbyMode && isHost)) จึงไม่ต้องกันซ้ำตรงนี้
+        if (tabBar != null) tabBar.Select("map");
+    }
+
     private void OnLobbyJoinClicked()
     {
         if (JoinRoomPanel.Instance != null) JoinRoomPanel.Instance.Open();
@@ -366,6 +387,32 @@ public class LobbyUI : MonoBehaviour
         if (difficultyLabel != null)
         {
             difficultyLabel.text = LobbyState.Instance.SelectedDifficulty.Value.ToString();
+        }
+
+        if (mapImage != null)
+        {
+            var spr = map != null ? map.previewImage : null;
+            mapImage.sprite  = spr;
+            mapImage.enabled = spr != null;
+        }
+
+        // เฉพาะ host เปลี่ยนแมพได้ — ไม่ซ่อนแต่ปิดการกด เพื่อให้ client ยังเห็นว่าจะเล่นแมพไหน
+        if (mapButton != null) mapButton.interactable = isHost;
+
+        // ตัวละครของเครื่องนี้ อ่านจาก LobbyState ไม่ใช่ static ของ CharacterSelectUI
+        // เพราะอันนี้คือค่าที่ server ถืออยู่จริง ถ้าสองอันไม่ตรงกันจะได้เห็นทันที
+        if (characterImage != null)
+        {
+            CharacterData myChar = null;
+            if (NetworkManager.Singleton != null && MetaDatabase.Instance != null
+                && LobbyState.Instance.TryGetEntry(NetworkManager.Singleton.LocalClientId, out var meEntry))
+            {
+                myChar = MetaDatabase.Instance.GetCharacter(meEntry.characterName.ToString());
+            }
+
+            var spr = myChar != null ? (myChar.portrait != null ? myChar.portrait : myChar.icon) : null;
+            characterImage.sprite  = spr;
+            characterImage.enabled = spr != null;
         }
 
         if (startRunButton != null)

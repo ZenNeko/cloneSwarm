@@ -17,6 +17,22 @@ public class CharacterData : ScriptableObject
     public float baseHealth    = 100f;
     public float baseMoveSpeed = 5f;
 
+    // ── Display-only stats ────────────────────────────────────────────────
+    // สี่ค่านี้ยังไม่ถูกต่อสายเข้า gameplay — playermove อ่านแค่ baseHealth/baseMoveSpeed
+    // และ PlayerStatManager คืนค่า crit/armor จากการอัปเกรดในรันเท่านั้น (ฐาน = 0)
+    // ตอนนี้ใช้แสดงบนแผง stat ของหน้าเลือกตัวละคร เพื่อให้เทียบตัวละครกันได้
+    // ถ้าจะให้มีผลจริงในเกม ต้องต่อสายแยกรอบ
+    [Header("Display Stats (หน้าเลือกตัวละคร — ยังไม่มีผลในเกม)")]
+    [Tooltip("พลังโจมตีฐานที่โชว์บนแผง stat")]
+    public float baseAttack     = 0f;
+    [Tooltip("ค่าป้องกันฐานที่โชว์บนแผง stat")]
+    public float baseDefense    = 0f;
+    [Tooltip("โอกาสคริฐาน 0-1 (0.05 = 5%)")]
+    [Range(0f, 1f)]
+    public float baseCritRate   = 0.05f;
+    [Tooltip("ดาเมจคริเพิ่มจากปกติ (0.5 = +50%)")]
+    public float baseCritDamage = 0.5f;
+
     // ─────────────────────────────────────────────────────────────────────
     [Header("Meta Unlock")]
     [Tooltip("ติ๊ก = เล่นได้ตั้งแต่แรก ไม่ต้องซื้อ (ควรมีอย่างน้อย 1 ตัว)")]

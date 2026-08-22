@@ -490,12 +490,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d69096f781a555749b29f7679ecd344a, type: 2}
   - {fileID: 11400000, guid: b05f701fbe13e904c894c707da567f93, type: 2}
   - {fileID: 11400000, guid: 1208c1e3404eff34d9a08d6928dfa45a, type: 2}
-  allRecipes:
-  - {fileID: 11400000, guid: f472b5c8144f4d54ab77892cbb316d5c, type: 2}
-  - {fileID: 11400000, guid: cc06f9f7f8663d74a9497b6778b35ae8, type: 2}
-  - {fileID: 11400000, guid: 58118de89628e554cbb5da62c89927bf, type: 2}
-  - {fileID: 11400000, guid: 13add57572c889d42a33f0bc0829598b, type: 2}
-  - {fileID: 11400000, guid: 313554049e5c8864fab9e935624b4935, type: 2}
+  allRecipes: []
   cardsPerLevel: 3
 --- !u!114 &1258628423518312534
 MonoBehaviour:
@@ -609,7 +604,7 @@ MonoBehaviour:
   motionSpeedValue: 1
   movingThreshold: 0.05
   maxSpeed: 5
-  speedSmoothTime: 0.1
+  speedSmoothTime: 0.3
   faceMoveDirection: 1
   rotateSpeed: 1440
 --- !u!114 &-4709983444148486069

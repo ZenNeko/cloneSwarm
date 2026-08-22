@@ -31,7 +31,7 @@ public class StormBunnyWeapon : BunnyHopWeapon
 
     // Override DashAndFire เพื่อเพิ่ม chain lightning หลัง AoE
     protected override IEnumerator DashAndFire(Vector3 dir, float radius, float damage,
-                                                bool bigSlash, bool exileActive, bool isCrit = false)
+                                                bool evenCast, bool exileActive, bool isCrit = false)
     {
         var pm = manager.playerMove;
         var rb = pm?.GetComponent<Rigidbody>();
@@ -46,22 +46,31 @@ public class StormBunnyWeapon : BunnyHopWeapon
             Vector3 endPos   = startPos + dir * dashDistance;
             float   elapsed  = 0f;
 
-            while (elapsed < dashDuration)
+            // try/finally: isDashing ต้องถูกคืนค่าทุกทางออก ไม่ใช่แค่ทางที่วิ่งจนจบ
+            // playermove.FixedUpdate ปล่อยให้ dash คุม velocity เอง ธงที่ค้าง true
+            // แปลว่าผู้เล่นขยับไม่ได้ถาวร — ตายคา dash แล้ว Respawn มาก็ยืนนิ่งตลอดรัน
+            try
             {
-                elapsed += Time.deltaTime;
-                float t  = Mathf.SmoothStep(0f, 1f, elapsed / dashDuration);
-                rb.MovePosition(Vector3.Lerp(startPos, endPos, t));
-                yield return new WaitForFixedUpdate();
-            }
+                while (elapsed < dashDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t  = Mathf.SmoothStep(0f, 1f, elapsed / dashDuration);
+                    rb.MovePosition(Vector3.Lerp(startPos, endPos, t));
+                    yield return new WaitForFixedUpdate();
+                }
 
-            rb.MovePosition(endPos);
-            rb.linearVelocity  = Vector3.zero;
-            pm.isDashing = false;
+                rb.MovePosition(endPos);
+                rb.linearVelocity  = Vector3.zero;
+            }
+            finally
+            {
+                pm.isDashing = false;
+            }
         }
         else yield return null;
 
         Vector3 center      = transform.position;
-        int     aoeHitCount = (IsSuper && bigSlash) ? 2 : 1;
+        int     aoeHitCount = (IsSuper && evenCast) ? 2 : 1;
 
         // นับศัตรูในวง **ก่อน** ตี — ตัวที่ตายจากหมัดนี้ต้องถูกนับด้วย
         // ถ้านับหลังตี ตัวที่ตายจะหลุดจากการนับ กลายเป็นยิ่งฆ่าเก่งยิ่งได้โล่น้อย

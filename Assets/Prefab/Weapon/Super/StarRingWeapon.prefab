@@ -57,13 +57,14 @@ MonoBehaviour:
   hitVolume: 0.6
   pitchVariance: 0.05
   orbPrefab: {fileID: 1942644075807370077, guid: 63dad2987e922444099544f206147b50, type: 3}
-  orbSize: 1
+  orbSize: 3
   rotSpeed: 240
   summonCooldown: 0
   activeDuration: 8
   orbHitRadius: 1.4
   hitCheckInterval: 0.08
   perEnemyHitCooldown: 0.5
+  knockbackForce: 0.6
   useTwoRings: 1
   outerRadiusMultiplier: 2.5
   outerRingSpeed: 120
