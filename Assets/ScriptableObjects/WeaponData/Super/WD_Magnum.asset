@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Magnum
   description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07\u0E1B\u0E37\u0E19\u0E1E\u0E01 \u2014 \u0E22\u0E34\u0E07\u0E23\u0E31\u0E27\u0E40\u0E1B\u0E47\u0E19\u0E0A\u0E38\u0E14 \u0E41\u0E23\u0E07\u0E02\u0E36\u0E49\u0E19\u0E41\u0E25\u0E30\u0E16\u0E35\u0E48\u0E02\u0E36\u0E49\u0E19\u0E01\u0E27\u0E48\u0E32\u0E40\u0E14\u0E34\u0E21\u0E21\u0E32\u0E01"
-  icon: {fileID: 0}
+  icon: {fileID: -1630120991, guid: 7d14fe165a6225e499757a3668bbe881, type: 3}
   tier: 1
   prefab: {fileID: 7269730001752335320, guid: ec753e3fcce46a5498beb41c53bec20b, type: 3}
   aimMode: 1

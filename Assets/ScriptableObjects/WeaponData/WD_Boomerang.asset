@@ -14,10 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Boomerang
   description: "\u0E02\u0E27\u0E49\u0E32\u0E07 projectile \u0E43\u0E2A\u0E48 \u0E28\u0E31\u0E04\u0E23\u0E39\u0E17\u0E35\u0E48\u0E43\u0E01\u0E25\u0E49 \u0E41\u0E25\u0E49\u0E27\u0E08\u0E30\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E17\u0E35\u0E48\u0E04\u0E38\u0E13"
-  icon: {fileID: 0}
+  icon: {fileID: 815001446, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   tier: 0
   prefab: {fileID: 5993201688506033904, guid: 68e9b37e85365db44b48625513869dc2, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 25
     cooldown: 1

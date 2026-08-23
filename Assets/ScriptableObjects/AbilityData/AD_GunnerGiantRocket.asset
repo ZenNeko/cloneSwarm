@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: GunnerGiantRocket
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c3b727e935860c9478412d0020ad57bb, type: 3}
+  slotType: 0
   prefab: {fileID: 8368472084642120886, guid: a97a8fdf9df1aaa418f9db7a78dbaa64, type: 3}
   levels:
   - damage: 400
-    cooldown: 40
+    cooldown: 20
     duration: 5
     range: 500
     levelUpText: 

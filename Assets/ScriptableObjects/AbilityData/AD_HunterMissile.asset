@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: AD_HunterMissile
   description: AD_HunterMissile
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f3228481da0e5d24c9fa01cb06cf0719, type: 3}
+  slotType: 0
   prefab: {fileID: 3900651202789033190, guid: 93a00aa2d46e17d4e93fa90f539272e8, type: 3}
   levels:
   - damage: 150

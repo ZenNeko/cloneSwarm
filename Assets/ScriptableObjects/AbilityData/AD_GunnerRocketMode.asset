@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: GunnerRocketMode
   description: GunnerRocketMode
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b7348e8f5b38e2b439706508dde218e5, type: 3}
+  slotType: 0
   prefab: {fileID: 1587426536235194859, guid: 861463d03c9f07e4f9305c773f614a5a, type: 3}
   levels:
   - damage: 20

@@ -13,48 +13,53 @@ MonoBehaviour:
   m_Name: WD_GunnerWeapon
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: 'GunnerWeapon '
-  description: "\u0E1B\u0E37\u0E19\u0E1E\u0E01\u0E01\u0E23\u0E30\u0E1A\u0E2D\u0E01\u0E40\u0E14\u0E35\u0E22\u0E27
-    \u0E22\u0E34\u0E07\u0E40\u0E23\u0E47\u0E27 aim \u0E15\u0E32\u0E21 mouse"
-  icon: {fileID: 0}
+  description: "\u0E1B\u0E37\u0E19\u0E1E\u0E01\u0E01\u0E23\u0E30\u0E1A\u0E2D\u0E01\u0E40\u0E14\u0E35\u0E22\u0E27 \u0E22\u0E34\u0E07\u0E40\u0E23\u0E47\u0E27 aim \u0E15\u0E32\u0E21 mouse"
+  icon: {fileID: 21300000, guid: 27ea88b5f56f99b40a49f9f1994a28fc, type: 3}
   tier: 0
   prefab: {fileID: 7269730001752335320, guid: ec753e3fcce46a5498beb41c53bec20b, type: 3}
   aimMode: 1
+  randomNearCandidates: 3
   levels:
   - damage: 20
     cooldown: 1
     projectileCount: 2
     range: 8
     projectileSpeed: 50
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 26
     cooldown: 0.9
     projectileCount: 2
     range: 9
     projectileSpeed: 60
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 33
     cooldown: 0.8
     projectileCount: 3
     range: 10
     projectileSpeed: 60
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 42
     cooldown: 0.72
     projectileCount: 3
     range: 10
     projectileSpeed: 60
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   - damage: 52
     cooldown: 0.62
     projectileCount: 4
     range: 11
     projectileSpeed: 60
+    radius: 0
+    duration: 0
     piercing: 0
-    levelUpText: 
   superVersion: {fileID: 11400000, guid: ff3e9a3dcb66bc140a7c5cb6e0100f00, type: 2}
   superConditions:
   - conditionType: 0

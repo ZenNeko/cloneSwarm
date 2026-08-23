@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// Interface สำหรับ Ability ที่ต้องการแสดงใน HUD slot (Q / E / R)
 ///
@@ -15,6 +17,11 @@ public interface IHUDAbility
 
     /// <summary>ข้อความบน key hint เช่น "Q", "E", "R"</summary>
     string HUDKeyLabel { get; }
+
+    /// <summary>icon ที่จะแสดงใน HUD slot — null = ให้ HUD คงรูปที่ตั้งไว้ใน prefab
+    /// AbilityBase implement ให้แล้ว (คืน AbilityData.icon) — subclass ไม่ต้องเขียนเอง
+    /// WeaponBase ที่ implement interface นี้ต้องเขียนเอง</summary>
+    Sprite HUDIcon { get; }
 
     // ── Cooldown ──────────────────────────────────────────────────────────
     bool  IsOnCooldown      { get; }

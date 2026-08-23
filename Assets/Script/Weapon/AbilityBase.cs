@@ -95,6 +95,14 @@ public abstract class AbilityBase : MonoBehaviour
         OnInit();
     }
 
+    // ── IHUDAbility (บางส่วน) ─────────────────────────────────────────────
+    /// <summary>icon สำหรับ HUD slot — ดึงจาก AbilityData ที่ Init() ใส่มาให้
+    ///
+    /// อยู่ตรงนี้เพราะ subclass ทุกตัวที่ implement IHUDAbility สืบทอด AbilityBase
+    /// C# ให้ member ของ base class นับเป็นการ implement interface ของ derived ได้
+    /// จึงไม่ต้องไปเขียนซ้ำใน ability ทั้ง 6 ตัว และตัวใหม่ได้ฟรี</summary>
+    public Sprite HUDIcon => data != null ? data.icon : null;
+
     public void SetLevel(int level)
     {
         currentLevel = Mathf.Clamp(level, 0, data.levels.Length - 1);

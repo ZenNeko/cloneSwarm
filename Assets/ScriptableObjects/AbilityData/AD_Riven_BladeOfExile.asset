@@ -19,7 +19,7 @@ MonoBehaviour:
   prefab: {fileID: 7060057563466003552, guid: b498ce9fc7a7a10468ab3d0e86d0d854, type: 3}
   levels:
   - damage: 0
-    cooldown: 2
-    duration: 15
+    cooldown: 45
+    duration: 12
     range: 0
     levelUpText: 
