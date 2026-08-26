@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: SuperBigCannon
   description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Big Cannon \u2014 \u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E43\u0E2B\u0E0D\u0E48\u0E02\u0E36\u0E49\u0E19 \u0E41\u0E23\u0E07\u0E02\u0E36\u0E49\u0E19 \u0E41\u0E25\u0E30\u0E17\u0E30\u0E25\u0E38\u0E44\u0E14\u0E49\u0E25\u0E36\u0E01\u0E01\u0E27\u0E48\u0E32\u0E40\u0E14\u0E34\u0E21"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 052790ed269a1eb4d88e25e15505a3fc, type: 3}
   tier: 1
   prefab: {fileID: 7313529067552909824, guid: 60c02574b349aeb49b8a2285043d4886, type: 3}
   aimMode: 0

@@ -65,6 +65,21 @@ public class UpgradeCardInfo
         }
     }
 
+    /// <summary>true = ได้ครั้งแรก (WeaponNew / Super / Fusion / Augment / Stat Lv0)
+    /// การ์ดจะโชว์ "คำอธิบาย" อย่างเดียว เพราะยังไม่มีค่าเดิมให้เทียบ
+    ///
+    /// false = level up ของที่มีอยู่แล้ว การ์ดจะโชว์ "สเตตัสที่เพิ่ม" อย่างเดียว
+    /// ผู้เล่นอ่านคำอธิบายไปแล้วตอนได้ครั้งแรก
+    ///
+    /// เป็นแหล่งความจริงเดียวของกฎนี้ — ทั้งการซ่อน descriptionText และการสร้าง
+    /// stat row ใน UpgradeCardUI อ่านจากตัวนี้ จะได้ไม่มีทางเพี้ยนไปคนละทาง</summary>
+    public bool IsFirstAcquisition => type switch
+    {
+        UpgradeCardType.WeaponLevelUp => false,
+        UpgradeCardType.Stat          => currentStatLevel == 0,
+        _                             => true,
+    };
+
     public string DisplayLevelText => type switch
     {
         UpgradeCardType.WeaponNew     => "NEW",

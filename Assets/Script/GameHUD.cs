@@ -55,6 +55,7 @@ public class GameHUD : MonoBehaviour
     public AbilitySlotUI eSlot;
 
     [Header("Ability Slot Colors")]
+    [Tooltip("สีเหล่านี้ลงที่ AbilitySlotUI.slotBg ไม่ใช่ที่ icon\nicon ถูกคงไว้สีเต็มเพื่อให้เห็นภาพสกิลชัดตลอด")]
     public Color abilityReadyColor    = Color.white;
     public Color abilityCooldownColor = new Color(0.35f, 0.35f, 0.35f);
     public Color abilityActiveColor   = new Color(1f, 0.85f, 0.1f);    // glow เมื่อ active mode
@@ -64,12 +65,17 @@ public class GameHUD : MonoBehaviour
     public class AbilitySlotUI
     {
         public GameObject      root;
+        [Tooltip("พื้นหลังของ slot — ตัวที่รับสี ready / cooldown / active\nว่างไว้ = fallback ไปย้อมที่ iconImage แบบเดิม (พร้อม warning)")]
+        public Image           slotBg;
         public Image           iconImage;
         public Image           cooldownFill;
         public TextMeshProUGUI cooldownText;
         public TextMeshProUGUI keyHintText;
         [UnityEngine.Serialization.FormerlySerializedAs("exileGlow")]
         public GameObject      activeGlow;
+
+        /// <summary>warning เรื่อง slotBg ว่าง ต้องดังครั้งเดียว ไม่ใช่ทุกเฟรม</summary>
+        [System.NonSerialized] public bool warnedNoBg;
     }
 
     // ── Internal ──────────────────────────────────────────────────────────
@@ -201,14 +207,19 @@ public class GameHUD : MonoBehaviour
     void ScanAbilities(GameObject root)
     {
         // หา IHUDAbility ทุกตัว — assign ตาม HUDSlotKey
+        bool slotAssigned = false;
         foreach (var ab in root.GetComponentsInChildren<IHUDAbility>(true))
         {
             switch (ab.HUDSlotKey)
             {
-                case "Q": if (qAbility == null) qAbility = ab; break;
-                case "E": if (eAbility == null) eAbility = ab; break;
+                case "Q": if (qAbility == null) { qAbility = ab; slotAssigned = true; } break;
+                case "E": if (eAbility == null) { eAbility = ab; slotAssigned = true; } break;
             }
         }
+
+        // apply เฉพาะตอนเพิ่งได้ ability มา — WaitAndFindAbilities สแกนซ้ำได้ถึง 12 รอบ
+        // ถ้า apply ทุกรอบ warning ข้างล่างจะพ่นซ้ำ 12 ครั้ง
+        if (slotAssigned) ApplyAbilitySlots();
 
         // หา IHUDPassiveBar ที่ IsActivePassive=true ก่อน (ถูก character)
         // fallback → ตัวแรกที่เจอ (กรณีไม่มีตัวไหน active)
@@ -223,11 +234,65 @@ public class GameHUD : MonoBehaviour
         }
     }
 
+    /// <summary>ค่าที่เปลี่ยนแค่ตอนได้ ability มา (key hint + icon)
+    /// ต่างจาก UpdateAbilitySlot ที่ poll ทุกเฟรมเพื่อ cooldown / สี / glow</summary>
     void ApplyAbilitySlots()
     {
         // slot และ passive bar แสดงตลอด — ตัวละครทุกตัวมีครบ
-        if (qSlot.keyHintText != null && qAbility != null) qSlot.keyHintText.text = qAbility.HUDKeyLabel;
-        if (eSlot.keyHintText != null && eAbility != null) eSlot.keyHintText.text = eAbility.HUDKeyLabel;
+        ApplySlotIdentity(qSlot, qAbility);
+        ApplySlotIdentity(eSlot, eAbility);
+    }
+
+    void ApplySlotIdentity(AbilitySlotUI slot, IHUDAbility ab)
+    {
+        if (slot == null || ab == null) return;
+
+        if (slot.keyHintText != null) slot.keyHintText.text = ab.HUDKeyLabel;
+
+        if (slot.iconImage != null)
+        {
+            // สีสถานะย้ายไปอยู่ที่ slotBg แล้ว icon จึงต้องเป็นสีเต็ม
+            // (ของเดิมโค้ดย้อม icon ทุกเฟรม ค่าที่ค้างใน scene จึงเชื่อถือไม่ได้)
+            if (slot.slotBg != null) slot.iconImage.color = Color.white;
+
+            if (ab.HUDIcon != null)
+            {
+                slot.iconImage.sprite = ab.HUDIcon;
+            }
+            else
+            {
+                // ไม่เงียบ — ปล่อยผ่านเฉยๆ แปลว่า HUD ค้างรูป placeholder ของตัวละครอื่น
+                // แล้วดูเหมือนทำงานปกติ (ดู handoff 2026-08-22 §7)
+                Debug.LogWarning(
+                    $"[GameHUD] slot {ab.HUDSlotKey} ({ab.GetType().Name}) ไม่มี icon — " +
+                    "เติม AbilityData.icon ไม่งั้นจะค้างรูปที่ตั้งไว้ใน prefab");
+            }
+        }
+    }
+
+    /// <summary>ลงสีสถานะ (ready / cooldown / active) ที่พื้นหลังของ slot
+    ///
+    /// ถ้ายังไม่ได้ต่อ slotBg ใน Inspector จะถอยไปย้อม icon แบบเดิมแทน —
+    /// ไม่ปล่อยให้เงียบ เพราะ "ไม่มีสีอะไรเลย" ดูเหมือน HUD พังมากกว่าดูเหมือนยังไม่ได้ต่อสาย</summary>
+    void ApplySlotColor(AbilitySlotUI slot, Color color)
+    {
+        if (slot == null) return;
+
+        if (slot.slotBg != null)
+        {
+            slot.slotBg.color = color;
+            return;
+        }
+
+        if (slot.iconImage != null) slot.iconImage.color = color;
+
+        if (!slot.warnedNoBg)
+        {
+            slot.warnedNoBg = true;
+            Debug.LogWarning(
+                "[GameHUD] ability slot ยังไม่ได้ต่อ slotBg — สีสถานะลงที่ icon ไปก่อน " +
+                "ลาก child ชื่อ BG ของ Q_Slot / E_Slot ใส่ช่อง Slot Bg");
+        }
     }
 
     // ── Ability Slot Update (Polling) ─────────────────────────────────────
@@ -240,7 +305,7 @@ public class GameHUD : MonoBehaviour
             // Active Mode: แสดง countdown drain จาก max → 0
             float norm = ab.ActiveRemaining / ab.ActiveMax;
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
-            if (slot.iconImage     != null) slot.iconImage.color = abilityActiveColor;
+            ApplySlotColor(slot, abilityActiveColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(true);
             if (slot.cooldownText  != null)
                 slot.cooldownText.text = ab.ActiveRemaining > 0.5f
@@ -251,7 +316,7 @@ public class GameHUD : MonoBehaviour
             // Cooldown: fill drain จาก 1 → 0
             float norm = ab.CooldownRemaining / ab.CooldownMax;
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
-            if (slot.iconImage     != null) slot.iconImage.color = abilityCooldownColor;
+            ApplySlotColor(slot, abilityCooldownColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
             if (slot.cooldownText  != null)
                 slot.cooldownText.text = ab.CooldownRemaining > 1f
@@ -261,7 +326,7 @@ public class GameHUD : MonoBehaviour
         {
             // Ready
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = 0f;
-            if (slot.iconImage     != null) slot.iconImage.color = abilityReadyColor;
+            ApplySlotColor(slot, abilityReadyColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
             if (slot.cooldownText  != null) slot.cooldownText.text = "";
         }

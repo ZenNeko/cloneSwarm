@@ -49,8 +49,16 @@ public class UpgradeCardUI : MonoBehaviour
 
         if (iconImage)       iconImage.sprite    = card.DisplayIcon;
         if (nameText)        nameText.text = card.DisplayName;
-        if (descriptionText) descriptionText.text = card.DisplayDescription;
         if (levelText)       levelText.text       = card.DisplayLevelText;
+
+        // ได้ครั้งแรก -> คำอธิบายอย่างเดียว · level up -> สเตตัสที่เพิ่มอย่างเดียว
+        // สองอย่างนี้ไม่เคยโชว์พร้อมกัน ทั้งคู่อ่านกฎจาก card.IsFirstAcquisition
+        bool showDescription = card.IsFirstAcquisition;
+        if (descriptionText)
+        {
+            descriptionText.gameObject.SetActive(showDescription);
+            if (showDescription) descriptionText.text = card.DisplayDescription;
+        }
 
         // --- Premium Highlights ---
         if (recommendedGlowOutline)
@@ -79,6 +87,7 @@ public class UpgradeCardUI : MonoBehaviour
                 var row = Instantiate(statRowPrefab, statRowsContainer);
                 row.SetData(change.statName, change.beforeValue, change.afterValue);
             }
+            statRowsContainer.gameObject.SetActive(changes.Count > 0);
         }
 
         // Card color — Augment ใช้สีตาม rarity ของตัวเอง
@@ -138,14 +147,14 @@ public class UpgradeCardUI : MonoBehaviour
     {
         var list = new System.Collections.Generic.List<StatChangeInfo>();
 
+        // ได้ครั้งแรก (WeaponNew / Super / Fusion / Augment / Stat Lv0) ยังไม่มีค่าเดิม
+        // ให้เทียบ การ์ดโชว์คำอธิบายแทน
+        if (card.IsFirstAcquisition) return list;
+
         if (card.type == UpgradeCardType.Stat && card.stat != null)
         {
-            // ได้ครั้งแรก (currentStatLevel == 0) -> ไม่ต้องแสดงแถบพลังเปรียบเทียบ
-            if (card.currentStatLevel == 0) return list;
-
             float prevVal = GetAccumulatedStatValue(card.stat, card.currentStatLevel);
             float newVal  = GetAccumulatedStatValue(card.stat, card.currentStatLevel + 1);
-            bool isNew = card.currentStatLevel == 0;
 
             string name = card.stat.statType switch
             {
@@ -166,8 +175,8 @@ public class UpgradeCardUI : MonoBehaviour
                 _                        => card.stat.statName
             };
 
-            string before = isNew ? "0" : FormatStatVal(card.stat.statType, prevVal, false);
-            string after = FormatStatVal(card.stat.statType, newVal, isNew);
+            string before = FormatStatVal(card.stat.statType, prevVal, false);
+            string after  = FormatStatVal(card.stat.statType, newVal,  false);
 
             if (card.stat.statType == StatType.GainGold)
             {
@@ -226,11 +235,10 @@ public class UpgradeCardUI : MonoBehaviour
                     list.Add(new StatChangeInfo {
                         statName = "Speed",
                         beforeValue = curLd.projectileSpeed.ToString("F0"),
-                        afterValue = curLd.projectileSpeed.ToString("F0")
+                        afterValue = nextLd.projectileSpeed.ToString("F0")
                     });
                 }
             }
-            // WeaponNew, Super, Fusion (ได้ครั้งแรก) -> ไม่ต้องแสดงสเตตัสเปรียบเทียบ
         }
 
         return list;

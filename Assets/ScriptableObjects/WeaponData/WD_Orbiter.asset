@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Orbiter
   description: "\u0E40\u0E23\u0E35\u0E22\u0E01\u0E25\u0E39\u0E01\u0E41\u0E01\u0E49\u0E27\u0E27\u0E19\u0E23\u0E2D\u0E1A\u0E15\u0E31\u0E27 \u0E17\u0E33\u0E14\u0E32\u0E40\u0E21\u0E08\u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E2A\u0E31\u0E21\u0E1C\u0E31\u0E2A\u0E16\u0E39\u0E01"
-  icon: {fileID: 0}
+  icon: {fileID: 1510120445, guid: 132358e9bf26b60458b731bf001e31db, type: 3}
   tier: 0
   prefab: {fileID: 1935411019707455659, guid: b492ddaadafc90c419d635faa3a2fd5e, type: 3}
   aimMode: 0

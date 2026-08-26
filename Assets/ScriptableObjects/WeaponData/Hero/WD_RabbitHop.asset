@@ -14,10 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: RabbitHop
   description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Bunny Hop \u2014 \u0E08\u0E31\u0E07\u0E2B\u0E27\u0E30\u0E1E\u0E38\u0E48\u0E07\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E2A\u0E2D\u0E07\u0E1F\u0E32\u0E14\u0E0B\u0E49\u0E33\u0E2A\u0E2D\u0E07\u0E40\u0E14\u0E49\u0E07"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 99709748bc8b8a24795a8bb5523453e3, type: 3}
   tier: 1
   prefab: {fileID: 6840295172297232903, guid: bfb9b6229e1ce204db093fcad283440b, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 160
     cooldown: 0
