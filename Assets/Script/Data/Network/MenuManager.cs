@@ -108,7 +108,15 @@ public class MenuManager : MonoBehaviour
         EnsureLobbyStateSpawned();
     }
 
-    void HandleJoined() => ShowPanel(lobbyPanel);
+    void HandleJoined()
+    {
+        ShowPanel(lobbyPanel);
+
+        // ต้องตั้งโหมดด้วย ไม่ใช่แค่เปิดแผง — ร้าน Talent เป็นแท็บใน lobbyPanel ตัวเดียวกัน
+        // ถ้าเพิ่งเข้าร้านมา mode ยังค้างเป็น Shop แผงจะเปิดมาเป็นหน้าร้าน
+        // ไม่มีแท็บล็อบบี้และไม่มี bottomBar (เทียบ OnPlayClicked ที่ตั้งให้อยู่แล้ว)
+        if (lobbyUI != null) lobbyUI.SetMode(HubMode.Lobby);
+    }
 
     void HandleJoinFailed()
     {

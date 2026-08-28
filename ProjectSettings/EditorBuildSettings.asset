@@ -11,13 +11,13 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/GameScenes/SampleScene.unity
     guid: 0ca8c34988b58184d875df9c246ee5b1
-  - enabled: 1
+  - enabled: 0
     path: Assets/GameScenes/SampleScene black.unity
     guid: b79fcf0437f39ad46b54b340f16fbf5a
-  - enabled: 1
+  - enabled: 0
     path: Assets/GameScenes/Scene 2.unity
     guid: a3c396bf1e63daf4ebbf6dbe73891f19
-  - enabled: 1
+  - enabled: 0
     path: Assets/GameScenes/WeaponTestScene.unity
     guid: 5169bcb8ee3bcb64f9eb9ca6baf1ab72
   m_configObjects:

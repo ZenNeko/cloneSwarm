@@ -19,6 +19,14 @@ public class MapCarousel : CarouselBase
     [Tooltip("ความเร็วจาง/โผล่ของภาพใหญ่ (หน่วยอัลฟาต่อวินาที)")]
     public float previewFadeSpeed = 6f;
 
+    [Range(0f, 1f)]
+    [Tooltip("ความทึบของภาพใหญ่ตอนเข้าช่องนิ่งแล้ว")]
+    public float previewIdleAlpha = 1f;
+
+    [Range(0f, 1f)]
+    [Tooltip("ความทึบระหว่างที่ยังลาก/ไถลอยู่ - ตั้ง 1 เท่ากับ previewIdleAlpha = ไม่จางเลย")]
+    public float previewMovingAlpha = 0f;
+
     // ── Data ──────────────────────────────────────────────────────────────
     private readonly List<MapData>   maps  = new();
     private readonly List<MapCardUI> cards = new();
@@ -41,6 +49,10 @@ public class MapCarousel : CarouselBase
 
         selectedColor = selColor;
         normalColor   = normColor;
+
+        // ตรวจก่อนว่าไม่ได้ชี้มาที่ container ของการ์ดเอง — ดู ValidateOverlayGroup
+        previewGroup = ValidateOverlayGroup(previewGroup, container, "previewGroup");
+        previewImage = ValidateOverlayImage(previewImage, "previewImage");
 
         // ภาพใหญ่ทับช่องกลาง ถ้ารับ raycast จะดูดคลิกกับการลากไปหมด — เป็นของประดับล้วน
         if (previewGroup != null)
@@ -96,7 +108,7 @@ public class MapCarousel : CarouselBase
         if (previewGroup == null) return;
 
         bool  show = IsIdle;
-        float goal = show ? 1f : 0f;
+        float goal = show ? previewIdleAlpha : previewMovingAlpha;
 
         if (instant) previewGroup.alpha = goal;
         else previewGroup.alpha = Mathf.MoveTowards(previewGroup.alpha, goal,

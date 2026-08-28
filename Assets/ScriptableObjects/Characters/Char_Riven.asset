@@ -18,6 +18,10 @@ MonoBehaviour:
   icon: {fileID: -9024117458653500818, guid: 472f1f65625e72e4ca02fe0eef149403, type: 3}
   baseHealth: 120
   baseMoveSpeed: 6
+  baseAttack: 0
+  baseDefense: 0
+  baseCritRate: 0.05
+  baseCritDamage: 0.5
   unlockedByDefault: 0
   unlockCost: 1000
   characterModelPrefab: {fileID: 9040545027999274934, guid: 00c2b0e5d0021bd44b0079c9921db028, type: 3}

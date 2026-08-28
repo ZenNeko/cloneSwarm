@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
   m_Name: AD_HunterUltimate
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
-  abilityName: AD_HunterUltimate
+  abilityName: Funnel Storm
   description: "\u0E1B\u0E25\u0E14\u0E1B\u0E25\u0E48\u0E2D\u0E22 Funnels \u0E2D\u0E2D\u0E01\u0E21\u0E32\u0E0A\u0E48\u0E27\u0E22\u0E01\u0E33\u0E08\u0E31\u0E14\u0E28\u0E31\u0E15\u0E23\u0E39 "
   icon: {fileID: 0}
   slotType: 1

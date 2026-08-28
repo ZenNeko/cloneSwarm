@@ -14,10 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Hunter
   description: "\u0E40\u0E1B\u0E47\u0E19\u0E19\u0E31\u0E01\u0E25\u0E48\u0E32\u0E17\u0E35\u0E48\u0E23\u0E27\u0E14\u0E40\u0E23\u0E47\u0E27\u0E41\u0E25\u0E30\u0E40\u0E15\u0E23\u0E31\u0E22\u0E21\u0E15\u0E31\u0E27\u0E21\u0E32\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E01\u0E32\u0E23\u0E25\u0E48\u0E32  \u0E43\u0E0A\u0E49 Laser \u0E40\u0E1B\u0E47\u0E19\u0E2B\u0E25\u0E31\u0E01"
-  portrait: {fileID: 0}
+  portrait: {fileID: -182236398, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   icon: {fileID: -2113404227, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   baseHealth: 120
   baseMoveSpeed: 5.5
+  baseAttack: 0
+  baseDefense: 0
+  baseCritRate: 0.05
+  baseCritDamage: 0.5
   unlockedByDefault: 1
   unlockCost: 0
   characterModelPrefab: {fileID: 8934512763525924868, guid: c38ab87a1eb9dda4a87574cece454d41, type: 3}

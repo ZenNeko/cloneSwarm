@@ -246,12 +246,17 @@ public class CharacterSelectUI : MonoBehaviour
             return;
         }
 
-        carousel = host.GetComponent<CharacterCarousel>();
+        // ค้นขึ้นไปทั้งสาย ไม่ใช่แค่พ่อของ cardsContainer โดยตรง
+        // ซีนจริงเป็น LeftPanel > Viewport > cardsContainer และ component อยู่บน LeftPanel
+        // ตามที่ CarouselBase เขียนไว้เองว่า "ต้องวางบน object ของแผงที่จะลาก"
+        // ของเดิมหาแค่ host (= Viewport) ไม่เจอ แล้ว AddComponent ตัวใหม่ที่ reference ว่าง
+        // ทับไปเงียบๆ — ตัวที่ต่อสายไว้ใน Editor จึงไม่เคยถูก Setup เลย
+        carousel = rect.GetComponentInParent<CharacterCarousel>(true);
         if (carousel == null)
         {
             carousel = host.gameObject.AddComponent<CharacterCarousel>();
-            Debug.LogWarning("[CharSelect] ไม่พบ CharacterCarousel บน '" + host.name + "' จึงเพิ่มให้ตอนรัน — " +
-                             "ช่อง hero กับปุ่มลูกศรจะว่าง ถ้าต้องการใช้ ให้เพิ่ม component นี้ใน Editor แล้วลาก reference");
+            Debug.LogWarning("[CharSelect] ไม่พบ CharacterCarousel เหนือ '" + rect.name + "' ขึ้นไปเลย จึงเพิ่มให้บน '" +
+                             host.name + "' ตอนรัน — ช่อง hero กับปุ่มลูกศรจะว่าง ถ้าต้องการใช้ ให้เพิ่ม component นี้ใน Editor แล้วลาก reference");
         }
 
         carousel.OnSettled -= OnCarouselSettled;
@@ -447,7 +452,14 @@ public class CharacterSelectUI : MonoBehaviour
         bool heroOwnsPortrait = carousel != null && carousel.heroImage != null;
         if (!heroOwnsPortrait)
         {
-            SetImage(detailPortrait, selected.portrait);
+            // ตกกลับไปใช้ icon เมื่อยังไม่มี portrait — ตอนนี้มีแค่ Riven ที่มี
+            // ถ้าปล่อยเป็น null SetImage จะปิด Image ทิ้ง ช่องเลยว่างเปล่า
+            // ซึ่งดูเหมือนแผงพังมากกว่าดูเหมือน "ยังไม่ได้ใส่รูป"
+            SetImage(detailPortrait, selected.portrait != null ? selected.portrait : selected.icon);
+
+            if (selected.portrait == null)
+                Debug.LogWarning($"[CharSelect] '{selected.characterName}' ไม่มี portrait — " +
+                                 "ใช้ icon แทนไปก่อน ภาพจะถูกยืดเต็มกรอบใหญ่ · เติม CharacterData.portrait");
         }
         else if (detailPortrait != null && detailPortrait != carousel.heroImage)
         {

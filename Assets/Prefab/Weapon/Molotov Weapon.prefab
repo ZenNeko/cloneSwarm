@@ -49,7 +49,7 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: MeteorAoE
+  weaponVfxType: GrenadeExplosion
   secondaryVfxType: MeteorAoE
   fireSfx: []
   hitSfx: []
@@ -58,4 +58,4 @@ MonoBehaviour:
   pitchVariance: 0.05
   projectilePrefab: {fileID: 1367524025346344, guid: 889c3fa9eb2f70045baf4c6542969991, type: 3}
   explosionRadius: 2.5
-  fuseTime: 1.2
+  fuseTime: 1

@@ -63,6 +63,9 @@ public class NetworkedVFXPool : MonoBehaviour
 
     // ─── Runtime ─────────────────────────────────────────────────────────
     private readonly Dictionary<string, int>            _keyToPoolId  = new();
+    /// <summary>cache ของ GetVfxDuration — CalcTTL วน GetComponentsInChildren
+    /// บน prefab ที่มี ParticleSystem ได้ถึง 30 ตัว ไม่ควรคิดใหม่ทุกครั้ง</summary>
+    private readonly Dictionary<string, float>          _ttlByKey     = new();
     private readonly Dictionary<int, Queue<GameObject>> _pools        = new();
     private readonly Dictionary<GameObject, int>        _projToId     = new();
 
@@ -341,6 +344,27 @@ public class NetworkedVFXPool : MonoBehaviour
     /// <summary>คืน true ถ้ามี prefab assign สำหรับ key นี้ใน pool</summary>
     public bool HasMapping(string key) => !string.IsNullOrEmpty(key) && _keyToPoolId.ContainsKey(key);
 
+    /// <summary>อายุจริงของ VFX ตาม key (วินาที) — ตรงกับเวลาที่ instance จะถูกคืน pool
+    ///
+    /// มีไว้ให้ผู้เรียกที่ต้อง "ต่ออายุ" เอฟเฟกต์ค้างพื้น ได้ spawn ตามอายุของ VFX เอง
+    /// ไม่ใช่ตามจังหวะดาเมจ (ดู PlayerWeaponManager.SpawnLightningZonesServerSide)
+    ///
+    /// อ่านจาก prefab ได้ผลเท่ากับอ่านจาก instance — CalcTTL ดูแค่ค่า main ของ
+    /// ParticleSystem กับการมีอยู่ของ VisualEffect ซึ่ง Rent ไม่ได้แก้
+    ///
+    /// คืน 0 ถ้าไม่รู้จัก key — ผู้เรียกต้องมี fallback เอง</summary>
+    public float GetVfxDuration(string key)
+    {
+        if (string.IsNullOrEmpty(key) || key == "None") return 0f;
+        if (_ttlByKey.TryGetValue(key, out float cached)) return cached;
+        if (!_keyToPoolId.TryGetValue(key, out int poolId)) return 0f;
+
+        var   prefab = GetPrefabForId(poolId);
+        float ttl    = prefab != null ? CalcTTL(prefab, poolId, includeInactive: true) : 0f;
+        _ttlByKey[key] = ttl;
+        return ttl;
+    }
+
     /// <summary>
     /// คืน designedRadius ของ VFXAsset ตาม id (ADR-006) — เทียบเท่า GetDesignedRadius(string) ฝั่งเก่า
     /// -1 = ไม่พบ id | 0 = fixed size (ไม่ควร scale)
@@ -618,7 +642,10 @@ public class NetworkedVFXPool : MonoBehaviour
         return null;
     }
 
-    float CalcTTL(GameObject go, int poolId = -1)
+    /// <param name="includeInactive">true เมื่ออ่านจาก prefab asset —
+    /// prefab ที่ยังไม่ Instantiate มี activeInHierarchy = false ทั้งก้อน
+    /// GetComponentsInChildren แบบ default จึงคืนศูนย์ตัว แล้วตกไปใช้ค่าเดา 3f เงียบๆ</param>
+    float CalcTTL(GameObject go, int poolId = -1, bool includeInactive = false)
     {
         // fixedDuration จาก Inspector — ใช้เมื่อกำหนดไว้ (VFX Graph)
         if (poolId >= ASSET_POOL_ID_BASE)
@@ -642,7 +669,7 @@ public class NetworkedVFXPool : MonoBehaviour
 
         // ParticleSystem — คำนวณจาก duration + lifetime
         float maxTTL = 0f;
-        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>())
+        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>(includeInactive))
         {
             float t = ps.main.duration + ps.main.startLifetime.constantMax;
             if (t > maxTTL) maxTTL = t;

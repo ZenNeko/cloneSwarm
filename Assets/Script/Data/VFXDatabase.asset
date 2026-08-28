@@ -15,7 +15,7 @@ MonoBehaviour:
   entries:
   - key: HitEffect
     prefab: {fileID: 4503612902121041701, guid: 5a936c83b1746f14f9100db745e94f04, type: 3}
-    poolSize: 600
+    poolSize: 1000
     designedRadius: 0
     fixedDuration: 0
   - key: CritHitEffect
@@ -25,7 +25,7 @@ MonoBehaviour:
     fixedDuration: 0
   - key: GrenadeExplosion
     prefab: {fileID: 5162910912013668194, guid: cf82839c411151342a7b2337bda9fb34, type: 3}
-    poolSize: 20
+    poolSize: 80
     designedRadius: 0
     fixedDuration: 0
   - key: OrbiterHit
@@ -70,7 +70,7 @@ MonoBehaviour:
     fixedDuration: 0
   - key: MeteorAoE
     prefab: {fileID: 7957833072274404953, guid: 37eb70a72cb0a094cb3a88aa02fd2234, type: 3}
-    poolSize: 65
+    poolSize: 300
     designedRadius: 3
     fixedDuration: 0
   - key: O_AoE_RadiantAura
@@ -100,7 +100,7 @@ MonoBehaviour:
     fixedDuration: 0
   - key: Stormcaller_AOE
     prefab: {fileID: 4748681987041982144, guid: be86a8ab229119d44bcf02c7ea449804, type: 3}
-    poolSize: 55
+    poolSize: 460
     designedRadius: 3
     fixedDuration: 0
   - key: VFX_Lance
@@ -120,17 +120,17 @@ MonoBehaviour:
     fixedDuration: 0
   - key: BigAOEBome
     prefab: {fileID: 4748681987041982144, guid: 1e9c209764f16b148a34080ebdbf4c15, type: 3}
-    poolSize: 5
+    poolSize: 80
     designedRadius: 3
     fixedDuration: 0
   - key: BigAOEBome_chargeTime
     prefab: {fileID: 4748681987041982144, guid: 31ff451a88873b9489fb3fad93871fb6, type: 3}
-    poolSize: 5
+    poolSize: 80
     designedRadius: 3
     fixedDuration: 0
   - key: AOE_ICEMiss
     prefab: {fileID: 4748681987041982144, guid: ccd96e11e8942d24a9a37f7db3017227, type: 3}
-    poolSize: 5
+    poolSize: 80
     designedRadius: 3
     fixedDuration: 0
   assets:
