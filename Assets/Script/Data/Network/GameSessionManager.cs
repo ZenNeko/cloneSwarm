@@ -524,12 +524,14 @@ public class GameSessionManager : MonoBehaviour
 
     /// <summary>Host กด Start Game → โหลด scene ให้ทุก client อัตโนมัติ</summary>
     /// <param name="sceneName">ชื่อ scene ที่จะโหลด — ถ้าไม่ส่งจะใช้ availableScenes[0]</param>
-    public void StartGame(string sceneName = null)
+    /// <returns>false = ไม่ได้เริ่มโหลดซีน (ไม่ใช่ host หรือ NGO ยังไม่ start)
+    /// ผู้เรียกเอาไปคืนสถานะปุ่มได้ ไม่งั้นจะค้างจอที่กดอะไรไม่ได้</returns>
+    public bool StartGame(string sceneName = null)
     {
         if (!IsHost)
         {
             Debug.LogWarning("[Session] StartGame: ต้องเป็น Host เท่านั้น");
-            return;
+            return false;
         }
 
         var nm = NetworkManager.Singleton;
@@ -538,11 +540,31 @@ public class GameSessionManager : MonoBehaviour
         if (nm == null || !nm.IsListening)
         {
             Debug.LogError("[Session] StartGame: NetworkManager ยังไม่ได้ start — ตรวจสอบ SessionSettings → createNetworkSession = true");
-            return;
+            return false;
         }
+
+        // ── ล้าง player ของรันก่อนหน้าก่อนโหลดซีน ────────────────────────────
+        // SpawnAsPlayerObject ใช้ destroyWithScene = false (ค่า default ของ NGO) player object
+        // จึงรอดข้าม LoadSceneMode.Single แล้ว SpawnPlayerIfMissing เห็น PlayerObject != null
+        // เลย return ทิ้ง — รันใหม่ได้ตัวเดิมทั้งดุ้น ทั้ง isDead ที่ยังเป็น true (ตอนแพ้ไม่มีใคร
+        // เรียก Respawn ให้), อาวุธกับสเตตัสของรันเก่า และตำแหน่งที่ตาย เพราะ GetSpawnPosition
+        // ไม่เคยถูกเรียก · อาการคือกด Play Again แล้วเกิดมาตายอยู่ ขยับไม่ได้
+        //
+        // วางไว้ตรงนี้เพื่อครอบทุกเส้นทางที่เริ่มรัน — กดจากล็อบบี้ยังไม่มี player ก็เป็น no-op
+        // และ RespawnCoroutine ที่ค้างอยู่จะตายไปพร้อม component ไม่ไปวาร์ปคนในรันใหม่
+        var stale = new List<NetworkObject>();
+        foreach (var c in nm.ConnectedClientsList)
+            if (c.PlayerObject != null) stale.Add(c.PlayerObject);
+
+        foreach (var po in stale)
+            if (po != null && po.IsSpawned) po.Despawn(true);
+
+        if (stale.Count > 0)
+            Debug.Log($"[Session] ล้าง player ของรันก่อนหน้า {stale.Count} ตัว ก่อนโหลดซีนใหม่");
 
         string target = sceneName ?? (availableScenes.Length > 0 ? availableScenes[0] : "SampleScene");
         Debug.Log($"[Session] StartGame → โหลด '{target}'");
         nm.SceneManager.LoadScene(target, LoadSceneMode.Single);
+        return true;
     }
 }
