@@ -139,7 +139,7 @@ public class MapSelectUI : MonoBehaviour
         // เฉพาะ host เปลี่ยนแมพได้ — LobbyState ทิ้ง ServerRpc ของ client เงียบๆ
         // ถ้าปล่อยให้ commit เครื่อง client จะเห็นแมพหนึ่ง แต่เข้าเกมได้อีกแมพหนึ่ง
         // จึงดีด carousel กลับไปที่แมพที่ server ถืออยู่แทน
-        if (lobbyUI != null && !lobbyUI.IsHost)
+        if (lobbyUI != null && lobbyUI.MapLocked)
         {
             var serverMap = lobbyUI.NetworkSelectedMap;
             if (serverMap != null && serverMap != map)

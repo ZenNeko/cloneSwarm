@@ -144,6 +144,15 @@ public class LobbyUI : MonoBehaviour
         (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost) ||
         (GameSessionManager.Instance != null && GameSessionManager.Instance.IsHost);
 
+    /// <summary>true = มีล็อบบี้บนเน็ตเวิร์กอยู่ และเครื่องนี้ไม่ใช่ host → เปลี่ยนแมพ/ความยากไม่ได้
+    ///
+    /// ต้องเช็ค LobbyState ด้วย ไม่ใช่ !IsHost เฉยๆ — MapSelectUI อยู่บน Canvas ที่ root
+    /// Start() ของมันจึงรันตั้งแต่ซีนโหลด ก่อนมี session ใดๆ ตอนนั้น IsHost เป็น false เสมอ
+    /// ถ้าบล็อกด้วย !IsHost ค่าเริ่มต้นที่ Start() ตั้งให้จะไม่ถูกเขียนลง RunSetup
+    /// แล้ว PushLocalSelectionsToLobby จะไม่มีอะไรส่งขึ้น server → SelectedMapId ว่าง
+    /// → GetSelectedMap คืน null → Map_Image ถูกปิดทิ้งใน Refresh()</summary>
+    public bool MapLocked => LobbyState.Instance != null && !IsHost;
+
     /// <summary>แมพที่ server ถืออยู่จริง — ไม่ใช่ตัวที่ผู้เล่นเครื่องนี้เพิ่งเลื่อนผ่าน</summary>
     public MapData NetworkSelectedMap =>
         LobbyState.Instance != null
@@ -165,7 +174,7 @@ public class LobbyUI : MonoBehaviour
         // SetMapServerRpc ทิ้ง request ที่ไม่ใช่ host เงียบๆ — ถ้าเขียน RunSetup ก่อนส่ง
         // เครื่อง client จะเห็นแมพเปลี่ยนในจอตัวเอง แล้วเข้าเกมได้แมพของ host แทน
         // ให้ host เป็นคนเดียวที่เขียน · client รับแมพจริงจาก LobbyState ใน Refresh()
-        if (!IsHost)
+        if (MapLocked)
         {
             Refresh();
             return;
@@ -179,7 +188,7 @@ public class LobbyUI : MonoBehaviour
     public void SelectDifficulty(DifficultyTier tier)
     {
         // SetDifficultyServerRpc รับเฉพาะ host เหมือนกัน — เหตุผลเดียวกับ SelectMap
-        if (!IsHost)
+        if (MapLocked)
         {
             Refresh();
             return;
