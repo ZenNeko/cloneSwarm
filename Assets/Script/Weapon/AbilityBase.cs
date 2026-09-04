@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Base class สำหรับทุก Ability script (ValorWeapon, BladeOfExileWeapon ฯลฯ)
@@ -37,6 +38,58 @@ public abstract class AbilityBase : MonoBehaviour
     public float pitchVariance = 0.05f;
 
     protected LayerMask enemyLayer;
+
+    // ── Input (New Input System) ──────────────────────────────────────────
+    // ปุ่มของสกิลไม่ได้อยู่ในโค้ดหรือใน prefab อีกแล้ว — อยู่ใน
+    // Assets/ScriptableObjects/Resources/AbilityInputActions.inputactions ที่เดียว
+    // ช่องไหนผูกปุ่มอะไรแก้ในนั้นได้เลย (ดู AbilityInput)
+    //
+    // action ถูกหาโดยอิง HUDSlotKey ของ ability ตัวเอง จึงไม่มีช่องให้ตั้งใน Inspector
+    // และไม่มีทางที่ปุ่มกับช่องบน HUD จะไม่ตรงกัน
+    InputAction _inputAction;
+    bool        _inputResolved;
+
+    protected InputAction AbilityAction
+    {
+        get
+        {
+            if (_inputResolved) return _inputAction;
+            _inputResolved = true;
+
+            string slot = (this as IHUDAbility)?.HUDSlotKey;
+            if (string.IsNullOrEmpty(slot))
+            {
+                Debug.LogWarning($"[{GetType().Name}] ไม่ได้ implement IHUDAbility.HUDSlotKey — หา input action ไม่ได้");
+                return null;
+            }
+
+            _inputAction = AbilityInput.Find(slot);
+            if (_inputAction == null)
+                Debug.LogWarning($"[{GetType().Name}] ไม่พบ action 'Slot{slot}' ใน AbilityInputActions — สกิลนี้จะกดไม่ติด");
+
+            return _inputAction;
+        }
+    }
+
+    /// <summary>กดปุ่มของสกิลนี้ในเฟรมนี้ไหม — คืน false ตอนเกมหยุดหรือ input ถูกพัก</summary>
+    protected bool AbilityPressedThisFrame
+        => !AbilityInput.Blocked && AbilityAction != null && AbilityAction.WasPressedThisFrame();
+
+    /// <summary>ยังกดปุ่มของสกิลนี้ค้างอยู่ไหม — สำหรับสกิลที่ต้องกดค้าง</summary>
+    protected bool AbilityHeld
+        => !AbilityInput.Blocked && AbilityAction != null && AbilityAction.IsPressed();
+
+    /// <summary>ชื่อปุ่มที่ผูกอยู่จริงสำหรับโชว์บน HUD ("LMB" / "RMB" / "R")
+    /// อ่านจาก binding ปัจจุบัน — เปลี่ยน binding ในไฟล์ .inputactions แล้วป้ายบนจอเปลี่ยนตาม
+    ///
+    /// ระบุ index 0 เจาะจง เพราะแบบไม่ระบุจะรวมทุก binding ของ action นั้นมาต่อกัน
+    /// (เมาส์/คีย์บอร์ด + gamepad) ได้ป้ายยาวแบบ "LMB | West Button" ซึ่งล้นช่องบน HUD
+    /// binding ตัวแรกของทุก action ในไฟล์คือฝั่งเมาส์/คีย์บอร์ดเสมอ ถ้าจะรองรับ gamepad
+    /// ให้โชว์ glyph ตามอุปกรณ์ที่ใช้อยู่ ต้องเพิ่ม control scheme แล้วใช้ MaskByGroup แทน</summary>
+    public string AbilityKeyLabel
+        => AbilityAction != null && AbilityAction.bindings.Count > 0
+            ? AbilityAction.GetBindingDisplayString(0)
+            : "?";
 
     // ── VFX (Per-Ability Prefab) ──────────────────────────────────────────
     // มิเรอร์ WeaponBase: VFX เป็นของ prefab ไม่ใช่ของ AbilityData
