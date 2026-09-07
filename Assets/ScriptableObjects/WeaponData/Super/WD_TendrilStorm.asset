@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_TendrilStorm
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: TendrilStorm
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Lance \u2014 \u0E41\u0E17\u0E07\u0E2B\u0E19\u0E27\u0E14\u0E2B\u0E25\u0E31\u0E01\u0E44\u0E1B\u0E02\u0E49\u0E32\u0E07\u0E2B\u0E19\u0E49\u0E32 \u0E41\u0E25\u0E49\u0E27\u0E41\u0E15\u0E01\u0E41\u0E02\u0E19\u0E07\u0E1E\u0E34\u0E48\u0E21\u0E44\u0E1B\u0E17\u0E31\u0E48\u0E27\u0E17\u0E38\u0E01\u0E17\u0E34\u0E28"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.TendrilStorm.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.TendrilStorm.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -779411195, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 1
   prefab: {fileID: 8378742293110232923, guid: 45cd5e43f55ffe94f9497155fa4a9d27, type: 3}
@@ -32,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 150
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

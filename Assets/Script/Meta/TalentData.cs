@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 namespace CloneSwarm.Meta
 {
@@ -41,9 +42,16 @@ namespace CloneSwarm.Meta
         [Header("Identity")]
         [Tooltip("คีย์ถาวรที่เขียนลงไฟล์เซฟ — **ห้ามเปลี่ยนหลังปล่อยเกม** ไม่งั้นผู้เล่นเสียเลเวลที่ซื้อไว้")]
         public string talentId = "talent_new";
+        [Tooltip("ใช้ใน log และเป็นค่าตั้งต้นเมื่อยังไม่ได้ผูก displayName — ไม่ต้องแปล")]
         public string talentName = "New Talent";
-        [TextArea(1, 3)]
-        public string description;
+
+        [Header("Display — แปลได้ ชี้ไป String Table 'Content'")]
+        public LocalizedString displayName;
+        public LocalizedString description;
+
+        /// <summary>ข้อความที่แปลแล้วตาม locale ปัจจุบัน — ว่างเมื่อยังไม่ได้ผูก entry</summary>
+        public string DisplayName => displayName.IsEmpty ? talentName : displayName.GetLocalizedString();
+        public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
         public Sprite icon;
 
         [Header("Effect")]

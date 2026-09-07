@@ -13,11 +13,29 @@ MonoBehaviour:
   m_Name: WD_TriRang
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: TriRang
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Boomerang \u2014 \u0E02\u0E27\u0E49\u0E32\u0E07\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E01\u0E31\u0E19\u0E2A\u0E32\u0E21\u0E2D\u0E31\u0E19 \u0E41\u0E25\u0E30\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E40\u0E1B\u0E47\u0E19\u0E27\u0E07\u0E15\u0E2D\u0E19\u0E1A\u0E34\u0E19\u0E01\u0E25\u0E31\u0E1A\u0E16\u0E36\u0E07\u0E21\u0E37\u0E2D"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.TriRang.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.TriRang.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 21300000, guid: 54d2a43caa5691c40b3c7ae3ad3d605c, type: 3}
   tier: 1
   prefab: {fileID: 3857138112386556378, guid: 7fcb7c1870e06a543871e763f5e0b2b5, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 120
     cooldown: 2
@@ -31,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 150
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

@@ -13,11 +13,29 @@ MonoBehaviour:
   m_Name: WD_Lance
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Lance
-  description: "\u0E41\u0E17\u0E07\u0E2B\u0E19\u0E27\u0E14\u0E1E\u0E38\u0E48\u0E07\u0E15\u0E23\u0E07\u0E44\u0E1B\u0E02\u0E49\u0E32\u0E07\u0E2B\u0E19\u0E49\u0E32\u0E40\u0E1B\u0E47\u0E19\u0E41\u0E19\u0E27\u0E22\u0E32\u0E27 \u0E23\u0E30\u0E14\u0E31\u0E1A\u0E2A\u0E39\u0E07\u0E2A\u0E38\u0E14\u0E1C\u0E25\u0E31\u0E01\u0E28\u0E31\u0E15\u0E23\u0E39\u0E01\u0E23\u0E30\u0E40\u0E14\u0E47\u0E19"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Lance.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Lance.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 862182946, guid: 91877df8e1489264b9a1fae12df06dd1, type: 3}
   tier: 0
   prefab: {fileID: 6389398472447319881, guid: 5ca2e091993985649b28abfdd9556c6d, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 45
     cooldown: 1.6
@@ -67,3 +85,6 @@ MonoBehaviour:
     requiredWeapon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

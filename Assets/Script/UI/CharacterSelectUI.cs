@@ -433,7 +433,7 @@ public class CharacterSelectUI : MonoBehaviour
             else if (!CloneSwarm.Meta.MetaProgression.CanUnlockCharacter(selected))
                 lockStatusText.text = $"ทองไม่พอ — ต้องการ {selected.unlockCost:N0} G";
             else
-                lockStatusText.text = selected.description;
+                lockStatusText.text = selected.Description;
         }
     }
 
@@ -465,13 +465,13 @@ public class CharacterSelectUI : MonoBehaviour
         {
             detailPortrait.enabled = false;   // เจ้าของคือ hero — ปิดใบซ้ำทิ้ง
         }
-        SetText(detailName,        selected.characterName);
-        SetText(detailDesc,        selected.description);
+        SetText(detailName,        selected.DisplayName);   // ชื่อที่โชว์ ไม่ใช่ characterName ที่เป็น ID
+        SetText(detailDesc,        selected.Description);
 
         // Passive row
         SetImage(detailPassiveIcon, selected.passiveIcon);
-        SetText(detailPassiveName,  selected.passiveName);
-        SetText(detailPassiveDesc,  selected.passiveDescription);
+        SetText(detailPassiveName,  selected.PassiveName);
+        SetText(detailPassiveDesc,  selected.PassiveDesc);
 
         // Weapon row
         Sprite wIcon = null;
@@ -481,8 +481,8 @@ public class CharacterSelectUI : MonoBehaviour
         if (selected.startingWeapon != null)
         {
             wIcon = selected.startingWeapon.icon;
-            wName = selected.startingWeapon.weaponName;
-            wDesc = selected.startingWeapon.description;
+            wName = selected.startingWeapon.DisplayName;   // ชื่อที่โชว์ ไม่ใช่ ID
+            wDesc = selected.startingWeapon.Description;   // แปลแล้วตาม locale
         }
         SetImage(detailWeaponIcon, wIcon);
         SetText(detailWeaponName,  wName);
@@ -498,7 +498,7 @@ public class CharacterSelectUI : MonoBehaviour
 
         Sprite qIcon = qAbility != null ? qAbility.icon : null;
         string qName = qAbility != null ? qAbility.abilityName : "";
-        string qDesc = qAbility != null ? qAbility.description : "";
+        string qDesc = qAbility != null ? qAbility.Description : "";
 
         SetImage(detailAbilityIcon, qIcon);
         SetText(detailAbilityName,  qName);
@@ -514,7 +514,7 @@ public class CharacterSelectUI : MonoBehaviour
 
         Sprite ultIcon = ultAbility != null ? ultAbility.icon : null;
         string ultName = ultAbility != null ? ultAbility.abilityName : "";
-        string ultDesc = ultAbility != null ? ultAbility.description : "";
+        string ultDesc = ultAbility != null ? ultAbility.Description : "";
 
         SetImage(detailUltimateIcon, ultIcon);
         SetText(detailUltimateName,  ultName);

@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: SD_ExpBonus
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: ExpBonus
-  description: +10% EXP/lv
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.ExpBonus.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.ExpBonus.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -895909590, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 11
   valuePerLevel:
@@ -23,3 +40,6 @@ MonoBehaviour:
   - 0.1
   - 0.1
   weight: 45
+  references:
+    version: 2
+    RefIds: []

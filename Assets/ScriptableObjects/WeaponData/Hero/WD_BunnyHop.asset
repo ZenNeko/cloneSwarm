@@ -13,11 +13,29 @@ MonoBehaviour:
   m_Name: WD_BunnyHop
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Bunny Hop
-  description: "\u0E1E\u0E38\u0E48\u0E07\u0E15\u0E31\u0E27\u0E41\u0E25\u0E49\u0E27\u0E1F\u0E32\u0E14\u0E23\u0E2D\u0E1A\u0E15\u0E31\u0E27 360 \u0E2D\u0E07\u0E28\u0E32 \u0E43\u0E0A\u0E49\u0E40\u0E01\u0E08\u0E0A\u0E32\u0E23\u0E4C\u0E08\u0E41\u0E17\u0E19\u0E04\u0E39\u0E25\u0E14\u0E32\u0E27\u0E19\u0E4C \xB7 \u0E14\u0E32\u0E40\u0E21\u0E08\u0E17\u0E35\u0E48\u0E17\u0E33\u0E44\u0E14\u0E49\u0E2A\u0E48\u0E27\u0E19\u0E2B\u0E19\u0E36\u0E48\u0E07\u0E01\u0E25\u0E32\u0E22\u0E40\u0E1B\u0E47\u0E19\u0E42\u0E25\u0E48"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Bunny_Hop.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Bunny_Hop.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -510736166, guid: bb65b198a6b1e62489159d4c11331534, type: 3}
   tier: 0
   prefab: {fileID: 6840295172297232903, guid: bfb9b6229e1ce204db093fcad283440b, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 45
     cooldown: 0
@@ -67,3 +85,6 @@ MonoBehaviour:
     requiredWeapon: {fileID: 0}
   weight: 90
   exclusiveCharacter: {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
+  references:
+    version: 2
+    RefIds: []

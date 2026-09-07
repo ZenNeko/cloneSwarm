@@ -177,7 +177,7 @@ namespace CloneSwarm.Meta
                 detailIcon.color   = selected.tintColor;
             }
             if (detailName        != null) detailName.text        = selected.talentName;
-            if (detailDescription != null) detailDescription.text = selected.description;
+            if (detailDescription != null) detailDescription.text = selected.Description;
             if (detailLevelText   != null) detailLevelText.text   = $"Lv {level} / {maxLv}";
 
             // ค่าปัจจุบัน  ›  ค่าหลังอัป   (ตันแล้วเหลือแค่ค่าปัจจุบัน + หมายเหตุ)

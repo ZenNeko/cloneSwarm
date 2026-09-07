@@ -44,7 +44,7 @@ public class MapSelectUI : MonoBehaviour
 
     void Log(string msg) { if (verboseLog) Debug.Log("[MapSelect] " + msg); }
 
-    static string Name(MapData m) => m != null ? m.displayName : "(null)";
+    static string Name(MapData m) => m != null ? m.DisplayName : "(null)";
 
     // ══════════════════════════════════════════════════════════════════════
     void Start()
@@ -190,8 +190,8 @@ public class MapSelectUI : MonoBehaviour
             detailPreview.enabled = false;
         }
 
-        if (detailName      != null) detailName.text      = selected.displayName;
-        if (detailDesc      != null) detailDesc.text      = selected.description;
+        if (detailName      != null) detailName.text      = selected.DisplayName;
+        if (detailDesc      != null) detailDesc.text      = selected.Description;
         if (detailSceneName != null) detailSceneName.text = selected.sceneName;
     }
 }

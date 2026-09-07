@@ -39,7 +39,7 @@ public class MapCardUI : MonoBehaviour
 
         if (map == null) return;
 
-        if (nameText != null) nameText.text = map.displayName;
+        if (nameText != null) nameText.text = map.DisplayName;
 
         if (previewImage != null)
         {

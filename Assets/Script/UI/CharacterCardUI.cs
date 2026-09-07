@@ -53,11 +53,11 @@ public class CharacterCardUI : MonoBehaviour
         normalColor   = normColor;
 
         if (nameText != null)
-            nameText.text = cd.characterName;
+            nameText.text = cd.DisplayName;   // ชื่อที่โชว์ ไม่ใช่ characterName ที่เป็น ID
 
         if (weaponText != null)
         {
-            string wName = cd.startingWeapon != null ? cd.startingWeapon.weaponName : "—";
+            string wName = cd.startingWeapon != null ? cd.startingWeapon.DisplayName : "—";
             weaponText.text = wName;
         }
 

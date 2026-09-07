@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: SD_PickupRadius
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: PickupRadius
-  description: "+35% \u0E23\u0E31\u0E28\u0E21\u0E35\u0E14\u0E39\u0E14 EXP/lv"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.PickupRadius.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.PickupRadius.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -443482787, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 10
   valuePerLevel:
@@ -23,3 +40,6 @@ MonoBehaviour:
   - 0.35
   - 0.35
   weight: 50
+  references:
+    version: 2
+    RefIds: []

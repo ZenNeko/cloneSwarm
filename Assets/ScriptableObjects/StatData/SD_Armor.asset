@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: SD_Armor
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: Armor
-  description: "+8 Armor \u0E25\u0E14 damage \u0E17\u0E35\u0E48\u0E23\u0E31\u0E1A/lv"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Armor.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Armor.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -1179455912, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 7
   valuePerLevel:
@@ -23,3 +40,6 @@ MonoBehaviour:
   - 8
   - 8
   weight: 65
+  references:
+    version: 2
+    RefIds: []

@@ -399,7 +399,9 @@ public class LobbyUI : MonoBehaviour
                 var textComp = go.GetComponentInChildren<TextMeshProUGUI>();
                 if (textComp != null)
                 {
-                    string displayName = charData != null ? charData.characterName : (string.IsNullOrEmpty(charName) ? "Selecting..." : charName);
+                    // charName เป็น ID ที่มาจากเน็ตเวิร์ก — ใช้เป็น fallback ได้ แต่ถ้าหา CharacterData เจอ
+                    // ต้องโชว์ DisplayName ไม่ใช่ characterName
+                    string displayName = charData != null ? charData.DisplayName : (string.IsNullOrEmpty(charName) ? "Selecting..." : charName);
                     int slot = PlayerSlotRegistry.Instance != null ? PlayerSlotRegistry.Instance.GetSlot(entry.clientId) : -1;
                     string slotText = slot >= 0 ? (slot + 1).ToString() : "?";
                     textComp.text = $"Player {slotText}: {displayName} [{(entry.ready ? "READY" : "NOT READY")}]";
@@ -427,7 +429,7 @@ public class LobbyUI : MonoBehaviour
         }
         if (mapNameLabel != null)
         {
-            mapNameLabel.text = map != null ? map.displayName : (string.IsNullOrEmpty(mapId) ? "Select Map" : mapId);
+            mapNameLabel.text = map != null ? map.DisplayName : (string.IsNullOrEmpty(mapId) ? "Select Map" : mapId);
         }
         if (difficultyLabel != null)
         {

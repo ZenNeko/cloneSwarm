@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: AD_Riven_Valor
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: Valor
-  description: "\u0E1E\u0E38\u0E48\u0E07\u0E44\u0E1B\u0E43\u0E19\u0E17\u0E34\u0E28\u0E17\u0E35\u0E48\u0E40\u0E25\u0E47\u0E07 \u0E25\u0E07\u0E08\u0E2D\u0E14\u0E41\u0E25\u0E49\u0E27\u0E17\u0E38\u0E1A\u0E1E\u0E37\u0E49\u0E19 \u0E2A\u0E23\u0E49\u0E32\u0E07\u0E14\u0E32\u0E40\u0E21\u0E08\u0E40\u0E1B\u0E47\u0E19\u0E27\u0E07\u0E41\u0E25\u0E30\u0E2A\u0E15\u0E31\u0E19\u0E28\u0E31\u0E15\u0E23\u0E39\u0E43\u0E19\u0E27\u0E07 2 \u0E27\u0E34\u0E19\u0E32\u0E17\u0E35"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Valor.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Valor.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 517294093, guid: 16698972bcdfa8747b4011d9f7cc9bc2, type: 3}
   slotType: 0
   prefab: {fileID: 4645848536509420378, guid: c73e3b13730b0db40bdb03efd78c5158, type: 3}
@@ -23,3 +40,6 @@ MonoBehaviour:
     duration: 0
     range: 4
     levelUpText: 
+  references:
+    version: 2
+    RefIds: []

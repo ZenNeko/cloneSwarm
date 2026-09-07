@@ -189,7 +189,7 @@ public class WeaponTestManager : MonoBehaviour
             btn.gameObject.SetActive(true);
 
             var label = btn.GetComponentInChildren<TextMeshProUGUI>();
-            string shown = string.IsNullOrWhiteSpace(w.weaponName) ? w.name : w.weaponName;
+            string shown = string.IsNullOrWhiteSpace(w.DisplayName) ? w.name : w.DisplayName;
             if (label != null) label.text = $"{w.tier} — {shown}";
 
             var captured = w;   // closure

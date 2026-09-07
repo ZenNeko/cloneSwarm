@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: Char_Riven
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Riven
-  description: "\u0E19\u0E31\u0E01\u0E23\u0E1A\u0E43\u0E0A\u0E49\u0E14\u0E32\u0E1A \u2014 \u0E2A\u0E30\u0E2A\u0E21 CHARGE \u0E02\u0E13\u0E30\u0E40\u0E14\u0E34\u0E19 \u0E41\u0E25\u0E49\u0E27 Dash+Slash"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Riven.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Riven.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   portrait: {fileID: 2138038448086242036, guid: e7cb3923f6933064c9706f1ea4f3a61f, type: 3}
   icon: {fileID: -9024117458653500818, guid: 472f1f65625e72e4ca02fe0eef149403, type: 3}
   baseHealth: 120
@@ -31,5 +48,24 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 21229689a26c6d1429cf4646873534ee, type: 2}
   - {fileID: 11400000, guid: 943409d2d4956014ab2987802397d1ef, type: 2}
   passiveIcon: {fileID: 0}
-  passiveName: Runic Blade
-  passiveDescription: "Dash \u0E17\u0E38\u0E01 20 units \u0E40\u0E14\u0E34\u0E19 \u0E14\u0E32\u0E40\u0E21\u0E08 +0\u201315% \u0E15\u0E32\u0E21\u0E23\u0E30\u0E22\u0E30 \u0E23\u0E31\u0E1A Shield 25% \u0E14\u0E32\u0E40\u0E21\u0E08\u0E17\u0E35\u0E48\u0E17\u0E33"
+  passiveName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Riven.passiveName
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  passiveDescription:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Riven.passiveDesc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  references:
+    version: 2
+    RefIds: []
