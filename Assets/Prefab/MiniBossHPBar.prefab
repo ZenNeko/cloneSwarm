@@ -63,6 +63,9 @@ MonoBehaviour:
   hpFill: {fileID: 7939184089147443295}
   nameText: {fileID: 0}
   hpNumText: {fileID: 4255430487262674646}
+  castBarRoot: {fileID: 0}
+  castFill: {fileID: 0}
+  castNameText: {fileID: 0}
   colorFull: {r: 1, g: 0, b: 0, a: 1}
   colorMid: {r: 1, g: 0, b: 0, a: 1}
   colorCritical: {r: 1, g: 0, b: 0, a: 1}
@@ -103,7 +106,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 990, y: 4}
+  m_SizeDelta: {x: 990, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1204628628798933090
 CanvasRenderer:
@@ -258,7 +261,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1

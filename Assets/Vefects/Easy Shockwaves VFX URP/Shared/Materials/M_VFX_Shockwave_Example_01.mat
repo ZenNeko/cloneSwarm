@@ -11,8 +11,10 @@ Material:
   m_Shader: {fileID: 4800000, guid: 60ffc169b2e46424ab2dae7e73d467cd, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_ValidKeywords:
+  - _RECEIVE_SHADOWS_OFF
+  m_InvalidKeywords:
+  - _RECEIVESHADOWS_OFF
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -59,8 +61,21 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AlphaCutoff: 0.5
     - _Cull: 0
     - _CustomOffset: 1
     - _CustomOffsetBase: 0
@@ -79,12 +94,16 @@ Material:
     - _Noise02: 0.5
     - _Noise02Intensity: 0.1
     - _OpacityMultiply: 1
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _ReceiveShadows: 0
     - _Src: 5
     - _ZTest: 2
     - _ZWrite: 0
     - __dirty: 0
     m_Colors:
     - _Control: {r: 1, g: 0, b: 1, a: 0}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _IntensityMaskUVS: {r: 1, g: 1, b: 0, a: 0}
     - _Noise01UVP: {r: -0.07, g: -0.3, b: 0, a: 0}
     - _Noise01UVS: {r: 1, g: 1, b: 0, a: 0}
@@ -96,3 +115,4 @@ Material:
     - _TileControl: {r: 5, g: 5, b: 3, a: 0}
     - _TileUVS: {r: 1, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
