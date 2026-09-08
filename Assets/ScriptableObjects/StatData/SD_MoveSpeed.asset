@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: SD_MoveSpeed
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: MoveSpeed
-  description: "+5% \u0E04\u0E27\u0E32\u0E21\u0E40\u0E23\u0E47\u0E27/lv"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.MoveSpeed.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.MoveSpeed.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -1073007861, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 9
   valuePerLevel:
@@ -23,3 +40,6 @@ MonoBehaviour:
   - 0.05
   - 0.05
   weight: 55
+  references:
+    version: 2
+    RefIds: []

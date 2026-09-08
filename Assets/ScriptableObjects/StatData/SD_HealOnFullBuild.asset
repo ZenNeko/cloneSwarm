@@ -13,8 +13,24 @@ MonoBehaviour:
   m_Name: SD_HealOnFullBuild
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: Heal 25% HP
-  description: "\u0E1F\u0E37\u0E49\u0E19 25% HP \u0E40\u0E21\u0E37\u0E48\u0E2D max
-    level (Full Build Bonus)"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Heal_25_HP.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Heal_25_HP.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -2067252572, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 13
   valuePerLevel:
@@ -24,3 +40,6 @@ MonoBehaviour:
   - 0
   - 0.25
   weight: 30
+  references:
+    version: 2
+    RefIds: []

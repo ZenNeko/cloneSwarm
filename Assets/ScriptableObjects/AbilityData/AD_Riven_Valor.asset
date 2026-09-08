@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: AD_Riven_Valor
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: Valor
-  description: Valor
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Valor.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Valor.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 517294093, guid: 16698972bcdfa8747b4011d9f7cc9bc2, type: 3}
   slotType: 0
   prefab: {fileID: 4645848536509420378, guid: c73e3b13730b0db40bdb03efd78c5158, type: 3}
@@ -23,3 +40,6 @@ MonoBehaviour:
     duration: 0
     range: 4
     levelUpText: 
+  references:
+    version: 2
+    RefIds: []

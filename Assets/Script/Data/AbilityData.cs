@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 /// <summary>Stats ของ ability ในแต่ละ level</summary>
 [System.Serializable]
@@ -25,11 +26,19 @@ public enum AbilitySlotType { Q, E }
 [CreateAssetMenu(fileName = "Ability_New", menuName = "LoL Swarm/Ability Data")]
 public class AbilityData : ScriptableObject
 {
-    [Header("Identity")]
+    [Header("Identity — ใช้ใน log/ค้นหา ไม่ต้องแปล")]
     public string          abilityName;
-    [TextArea(1, 3)]
-    public string          description;
+
+    [Header("Display — แปลได้ ชี้ไป String Table 'Content'")]
+    [Tooltip("ว่าง = ใช้ abilityName แทน · ตั้งอัตโนมัติด้วย Tools > Clone Swarm > Localization > 2. Relink")]
+    public LocalizedString displayName;
+    public LocalizedString description;
     public Sprite          icon;
+
+    /// <summary>ข้อความที่แปลแล้วตาม locale ปัจจุบัน — ว่างเมื่อยังไม่ได้ผูก entry
+    /// ทุกที่ที่เอาไปแสดงต้องอ่าน property พวกนี้ ไม่ใช่ field ตรงๆ</summary>
+    public string DisplayName => displayName.IsEmpty ? abilityName : displayName.GetLocalizedString();
+    public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
 
     [Header("HUD Slot")]
     [Tooltip("กำหนดว่า ability นี้แสดงใน slot ไหนของ HUD (Q หรือ E)")]

@@ -44,15 +44,17 @@ public abstract class CarouselBase : MonoBehaviour,
     public float centerScale = 1f;
     [Tooltip("ขนาดการ์ดที่ห่างจากกลาง 2 ช่อง — ระหว่างนั้นไล่ต่อเนื่อง")]
     public float edgeScale = 0.65f;
-    [Tooltip("ความทึบของการ์ดที่ห่างจากกลาง 2 ช่อง")]
+    [Tooltip("ไล่ความจางตามระยะห่างจากกลาง - ปิดไว้ = script ไม่แตะ CanvasGroup.alpha เลย\nและไม่แปะ CanvasGroup ให้การ์ดที่ยังไม่มี ความทึบจึงเป็นของที่ตั้งไว้ใน Editor ล้วนๆ")]
+    public bool fadeByDistance = false;
+
+    [Tooltip("ความทึบของการ์ดที่ห่างจากกลาง 2 ช่อง - มีผลเมื่อ fadeByDistance เปิดเท่านั้น")]
     public float edgeAlpha = 0.45f;
 
     [Tooltip("ปิด RectMask2D ของการ์ดใบกลาง เพื่อให้ภาพล้นกรอบการ์ดออกมาได้ - " +
              "หา RectMask2D ทั้งกิ่งของการ์ด จะอยู่บน root หรือบนลูกที่ครอบภาพก็ได้ - ไม่มีก็ข้ามไปเฉยๆ")]
     public bool unmaskCenterCard = true;
 
-    [Tooltip("ใส่ RectMask2D ที่แผงเพื่อตัดใบที่โผล่ขอบ - " +
-             "ปิดช่องนี้ถ้าอยากให้ภาพใบกลางล้นพ้นขอบแผงออกไปได้ แล้วใช้ edgeAlpha กลบใบที่โผล่แทน")]
+    [Tooltip("บอกว่า 'ตั้งใจให้มีการตัดขอบ' เฉยๆ - ไม่ได้แปะ mask ให้เอง\nเปิดไว้แล้วไม่มี Mask/RectMask2D เหนือ container จะเตือนใน Console\nปิดถ้าอยากให้ภาพใบกลางล้นพ้นขอบแผงออกไปได้ แล้วใช้ edgeAlpha กลบใบที่โผล่แทน")]
     public bool clipToPanel = true;
 
     // ── Arrow buttons ─────────────────────────────────────────────────────
@@ -109,6 +111,50 @@ public abstract class CarouselBase : MonoBehaviour,
     // Setup
     // ══════════════════════════════════════════════════════════════════════
     /// <summary>
+    /// <summary>
+    /// กัน overlay group ชี้ผิดมาที่ container ของการ์ดเอง (หรือพ่อของมัน)
+    ///
+    /// ต่อผิดแบบนี้จะพังสองทางพร้อมกัน — OnCenterSettledVisual เขียน alpha ลงไป
+    /// ทั้งแถบการ์ดเลยจางหายตอนลาก และการปิด blocksRaycasts ก็ไปปิดของการ์ดทั้งหมด
+    /// อาการที่เห็นคือ "ลากแล้วการ์ดหาย" กับ "คลิกการ์ดไม่ติด" ซึ่งดูไม่ออกว่ามาจากช่องนี้
+    ///
+    /// คืน null พร้อมเตือน — ปิด layer จางไปเลยดีกว่าปล่อยให้พังเงียบๆ
+    /// </summary>
+    protected CanvasGroup ValidateOverlayGroup(CanvasGroup group, RectTransform container, string fieldName)
+    {
+        if (group == null || container == null) return group;
+        if (!container.IsChildOf(group.transform)) return group;
+
+        Debug.LogWarning("[" + GetType().Name + "] " + fieldName + " ชี้มาที่ '" + group.name +
+                         "' ซึ่งเป็น container ของการ์ดเอง (หรือพ่อของมัน) — ทั้งแถบจะจางหายตอนลาก " +
+                         "และการ์ดจะกดไม่ติด · ปิด layer นี้ไปก่อน ปล่อยช่องว่างไว้ " +
+                         "หรือชี้ไปที่ object ภาพใหญ่ที่อยู่นอกแถบการ์ด");
+        return null;
+    }
+
+    /// <summary>
+    /// กัน overlay image ชี้ไปที่ Image ที่อยู่ใน "prefab asset" แทนที่จะเป็น object ในซีน
+    ///
+    /// ต่อผิดแบบนี้พังหนักกว่าที่คิด เพราะโค้ดเขียนค่าลงไปจริง —
+    ///   OnCenterSettledVisual: heroImage.sprite = portrait  → เขียนทับไฟล์ prefab บนดิสก์
+    ///   Setup: heroImage.raycastTarget = false              → เขียนทับไฟล์ prefab บนดิสก์
+    /// ผลคือ prefab ถูกแก้ใน git โดยไม่มีใครตั้งใจ และ CharacterSelectUI จะคิดว่า
+    /// "hero เป็นเจ้าของ portrait แล้ว" แล้วปิด detailPortrait ทิ้ง แผงรายละเอียดเลยว่าง
+    ///
+    /// เป็นกับดักตัวเดียวกับที่ SetupViews กันไว้ตอน SetActive ของ cardTemplate
+    /// </summary>
+    protected Image ValidateOverlayImage(Image img, string fieldName)
+    {
+        if (img == null) return null;
+        if (img.gameObject.scene.IsValid()) return img;
+
+        Debug.LogWarning("[" + GetType().Name + "] " + fieldName + " ชี้ไปที่ Image ใน prefab asset " +
+                         "('" + img.gameObject.name + "') ไม่ใช่ object ในซีน — การเขียน sprite/raycastTarget " +
+                         "จะไปแก้ไฟล์ prefab บนดิสก์ และทำให้แผงรายละเอียดถูกปิดทิ้ง · ปิด layer นี้ไปก่อน " +
+                         "ปล่อยช่องว่างไว้ หรือลาก Image ที่อยู่ในซีนมาใส่");
+        return null;
+    }
+
     /// สร้าง view ตามจำนวนที่ตั้งไว้แล้วจัดวางให้จบในตัว
     /// subclass ต้องเตรียมข้อมูลให้ ItemCount ใช้ได้ก่อนเรียกตัวนี้
     /// </summary>
@@ -137,19 +183,19 @@ public abstract class CarouselBase : MonoBehaviour,
         var fitter = slotParent.GetComponent<ContentSizeFitter>();
         if (fitter != null && fitter.enabled) fitter.enabled = false;
 
-        // mask ซ้อนกันคิดแบบทับซ้อน — ตราบใดที่ตัวนี้ยังอยู่ ภาพจะล้นได้แค่กรอบการ์ด
-        // ไม่พ้นขอบแผง ต่อให้ปิด mask ของการ์ดใบกลางแล้วก็ตาม
-        var panelMask = GetComponent<RectMask2D>();
-        if (clipToPanel && panelMask == null)
+        // ไม่แปะ RectMask2D ให้เองแล้ว — การ AddComponent ตอนรันทำให้ภาพที่ได้ขึ้นกับว่า
+        // script ไปอยู่บน object ไหน ซึ่งมองไม่ออกจากใน Editor และซ้อนทับ mask ที่ซีนมีอยู่แล้ว
+        // การตัดขอบเป็นหน้าที่ของซีน (ซีนจริงใช้ Mask บน Viewport อยู่แล้ว)
+        //
+        // mask ซ้อนกันคิดแบบทับซ้อน — ตราบใดที่ยังมี mask เหนือ container อยู่
+        // ภาพใบกลางจะล้นได้แค่ในกรอบนั้น ต่อให้ปิด mask ของการ์ดเองแล้วก็ตาม
+        if (clipToPanel
+            && slotParent.GetComponentInParent<RectMask2D>(true) == null
+            && slotParent.GetComponentInParent<Mask>(true) == null)
         {
-            gameObject.AddComponent<RectMask2D>();
-            Debug.Log("[" + GetType().Name + "] เพิ่ม RectMask2D ให้แผง — ตัดใบที่โผล่ขอบ");
-        }
-        else if (!clipToPanel && panelMask != null)
-        {
-            panelMask.enabled = false;
-            Debug.Log("[" + GetType().Name + "] ปิด RectMask2D ของแผงตาม clipToPanel — " +
-                      "ภาพล้นพ้นขอบได้ แต่ใบที่ ±2 จะไม่ถูกตัด ต้องพึ่ง edgeAlpha กลบแทน");
+            Debug.LogWarning("[" + GetType().Name + "] clipToPanel เปิดอยู่ แต่ไม่มี Mask หรือ RectMask2D " +
+                             "เหนือ '" + slotParent.name + "' ขึ้นไปเลย — ใบที่ ±2 จะโผล่พ้นขอบแผง · " +
+                             "ใส่ Mask ในซีน หรือปิด clipToPanel แล้วใช้ edgeAlpha กลบแทน");
         }
 
         // ซ่อน template ได้เฉพาะตอนที่มันเป็น object ในซีน — ถ้าเป็น prefab asset
@@ -193,8 +239,10 @@ public abstract class CarouselBase : MonoBehaviour,
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot     = new Vector2(0.5f, 0.5f);
 
+            // แปะ CanvasGroup ให้เฉพาะตอนที่จะขับ alpha จริง — ไม่งั้นเป็นการยัด component
+            // ลงการ์ดตอนรันโดยที่ไม่มีใครสั่ง (เหตุผลเดียวกับที่เลิกแปะ RectMask2D ให้แผง)
             var group = go.GetComponent<CanvasGroup>();
-            if (group == null) group = go.AddComponent<CanvasGroup>();
+            if (group == null && fadeByDistance) group = go.AddComponent<CanvasGroup>();
 
             // ค้นทั้งกิ่ง ไม่ใช่แค่ root — วาง mask ไว้บน wrapper ที่ครอบเฉพาะภาพเป็นโครงที่ถูกกว่า
             // (พื้นหลังการ์ดกับพื้นที่รับคลิกของ Button จะได้ไม่โดนตัดไปด้วย)
@@ -358,7 +406,8 @@ public abstract class CarouselBase : MonoBehaviour,
             float t = Mathf.Clamp01(Mathf.Abs(delta) / 2f);  // 0 = กลาง, 1 = ห่าง 2 ช่องขึ้นไป
             float s = Mathf.Lerp(centerScale, edgeScale, t);
             v.rect.localScale = new Vector3(s, s, 1f);
-            v.group.alpha     = Mathf.Lerp(1f, edgeAlpha, t);
+            if (fadeByDistance && v.group != null)
+                v.group.alpha = Mathf.Lerp(1f, edgeAlpha, t);
 
             // ผูกข้อมูลเฉพาะตอนชิ้นที่ view นี้แสดงเปลี่ยนจริง — การผูกมักไล่ลิสต์/แตะ TMP
             // ถ้าทำทุกเฟรมระหว่างลากคือเสียเปล่าทั้งหมด ส่วนตำแหน่ง/ขนาด/ความจางด้านบนเปลี่ยนจริงทุกเฟรม

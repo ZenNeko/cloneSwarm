@@ -9,8 +9,9 @@ using TMPro;
 /// รายชื่อแมพอ่านจาก LobbyUI.maps ไม่ถือลิสต์เอง — ไม่งั้นจะมีสองที่ที่ต้องจำอัปเดต
 /// และ LobbyUI คือคนที่ส่งค่าขึ้นเน็ตเวิร์กอยู่แล้ว
 ///
-/// วางบน Canvas ได้ (เหมือน CharacterSelectUI) ส่วน MapCarousel จะถูกวางบน "แผง"
-/// ซึ่งคือ parent ของ cardsContainer — เพราะ event ลาก/ลูกกลิ้งไปไม่ถึง Canvas
+/// วางบน Canvas ได้ (เหมือน CharacterSelectUI) ส่วน MapCarousel ต้องอยู่บน "แผงที่ลาก"
+/// ซึ่งเป็น ancestor ตัวใดก็ได้เหนือ cardsContainer — เพราะ event ลาก/ลูกกลิ้งไปไม่ถึง Canvas
+/// แต่ส่งถึงทุก ancestor ระหว่างทาง (ซีนจริงอยู่บน LeftPanel ไม่ใช่ Viewport)
 /// </summary>
 public class MapSelectUI : MonoBehaviour
 {
@@ -43,7 +44,7 @@ public class MapSelectUI : MonoBehaviour
 
     void Log(string msg) { if (verboseLog) Debug.Log("[MapSelect] " + msg); }
 
-    static string Name(MapData m) => m != null ? m.displayName : "(null)";
+    static string Name(MapData m) => m != null ? m.DisplayName : "(null)";
 
     // ══════════════════════════════════════════════════════════════════════
     void Start()
@@ -106,12 +107,17 @@ public class MapSelectUI : MonoBehaviour
             return;
         }
 
-        carousel = host.GetComponent<MapCarousel>();
+        // ค้นขึ้นไปทั้งสาย ไม่ใช่แค่พ่อของ cardsContainer โดยตรง
+        // ซีนจริงเป็น LeftPanel > Viewport > cardsContainer และ component อยู่บน LeftPanel
+        // ตามที่ CarouselBase เขียนไว้เองว่า "ต้องวางบน object ของแผงที่จะลาก"
+        // ของเดิมหาแค่ host (= Viewport) ไม่เจอ แล้ว AddComponent ตัวใหม่ที่ reference ว่าง
+        // ทับไปเงียบๆ — ตัวที่ต่อสายไว้ใน Editor จึงไม่เคยถูก Setup เลย
+        carousel = rect.GetComponentInParent<MapCarousel>(true);
         if (carousel == null)
         {
             carousel = host.gameObject.AddComponent<MapCarousel>();
-            Debug.LogWarning("[MapSelect] ไม่พบ MapCarousel บน '" + host.name + "' จึงเพิ่มให้ตอนรัน — " +
-                             "ช่องภาพใหญ่กับปุ่มลูกศรจะว่าง ถ้าต้องการใช้ ให้เพิ่ม component นี้ใน Editor แล้วลาก reference");
+            Debug.LogWarning("[MapSelect] ไม่พบ MapCarousel เหนือ '" + rect.name + "' ขึ้นไปเลย จึงเพิ่มให้บน '" +
+                             host.name + "' ตอนรัน — ช่องภาพใหญ่กับปุ่มลูกศรจะว่าง ถ้าต้องการใช้ ให้เพิ่ม component นี้ใน Editor แล้วลาก reference");
         }
 
         carousel.OnSettled -= OnCarouselSettled;
@@ -129,6 +135,32 @@ public class MapSelectUI : MonoBehaviour
     void SelectMap(MapData map, string source)
     {
         Log("── SelectMap('" + Name(map) + "') · จาก: " + source + " ──");
+
+        // เฉพาะ host เปลี่ยนแมพได้ — LobbyState ทิ้ง ServerRpc ของ client เงียบๆ
+        // ถ้าปล่อยให้ commit เครื่อง client จะเห็นแมพหนึ่ง แต่เข้าเกมได้อีกแมพหนึ่ง
+        // จึงดีด carousel กลับไปที่แมพที่ server ถืออยู่แทน
+        if (lobbyUI != null && lobbyUI.MapLocked)
+        {
+            var serverMap = lobbyUI.NetworkSelectedMap;
+            if (serverMap != null && serverMap != map)
+            {
+                Log("ไม่ใช่ host — ดีดกลับไปแมพของ host: '" + Name(serverMap) + "'");
+                selected = serverMap;
+                RefreshDetail();
+                if (carousel != null)
+                {
+                    int back = carousel.IndexOf(serverMap);
+                    // JumpTo ไม่ยิง OnSettled จึงไม่วนกลับเข้ามาที่นี่อีก
+                    if (back >= 0) carousel.JumpTo(back);
+                }
+                return;
+            }
+
+            // server ยังไม่ได้เลือกแมพ — โชว์ในเครื่องได้ แต่ไม่ส่งขึ้นเน็ตเวิร์ก
+            selected = map;
+            RefreshDetail();
+            return;
+        }
 
         selected = map;
         RefreshDetail();
@@ -158,8 +190,8 @@ public class MapSelectUI : MonoBehaviour
             detailPreview.enabled = false;
         }
 
-        if (detailName      != null) detailName.text      = selected.displayName;
-        if (detailDesc      != null) detailDesc.text      = selected.description;
+        if (detailName      != null) detailName.text      = selected.DisplayName;
+        if (detailDesc      != null) detailDesc.text      = selected.Description;
         if (detailSceneName != null) detailSceneName.text = selected.sceneName;
     }
 }

@@ -13,8 +13,24 @@ MonoBehaviour:
   m_Name: SD_HealthRegen
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: HealthRegen
-  description: "\u0E1F\u0E37\u0E49\u0E19 +2 HP/\u0E27\u0E34\u0E19\u0E32\u0E17\u0E35
-    \u0E15\u0E48\u0E2D lv"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.HealthRegen.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.HealthRegen.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -742831986, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 8
   valuePerLevel:
@@ -24,3 +40,6 @@ MonoBehaviour:
   - 2
   - 2
   weight: 60
+  references:
+    version: 2
+    RefIds: []

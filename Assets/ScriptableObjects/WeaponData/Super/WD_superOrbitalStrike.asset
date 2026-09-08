@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_superOrbitalStrike
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: superOrbitalStrike
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Orbital Strike \u2014 \u0E27\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E14\u0E39\u0E14\u0E28\u0E31\u0E15\u0E23\u0E39\u0E40\u0E02\u0E49\u0E32\u0E2B\u0E32\u0E01\u0E25\u0E32\u0E07 \u0E41\u0E25\u0E49\u0E27\u0E15\u0E32\u0E21\u0E14\u0E49\u0E27\u0E22\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E0B\u0E49\u0E33\u0E2D\u0E35\u0E01\u0E2B\u0E25\u0E32\u0E22\u0E25\u0E39\u0E01"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.superOrbitalStrike.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.superOrbitalStrike.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 281346443, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   tier: 1
   prefab: {fileID: 684688466817222652, guid: 8d724ec16499d6c44ac336ee3a7b1fb0, type: 3}
@@ -32,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 100
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

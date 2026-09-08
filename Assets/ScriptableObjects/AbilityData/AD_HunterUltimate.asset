@@ -12,8 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
   m_Name: AD_HunterUltimate
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
-  abilityName: AD_HunterUltimate
-  description: "\u0E1B\u0E25\u0E14\u0E1B\u0E25\u0E48\u0E2D\u0E22 Funnels \u0E2D\u0E2D\u0E01\u0E21\u0E32\u0E0A\u0E48\u0E27\u0E22\u0E01\u0E33\u0E08\u0E31\u0E14\u0E28\u0E31\u0E15\u0E23\u0E39 "
+  abilityName: Funnel Storm
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Funnel_Storm.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Funnel_Storm.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   slotType: 1
   prefab: {fileID: 1961272562416535874, guid: 45641f6b844fe1a429210c07b7e60c84, type: 3}
@@ -23,3 +40,6 @@ MonoBehaviour:
     duration: 12
     range: 20
     levelUpText: 
+  references:
+    version: 2
+    RefIds: []

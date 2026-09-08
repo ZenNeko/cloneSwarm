@@ -39,7 +39,7 @@ public class UpgradeCardInfo
     {
         UpgradeCardType.Augment => augment?.augmentName ?? "???",
         UpgradeCardType.Stat    => stat?.statName       ?? "???",
-        _                       => weapon?.weaponName   ?? "???",
+        _                       => weapon?.DisplayName   ?? "???",   // ชื่อบนการ์ด ไม่ใช่ ID
     };
 
     public Sprite DisplayIcon => type switch
@@ -57,11 +57,11 @@ public class UpgradeCardInfo
                 return augment?.description ?? "";
 
             if (type == UpgradeCardType.Stat)
-                return stat?.description ?? "";
+                return stat != null ? stat.Description : "";
 
             if (weapon == null) return "";
 
-            return weapon.description;
+            return weapon.Description;   // แปลแล้วตาม locale
         }
     }
 

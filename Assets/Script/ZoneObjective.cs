@@ -132,6 +132,28 @@ public class ZoneObjective : NetworkBehaviour
     public NetworkVariable<int>   deliveredCount = new(0,     NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<int>   requiredCount  = new(0,     NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    /// <summary>เวลาบน**นาฬิกา server** ที่ phase/quest ปัจจุบันจะหมดอายุ · 0 = ไม่จำกัดเวลา
+    ///
+    /// เก็บเป็น "เวลาสิ้นสุด" ไม่ใช่ "เวลาที่เหลือ" — เขียนครั้งเดียวตอนเริ่มแต่ละ phase
+    /// แทนที่จะ sync ทุกเฟรม client เอาไปลบกับ NetworkManager.ServerTime.Time ที่ NGO
+    /// sync ให้อยู่แล้ว จึงนับถอยหลังได้ลื่นโดยไม่กิน bandwidth เพิ่มเลย
+    ///
+    /// ก่อนหน้านี้ deadline ทุกตัวเป็น Time.time ฝั่ง server ในคอรูทีนล้วน client
+    /// จึงไม่มีทางรู้ว่าเหลือเวลาเท่าไร</summary>
+    public NetworkVariable<double> phaseEndTime = new(0d, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    /// <summary>วินาทีที่เหลือของ phase ปัจจุบัน — คืน -1 เมื่อไม่มีเวลาจำกัด (UI ซ่อนตัวนับได้)</summary>
+    public float SecondsRemaining
+    {
+        get
+        {
+            if (phaseEndTime.Value <= 0d) return -1f;
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return -1f;
+            return Mathf.Max(0f, (float)(phaseEndTime.Value - nm.ServerTime.Time));
+        }
+    }
+
     public Phase     CurrentPhase    => (Phase)phaseInt.Value;
     public QuestType ActiveQuestType => (QuestType)Mathf.Max(0, activeQuestInt.Value);
     public bool      HasActiveQuest  => activeQuestInt.Value >= 0;
@@ -245,7 +267,7 @@ public class ZoneObjective : NetworkBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     IEnumerator ObjectiveStateMachine()
     {
-        float timeoutAt = timeoutDuration > 0 ? Time.time + timeoutDuration : float.MaxValue;
+        float timeoutAt = Deadline(timeoutDuration);
 
         // ── Phase 1: Activation — fill progress while ผู้เล่นยืน ─────────
         phaseInt.Value = (int)Phase.Activating;
@@ -281,15 +303,13 @@ public class ZoneObjective : NetworkBehaviour
         switch (chosen)
         {
             case QuestType.FetchAndDeliver:
-                float fetchDeadline = fetchQuestTimeLimit > 0
-                    ? Time.time + fetchQuestTimeLimit
-                    : float.MaxValue;
+                float fetchDeadline = Deadline(fetchQuestTimeLimit);
                 yield return StartCoroutine(QuestFetchAndDeliver(fetchDeadline));
                 break;
             case QuestType.Survive:
                 // surviveTime เดินเฉพาะตอนมีคนอยู่ในโซน → ต้องมี deadline แยกจริงๆ
                 float surviveLimit    = surviveQuestTimeLimit > 0f ? surviveQuestTimeLimit : surviveTime * 2f;
-                float surviveDeadline = Time.time + surviveLimit;
+                float surviveDeadline = Deadline(surviveLimit);
                 yield return StartCoroutine(QuestSurvive(surviveDeadline));
                 break;
             case QuestType.DestroyObjects:
@@ -547,8 +567,23 @@ public class ZoneObjective : NetworkBehaviour
         return Mathf.Clamp(n, 1, Mathf.Max(1, max));
     }
 
-    static float Deadline(float limitSeconds)
-        => limitSeconds > 0f ? Time.time + limitSeconds : float.MaxValue;
+    /// <summary>ตั้ง deadline ของ phase ปัจจุบัน — คืนค่าเวลาแบบ Time.time ให้คอรูทีนฝั่ง server ใช้
+    /// พร้อมเผยแพร่เวลาสิ้นสุดบนนาฬิกา server ให้ client นับถอยหลังตามได้
+    ///
+    /// เลิกเป็น static เพราะต้องเขียน NetworkVariable — เขียนได้เฉพาะ server อยู่แล้ว
+    /// ทุกจุดที่เรียกอยู่ในคอรูทีนที่รันบน server เท่านั้น</summary>
+    float Deadline(float limitSeconds)
+    {
+        if (limitSeconds <= 0f)
+        {
+            if (IsServer) phaseEndTime.Value = 0d;
+            return float.MaxValue;
+        }
+
+        var nm = NetworkManager.Singleton;
+        if (IsServer) phaseEndTime.Value = nm != null ? nm.ServerTime.Time + limitSeconds : 0d;
+        return Time.time + limitSeconds;
+    }
 
     // ── Server: Spawn destructibles ───────────────────────────────────────
     void SpawnDestructibles(int count)
@@ -755,7 +790,8 @@ public class ZoneObjective : NetworkBehaviour
         SetDiscColor(COL_COMPLETE);
         if (discMat != null) discMat.SetFloat(ID_Progress, 1f);
         VFXFactory.Play("None", transform.position);
-        AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  ★ORB", Color.green);
+        // ห้ามใส่สัญลักษณ์นอก ASCII — ฟอนต์ในโปรเจกต์ไม่มี STAR/WARN/BOLT glyph
+        AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  +ORB", Color.green);
         NotifyRemoved(completed: true);
     }
 
@@ -788,7 +824,9 @@ public class ZoneObjective : NetworkBehaviour
         }
     }
 
-    string GetQuestAnnouncement()
+    /// <summary>ข้อความ "ต้องทำอะไร" ของ quest ปัจจุบัน — public เพราะ ObjectiveTrackerHUD
+    /// อ่านตัวเดียวกันนี้ ไม่ต้องมีข้อความสองชุดที่ต้องจำอัปเดตพร้อมกัน</summary>
+    public string GetQuestAnnouncement()
     {
         return ActiveQuestType switch
         {

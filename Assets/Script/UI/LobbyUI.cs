@@ -138,6 +138,27 @@ public class LobbyUI : MonoBehaviour
         if (cd != null) SelectCharacter(cd.characterName);
     }
 
+    /// <summary>host เท่านั้นที่เปลี่ยนแมพ/ความยากได้ — LobbyState ทิ้ง ServerRpc ของคนอื่นเงียบๆ
+    /// อ่านสองแหล่งเพราะช่วงกำลังต่อ session ตัวใดตัวหนึ่งยังไม่พร้อม</summary>
+    public bool IsHost =>
+        (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost) ||
+        (GameSessionManager.Instance != null && GameSessionManager.Instance.IsHost);
+
+    /// <summary>true = มีล็อบบี้บนเน็ตเวิร์กอยู่ และเครื่องนี้ไม่ใช่ host → เปลี่ยนแมพ/ความยากไม่ได้
+    ///
+    /// ต้องเช็ค LobbyState ด้วย ไม่ใช่ !IsHost เฉยๆ — MapSelectUI อยู่บน Canvas ที่ root
+    /// Start() ของมันจึงรันตั้งแต่ซีนโหลด ก่อนมี session ใดๆ ตอนนั้น IsHost เป็น false เสมอ
+    /// ถ้าบล็อกด้วย !IsHost ค่าเริ่มต้นที่ Start() ตั้งให้จะไม่ถูกเขียนลง RunSetup
+    /// แล้ว PushLocalSelectionsToLobby จะไม่มีอะไรส่งขึ้น server → SelectedMapId ว่าง
+    /// → GetSelectedMap คืน null → Map_Image ถูกปิดทิ้งใน Refresh()</summary>
+    public bool MapLocked => LobbyState.Instance != null && !IsHost;
+
+    /// <summary>แมพที่ server ถืออยู่จริง — ไม่ใช่ตัวที่ผู้เล่นเครื่องนี้เพิ่งเลื่อนผ่าน</summary>
+    public MapData NetworkSelectedMap =>
+        LobbyState.Instance != null
+            ? GetSelectedMap(LobbyState.Instance.SelectedMapId.Value.ToString())
+            : null;
+
     public void SelectCharacter(string characterName)
     {
         if (LobbyState.Instance != null)
@@ -149,6 +170,16 @@ public class LobbyUI : MonoBehaviour
     public void SelectMap(MapData map)
     {
         if (map == null) return;
+
+        // SetMapServerRpc ทิ้ง request ที่ไม่ใช่ host เงียบๆ — ถ้าเขียน RunSetup ก่อนส่ง
+        // เครื่อง client จะเห็นแมพเปลี่ยนในจอตัวเอง แล้วเข้าเกมได้แมพของ host แทน
+        // ให้ host เป็นคนเดียวที่เขียน · client รับแมพจริงจาก LobbyState ใน Refresh()
+        if (MapLocked)
+        {
+            Refresh();
+            return;
+        }
+
         RunSetup.Set(map, RunSetup.Difficulty);
         if (LobbyState.Instance != null) LobbyState.Instance.SetMapServerRpc(map.mapId);
         Refresh();
@@ -156,6 +187,13 @@ public class LobbyUI : MonoBehaviour
 
     public void SelectDifficulty(DifficultyTier tier)
     {
+        // SetDifficultyServerRpc รับเฉพาะ host เหมือนกัน — เหตุผลเดียวกับ SelectMap
+        if (MapLocked)
+        {
+            Refresh();
+            return;
+        }
+
         RunSetup.Set(RunSetup.Map, tier);
         if (LobbyState.Instance != null) LobbyState.Instance.SetDifficultyServerRpc(tier);
         Refresh();
@@ -300,8 +338,7 @@ public class LobbyUI : MonoBehaviour
 
     public void Refresh()
     {
-        bool isHost = (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost) ||
-                      (GameSessionManager.Instance != null && GameSessionManager.Instance.IsHost);
+        bool isHost = IsHost;
 
         if (tabBar != null)
         {
@@ -362,7 +399,9 @@ public class LobbyUI : MonoBehaviour
                 var textComp = go.GetComponentInChildren<TextMeshProUGUI>();
                 if (textComp != null)
                 {
-                    string displayName = charData != null ? charData.characterName : (string.IsNullOrEmpty(charName) ? "Selecting..." : charName);
+                    // charName เป็น ID ที่มาจากเน็ตเวิร์ก — ใช้เป็น fallback ได้ แต่ถ้าหา CharacterData เจอ
+                    // ต้องโชว์ DisplayName ไม่ใช่ characterName
+                    string displayName = charData != null ? charData.DisplayName : (string.IsNullOrEmpty(charName) ? "Selecting..." : charName);
                     int slot = PlayerSlotRegistry.Instance != null ? PlayerSlotRegistry.Instance.GetSlot(entry.clientId) : -1;
                     string slotText = slot >= 0 ? (slot + 1).ToString() : "?";
                     textComp.text = $"Player {slotText}: {displayName} [{(entry.ready ? "READY" : "NOT READY")}]";
@@ -380,9 +419,17 @@ public class LobbyUI : MonoBehaviour
 
         string mapId = LobbyState.Instance.SelectedMapId.Value.ToString();
         MapData map = GetSelectedMap(mapId);
+
+        // client ไม่ได้เขียน RunSetup เองแล้ว (ดู SelectMap) จึงต้องรับค่าที่ server ถืออยู่มาใส่
+        // ไม่งั้น RunSetup.Map ฝั่ง client ค้าง null ทั้งรัน แล้ว WinLoseUI/WaveManager อ่านผิด
+        // host ไม่แตะตรงนี้ — RunSetup ของ host คือต้นทางอยู่แล้ว การเขียนทับจะเปิดช่องค่าเก่า
+        if (!isHost && map != null)
+        {
+            RunSetup.Set(map, LobbyState.Instance.SelectedDifficulty.Value);
+        }
         if (mapNameLabel != null)
         {
-            mapNameLabel.text = map != null ? map.displayName : (string.IsNullOrEmpty(mapId) ? "Select Map" : mapId);
+            mapNameLabel.text = map != null ? map.DisplayName : (string.IsNullOrEmpty(mapId) ? "Select Map" : mapId);
         }
         if (difficultyLabel != null)
         {

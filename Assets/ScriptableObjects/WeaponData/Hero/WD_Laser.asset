@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_Laser
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Laser
-  description: "\u0E22\u0E34\u0E07\u0E25\u0E33\u0E41\u0E2A\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E41\u0E19\u0E27\u0E15\u0E23\u0E07 \u0E42\u0E14\u0E19\u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E38\u0E01\u0E15\u0E31\u0E27\u0E17\u0E35\u0E48\u0E02\u0E27\u0E32\u0E07\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Laser.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Laser.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 21300000, guid: 9cf3ac0b624168545975e8923bfe94e3, type: 3}
   tier: 0
   prefab: {fileID: 5642432581615302053, guid: 5335a55d0549be6428b5c1a04d51b261, type: 3}
@@ -68,3 +85,6 @@ MonoBehaviour:
     requiredWeapon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 11400000, guid: d5e58a2ae414ebc4d8db9ae2cd3d54ad, type: 2}
+  references:
+    version: 2
+    RefIds: []

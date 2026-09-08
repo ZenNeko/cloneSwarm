@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_StarRing
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Star Ring
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Orbiter \u2014 \u0E25\u0E39\u0E01\u0E41\u0E01\u0E49\u0E27\u0E27\u0E19\u0E2A\u0E2D\u0E07\u0E27\u0E07\u0E0B\u0E49\u0E2D\u0E19 \u0E04\u0E23\u0E2D\u0E1A\u0E1E\u0E37\u0E49\u0E19\u0E17\u0E35\u0E48\u0E23\u0E2D\u0E1A\u0E15\u0E31\u0E27\u0E44\u0E14\u0E49\u0E41\u0E19\u0E48\u0E19\u0E02\u0E36\u0E49\u0E19"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Star_Ring.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Star_Ring.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -84754720, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   tier: 1
   prefab: {fileID: 1935411019707455659, guid: ceeca7ca5058fc247a0288a5ac953bf6, type: 3}
@@ -32,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 150
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

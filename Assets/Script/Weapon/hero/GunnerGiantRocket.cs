@@ -10,8 +10,6 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class GunnerGiantRocket : AbilityBase, IHUDAbility
 {
-    [Header("Input Key")]
-    public Key activateKey = Key.E;
 
     [Header("Giant Rocket Config")]
     public float rocketSpeed        = 18f;
@@ -25,7 +23,7 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
     public string HUDSlotKey      => "E";   // Giant Rocket ของ Gunner อยู่ E เสมอ
-    public string HUDKeyLabel     => activateKey.ToString();
+    public string HUDKeyLabel     => AbilityKeyLabel;   // อ่านจาก binding จริงใน AbilityInputActions
     public bool   IsActiveMode    => false;
     public float  ActiveRemaining => 0f;
     public float  ActiveMax       => 0f;
@@ -46,9 +44,8 @@ public class GunnerGiantRocket : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown) return;
-        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
-        if (Keyboard.current != null && Keyboard.current[activateKey].wasPressedThisFrame)
+        if (AbilityPressedThisFrame)
             Fire();
     }
 

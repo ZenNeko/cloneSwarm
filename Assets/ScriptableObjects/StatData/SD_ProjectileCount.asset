@@ -13,8 +13,24 @@ MonoBehaviour:
   m_Name: SD_ProjectileCount
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: ProjectileCount
-  description: "\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E08\u0E33\u0E19\u0E27\u0E19 Projectile
-    \u0E17\u0E38\u0E01 weapon"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.ProjectileCount.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.ProjectileCount.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -152921185, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 4
   valuePerLevel:
@@ -24,3 +40,6 @@ MonoBehaviour:
   - 1
   - 3
   weight: 65
+  references:
+    version: 2
+    RefIds: []

@@ -38,6 +38,10 @@ public class AnalyticsManager : MonoBehaviour
 
     private async void Start()
     {
+        // subscribe ก่อน await — ถ้ารอ InitializeAsync ให้เสร็จก่อนค่อยผูก
+        // player ที่ spawn ระหว่างนั้นจะหลุดไปเลย แล้วไม่มี game_session_start ทั้งรัน
+        playermove.OnLocalPlayerSpawned += HandleLocalPlayerSpawned;
+
         try
         {
             await UnityServices.InitializeAsync();
@@ -53,8 +57,8 @@ public class AnalyticsManager : MonoBehaviour
             Debug.LogError($"[Analytics] Initialization failed: {e.Message}");
         }
 
-        // Subscribe to player spawn
-        playermove.OnLocalPlayerSpawned += HandleLocalPlayerSpawned;
+        // player อาจ spawn ไปแล้วระหว่างรอ init — ยิง session start ย้อนหลังให้
+        if (_initialized && _localPlayer != null) StartSession();
     }
 
     private void OnDestroy()
@@ -66,8 +70,42 @@ public class AnalyticsManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ชื่อตัวละครของ local player — ต้องอ่านจาก PlayerVisual.CharacterIndex เป็นหลัก
+    ///
+    /// PlayerWeaponManager.characterData เป็น field ที่ตั้งใน Inspector เท่านั้น
+    /// ไม่มีโค้ดไหนเขียนตอนรัน (player.prefab เป็น fileID: 0) ทุก event เลยได้ "Unknown"
+    /// ตลอด — เห็นใน log จริง: "game_session_start: character=Unknown"
+    ///
+    /// PlayerVisual.CharacterIndex เป็น NetworkVariable จึงเชื่อถือได้ทั้ง host และ client
+    /// (แหล่งเดียวกับที่ TempPartyHUD ใช้โชว์ชื่อบนหัวจอ)
+    /// </summary>
+    private string GetLocalCharacterName()
+    {
+        if (_localPlayer == null) return "Unknown";
+
+        var visual = _localPlayer.GetComponent<PlayerVisual>();
+        if (visual != null)
+        {
+            var cd = visual.GetCharacterData(visual.CharacterIndex);
+            if (cd != null && !string.IsNullOrEmpty(cd.characterName)) return cd.characterName;
+        }
+
+        var pwm = _localPlayer.GetComponent<PlayerWeaponManager>();
+        if (pwm != null && pwm.characterData != null) return pwm.characterData.characterName;
+
+        var selected = CharacterSelectUI.SelectedCharacter;
+        if (selected != null && !string.IsNullOrEmpty(selected.characterName)) return selected.characterName;
+
+        Debug.LogWarning("[Analytics] หาชื่อตัวละครไม่ได้ — event จะถูกส่งเป็น 'Unknown'");
+        return "Unknown";
+    }
+
     private void HandleLocalPlayerSpawned(Transform playerTransform)
     {
+        // ปลด subscription ของ player ตัวก่อนเสมอ — เปลี่ยนซีน/รันใหม่จะได้ object ใหม่
+        if (_localPlayer != null) _localPlayer.isDead.OnValueChanged -= HandleLocalPlayerDeadChanged;
+
         _localPlayer = playerTransform.GetComponent<playermove>();
         if (_localPlayer != null)
         {
@@ -83,12 +121,7 @@ public class AnalyticsManager : MonoBehaviour
         if (!_initialized || _sessionStarted) return;
         _sessionStarted = true;
 
-        string charName = "Unknown";
-        var pwm = _localPlayer.GetComponent<PlayerWeaponManager>();
-        if (pwm != null && pwm.characterData != null)
-        {
-            charName = pwm.characterData.characterName;
-        }
+        string charName = GetLocalCharacterName();
 
         int playerCount = NetworkManager.Singleton != null ? NetworkManager.Singleton.ConnectedClients.Count : 1;
 
@@ -114,12 +147,7 @@ public class AnalyticsManager : MonoBehaviour
             float timeOfDeath = GameTimeline.Instance != null ? GameTimeline.Instance.gameTime.Value : 0f;
             int finalLevel = SharedExperienceManager.Instance != null ? SharedExperienceManager.Instance.sharedLevel.Value : 1;
 
-            string charName = "Unknown";
-            var pwm = _localPlayer.GetComponent<PlayerWeaponManager>();
-            if (pwm != null && pwm.characterData != null)
-            {
-                charName = pwm.characterData.characterName;
-            }
+            string charName = GetLocalCharacterName();
 
             CustomEvent deathEvent = new CustomEvent("player_death");
             deathEvent["time_of_death"] = timeOfDeath;
@@ -146,15 +174,7 @@ public class AnalyticsManager : MonoBehaviour
     {
         if (!_initialized) return;
 
-        string charName = "Unknown";
-        if (_localPlayer != null)
-        {
-            var pwm = _localPlayer.GetComponent<PlayerWeaponManager>();
-            if (pwm != null && pwm.characterData != null)
-            {
-                charName = pwm.characterData.characterName;
-            }
-        }
+        string charName = GetLocalCharacterName();
 
         // Calculate DPS per weapon
         float duration = Mathf.Max(1f, finalTime);
@@ -184,6 +204,11 @@ public class AnalyticsManager : MonoBehaviour
         {
             Debug.LogWarning($"[Analytics] Failed to send session end event: {e.Message}");
         }
+
+        // Analytics บัฟเฟอร์ไว้แล้วอัปโหลดเป็นรอบ (~60s) — จบเกมแล้วผู้เล่นมักปิดเกมทันที
+        // ไม่ Flush จะหายทั้งก้อน
+        try { AnalyticsService.Instance.Flush(); }
+        catch (Exception e) { Debug.LogWarning($"[Analytics] Flush ไม่สำเร็จ: {e.Message}"); }
 
         // Reset session state for next run
         _sessionStarted = false;

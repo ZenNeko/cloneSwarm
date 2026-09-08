@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 15024, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: NewPlayModeScenario
-  m_EditorClassIdentifier: UnityEditor.MultiplayerModule.dll::Unity.Multiplayer.PlayMode.Editor.ScenarioConfig
+  m_EditorClassIdentifier: UnityEditor.MultiplayerModule.dll::Unity.Multiplayer.PlayMode.Editor.OrchestratedScenario
   m_Description: 
   m_EnableEditors: 1
   m_MainEditorInstance:
@@ -30,32 +30,18 @@ MonoBehaviour:
       serializedVersion: 2
       Hash: c16915d1f789adfc5d3631ffc39c502e
     m_InstanceItems:
-    - rid: 7124451932437479432
-    - rid: 7124451932437479436
+    - rid: 4763815665496228153
   references:
     version: 2
     RefIds:
-    - rid: 7124451932437479432
+    - rid: 4763815665496228153
       type: {class: 'InstanceItem`2[[Unity.Multiplayer.PlayMode.Editor.MainEditorController, UnityEditor.MultiplayerModule],[Unity.Multiplayer.PlayMode.Editor.MainEditorController/InstanceSettings, UnityEditor.MultiplayerModule]]', ns: Unity.Multiplayer.PlayMode.Editor, asm: UnityEditor.MultiplayerModule}
       data:
-        m_Id: da5ae2d72cf841a79bf689878f6aa76f
+        m_Id: 389b4094a5854ae2be2697dabcbb4ac8
         m_Name: Main Editor
         m_RunMode: 0
         m_Settings:
           PlayerTag: 
           RoleMask: 1
           InitialScene: {fileID: 0}
-        m_Decorators: []
-    - rid: 7124451932437479436
-      type: {class: 'InstanceItem`2[[Unity.Multiplayer.PlayMode.Editor.CloneEditorController, UnityEditor.MultiplayerModule],[Unity.Multiplayer.PlayMode.Editor.CloneEditorController/InstanceSettings, UnityEditor.MultiplayerModule]]', ns: Unity.Multiplayer.PlayMode.Editor, asm: UnityEditor.MultiplayerModule}
-      data:
-        m_Id: 64cfd32b78694d82bb7fdeffd7e3b972
-        m_Name: Player 2
-        m_RunMode: 0
-        m_Settings:
-          PlayerTag: 
-          RoleMask: 1
-          PlayerInstanceIndex: 1
-          StreamLogsToMainEditor: 0
-          LogsColor: {r: 0.3643, g: 0.581, b: 0.8679, a: 1}
         m_Decorators: []

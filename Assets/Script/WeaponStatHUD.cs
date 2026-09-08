@@ -143,7 +143,7 @@ public class WeaponStatHUD : MonoBehaviour
             s.icon.color  = w.icon != null ? Color.white : new Color(1f, 1f, 1f, 0.25f);
         }
 
-        if (s.nameTxt)  s.nameTxt.text  = w.weaponName;
+        if (s.nameTxt)  s.nameTxt.text  = w.DisplayName;   // ชื่อที่โชว์ ไม่ใช่ weaponName ที่เป็น ID
         if (s.levelTxt) s.levelTxt.text = w.tier switch
         {
             WeaponTier.Super  => "★",

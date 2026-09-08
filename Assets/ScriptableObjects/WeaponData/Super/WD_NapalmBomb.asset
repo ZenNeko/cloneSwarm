@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_NapalmBomb
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: NapalmBomb
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Molotov \u2014 \u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E25\u0E39\u0E01\u0E22\u0E31\u0E01\u0E29\u0E4C\u0E17\u0E34\u0E49\u0E07\u0E2A\u0E23\u0E30\u0E40\u0E1E\u0E25\u0E34\u0E07\u0E01\u0E27\u0E49\u0E32\u0E07\u0E04\u0E49\u0E32\u0E07\u0E44\u0E27\u0E49\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.NapalmBomb.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.NapalmBomb.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -1204215498, guid: 7d14fe165a6225e499757a3668bbe881, type: 3}
   tier: 1
   prefab: {fileID: 5171679326528762733, guid: f3f1e924fc4b2594ea299ba67b351995, type: 3}
@@ -32,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 150
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

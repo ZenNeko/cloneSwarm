@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_superSupportArena
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: superSupportArena
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Support Arena \u2014 \u0E1A\u0E31\u0E1F\u0E41\u0E23\u0E07\u0E02\u0E36\u0E49\u0E19\u0E17\u0E38\u0E01\u0E17\u0E32\u0E07 \u0E41\u0E25\u0E30\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E40\u0E25\u0E37\u0E2D\u0E14\u0E17\u0E35\u0E48\u0E40\u0E15\u0E47\u0E21\u0E41\u0E25\u0E49\u0E27\u0E40\u0E1B\u0E47\u0E19\u0E42\u0E25\u0E48"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.superSupportArena.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.superSupportArena.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 21300000, guid: 015bc8bbd145375458145073edcd12fa, type: 3}
   tier: 1
   prefab: {fileID: 5192285562658973075, guid: ad60216415a645d428e97e973a43a2d0, type: 3}
@@ -32,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 100
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

@@ -13,8 +13,24 @@ MonoBehaviour:
   m_Name: SD_GainGold
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: Gain 25 Gold
-  description: "\u0E23\u0E31\u0E1A 25 Gold \u0E40\u0E21\u0E37\u0E48\u0E2D max level
-    (Full Build Bonus)"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Gain_25_Gold.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Gain_25_Gold.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -1815068553, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 12
   valuePerLevel:
@@ -24,3 +40,6 @@ MonoBehaviour:
   - 0
   - 25
   weight: 30
+  references:
+    version: 2
+    RefIds: []

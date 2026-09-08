@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.TalentData
   talentId: talent_regen
   talentName: Regeneration
-  description: "\u0E1F\u0E37\u0E49\u0E19 HP \u0E16\u0E32\u0E27\u0E23 +0.5 \u0E15\u0E48\u0E2D\u0E27\u0E34\u0E19\u0E32\u0E17\u0E35 \u0E15\u0E48\u0E2D\u0E40\u0E25\u0E40\u0E27\u0E25"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_regen.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_regen.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   mode: 0
   statType: 8
@@ -23,3 +40,6 @@ MonoBehaviour:
   category: 1
   sortOrder: 12
   tintColor: {r: 0.2901961, g: 0.87058824, b: 0.5019608, a: 1}
+  references:
+    version: 2
+    RefIds: []

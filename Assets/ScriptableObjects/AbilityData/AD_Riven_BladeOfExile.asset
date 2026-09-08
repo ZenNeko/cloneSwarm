@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: AD_Riven_BladeOfExile
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
   abilityName: Blade of Exile
-  description: Blade of Exile
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Blade_of_Exile.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Blade_of_Exile.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 2037185278, guid: 16c624dce00d2f34e80083d085d2bf8d, type: 3}
   slotType: 1
   prefab: {fileID: 7060057563466003552, guid: b498ce9fc7a7a10468ab3d0e86d0d854, type: 3}
@@ -23,3 +40,6 @@ MonoBehaviour:
     duration: 12
     range: 0
     levelUpText: 
+  references:
+    version: 2
+    RefIds: []

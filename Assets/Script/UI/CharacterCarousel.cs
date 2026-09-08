@@ -21,6 +21,14 @@ public class CharacterCarousel : CarouselBase
     [Tooltip("ความเร็วจาง/โผล่ของตัวเด่น (หน่วยอัลฟาต่อวินาที)")]
     public float heroFadeSpeed = 6f;
 
+    [Range(0f, 1f)]
+    [Tooltip("ความทึบของตัวเด่นตอนเข้าช่องนิ่งแล้ว")]
+    public float heroIdleAlpha = 1f;
+
+    [Range(0f, 1f)]
+    [Tooltip("ความทึบระหว่างที่ยังลาก/ไถลอยู่ - ตั้ง 1 เท่ากับ heroIdleAlpha = ไม่จางเลย")]
+    public float heroMovingAlpha = 0f;
+
     // ── Data ──────────────────────────────────────────────────────────────
     private readonly List<CharacterData>   roster = new();
     private readonly List<CharacterCardUI> cards  = new();
@@ -46,6 +54,10 @@ public class CharacterCarousel : CarouselBase
 
         selectedColor = selColor;
         normalColor   = normColor;
+
+        // ตรวจก่อนว่าไม่ได้ชี้มาที่ container ของการ์ดเอง — ดู ValidateOverlayGroup
+        heroGroup = ValidateOverlayGroup(heroGroup, container, "heroGroup");
+        heroImage = ValidateOverlayImage(heroImage, "heroImage");
 
         // ตัวเด่นวางทับช่องกลางและใหญ่กว่าการ์ด ถ้ามันรับ raycast จะดูดคลิกกับการลากไปหมด
         // การ์ดใต้มันจะกดไม่ได้เลย — มันเป็นของประดับล้วน จึงปิดการรับ input ทิ้งตั้งแต่ต้น
@@ -116,7 +128,7 @@ public class CharacterCarousel : CarouselBase
         if (heroGroup == null) return;
 
         bool  show = IsIdle;
-        float goal = show ? 1f : 0f;
+        float goal = show ? heroIdleAlpha : heroMovingAlpha;
 
         if (instant) heroGroup.alpha = goal;
         else heroGroup.alpha = Mathf.MoveTowards(heroGroup.alpha, goal,

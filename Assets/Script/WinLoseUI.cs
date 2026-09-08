@@ -47,6 +47,10 @@ public class WinLoseUI : MonoBehaviour
 
     private CanvasGroup canvasGroup;
 
+    /// <summary>กดเริ่มรันใหม่ไปแล้ว — LoadScene เป็น async ปุ่มยังรับคลิกได้จนกว่าซีนจะสลับจริง
+    /// เหตุผลเดียวกับที่ ReturnToMenu ปิดปุ่มทั้งสองไว้ระหว่าง await</summary>
+    private bool restarting;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
     {
@@ -162,17 +166,43 @@ public class WinLoseUI : MonoBehaviour
 
     void OnPlayAgainClicked()
     {
+        if (restarting) return;
+        restarting = true;
+
+        if (playAgainButton) playAgainButton.interactable = false;
+        if (returnButton)    returnButton.interactable    = false;
+
+        // ปลด timeScale ก่อนสั่งโหลด — NGO รอ scene event ด้วยเวลาที่ถูก scale บางเส้นทาง
         IsShowing = false;
         GamePause.ResetAll();
 
         string sceneName = RunSetup.Map != null ? RunSetup.Map.sceneName : "SampleScene";
+
+        bool started;
         if (GameSessionManager.Instance != null)
         {
-            GameSessionManager.Instance.StartGame(sceneName);
+            started = GameSessionManager.Instance.StartGame(sceneName);
         }
         else if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsServer)
         {
             Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+            started = true;
+        }
+        else
+        {
+            Debug.LogWarning("[WinLose] Play Again: ไม่มีทั้ง GameSessionManager และ NetworkManager ฝั่ง server — เริ่มรันใหม่ไม่ได้");
+            started = false;
+        }
+
+        // ไม่ได้โหลดซีนจริง — คืนสถานะเดิมทั้งหมด ไม่งั้นเหลือจอผลลัพธ์ที่กดอะไรไม่ได้
+        // และเกมเดินต่อทั้งที่ผู้เล่นตายหมดแล้ว
+        if (!started)
+        {
+            restarting = false;
+            IsShowing  = true;
+            GamePause.Add(PauseReason.GameOver);
+            if (playAgainButton) playAgainButton.interactable = true;
+            if (returnButton)    returnButton.interactable    = true;
         }
     }
 

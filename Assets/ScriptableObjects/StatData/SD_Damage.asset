@@ -13,8 +13,24 @@ MonoBehaviour:
   m_Name: SD_Damage
   m_EditorClassIdentifier: Assembly-CSharp::StatData
   statName: Damage
-  description: "\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E04\u0E27\u0E32\u0E21\u0E40\u0E2A\u0E35\u0E22\u0E2B\u0E32\u0E22\u0E17\u0E38\u0E01
-    weapon +10%/lv"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Damage.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: stat.Damage.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 5318086, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   statType: 0
   valuePerLevel:
@@ -24,3 +40,6 @@ MonoBehaviour:
   - 0.1
   - 0.1
   weight: 90
+  references:
+    version: 2
+    RefIds: []

@@ -12,8 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
   m_Name: AD_GunnerRocketMode
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
-  abilityName: GunnerRocketMode
-  description: GunnerRocketMode
+  abilityName: Rocket Mode
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Rocket_Mode.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Rocket_Mode.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 21300000, guid: b7348e8f5b38e2b439706508dde218e5, type: 3}
   slotType: 0
   prefab: {fileID: 1587426536235194859, guid: 861463d03c9f07e4f9305c773f614a5a, type: 3}
@@ -23,3 +40,6 @@ MonoBehaviour:
     duration: 5
     range: 5
     levelUpText: 
+  references:
+    version: 2
+    RefIds: []

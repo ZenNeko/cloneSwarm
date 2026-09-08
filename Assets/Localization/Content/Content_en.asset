@@ -1,0 +1,371 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Content_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 9e69529d31d158540a1b4848bdcb39fd, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 2627712393216
+    m_Localized: Cluster Bomb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627754336256
+    m_Localized: CycloneBlade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530560
+    m_Localized: Orbital Cannon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530562
+    m_Localized: ThunderRail
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530564
+    m_Localized: Bunny Hop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530566
+    m_Localized: 'GunnerWeapon '
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530568
+    m_Localized: Laser
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530570
+    m_Localized: RabbitHop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530572
+    m_Localized: GunnerPassiveWeapon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530574
+    m_Localized: Hunter Passive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530576
+    m_Localized: BladeStorm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530578
+    m_Localized: Blunderbuss
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530580
+    m_Localized: DeathField
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530582
+    m_Localized: Magnum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530584
+    m_Localized: NapalmBomb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530586
+    m_Localized: Railgun
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530588
+    m_Localized: SpiralGalaxy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530590
+    m_Localized: SplitSpikeWeapon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724864
+    m_Localized: splitter bomb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724866
+    m_Localized: Star Ring
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724868
+    m_Localized: Stormcaller
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724870
+    m_Localized: Superbig aoe
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724872
+    m_Localized: SuperBigCannon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724874
+    m_Localized: Spider Fence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724876
+    m_Localized: superMagicMissile
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724878
+    m_Localized: superOrbitalStrike
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724880
+    m_Localized: superSupportArena
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724882
+    m_Localized: TendrilStorm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724884
+    m_Localized: TriRang
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724886
+    m_Localized: WD_BigAoE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724888
+    m_Localized: WD_BigCannon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724890
+    m_Localized: Boomerang
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724892
+    m_Localized: DualSlash
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724894
+    m_Localized: Fence
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724896
+    m_Localized: Grenade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724898
+    m_Localized: Lance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724900
+    m_Localized: LightningChain
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724902
+    m_Localized: MagicMissile
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724904
+    m_Localized: Molotov
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724906
+    m_Localized: OrbitalStrike
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724908
+    m_Localized: Orbiter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724910
+    m_Localized: RadiantAura
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724912
+    m_Localized: Shotgun
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724914
+    m_Localized: Spike
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724916
+    m_Localized: SupportArena
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724918
+    m_Localized: Vortex Flame
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165376
+    m_Localized: Giant Rocket
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165378
+    m_Localized: Rocket Mode
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165380
+    m_Localized: Homing Missiles
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165382
+    m_Localized: Funnel Storm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165384
+    m_Localized: Blade of Exile
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165386
+    m_Localized: Valor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411584
+    m_Localized: Gunner
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411587
+    m_Localized: Hunter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411590
+    m_Localized: Riven
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411592
+    m_Localized: Runic Blade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628106657792
+    m_Localized: Arena 01
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628106657793
+    m_Localized: map preview
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098304
+    m_Localized: AbilityHaste
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098306
+    m_Localized: AreaSize
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098308
+    m_Localized: Armor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098310
+    m_Localized: CriticalChance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098312
+    m_Localized: Damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098314
+    m_Localized: Duration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098316
+    m_Localized: ExpBonus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098317
+    m_Localized: +10% EXP/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628299595776
+    m_Localized: Gain 25 Gold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761600
+    m_Localized: Heal 25% HP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761602
+    m_Localized: HealthRegen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761604
+    m_Localized: MaxHealth
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761606
+    m_Localized: MoveSpeed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761608
+    m_Localized: PickupRadius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761610
+    m_Localized: ProjectileCount
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950848
+    m_Localized: Wide Impact
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950850
+    m_Localized: Iron Skin
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950852
+    m_Localized: Attack Power
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950854
+    m_Localized: Critical Edge
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950856
+    m_Localized: Lingering Force
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950858
+    m_Localized: Fast Learner
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950860
+    m_Localized: Gold Finder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950862
+    m_Localized: Haste Speed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950864
+    m_Localized: Max Health
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950866
+    m_Localized: Magnet Boost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950868
+    m_Localized: Swift Boots
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950870
+    m_Localized: Extra Shot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950872
+    m_Localized: Regeneration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628484145152
+    m_Localized: Second Chance
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []
