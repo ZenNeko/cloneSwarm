@@ -25,6 +25,8 @@ namespace CloneSwarm.EditorTools
     {
         private const string ScenePath = "Assets/GameScenes/Proto_LevelUp.unity";
         private const string ThemePath = "Assets/ScriptableObjects/UI/P3RTheme.asset";
+        private const string UiAssetDir = "Assets/ScriptableObjects/UI";
+        private const string RadialPath = UiAssetDir + "/LevelUpWash_Radial.png";
         private const string ThemeDir  = "Assets/ScriptableObjects/UI";
         private const string FontPath  = "Assets/Prefab/Art Asset/Fnot/Sarabun/Sarabun-ExtraBold SDF.asset";
         // โปรเจกต์ไม่มีฟอนต์ mono จริง — ป้าย/ตัวเลขระบบใช้ SemiBold + letterSpacing แทน
@@ -74,6 +76,11 @@ namespace CloneSwarm.EditorTools
 
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
+            // โหลด asset **หลัง** NewScene เสมอ — NewScene ปลด asset ที่ไม่มีใครอ้างถึงทิ้ง
+            // ใน batchmode ตัวแปรที่โหลดไว้ก่อนจะกลายเป็น fake-null แล้วซีนออกมาไม่มีฟอนต์/สี
+            // โดยไม่มี error ให้เห็น (เคยกินเวลาสองวันมาแล้วในจอเมนูหลัก)
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
             var theme = LoadTheme();
             displayFont = theme != null && theme.font != null
                 ? theme.font
@@ -82,8 +89,6 @@ namespace CloneSwarm.EditorTools
 
             if (displayFont == null)
                 Debug.LogWarning($"[P3R LevelUp] หา font ไม่เจอที่ {FontPath} — ตัวหนังสือจะตกกลับไป TMP default");
-
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             BuildCamera();
             BuildEventSystem();
@@ -185,17 +190,84 @@ namespace CloneSwarm.EditorTools
             // ตัวเดียวในจอที่กินเมาส์ — กันคลิกทะลุไปโดน gameplay ข้างหลัง
             ink.raycastTarget = true;
 
-            // ก้อนน้ำเงินกลางจอแทนใจกลางของ radial-gradient
-            var wash = NewImage("Wash", root, new Color32(0x18, 0x24, 0xD8, 0x4D));
-            var wrt = wash.rectTransform;
-            wrt.anchorMin = wrt.anchorMax = new Vector2(0.5f, 0.55f);
-            wrt.pivot     = new Vector2(0.5f, 0.5f);
-            wrt.sizeDelta = new Vector2(RefW * 1.2f, RefH * 0.9f);
+            // radial-gradient ของจริง — อบเป็น sprite เพราะ uGUI วาดเกรเดียนต์เองไม่ได้
+            // อบในพิกัดกล่องแบบ normalize แล้วยืดเต็มจอ · ตรงกับที่ CSS เขียนวงรีเป็น % ของกล่อง
+            // (120% 90%) อยู่แล้ว การยืดไม่เท่ากันสองแกนจึงเป็นสิ่งที่ตั้งใจ ไม่ใช่ความเพี้ยน
+            var wash = NewImage("Wash", root, Color.white);
+            Stretch(wash.rectTransform);
+            wash.sprite = LoadOrCreateRadialSprite();
+            if (wash.sprite == null)
+            {
+                // ยังดีกว่าปล่อยขาวทั้งจอถ้าสร้าง sprite ไม่สำเร็จ
+                wash.color = new Color32(0x18, 0x24, 0xD8, 0x4D);
+                Debug.LogWarning("[P3R LevelUp] สร้าง sprite พื้นหลังไม่สำเร็จ — ใช้สีทึบแทน");
+            }
 
             // ที่สำหรับ sprite ลายเส้นทับพื้น 115° — ปิดไว้จนกว่าจะมีของจริง
             var lines = NewImage("Scanlines", root, new Color(1f, 1f, 1f, 0.05f));
             Stretch(lines.rectTransform);
             lines.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// อบ radial-gradient ตามที่แบบเขียนไว้เป็น PNG
+        /// `radial-gradient(120% 90% at 50% 45%, rgba(24,36,216,.72), rgba(10,14,30,.94) 62%, rgba(6,8,18,.98))`
+        /// คงค่า alpha ไว้ตามแบบ — จอนี้เปิดทับ gameplay ที่ยังเดินอยู่ (co-op) จึงต้องโปร่งจริง
+        /// </summary>
+        private static Sprite LoadOrCreateRadialSprite()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<Sprite>(RadialPath);
+            if (existing != null) return existing;
+
+            if (!AssetDatabase.IsValidFolder(UiAssetDir))
+                AssetDatabase.CreateFolder("Assets/ScriptableObjects", "UI");
+
+            const int n = 256;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+            var px  = new Color[n * n];
+
+            var c0 = new Color(24 / 255f, 36 / 255f, 216 / 255f, 0.72f);
+            var c1 = new Color(10 / 255f, 14 / 255f,  30 / 255f, 0.94f);
+            var c2 = new Color( 6 / 255f,  8 / 255f,  18 / 255f, 0.98f);
+
+            for (int y = 0; y < n; y++)
+            {
+                // v กลับแกน — Texture2D นับ y จากล่าง ส่วน CSS นับจากบน
+                float v = 1f - y / (float)(n - 1);
+                for (int x = 0; x < n; x++)
+                {
+                    float u  = x / (float)(n - 1);
+                    float dx = (u - 0.50f) / 1.20f;      // วงรี 120% ของความกว้าง
+                    float dy = (v - 0.45f) / 0.90f;      // 90% ของความสูง · ศูนย์กลางที่ 45%
+                    float t  = Mathf.Clamp01(Mathf.Sqrt(dx * dx + dy * dy) * 2f);
+
+                    px[y * n + x] = t <= 0.62f
+                        ? Color.Lerp(c0, c1, t / 0.62f)
+                        : Color.Lerp(c1, c2, (t - 0.62f) / 0.38f);
+                }
+            }
+
+            tex.SetPixels(px);
+            tex.Apply();
+            File.WriteAllBytes(RadialPath, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+
+            AssetDatabase.ImportAsset(RadialPath, ImportAssetOptions.ForceUpdate);
+            if (AssetImporter.GetAtPath(RadialPath) is TextureImporter imp)
+            {
+                imp.textureType         = TextureImporterType.Sprite;
+                imp.spriteImportMode    = SpriteImportMode.Single;
+                imp.alphaIsTransparency = true;
+                imp.mipmapEnabled       = false;
+                imp.wrapMode            = TextureWrapMode.Clamp;
+                imp.filterMode          = FilterMode.Bilinear;
+                // บีบอัดแล้วไล่เฉดจะเป็นแถบทันที · 256×256 เล็กพอที่จะไม่ต้องประหยัด
+                imp.textureCompression  = TextureImporterCompression.Uncompressed;
+                imp.maxTextureSize      = 256;
+                imp.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(RadialPath);
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -274,7 +346,8 @@ namespace CloneSwarm.EditorTools
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot     = new Vector2(0f, 1f);
             rt.sizeDelta = new Vector2(w, h);
-            rt.anchoredPosition = new Vector2(i * (w + gap), 0f);
+            // ใบที่แนะนำถูกยกขึ้น 22px ตามแบบ — เป็นสัญญาณลำดับชั้นที่อ่านได้เร็วกว่าป้ายอย่างเดียว
+            rt.anchoredPosition = new Vector2(i * (w + gap), recommended ? 22f : 0f);
 
             var card = rt.gameObject.AddComponent<UpgradeCardUI>();
 
@@ -394,6 +467,16 @@ namespace CloneSwarm.EditorTools
             rows.gameObject.SetActive(useStatRows);
             card.statRowsContainer = rows;
             card.statRowPrefab     = statRowTemplate;
+
+            // แถวสเตตตัวอย่าง — UpgradeCardUI.Populate() ล้าง container แล้วสร้างใหม่จาก
+            // GetStatChanges() ของการ์ดจริงตอนรัน ตัวอย่างจึงหายไปเองไม่ต้องตามลบ
+            // แบบระบุว่าโชว์เฉพาะสเตตที่เปลี่ยน ไม่ใช่ยกตารางทั้งชุดมา — ตัวอย่างจึงมีแค่ 2–3 แถว
+            if (useStatRows)
+            {
+                SpawnStatRow(rows, statRowTemplate, "DAMAGE",   "42",   "58");
+                SpawnStatRow(rows, statRowTemplate, "AREA",     "3.0",  "3.6");
+                SpawnStatRow(rows, statRowTemplate, "COOLDOWN", "1.4s", "1.1s");
+            }
 
             // แถว SYNERGY — ป้าย mono 15 + ช่อง 36×36 สองช่อง
             var synergy = NewRect("SynergyRow", bottom);
@@ -658,6 +741,22 @@ namespace CloneSwarm.EditorTools
             strip.passiveSlotArea = BuildStripRow(root, "Row_Passives", "PASSIVES", Green,
                                                   -(rowH + rowGap), rowH, padX, labelW, edgeW);
             strip.slotTemplate = BuildSlotTemplate(root);
+
+            // เติมของตัวอย่างให้เห็นในซีน — ตอนรัน BuildStripUI.RefreshFromLocalPlayer()
+            // ล้างแล้วสร้างใหม่จาก PlayerWeaponManager จริง ตัวอย่างจึงไม่กลายเป็นของค้าง
+            // ช่องที่เหลือ SetEntries เติมเป็นช่องว่างกรอบเส้นประให้เอง
+            strip.SetEntries(
+                new[]
+                {
+                    new BuildStripUI.Entry { abbrev = "BLD", level = 3, highlight = true },
+                    new BuildStripUI.Entry { abbrev = "ARC", level = 2 },
+                    new BuildStripUI.Entry { abbrev = "ORB", level = 1 },
+                },
+                new[]
+                {
+                    new BuildStripUI.Entry { abbrev = "ATK", level = 2 },
+                    new BuildStripUI.Entry { abbrev = "HST", level = 1 },
+                });
         }
 
         private static RectTransform BuildStripRow(RectTransform parent, string name, string label,
@@ -697,6 +796,15 @@ namespace CloneSwarm.EditorTools
             area.sizeDelta = new Vector2(420f, 62f);
             area.anchoredPosition = new Vector2(edgeW + padX + labelW, 0f);
             return area;
+        }
+
+        private static void SpawnStatRow(RectTransform parent, UpgradeStatRowUI template,
+                                         string statName, string before, string after)
+        {
+            if (template == null) return;
+            var row = Object.Instantiate(template, parent);
+            row.gameObject.SetActive(true);
+            row.SetData(statName, before, after);
         }
 
         private static BuildStripSlot BuildSlotTemplate(RectTransform parent)
