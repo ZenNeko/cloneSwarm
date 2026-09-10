@@ -22,7 +22,7 @@ namespace CloneSwarm.UI.P3R
     /// เช็คทุกเฟรมด้วยการเทียบจำนวน ซึ่งถูกกว่าการ subscribe อะไรที่ TMP_Dropdown ไม่มีให้
     /// </summary>
     [DisallowMultipleComponent]
-    public class P3RSegmentedControl : MonoBehaviour
+    public class P3RSegmentedControl : MonoBehaviour, IP3RSegmentOwner
     {
         [Header("── Source ─────────────────────────────")]
         [Tooltip("dropdown ตัวจริงที่ถือตรรกะไว้ — ตัวนี้แค่ขับมัน")]

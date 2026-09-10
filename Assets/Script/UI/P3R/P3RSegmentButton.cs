@@ -6,6 +6,16 @@ using UnityEngine.UI;
 namespace CloneSwarm.UI.P3R
 {
     /// <summary>
+    /// เจ้าของชุดปุ่มแบ่งช่อง — มีสองแบบที่ขับคนละแหล่งข้อมูล
+    /// <see cref="P3RSegmentedControl"/> ขับ TMP_Dropdown · <see cref="P3RDifficultySelector"/> ขับ enum
+    /// ปุ่มไม่ต้องรู้ว่าใครเป็นเจ้าของ รู้แค่ว่าจะบอกใครตอนถูกกด
+    /// </summary>
+    public interface IP3RSegmentOwner
+    {
+        void Choose(int index);
+    }
+
+    /// <summary>
     /// ปุ่มหนึ่งช่องในชุดปุ่มแบ่งช่อง — พื้นเอียง ตัวหนังสือไม่เอียง ตามภาษาภาพ P3R
     ///
     /// จงใจ **ไม่ใช้ <c>UnityEngine.UI.Button</c>** ด้วยเหตุผลเดียวกับ <see cref="P3RMenuItem"/>
@@ -32,11 +42,11 @@ namespace CloneSwarm.UI.P3R
         /// <summary>ช่องที่เท่าไรในชุด — ตรงกับ index ของ TMP_Dropdown.options</summary>
         public int Index { get; private set; }
 
-        private P3RSegmentedControl owner;
+        private IP3RSegmentOwner owner;
         private bool selected;
         private bool hovered;
 
-        public void Init(P3RSegmentedControl control, int index, string text, float tracking)
+        public void Init(IP3RSegmentOwner control, int index, string text, float tracking)
         {
             owner = control;
             Index = index;
