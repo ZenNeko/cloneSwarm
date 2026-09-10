@@ -27,13 +27,22 @@ namespace CloneSwarm.EditorTools
     {
         private const int W = 1920, H = 1080;
 
-        private static readonly string[] Scenes =
+        /// <summary>
+        /// หาซีนต้นแบบเองจากชื่อ — เดิมเป็นลิสต์ที่พิมพ์มือ แล้วจอใหม่ก็เงียบหายไปจากชุดภาพ
+        /// โดยไม่มีอะไรฟ้อง เพราะ "ไม่มีในลิสต์" กับ "เรนเดอร์แล้วไม่มีอะไร" หน้าตาเหมือนกัน
+        /// </summary>
+        private static string[] FindProtoScenes()
         {
-            "Assets/GameScenes/Proto_P3RMenu.unity",
-            "Assets/GameScenes/Proto_LevelUp.unity",
-            "Assets/GameScenes/Proto_Pause.unity",
-            "Assets/GameScenes/Proto_WinLose.unity",
-        };
+            var found = new List<string>();
+            foreach (var guid in AssetDatabase.FindAssets("t:Scene Proto_", new[] { "Assets/GameScenes" }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                // FindAssets จับชื่อแบบ fuzzy — คัดเฉพาะที่ขึ้นต้นด้วย Proto_ จริงๆ
+                if (Path.GetFileName(path).StartsWith("Proto_")) found.Add(path);
+            }
+            found.Sort(System.StringComparer.Ordinal);
+            return found.ToArray();
+        }
 
         [MenuItem("Tools/Clone Swarm/Capture P3R Proto Screens")]
         public static void CaptureAll()
@@ -41,7 +50,11 @@ namespace CloneSwarm.EditorTools
             string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
             Directory.CreateDirectory(outDir);
 
-            foreach (var scenePath in Scenes)
+            var scenes = FindProtoScenes();
+            if (scenes.Length == 0)
+                Debug.LogWarning("[Shot] ไม่พบซีน Proto_* ใน Assets/GameScenes เลย");
+
+            foreach (var scenePath in scenes)
             {
                 if (!File.Exists(scenePath))
                 {
