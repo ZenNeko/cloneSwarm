@@ -1,11 +1,17 @@
 using System.Collections.Generic;
+using CloneSwarm.UI.P3R;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
 /// ควบคุม Panel แสดง upgrade cards เมื่อ Level Up
-/// - แสดง countdown timer (รับ event จาก SharedExperienceManager.OnTimerTick)
-/// - แสดงจำนวนคนที่เลือกแล้ว "X / Y ผู้เล่น"
+/// - แสดง countdown timer + แถบเติมเวลา (รับ event จาก SharedExperienceManager.OnTimerTick)
+/// - แสดงสถานะรอเพื่อนเป็น dog-tag (LevelUpDogTagUI) + ข้อความ "X / Y ผู้เล่น"
+/// - แสดงแถบ build (BuildStripUI) ให้ตัดสินใจได้โดยไม่ต้องจำว่าถืออะไรอยู่
+/// - รับปุ่ม 1 / 2 / 3 เลือกการ์ด (Input System — ProjectSettings activeInputHandler = 1)
 /// - ไม่ยุ่งกับ Time.timeScale — SharedExperienceManager จัดการแทน
 /// </summary>
 public class LevelUpUI : MonoBehaviour
@@ -23,23 +29,64 @@ public class LevelUpUI : MonoBehaviour
     public GameObject cardsContainer;
     public TextMeshProUGUI levelLabel;      // "LEVEL UP!  →  Level 5"
     [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่")]
-    public List<UpgradeCardUI> cardSlots;
+    public List<UpgradeCardUI> cardSlots = new();
+
+    [Tooltip("รูปแบบหัวเรื่องเมื่อรู้เลเวลใหม่ · {0} = เลเวล · ใส่ \\n ขึ้นบรรทัดได้\n" +
+             "ซีน P3R ตั้งเป็น 'LEVEL\\nUP!' สองบรรทัดตามแบบ (เลเวลไม่อยู่ในหัวเรื่องแล้ว)")]
+    public string titleFormat        = "LEVEL UP!   Level {0}";
+    [Tooltip("รูปแบบหัวเรื่องเมื่อไม่รู้เลเวล (Orb phase)")]
+    public string titleFormatNoLevel = "LEVEL UP!";
 
     [Header("Timer")]
     [Tooltip("แสดง countdown  เช่น '28'  — ซ่อนได้ถ้าไม่ต้องการ")]
     public TextMeshProUGUI timerLabel;
+    [Tooltip("แถบเติมเวลา 180×6 ใต้ตัวเลข — ต้องเป็น Image type = Filled, Horizontal, Origin Left")]
+    public Image timerFillBar;
     [Tooltip("สีปกติของตัวเลข timer")]
     public Color timerNormalColor  = Color.white;
     [Tooltip("สีเมื่อเหลือเวลาน้อย (< urgentThreshold วินาที)")]
     public Color timerUrgentColor  = new Color(1f, 0.3f, 0.2f);   // แดง
+    [Tooltip("สีแถบเติมเวลาปกติ — Gold ตาม design token")]
+    public Color timerFillColor    = new Color32(0xFF, 0xE6, 0x33, 0xFF);
     [Tooltip("วินาทีที่เปลี่ยนเป็นสีด่วน")]
     public float urgentThreshold   = 10f;
 
     [Header("Waiting Status")]
-    [Tooltip("แสดงจำนวนคนที่เลือกแล้ว  เช่น 'รอผู้เล่น: 1 / 2'")]
+    [Tooltip("แสดงจำนวนคนที่เลือกแล้ว  เช่น 'รอผู้เล่น: 1 / 2' — ยังใช้ได้ ถ้าไม่ได้ใช้ dog-tag")]
     public TextMeshProUGUI waitingLabel;
     [Tooltip("แถบเล็กมุมจอตอนรอเพื่อน — ปล่อยว่างได้")]
     public GameObject waitingStrip;
+    [Tooltip("dog-tag รายคน — ตัวที่แบบใหม่ใช้แทน waitingLabel")]
+    public LevelUpDogTagUI dogTags;
+
+    [Header("Build Strip")]
+    [Tooltip("แถบ WEAPONS / PASSIVES มุมขวาล่าง — รีเฟรชตอนเปิดจอ")]
+    public BuildStripUI buildStrip;
+
+    [Header("Key Hint")]
+    [Tooltip("คำใบ้ปุ่มข้างสถานะรอเพื่อน — ซ่อนพร้อมการ์ดหลังเลือกแล้ว")]
+    public TextMeshProUGUI hintLabel;
+    public string hintText = "1 · 2 · 3 หรือคลิกเพื่อเลือก";
+
+    [Header("Card Glow")]
+    [Tooltip("design handoff §Screen 1: วงเรืองแสงต้องเป็นสถานะ hover เท่านั้น\n" +
+             "ส่วน 'แนะนำ' เหลือแค่ป้าย — ไม่งั้นแยกไม่ออกว่าใบไหนคือใบที่กำลังชี้อยู่\n" +
+             "UpgradeCardUI เปิด glow ตาม isRecommended เอง ที่นี่จึงต้องปิดทับหลัง Populate")]
+    public bool glowOnlyOnHover = true;
+
+    // ── runtime ───────────────────────────────────────────────────────────
+    /// <summary>การ์ดที่กำลังโชว์อยู่จริง เรียงตามที่ตาเห็น — ปุ่ม 1/2/3 อ้างอิงลิสต์นี้</summary>
+    private readonly List<UpgradeCardUI> visibleSlots = new();
+    private bool  cardsInteractable;
+
+    /// <summary>
+    /// เวลาทั้งหมดของรอบนี้ ใช้หารเพื่อหาสัดส่วนของแถบ
+    /// <c>OnTimerTick</c> ส่งมาแค่เวลาที่เหลือ ไม่ได้ส่งเวลารวม —
+    /// ค่าจริงอยู่ที่ <c>SharedExperienceManager.upgradePickSeconds</c> ซึ่งเป็น public field
+    /// ทั้ง UpgradeTimerCoroutine และ OrbTimerCoroutine เริ่มนับจากค่านั้นทั้งคู่ จึงเชื่อถือได้
+    /// ถ้าหา Instance ไม่เจอ (เช่นเปิดซีนต้นแบบเดี่ยวๆ) จะตกกลับไปจำ tick แรกที่ได้รับเป็น 100%
+    /// </summary>
+    private float timerTotal;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -81,29 +128,49 @@ public class LevelUpUI : MonoBehaviour
 
         // 2. Header
         if (levelLabel)
-            levelLabel.text = level > 0 ? $"LEVEL UP!   Level {level}" : "LEVEL UP!";
+            levelLabel.text = level > 0
+                ? string.Format(titleFormat, level)
+                : titleFormatNoLevel;
 
         // 3. หา card slots จาก cardsContainer โดยตรง
         UpgradeCardUI[] slots = cardsContainer
             ? cardsContainer.GetComponentsInChildren<UpgradeCardUI>(true)
             : cardSlots.ToArray();
 
+        visibleSlots.Clear();
         for (int i = 0; i < slots.Length; i++)
         {
             if (i < cards.Count)
             {
                 slots[i].gameObject.SetActive(true);
                 slots[i].Populate(cards[i], onPicked);
+                ApplyGlowPolicy(slots[i]);
+                visibleSlots.Add(slots[i]);
             }
             else
             {
                 slots[i].gameObject.SetActive(false);
             }
         }
+        cardsInteractable = visibleSlots.Count > 0;
 
         // 4. Reset timer / waiting
+        ResetTimerTotal();
         if (timerLabel)  { timerLabel.color = timerNormalColor; timerLabel.text = ""; }
+        if (timerFillBar) { timerFillBar.color = timerFillColor; timerFillBar.fillAmount = 1f; }
         if (waitingLabel)  waitingLabel.text = "";
+        if (dogTags)       dogTags.ResetAll();
+
+        // 5. คำใบ้ปุ่ม — จอนี้มีเวลาจำกัด ถ้าไม่บอกผู้เล่นจะไม่รู้ว่ากดเลขได้
+        if (hintLabel)
+        {
+            hintLabel.text = hintText;
+            hintLabel.gameObject.SetActive(true);
+        }
+
+        // 6. แถบ build — ดึงของที่ถืออยู่ ณ วินาทีนี้ (ก่อนการ์ดใบใหม่จะถูก apply)
+        //    ล้มเหลวเงียบๆ ได้ ถ้ายังไม่มี player ในซีน แถบจะคงค่าเดิมไว้
+        if (buildStrip) buildStrip.RefreshFromLocalPlayer();
     }
 
     /// <summary>
@@ -112,33 +179,142 @@ public class LevelUpUI : MonoBehaviour
     /// </summary>
     public void HideCards()
     {
+        cardsInteractable = false;
+        visibleSlots.Clear();
+
         if (cardsSection) cardsSection.SetActive(false);
         if (waitingStrip) waitingStrip.SetActive(true);
+        if (hintLabel)    hintLabel.gameObject.SetActive(false);
+
+        // เลือกไปแล้ว = ของในมือเปลี่ยนแล้ว · รีเฟรชเพื่อให้แถบตรงกับความจริงระหว่างรอเพื่อน
+        if (buildStrip) buildStrip.RefreshFromLocalPlayer();
     }
 
     /// <summary>ปิด Panel ทั้งหมด — เรียกเมื่อทุกคนเลือกเสร็จ (OnUpgradePhaseEnd)</summary>
     public void Hide()
     {
+        cardsInteractable = false;
+        visibleSlots.Clear();
+
         if (waitingStrip) waitingStrip.SetActive(false);
         if (panelRoot)    panelRoot.SetActive(false);
     }
 
+    // ── Keyboard 1 / 2 / 3 ────────────────────────────────────────────────
+    void Update()
+    {
+        if (!cardsInteractable) return;
+        if (cardsSection != null && !cardsSection.activeInHierarchy) return;
+
+        // Keyboard.current เป็น null ได้จริงบนเครื่องที่ไม่มีคีย์บอร์ด (แพด/มือถือ) — ต้องเช็ค
+        var kb = Keyboard.current;
+        if (kb == null) return;
+
+        if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame) PickByIndex(0);
+        else if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame) PickByIndex(1);
+        else if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame) PickByIndex(2);
+    }
+
+    /// <summary>
+    /// เลือกการ์ดใบที่ index (0-based) เหมือนคลิกเอง
+    /// ยิงผ่าน <c>selectButton.onClick</c> เพราะ callback ตัวจริงเป็น private ใน UpgradeCardUI
+    /// — ทางนี้ทำให้คลิกกับกดปุ่มเดินเส้นทางเดียวกันเป๊ะ ไม่มีโอกาสแตกต่างกัน
+    /// </summary>
+    public void PickByIndex(int index)
+    {
+        if (!cardsInteractable) return;
+        if (index < 0 || index >= visibleSlots.Count) return;
+
+        var card = visibleSlots[index];
+        if (card == null) return;
+
+        if (card.selectButton != null)
+        {
+            if (!card.selectButton.interactable) return;
+            card.selectButton.onClick.Invoke();
+        }
+        else
+        {
+            // ไม่มีปุ่ม → ยิง pointer click ให้ handler ตัวไหนก็ตามที่ผูกอยู่บนการ์ด
+            ExecuteEvents.Execute(card.gameObject, new PointerEventData(EventSystem.current),
+                                  ExecuteEvents.pointerClickHandler);
+        }
+    }
+
+    // ── Card Glow ─────────────────────────────────────────────────────────
+    /// <summary>
+    /// บังคับให้วงเรืองแสงเป็นของ hover อย่างเดียวตามที่ design handoff สั่ง
+    /// ป้าย "แนะนำ" (recommendedRibbon) ไม่ถูกแตะ — ยังทำหน้าที่บอกใบที่แนะนำเหมือนเดิม
+    /// </summary>
+    void ApplyGlowPolicy(UpgradeCardUI card)
+    {
+        if (!glowOnlyOnHover || card == null || card.recommendedGlowOutline == null) return;
+
+        card.recommendedGlowOutline.SetActive(false);
+
+        var hover = card.GetComponent<UpgradeCardGlowOnHover>();
+        if (hover == null) hover = card.gameObject.AddComponent<UpgradeCardGlowOnHover>();
+        hover.glow = card.recommendedGlowOutline;
+    }
+
     // ── Timer ─────────────────────────────────────────────────────────────
+    void ResetTimerTotal()
+    {
+        float configured = SharedExperienceManager.Instance != null
+            ? SharedExperienceManager.Instance.upgradePickSeconds
+            : 0f;
+        // 0 = ยังไม่รู้ → UpdateTimer จะจำ tick แรกแทน
+        timerTotal = configured > 0f ? configured : 0f;
+    }
+
     void UpdateTimer(float remaining)
     {
-        if (timerLabel == null) return;
+        if (timerTotal <= 0f) timerTotal = Mathf.Max(remaining, 0.0001f);
 
-        int secs = Mathf.CeilToInt(remaining);
-        timerLabel.text  = secs > 0 ? secs.ToString() : "0";
-        timerLabel.color = remaining <= urgentThreshold ? timerUrgentColor : timerNormalColor;
+        if (timerLabel != null)
+        {
+            int secs = Mathf.CeilToInt(remaining);
+            timerLabel.text  = secs > 0 ? secs.ToString() : "0";
+            timerLabel.color = remaining <= urgentThreshold ? timerUrgentColor : timerNormalColor;
+        }
+
+        if (timerFillBar != null)
+        {
+            timerFillBar.fillAmount = Mathf.Clamp01(remaining / timerTotal);
+            // แถบเปลี่ยนสีตามตัวเลขด้วย — ถ้าเหลือแถบทองบางๆ บนตัวเลขแดง จะอ่านเป็นคนละเรื่อง
+            timerFillBar.color = remaining <= urgentThreshold ? timerUrgentColor : timerFillColor;
+        }
     }
 
     // ── Waiting Count ─────────────────────────────────────────────────────
     void UpdateWaiting(int picked, int total)
     {
+        if (dogTags != null) dogTags.SetCounts(picked, total);
+
         if (waitingLabel == null) return;
         waitingLabel.text = total > 1
             ? $"รอผู้เล่น: {picked} / {total}"
             : "";    // Solo ไม่ต้องแสดง
     }
+}
+
+/// <summary>
+/// เปิด/ปิดวงเรืองแสงของการ์ดตามการชี้เมาส์
+///
+/// อยู่ไฟล์เดียวกับ LevelUpUI เพราะเป็นส่วนหนึ่งของนโยบาย "glow = hover เท่านั้น"
+/// ที่ LevelUpUI เป็นคนบังคับ · ถูกใส่ให้อัตโนมัติตอน Populate ไม่ต้องแตะการ์ดใน Inspector
+///
+/// **ทางที่ถูกจริง** คือให้ <c>UpgradeCardUI</c> เลิกผูก recommendedGlowOutline กับ isRecommended
+/// แล้วเปิด glow จากสถานะ hover/selected ของตัวเอง — แต่ไฟล์นั้นอยู่นอกขอบเขตงานนี้
+/// ตัวนี้จึงเป็นการแก้จากข้างนอก ให้ผลตรงตามแบบไปก่อน
+/// </summary>
+[DisallowMultipleComponent]
+public class UpgradeCardGlowOnHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+{
+    [HideInInspector] public GameObject glow;
+
+    public void OnPointerEnter(PointerEventData e) { if (glow) glow.SetActive(true); }
+    public void OnPointerExit (PointerEventData e) { if (glow) glow.SetActive(false); }
+
+    void OnDisable() { if (glow) glow.SetActive(false); }
 }
