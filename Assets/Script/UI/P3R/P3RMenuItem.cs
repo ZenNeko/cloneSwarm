@@ -125,7 +125,7 @@ namespace CloneSwarm.UI.P3R
                 if (!string.IsNullOrEmpty(labelText)) label.text = labelText;
                 if (theme.font != null) label.font = theme.font;
                 label.fontSize         = theme.fontSize;
-                label.characterSpacing = theme.characterSpacing;
+                P3RText.SetTracking(label, theme.characterSpacing);
                 label.alignment        = right ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
                 label.textWrappingMode = TextWrappingModes.NoWrap;
                 label.raycastTarget    = false;

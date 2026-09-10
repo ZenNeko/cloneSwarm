@@ -244,7 +244,7 @@ namespace CloneSwarm.EditorTools
             t.font        = displayFont;
             t.fontSize    = 150f;
             t.lineSpacing = -18f;                 // ≈ line-height 0.84
-            t.characterSpacing = -3.5f;           // letter-spacing -0.035em
+            P3RText.SetTracking(t, -3.5f);           // letter-spacing -0.035em
             t.fontStyle   = FontStyles.Italic;
             t.color       = Ink;
             t.outlineColor = Gold;
@@ -347,7 +347,7 @@ namespace CloneSwarm.EditorTools
             nameText.font      = displayFont;
             nameText.fontSize  = 40f;
             nameText.lineSpacing = -12f;
-            nameText.characterSpacing = -3f;
+            P3RText.SetTracking(nameText, -3f);
             nameText.color     = Color.white;
             nameText.alignment = TextAlignmentOptions.TopLeft;
             nameText.textWrappingMode = TextWrappingModes.Normal;
@@ -523,7 +523,7 @@ namespace CloneSwarm.EditorTools
             var num = NewText("Number", root, "28");
             num.font      = displayFont;
             num.fontSize  = 122f;
-            num.characterSpacing = -4f;
+            P3RText.SetTracking(num, -4f);
             num.color     = Color.white;
             num.alignment = TextAlignmentOptions.TopRight;
             var nrt = num.rectTransform;
@@ -783,7 +783,7 @@ namespace CloneSwarm.EditorTools
             var t = NewText(name, parent, text);
             if (monoFont != null) t.font = monoFont;
             t.fontSize         = size;
-            t.characterSpacing = letterSpacingEm * 100f;
+            P3RText.SetTracking(t, letterSpacingEm * 100f);
             return t;
         }
 

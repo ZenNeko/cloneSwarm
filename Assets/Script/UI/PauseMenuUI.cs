@@ -351,12 +351,34 @@ public class PauseMenuUI : MonoBehaviour
     //             เลเวลจึง **เท่ากันทุกคนโดยดีไซน์** ไม่ใช่ค่าต่อคน (แบบเขียน Lv 14 ต่อแถว
     //             ซึ่งอ่านได้ทั้งสองแบบ — ที่นี่เลือกตามความจริงของระบบ)
     // ═══════════════════════════════════════════════════════════════════
+    bool rowsAdopted;
+
+    /// <summary>
+    /// รับแถวที่มีอยู่แล้วใน container เข้าพูล — Editor builder วางแถวตัวอย่างไว้ให้ดูดีไซน์
+    /// ถ้าไม่รับเข้ามา มันจะกลายเป็นของค้างที่ไม่มีใครอัปเดต แล้วซ้อนทับแถวจริงตอนรัน
+    /// เรียกครั้งเดียวพอ — หลังจากนี้ RefreshParty เป็นเจ้าของพูลเต็มตัว
+    /// </summary>
+    void AdoptExistingRows()
+    {
+        if (rowsAdopted) return;
+        rowsAdopted = true;
+        if (partyRowContainer == null) return;
+
+        foreach (Transform child in partyRowContainer)
+        {
+            var row = child.GetComponent<PausePartyRowUI>();
+            if (row == null || row == partyRowTemplate) continue;
+            if (!partyRows.Contains(row)) partyRows.Add(row);
+        }
+    }
+
     void RefreshParty()
     {
         UpdateCoopBadge();
 
         if (partyRowContainer == null || partyRowTemplate == null) return;
 
+        AdoptExistingRows();
         CollectPlayers();
 
         // ให้มีแถวพอ — โคลนจากต้นแบบในซีน (ไม่ใช้ prefab เพราะแถวนี้เป็นของจอนี้จอเดียว

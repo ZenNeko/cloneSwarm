@@ -199,7 +199,7 @@ namespace CloneSwarm.EditorTools
 
             t.fontSize        = RowNameSize;
             t.horizontalScale = 1f;    // แถวเมนูไม่บีบ — บีบเฉพาะหัวเรื่อง PAUSED (scaleX .84)
-            t.characterSpacing = -3.5f; // = letter-spacing -0.035em ตามหน่วยที่ P3RTheme ใช้อยู่
+            t.characterSpacing = -3.5f; // ค่าใน P3RTheme ไม่ใช่ TMP — P3RMenuItem เอาไปกรองไทยเองตอน Apply
             t.rowPitch        = RowHeight;
 
             t.barHeight       = BarHeight;
@@ -340,7 +340,7 @@ namespace CloneSwarm.EditorTools
             SetFont(title, theme.font);
             title.fontSize         = TitleSize;
             title.lineSpacing      = -10f;    // = line-height 0.9 โดยประมาณของ TMP
-            title.characterSpacing = -4f;
+            P3RText.SetTracking(title, -4f);
             title.color            = Color.white;
             title.alignment        = TextAlignmentOptions.TopLeft;
             var trt = title.rectTransform;
@@ -354,7 +354,7 @@ namespace CloneSwarm.EditorTools
             var hint = NewText("TitleHint", panel, "ESC เพื่อกลับเข้าเกม");
             SetFont(hint, mono);
             hint.fontSize         = 17f;
-            hint.characterSpacing = 28f;   // = .28em
+            P3RText.SetTracking(hint, 28f);   // = .28em
             hint.color            = new Color(1f, 1f, 1f, 0.55f);
             hint.alignment        = TextAlignmentOptions.TopLeft;
             var hrt = hint.rectTransform;
@@ -416,7 +416,7 @@ namespace CloneSwarm.EditorTools
             var order = NewText("Order", rt, data.order);
             SetFont(order, mono);
             order.fontSize         = RowOrderSize;
-            order.characterSpacing = 12f;
+            P3RText.SetTracking(order, 12f);
             order.color            = new Color(1f, 1f, 1f, 0.55f);
             order.alignment        = TextAlignmentOptions.MidlineLeft;
             var ort = order.rectTransform;
@@ -463,6 +463,36 @@ namespace CloneSwarm.EditorTools
             ui.partyRowHeight    = PartyRowH;
             ui.partyRowSpacing   = PartyGap;
             ui.partyRowTemplate  = BuildPartyRowTemplate(col, theme, mono);
+
+            // แถวตัวอย่างสำหรับดูใน Editor — ต้นแบบถูกปิดไว้ ซีนจึงว่างเปล่าจนกว่าจะกด Play
+            // ซึ่งทำให้รีวิวดีไซน์ไม่ได้เลย · ตอนรัน PauseMenuUI.AdoptExistingRows()
+            // รับแถวพวกนี้เข้าพูลแล้วเขียนทับด้วยข้อมูลจริง จึงไม่กลายเป็นของค้าง
+            SpawnSampleRow(col, ui.partyRowTemplate, 0, "Riven",  "P1 · HOST", true,  14, 182f, 220f);
+            SpawnSampleRow(col, ui.partyRowTemplate, 1, "Gunner", "P2",        false, 14,  76f, 200f);
+
+            // container pivot อยู่ล่าง สูง 0 ตอนสร้าง → แถวที่เกาะขอบบนจะงอก **ลงล่าง** ไปทับป้าย CO-OP
+            // ต้องตั้งความสูงด้วยสูตรเดียวกับ PauseMenuUI.RefreshParty() แถวถึงจะงอกขึ้นบนอย่างที่ตั้งใจ
+            const int sampleCount = 2;
+            col.sizeDelta = new Vector2(PartyWidth,
+                                        sampleCount * PartyRowH + (sampleCount - 1) * PartyGap);
+        }
+
+        private static void SpawnSampleRow(RectTransform parent, PausePartyRowUI template, int index,
+                                           string name, string sub, bool highlight,
+                                           int level, float hp, float maxHp)
+        {
+            if (template == null) return;
+            var row = Object.Instantiate(template, parent);
+            row.name = $"PartyRow_{index}";
+            row.gameObject.SetActive(true);
+
+            var rt = (RectTransform)row.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot     = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(0f, -index * (PartyRowH + PartyGap));
+
+            row.SetIdentity(name, sub, null, highlight);
+            row.SetVitals(level, hp, maxHp, isDead: false);
         }
 
         /// <summary>
@@ -514,7 +544,7 @@ namespace CloneSwarm.EditorTools
             var nameText = NewText("Name", rt, "Gunner");
             SetFont(nameText, theme.font);
             nameText.fontSize  = 27f;
-            nameText.characterSpacing = -2f;
+            P3RText.SetTracking(nameText, -2f);
             nameText.color     = Color.white;
             nameText.alignment = TextAlignmentOptions.MidlineLeft;
             PlaceLeft(nameText.rectTransform, nameX, NameBlockW, 34f, 13f);
@@ -523,7 +553,7 @@ namespace CloneSwarm.EditorTools
             var subText = NewText("Sub", rt, "P1 · HOST");
             SetFont(subText, mono);
             subText.fontSize  = 15f;
-            subText.characterSpacing = 16f;   // = .16em
+            P3RText.SetTracking(subText, 16f);   // = .16em
             subText.color     = new Color(1f, 1f, 1f, 0.55f);
             subText.alignment = TextAlignmentOptions.MidlineLeft;
             PlaceLeft(subText.rectTransform, nameX, NameBlockW, 22f, -14f);
@@ -536,7 +566,7 @@ namespace CloneSwarm.EditorTools
             var levelText = NewText("Level", rt, "Lv 14");
             SetFont(levelText, mono);
             levelText.fontSize  = 15f;
-            levelText.characterSpacing = 10f;
+            P3RText.SetTracking(levelText, 10f);
             levelText.color     = new Color(1f, 1f, 1f, 0.5f);
             levelText.alignment = TextAlignmentOptions.MidlineLeft;
             PlaceLeft(levelText.rectTransform, vitalsX, vitalsW * 0.5f, 24f, 12f);
@@ -545,7 +575,7 @@ namespace CloneSwarm.EditorTools
             var hpText = NewText("Hp", rt, "182 / 220");
             SetFont(hpText, mono);
             hpText.fontSize  = 18f;
-            hpText.characterSpacing = 8f;
+            P3RText.SetTracking(hpText, 8f);
             hpText.color     = new Color(1f, 1f, 1f, 0.75f);
             hpText.alignment = TextAlignmentOptions.MidlineRight;
             PlaceLeft(hpText.rectTransform, vitalsX + vitalsW * 0.5f, vitalsW * 0.5f, 24f, 12f);
@@ -613,7 +643,7 @@ namespace CloneSwarm.EditorTools
             var tag = NewText("Tag", rt, "CO-OP");
             SetFont(tag, mono);
             tag.fontSize         = 15f;
-            tag.characterSpacing = 20f;   // = .2em
+            P3RText.SetTracking(tag, 20f);   // = .2em
             tag.color            = new Color32(0xFF, 0x6B, 0x6B, 0xFF);
             tag.alignment        = TextAlignmentOptions.TopLeft;
             AddLayoutHeight(tag.gameObject, 20f);
@@ -654,7 +684,7 @@ namespace CloneSwarm.EditorTools
             var header = NewText("Header", rt, "ตั้งค่าเสียง");
             SetFont(header, mono);
             header.fontSize         = 15f;
-            header.characterSpacing = 24f;   // = .24em
+            P3RText.SetTracking(header, 24f);   // = .24em
             header.color            = new Color(1f, 1f, 1f, 0.6f);
             header.alignment        = TextAlignmentOptions.TopLeft;
             var hrt = header.rectTransform;
@@ -685,7 +715,7 @@ namespace CloneSwarm.EditorTools
             var label = NewText($"Label_{caption}", parent, caption);
             SetFont(label, mono);
             label.fontSize         = 15f;
-            label.characterSpacing = 20f;
+            P3RText.SetTracking(label, 20f);
             label.color            = new Color(1f, 1f, 1f, 0.7f);
             label.alignment        = TextAlignmentOptions.MidlineLeft;
             PlaceTopLeft(label.rectTransform, 30f, y, 150f, 40f);

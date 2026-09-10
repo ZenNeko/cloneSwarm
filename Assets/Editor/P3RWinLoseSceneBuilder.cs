@@ -185,7 +185,7 @@ namespace CloneSwarm.EditorTools
             y += 34f;
 
             var result = NewText("ResultLabel", col, "VICTORY", 200f, TextAlignmentOptions.TopLeft);
-            result.characterSpacing = -5.5f;                       // letter-spacing:-0.055em
+            P3RText.SetTracking(result, -5.5f);                       // letter-spacing:-0.055em
             result.lineSpacing = -18f;                             // line-height .82
             result.rectTransform.localScale = new Vector3(0.82f, 1f, 1f);
             result.rectTransform.pivot = new Vector2(0f, 1f);      // ย่อ scaleX แล้วขอบซ้ายต้องไม่ขยับ
@@ -328,12 +328,12 @@ namespace CloneSwarm.EditorTools
             bg.raycastTarget = true;
             bg.gameObject.AddComponent<UIShear>().angleDegrees = 9f;   // CSS skewX(-9deg)
 
-            if (!primary)
-            {
-                var outline = bg.gameObject.AddComponent<Outline>();
-                outline.effectColor    = new Color(1f, 1f, 1f, 0.3f);
-                outline.effectDistance = new Vector2(2f, 2f);
-            }
+            // กรอบ 2px ของปุ่มรอง — **ห้ามใช้ UnityEngine.UI.Outline**
+            // Outline ทำงานโดยก๊อป mesh ของ graphic ไปวาดซ้ำแบบเลื่อนตำแหน่ง
+            // พื้นปุ่มรองเป็น alpha 0 เงาที่ก๊อปไปจึงโปร่งใสตาม = มองไม่เห็นอะไรเลย
+            // ต้องวาดเป็นแถบสี่ด้านจริง และทั้งสี่ต้องเฉือนรอบจุดเดียวกัน (pivotOnParent)
+            // ไม่งั้นแถบบนกับล่างจะเลื่อนคนละทางแล้วกรอบแตกออกจากกัน
+            if (!primary) BuildSkewedBorder(rt, new Color(1f, 1f, 1f, 0.3f), 2f, 9f);
 
             var txt = NewText("Label", rt, label, 34f, TextAlignmentOptions.Midline);
             Stretch(txt.rectTransform);
@@ -343,6 +343,34 @@ namespace CloneSwarm.EditorTools
             // ไม่ให้โฟกัสค้าง — บั๊กเดิมที่ handoff-ui-2026-08-22 §7 บันทึกไว้
             var nav = btn.navigation; nav.mode = Navigation.Mode.None; btn.navigation = nav;
             return btn;
+        }
+
+        /// <summary>
+        /// กรอบเอียงที่ประกอบจากแถบสี่ด้าน · ทุกแถบเฉือนรอบกึ่งกลางพาเรนต์เดียวกัน
+        /// แถบบน/ล่างยืดเต็มความกว้าง แถบซ้าย/ขวาเว้นความหนาไว้ไม่ให้มุมทับกันสองชั้น
+        /// (ทับกันแล้วมุมจะเข้มกว่าด้านอื่นเพราะอัลฟาซ้อน)
+        /// </summary>
+        private static void BuildSkewedBorder(RectTransform target, Color color, float thickness, float shear)
+        {
+            Edge("Border_Top",    new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, thickness),  new Vector2(0f, 0f));
+            Edge("Border_Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, thickness),  new Vector2(0f, 0f));
+            Edge("Border_Left",   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(thickness, -thickness * 2f), new Vector2(0f, 0f));
+            Edge("Border_Right",  new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(thickness, -thickness * 2f), new Vector2(0f, 0f));
+
+            void Edge(string name, Vector2 aMin, Vector2 aMax, Vector2 size, Vector2 pos)
+            {
+                var img = NewImage(name, target, color);
+                var rt  = img.rectTransform;
+                rt.anchorMin = aMin;
+                rt.anchorMax = aMax;
+                rt.pivot     = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = size;
+                rt.anchoredPosition = pos;
+
+                var sh = img.gameObject.AddComponent<UIShear>();
+                sh.angleDegrees  = shear;
+                sh.pivotOnParent = true;
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -468,8 +496,8 @@ namespace CloneSwarm.EditorTools
         /// </summary>
         private static void Mono(TextMeshProUGUI t, float emSpacing)
         {
-            t.characterSpacing = emSpacing * 100f;   // TMP นับเป็น % ของ em
-            t.fontStyle |= FontStyles.UpperCase;
+            P3RText.SetTracking(t, emSpacing * 100f);   // TMP นับเป็น % ของ em
+            P3RText.TryUpperCase(t);
         }
 
         private static void Stretch(RectTransform rt)

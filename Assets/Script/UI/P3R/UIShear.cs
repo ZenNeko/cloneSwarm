@@ -30,6 +30,12 @@ namespace CloneSwarm.UI.P3R
                  "CSS skewY(-4.5deg) = angleDegrees 4.5 พร้อมติ๊กช่องนี้")]
         public bool shearVertical;
 
+        [Tooltip("เฉือนรอบจุดกึ่งกลางของ **พาเรนต์** แทนของตัวเอง\n\n" +
+                 "จำเป็นเมื่อประกอบรูปทรงเดียวจากหลายชิ้น เช่นกรอบปุ่มที่ทำจากแถบสี่ด้าน\n" +
+                 "ถ้าแต่ละชิ้นเฉือนรอบกึ่งกลางตัวเอง แถบบนกับแถบล่างจะเลื่อนไปคนละทาง\n" +
+                 "แล้วกรอบจะแตกออกจากกันแทนที่จะเอียงไปทั้งอัน")]
+        public bool pivotOnParent;
+
         public override void ModifyMesh(VertexHelper vh)
         {
             if (!IsActive() || vh.currentVertCount == 0) return;
@@ -40,6 +46,15 @@ namespace CloneSwarm.UI.P3R
             Rect  r      = ((RectTransform)transform).rect;
             float pivotX = r.center.x;
             float pivotY = r.center.y;
+
+            // ย้ายจุดหมุนไปกึ่งกลางพาเรนต์ โดยแปลงผ่าน world เพื่อให้ถูกต้องทุกระดับการซ้อน
+            if (pivotOnParent && transform.parent is RectTransform prt)
+            {
+                Vector3 centerWorld = prt.TransformPoint(prt.rect.center);
+                Vector3 centerLocal = transform.InverseTransformPoint(centerWorld);
+                pivotX = centerLocal.x;
+                pivotY = centerLocal.y;
+            }
 
             var v = new UIVertex();
             for (int i = 0; i < vh.currentVertCount; i++)
