@@ -18,15 +18,15 @@ cd "C:/Users/choro/Downloads/Menu UI mockups/design_handoff_ingame_screens" && p
 
 | # | จอ | เรา | ซีนต้นแบบ |
 |---|---|---|---|
-| 1 | TITLE | ❌ | — |
+| 1 | TITLE | ✅ | `Proto_Title.unity` |
 | 2 | MAIN MENU | ✅ | `Proto_P3RMenu.unity` |
-| 3 | CHARACTER | ❌ | — |
-| 4 | LOBBY | ❌ | — |
-| 5 | MAP SELECT | ❌ | — |
-| 6 | TALENT SHOP | ❌ | — |
-| 7 | CONFIG | ❌ | — |
-| 8 | LOADING | ❌ | — |
-| 9 | GAMEPLAY HUD | ❌ | — |
+| 3 | CHARACTER | ✅ | `Proto_Character.unity` |
+| 4 | LOBBY | ✅ | `Proto_Lobby.unity` |
+| 5 | MAP SELECT | ✅ | `Proto_MapSelect.unity` |
+| 6 | TALENT SHOP | ✅ | `Proto_TalentShop.unity` |
+| 7 | CONFIG | ✅ | `Proto_Config.unity` |
+| 8 | LOADING | ✅ | `Proto_Loading.unity` |
+| 9 | GAMEPLAY HUD | ✅ ภาพอ้างอิง | `Proto_GameplayHUD.unity` |
 | 10 | LEVEL UP | ✅ | `Proto_LevelUp.unity` |
 | 11 | WIN / LOSE | ✅ | `Proto_WinLose.unity` |
 | 12 | PAUSED | ✅ | `Proto_Pause.unity` |
@@ -398,6 +398,52 @@ HP เหลือกี่ % / สกิลไหนพร้อม · ถ้�
 5. **TALENT SHOP** — แก้บั๊กเงินหายก่อน (ย้าย `TalentShopUI` ลง `TalentShopPanel`)
 6. **TITLE** — ต้องตัดสินเรื่องซีน/panel ก่อน
 7. **GAMEPLAY HUD** — ท้ายสุด ต้องผ่าน 5-second test
+
+---
+
+## แก้ไขจากรอบสร้างจริง · 2026-09-11
+
+สามข้อแรกคือที่เอกสารรุ่นก่อนเขียนผิด · ที่เหลือคือของที่เพิ่งเจอตอนลงมือ
+
+**1 · `RUNS · WINS · BEST` มีอยู่แล้ว ไม่ต้องทำใหม่**
+`TalentShopUI.RefreshAll()` อ่าน `SaveManager.Data` แล้วเติม `statsText` เองตั้งแต่แรก
+เอกสารเดิมเขียนว่า "ต้องเช็คว่ามี getter" — มันไม่ได้ผ่าน `MetaProgression` แต่ทำงานอยู่
+
+**2 · บั๊กเงินหายไม่จริงแล้ว**
+`SaveManager` ติดตั้ง `SaveAutoFlush` เองผ่าน `[RuntimeInitializeOnLoadMethod]`
+ซึ่ง `FlushIfDirty()` ตอน quit · pause · เสียโฟกัส · การที่ `TalentShopUI` อยู่บน
+`Canvas` แทน `TalentShopPanel` ยังเป็นเรื่อง lifecycle ที่ควรแก้ (OnEnable วิ่งตอนโหลดซีน
+ไม่ใช่ตอนเปิดแผง) แต่ **ไม่ได้ทำให้ข้อมูลหาย** ตามที่เอกสารเดิมเตือนไว้
+
+**3 · `ENEMY HP ×1.0` / `GOLD ×1.0` ไม่มีที่มา**
+`DifficultyTier` เป็น enum เปล่าห้าค่า ไม่มีตัวคูณอยู่ที่ไหนในโปรเจกต์เลย
+จอ MAP SELECT จึงโชว์ `—` · การโชว์ ×1.0 คือการบอกผู้เล่นว่ามีระบบที่ยังไม่มีอยู่จริง
+ถ้าจะทำ ต้องตัดสินก่อนว่าตัวคูณอยู่ที่ไหน — บน enum, บน SO แยก, หรือใน `WaveConfig`
+
+**4 · วรรณยุกต์ไทยทับสระ — พังทุกจอมาตั้งแต่ต้น**
+`เพื่อ` เห็นเป็น `เพือ` · `ที่` เห็นเป็น `ที` · `อยู่` เห็นเป็น `อยู`
+กลิฟไม่ได้หาย แค่ไม่ถูกยกขึ้นชั้นสอง TMP ไม่ทำ mark-to-mark positioning ให้เอง
+แก้ด้วยแพ็กเกจ `ThaiTextCare` (MIT) + เครื่องมือ `Tools > Clone Swarm > Fix Thai Fonts`
+ซึ่งอบตัวอักษรลง character table พร้อม `includeFontFeatures` แล้วปิด
+`m_ClearDynamicDataOnBuild` (ไม่งั้นตอน build ตารางถูกล้างแล้วอาการกลับมาเฉพาะในบิลด์)
+
+**5 · ภาษาไทยไม่มีช่องว่างระหว่างคำ TMP จึงตัดบรรทัดผ่ากลางคำ**
+`บรรทัด` ถูกผ่าเป็น `บร` + `รทัด` · แก้ด้วย `ThaiTextNurse` ที่แทรกช่องว่างความกว้างศูนย์
+ตามขอบคำจากพจนานุกรม · ใส่ให้ TMP ทุกตัวที่ตั้ง wrap แล้ว 249 ตัวใน 8 ซีน
+จอที่ทำต่อจากนี้ใช้ `P3RBuilderKit.Wrap()` แทนการเขียน `textWrappingMode` ตรงๆ
+
+**6 · โปรเจกต์อยู่ใน Linear color space — `Image` alpha ต่ำสว่างกว่าที่ค่า CSS บอก**
+วัดจริง: ขาว `.10` บนพื้น `#0D1226` ได้ `#5B5D61` แทนที่จะเป็น `#252A3C`
+ใช้ `P3RBuilderKit.Over()` / `Lift()` ผสมล่วงหน้าเป็นสีทึบแทนการวางทับ
+
+**7 · Sarabun ไม่มีกลิฟ `✓` และ `⚠`** — TMP วาดเป็นกล่องสี่เหลี่ยม
+เครื่องหมายถูก/ไอคอนเตือนต้องวาดเป็นรูปเอง ไม่ใช้อักขระ
+
+**8 · ป้ายปุ่มสกิลเรนเดอร์ออกมาเป็น `LMB` / `RMB` จริงแล้ว**
+`LobbyAbilityChipUI` ถาม `AbilityInput.Find(slot)` — ยืนยันว่าที่แบบเขียน `Q`/`E` ล้าสมัย
+
+**9 · บั๊กที่แก้ไประหว่างทาง** — `TalentShopUI.detailName` โชว์ `talentName` ดิบ
+แทน `DisplayName` ทำให้แผงขวาเป็นภาษาอังกฤษอยู่แผงเดียวตอนสลับเป็นไทย
 
 ---
 
