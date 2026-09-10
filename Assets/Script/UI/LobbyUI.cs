@@ -23,6 +23,37 @@ public class LobbyUI : MonoBehaviour
     public Transform partyContainer;
     public GameObject partyRowTemplate;
 
+    // ── แถวปาร์ตี้แบบ P3R (ของใหม่ · ไม่บังคับ) ────────────────────────────
+    // ทั้งหมดนี้ "ต่อก็ใช้ ไม่ต่อก็ได้" — ซีน MenuScene เดิมต่อไว้กับ partyRowTemplate
+    // ที่เป็น TMP บรรทัดเดียว ถ้าเปลี่ยนไปเลยสายในซีนจะขาดเงียบๆ โดยคอมไพเลอร์ไม่ฟ้อง
+    // Refresh() จึงเลือกทางเองตามว่ามีอะไรต่ออยู่
+    [Header("── P3R Party Rows (ปล่อยว่างได้) ──────")]
+    [Tooltip("แถวเต็มรูปแบบ P3R — ต่อแล้วจะถูกใช้แทน partyRowTemplate")]
+    public CloneSwarm.UI.P3R.LobbyPartyRowUI partyRowPrefab;
+
+    [Tooltip("จำนวนช่องที่โชว์ทั้งหมด · ช่องที่เกินจำนวนผู้เล่นจะเป็นช่องว่างเส้นประ")]
+    public int partySlotCount = 4;
+
+    [Tooltip("สีขอบซ้ายของแต่ละช่อง — index ตรงกับ PlayerSlotRegistry.GetSlot() ไม่ใช่ clientId")]
+    public Color[] slotColors =
+    {
+        new Color32(0x40, 0x73, 0xD9, 0xFF),
+        new Color32(0x2C, 0xC5, 0xA0, 0xFF),
+        new Color32(0xFF, 0xE6, 0x33, 0xFF),
+        new Color32(0xF0, 0x86, 0x54, 0xFF),
+    };
+
+    [Header("── P3R Header (ปล่อยว่างได้) ───────────")]
+    [Tooltip("ยอดทองบนแถบบน — MetaProgression.OnGoldChanged มีอยู่แล้ว แค่ยังไม่มีที่โชว์")]
+    public TextMeshProUGUI goldText;
+    [Tooltip("รหัสห้องแยกออกมาเป็นป้ายของตัวเอง — เดิมไปปนอยู่บนป้ายปุ่ม Invite")]
+    public TextMeshProUGUI roomCodeLabel;
+    public Button copyCodeButton;
+    [Tooltip("PARTY · 3 / 4")]
+    public TextMeshProUGUI partyCountLabel;
+    [Tooltip("2 READY")]
+    public TextMeshProUGUI readyCountLabel;
+
     [Header("Controls")]
     public Button readyButton;
     public TextMeshProUGUI readyButtonText;
@@ -375,7 +406,15 @@ public class LobbyUI : MonoBehaviour
             return;
         }
 
-        if (partyContainer != null && partyRowTemplate != null)
+        RefreshP3RHeader();
+
+        if (partyContainer != null && partyRowPrefab != null)
+        {
+            // ทางใหม่ — แถวเต็มรูปแบบ P3R · แม่แบบเก่าถ้ามีก็ปิดทิ้ง
+            if (partyRowTemplate != null) partyRowTemplate.SetActive(false);
+            RefreshP3RPartyRows();
+        }
+        else if (partyContainer != null && partyRowTemplate != null)
         {
             partyRowTemplate.SetActive(false);
             foreach (var row in spawnedPartyRows)
@@ -472,5 +511,92 @@ public class LobbyUI : MonoBehaviour
     {
         if (maps == null || string.IsNullOrEmpty(mapId)) return null;
         return maps.Find(m => m != null && m.mapId == mapId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // P3R HEADER / PARTY — ทั้งบล็อกนี้ทำงานเฉพาะเมื่อมีการต่อสายไว้
+    // ═══════════════════════════════════════════════════════════════════════
+    private readonly List<CloneSwarm.UI.P3R.LobbyPartyRowUI> p3rRows = new();
+
+    private void RefreshP3RHeader()
+    {
+        if (goldText != null)
+            goldText.text = $"{CloneSwarm.Meta.MetaProgression.Gold:N0} G";
+
+        bool hasSession = GameSessionManager.Instance != null
+                       && GameSessionManager.Instance.CurrentSession != null;
+
+        if (roomCodeLabel != null)
+            roomCodeLabel.text = hasSession ? GameSessionManager.Instance.SessionCode : "—";
+
+        // ไม่มีห้อง = ไม่มีรหัสให้คัดลอก · ซ่อนดีกว่าให้กดแล้วไม่เกิดอะไร
+        if (copyCodeButton != null) copyCodeButton.gameObject.SetActive(hasSession);
+
+        if (LobbyState.Instance == null) return;
+
+        int count = LobbyState.Instance.Players.Count;
+        int ready = 0;
+        for (int i = 0; i < count; i++)
+            if (LobbyState.Instance.Players[i].ready) ready++;
+
+        if (partyCountLabel != null) partyCountLabel.text = $"PARTY · {count} / {partySlotCount}";
+        if (readyCountLabel != null) readyCountLabel.text = $"{ready} READY";
+    }
+
+    /// <summary>
+    /// สร้างแถวให้ครบ <see cref="partySlotCount"/> ช่องเสมอ — ช่องที่ยังไม่มีคนเป็นเส้นประ
+    /// แบบวาดไว้แบบนี้เพื่อให้เห็นว่าห้องยังรับได้อีกกี่คน ไม่ใช่แค่ว่ามีใครอยู่บ้าง
+    /// </summary>
+    private void RefreshP3RPartyRows()
+    {
+        foreach (var row in p3rRows)
+            if (row != null) Destroy(row.gameObject);
+        p3rRows.Clear();
+
+        if (partyRowPrefab == null || partyContainer == null) return;
+
+        var  players    = LobbyState.Instance != null ? LobbyState.Instance.Players : null;
+        int  playerCount = players != null ? players.Count : 0;
+        ulong localId   = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0;
+        int  total      = Mathf.Max(partySlotCount, playerCount);
+
+        for (int i = 0; i < total; i++)
+        {
+            var row = Instantiate(partyRowPrefab, partyContainer);
+            row.gameObject.SetActive(true);
+            p3rRows.Add(row);
+
+            if (i >= playerCount) { row.SetEmpty(); continue; }
+
+            var entry    = players[i];
+            var charName = entry.characterName.ToString();
+            var charData = !string.IsNullOrEmpty(charName) && MetaDatabase.Instance != null
+                         ? MetaDatabase.Instance.GetCharacter(charName)
+                         : null;
+
+            // charName เป็น ID บนเน็ตเวิร์ก — ที่โชว์ต้องเป็น DisplayName เสมอ
+            string display = charData != null
+                           ? charData.DisplayName
+                           : (string.IsNullOrEmpty(charName) ? "กำลังเลือก…" : charName);
+
+            // สีประจำช่องต้องมาจาก PlayerSlotRegistry ไม่ใช่ clientId % 4 (CLAUDE.md ข้อ 11)
+            int slot = PlayerSlotRegistry.Instance != null
+                     ? PlayerSlotRegistry.Instance.GetSlot(entry.clientId)
+                     : i;
+
+            Color accent = slotColors != null && slotColors.Length > 0
+                         ? slotColors[Mathf.Abs(slot < 0 ? i : slot) % slotColors.Length]
+                         : Color.white;
+
+            // HP ยังไม่มีให้อ่านตอนอยู่ล็อบบี้ — ตัวละครยังไม่ถูก spawn
+            // โชว์ค่าฐานจาก CharacterData แทน ซึ่งเป็นค่าที่จะได้ตอนเกิดจริง
+            string detail = charData != null
+                          ? $"HP {Mathf.RoundToInt(charData.baseHealth)}"
+                          : "";
+
+            row.Bind(slot, display, isHost: entry.clientId == 0,
+                     isYou: entry.clientId == localId,
+                     ready: entry.ready, detail: detail, accent: accent);
+        }
     }
 }
