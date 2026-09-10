@@ -45,6 +45,13 @@ namespace CloneSwarm.Meta
         [Tooltip("ข้อความ \"ไปถึงเลเวลสูงสุดแล้ว\" — โชว์เฉพาะตอนตัน")]
         public GameObject      detailMaxedNote;
 
+        // ── ป้ายแบบ P3R (ของเพิ่ม · ปล่อยว่างได้) ───────────────────────
+        [Tooltip("หมวดของ talent เช่น OFFENCE — อ่านจาก TalentData.CategoryLabel")]
+        public TextMeshProUGUI detailCategoryText;
+
+        [Tooltip("ยอดทองที่จะเหลือหลังกดซื้อ — ช่วยให้ตัดสินใจโดยไม่ต้องคิดเลขเอง")]
+        public TextMeshProUGUI afterPurchaseText;
+
         [Header("── Buy Button ─────────────────────────")]
         public Button          buyButton;
         public TextMeshProUGUI buyCostText;
@@ -176,7 +183,9 @@ namespace CloneSwarm.Meta
                 detailIcon.enabled = selected.icon != null;
                 detailIcon.color   = selected.tintColor;
             }
-            if (detailName        != null) detailName.text        = selected.talentName;
+            // DisplayName ไม่ใช่ talentName — talentName เป็นชื่อสำรองตอนยังไม่ผูก String Table
+            // ใช้ตัวดิบแล้วจอนี้จะเป็นภาษาอังกฤษอยู่จอเดียวตอนสลับเป็นไทย
+            if (detailName        != null) detailName.text        = selected.DisplayName;
             if (detailDescription != null) detailDescription.text = selected.Description;
             if (detailLevelText   != null) detailLevelText.text   = $"Lv {level} / {maxLv}";
 
@@ -199,6 +208,15 @@ namespace CloneSwarm.Meta
                 var img = buyButton.GetComponent<Image>();
                 if (img != null) img.color = canBuy ? buyAffordableColor : buyTooPoorColor;
             }
+            if (detailCategoryText != null) detailCategoryText.text = selected.CategoryLabel;
+
+            // ยอดคงเหลือหลังซื้อ — ซ่อนเมื่อซื้อไม่ได้ เพราะตัวเลขติดลบไม่ได้บอกอะไร
+            if (afterPurchaseText != null)
+            {
+                afterPurchaseText.gameObject.SetActive(canBuy);
+                if (canBuy) afterPurchaseText.text = $"หลังซื้อเหลือ {MetaProgression.Gold - cost:N0} G";
+            }
+
             if (buyCostText != null) buyCostText.text    = maxed ? "" : $"{cost:N0}";
             if (buyCoinIcon != null) buyCoinIcon.enabled = !maxed;
         }
