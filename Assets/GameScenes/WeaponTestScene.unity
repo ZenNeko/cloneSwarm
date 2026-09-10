@@ -130,6 +130,7 @@ GameObject:
   - component: {fileID: 5344837}
   - component: {fileID: 5344838}
   - component: {fileID: 5344839}
+  - component: {fileID: 5344840}
   m_Layer: 5
   m_Name: ResultText (TMP)
   m_TagString: Untagged
@@ -256,6 +257,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &5344840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5344836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &5966083
 GameObject:
   m_ObjectHideFlags: 0
@@ -846,6 +870,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 71353884}
+  - component: {fileID: 71353887}
   - component: {fileID: 71353886}
   - component: {fileID: 71353885}
   m_Layer: 0
@@ -974,6 +999,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 71353883}
   m_CullTransparentMesh: 1
+--- !u!114 &71353887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 71353883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 71353885}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &71640129
 GameObject:
   m_ObjectHideFlags: 0
@@ -1060,6 +1108,7 @@ GameObject:
   - component: {fileID: 90036641}
   - component: {fileID: 90036640}
   - component: {fileID: 90036639}
+  - component: {fileID: 90036642}
   m_Layer: 5
   m_Name: Waiting Label
   m_TagString: Untagged
@@ -1186,6 +1235,29 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -189.99998}
   m_SizeDelta: {x: 500, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &90036642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90036638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &101424669
 GameObject:
   m_ObjectHideFlags: 0
@@ -1332,6 +1404,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 109089980}
+  - component: {fileID: 109089983}
   - component: {fileID: 109089982}
   - component: {fileID: 109089981}
   m_Layer: 0
@@ -1460,6 +1533,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 109089979}
   m_CullTransparentMesh: 1
+--- !u!114 &109089983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 109089979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 109089981}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &114427017
 GameObject:
   m_ObjectHideFlags: 0
@@ -1824,6 +1920,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 124796437}
+  - component: {fileID: 124796440}
   - component: {fileID: 124796438}
   - component: {fileID: 124796439}
   m_Layer: 0
@@ -1952,6 +2049,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &124796440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 124796436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 124796439}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &134391669
 GameObject:
   m_ObjectHideFlags: 0
@@ -1983,6 +2103,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 56649333}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &141382411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &143814354
 GameObject:
   m_ObjectHideFlags: 0
@@ -2100,6 +2243,7 @@ GameObject:
   - component: {fileID: 150505572}
   - component: {fileID: 150505574}
   - component: {fileID: 150505573}
+  - component: {fileID: 150505575}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -2226,6 +2370,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 150505571}
   m_CullTransparentMesh: 1
+--- !u!114 &150505575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 150505571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &156794588
 GameObject:
   m_ObjectHideFlags: 0
@@ -2235,6 +2402,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 156794589}
+  - component: {fileID: 156794592}
   - component: {fileID: 156794591}
   - component: {fileID: 156794590}
   m_Layer: 0
@@ -2407,6 +2575,29 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &156794592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 156794588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 156794590}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &158483679
 GameObject:
   m_ObjectHideFlags: 0
@@ -2418,6 +2609,7 @@ GameObject:
   - component: {fileID: 158483680}
   - component: {fileID: 158483681}
   - component: {fileID: 158483682}
+  - component: {fileID: 158483683}
   m_Layer: 5
   m_Name: Timer Label
   m_TagString: Untagged
@@ -2544,6 +2736,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &158483683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158483679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &159292708
 GameObject:
   m_ObjectHideFlags: 0
@@ -2807,6 +3022,9 @@ MonoBehaviour:
   sessionType: default-session
   availableScenes:
   - SampleScene
+  menuSceneName: MenuScene
+  spawnPoints: []
+  spawnRingRadius: 2.5
 --- !u!4 &182888344
 Transform:
   m_ObjectHideFlags: 0
@@ -2911,6 +3129,7 @@ GameObject:
   - component: {fileID: 219964260}
   - component: {fileID: 219964262}
   - component: {fileID: 219964261}
+  - component: {fileID: 219964263}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -3039,6 +3258,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 219964259}
   m_CullTransparentMesh: 1
+--- !u!114 &219964263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 219964259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &224149986
 GameObject:
   m_ObjectHideFlags: 0
@@ -3050,6 +3292,7 @@ GameObject:
   - component: {fileID: 224149987}
   - component: {fileID: 224149989}
   - component: {fileID: 224149988}
+  - component: {fileID: 224149990}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -3176,6 +3419,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 224149986}
   m_CullTransparentMesh: 1
+--- !u!114 &224149990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 224149986}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &240159609
 GameObject:
   m_ObjectHideFlags: 0
@@ -3383,8 +3649,210 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 247500479}
+    - targetCorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 247500478}
+    - targetCorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 247500477}
+    - targetCorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 247500476}
+    - targetCorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 247500475}
+    - targetCorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 437467438}
+    - targetCorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 141382411}
+    - targetCorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1153740584}
   m_SourcePrefab: {fileID: 100100000, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+--- !u!1 &247500467 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500468 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500469 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500470 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500471 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500472 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500473 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &247500474 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 247500466}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &247500475
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &247500476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &247500477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &247500478
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &247500479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &250102186
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &250112920
 GameObject:
   m_ObjectHideFlags: 0
@@ -3600,6 +4068,7 @@ GameObject:
   - component: {fileID: 305579270}
   - component: {fileID: 305579271}
   - component: {fileID: 305579272}
+  - component: {fileID: 305579273}
   m_Layer: 5
   m_Name: timeLabel
   m_TagString: Untagged
@@ -3726,6 +4195,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &305579273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 305579269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &310576861
 GameObject:
   m_ObjectHideFlags: 0
@@ -4584,6 +5076,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 383424004}
+  - component: {fileID: 383424007}
   - component: {fileID: 383424005}
   - component: {fileID: 383424006}
   m_Layer: 0
@@ -4712,6 +5205,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &383424007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 383424003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 383424006}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &384280011
 GameObject:
   m_ObjectHideFlags: 0
@@ -5319,6 +5835,29 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -155}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &437467438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &439130385
 GameObject:
   m_ObjectHideFlags: 0
@@ -5771,6 +6310,29 @@ Transform:
   - {fileID: 557323517}
   m_Father: {fileID: 461825391}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &487718831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &506802394
 GameObject:
   m_ObjectHideFlags: 0
@@ -5780,6 +6342,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 506802395}
+  - component: {fileID: 506802398}
   - component: {fileID: 506802396}
   - component: {fileID: 506802397}
   m_Layer: 0
@@ -5908,6 +6471,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &506802398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 506802394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 506802397}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &513835226
 GameObject:
   m_ObjectHideFlags: 0
@@ -6290,6 +6876,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &570834317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &576152720
 GameObject:
   m_ObjectHideFlags: 0
@@ -6395,6 +7004,7 @@ GameObject:
   - component: {fileID: 587227195}
   - component: {fileID: 587227196}
   - component: {fileID: 587227197}
+  - component: {fileID: 587227198}
   m_Layer: 5
   m_Name: 'Master Value Text (TMP) '
   m_TagString: Untagged
@@ -6521,6 +7131,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &587227198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 587227194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1001 &590487983
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6664,8 +7297,187 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 590487996}
+    - targetCorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 590487995}
+    - targetCorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 590487994}
+    - targetCorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 590487993}
+    - targetCorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 590487992}
+    - targetCorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 645179988}
+    - targetCorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1514151258}
+    - targetCorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 570834317}
   m_SourcePrefab: {fileID: 100100000, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+--- !u!1 &590487984 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487985 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487986 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487987 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487988 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487989 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487990 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &590487991 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 590487983}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &590487992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &590487993
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &590487994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487989}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &590487995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &590487996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &601812901
 GameObject:
   m_ObjectHideFlags: 0
@@ -7056,6 +7868,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 642272827}
+  - component: {fileID: 642272828}
   - component: {fileID: 642272826}
   - component: {fileID: 642272825}
   m_Layer: 0
@@ -7184,6 +7997,29 @@ RectTransform:
   m_AnchoredPosition: {x: 32, y: 32}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &642272828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642272824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 642272825}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &644608431
 GameObject:
   m_ObjectHideFlags: 0
@@ -7222,6 +8058,29 @@ RectTransform:
   m_AnchoredPosition: {x: 399, y: -336}
   m_SizeDelta: {x: 700, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &645179988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487986}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &653312241
 GameObject:
   m_ObjectHideFlags: 0
@@ -8674,6 +9533,29 @@ Transform:
   - {fileID: 1749520028}
   m_Father: {fileID: 1370777623}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &772299732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!224 &782541349 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6957760166373655409, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
@@ -8699,6 +9581,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 788428722}
+  - component: {fileID: 788428725}
   - component: {fileID: 788428723}
   - component: {fileID: 788428724}
   m_Layer: 0
@@ -8827,6 +9710,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &788428725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 788428721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 788428724}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &793198001
 GameObject:
   m_ObjectHideFlags: 0
@@ -9243,6 +10149,7 @@ GameObject:
   - component: {fileID: 816690868}
   - component: {fileID: 816690870}
   - component: {fileID: 816690869}
+  - component: {fileID: 816690871}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -9371,6 +10278,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 816690867}
   m_CullTransparentMesh: 1
+--- !u!114 &816690871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 816690867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &817464406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &832208301
 GameObject:
   m_ObjectHideFlags: 0
@@ -10254,6 +11207,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 956645437}
+  - component: {fileID: 956645440}
   - component: {fileID: 956645439}
   - component: {fileID: 956645438}
   m_Layer: 0
@@ -10382,6 +11336,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 956645436}
   m_CullTransparentMesh: 1
+--- !u!114 &956645440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 956645436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 956645438}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &980939571
 GameObject:
   m_ObjectHideFlags: 0
@@ -10808,6 +11785,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1016582577}
+  - component: {fileID: 1016582580}
   - component: {fileID: 1016582579}
   - component: {fileID: 1016582578}
   m_Layer: 0
@@ -10936,6 +11914,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1016582576}
   m_CullTransparentMesh: 1
+--- !u!114 &1016582580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1016582576}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1016582578}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1022109661
 GameObject:
   m_ObjectHideFlags: 0
@@ -11238,6 +12239,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1027120763}
+  - component: {fileID: 1027120766}
   - component: {fileID: 1027120764}
   - component: {fileID: 1027120765}
   m_Layer: 0
@@ -11366,6 +12368,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1027120766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1027120762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1027120765}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1028586467
 GameObject:
   m_ObjectHideFlags: 0
@@ -11409,6 +12434,7 @@ GameObject:
   - component: {fileID: 1028744891}
   - component: {fileID: 1028744892}
   - component: {fileID: 1028744893}
+  - component: {fileID: 1028744894}
   m_Layer: 5
   m_Name: waveLabel
   m_TagString: Untagged
@@ -11537,6 +12563,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1028744894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1028744890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1041572015
 GameObject:
   m_ObjectHideFlags: 0
@@ -11719,6 +12768,7 @@ GameObject:
   - component: {fileID: 1102440818}
   - component: {fileID: 1102440819}
   - component: {fileID: 1102440820}
+  - component: {fileID: 1102440821}
   m_Layer: 5
   m_Name: 'SFX Value Text (TMP) '
   m_TagString: Untagged
@@ -11845,6 +12895,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1102440821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1102440817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1112493506
 GameObject:
   m_ObjectHideFlags: 0
@@ -12028,6 +13101,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1121385308}
+  - component: {fileID: 1121385311}
   - component: {fileID: 1121385309}
   - component: {fileID: 1121385310}
   m_Layer: 0
@@ -12156,6 +13230,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1121385311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1121385307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1121385310}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1131176111
 GameObject:
   m_ObjectHideFlags: 0
@@ -12412,6 +13509,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1152914397}
+  - component: {fileID: 1152914400}
   - component: {fileID: 1152914398}
   - component: {fileID: 1152914399}
   m_Layer: 0
@@ -12540,6 +13638,52 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1152914400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1152914396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1152914399}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
+--- !u!114 &1153740584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 247500467}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1171570397
 GameObject:
   m_ObjectHideFlags: 0
@@ -12716,6 +13860,18 @@ MonoBehaviour:
   resumeButton: {fileID: 2143590254}
   quitButton: {fileID: 1537361818}
   resetDefaultsButton: {fileID: 1149689231}
+  menuList: {fileID: 0}
+  settingsSubPanel: {fileID: 0}
+  settingsBackButton: {fileID: 0}
+  partyRowContainer: {fileID: 0}
+  partyRowTemplate: {fileID: 0}
+  partyRowHeight: 90
+  partyRowSpacing: 12
+  coopBadgeRoot: {fileID: 0}
+  coopBadgeBackground: {fileID: 0}
+  coopBadgeAccent: {fileID: 0}
+  coopBadgeTag: {fileID: 0}
+  coopBadgeText: {fileID: 0}
 --- !u!114 &1179494318
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12758,6 +13914,7 @@ MonoBehaviour:
   destructiblePrefix: '!'
   displayNearPlayer: 1
   indicatorRadius: 400
+  maxRadiusScreenFraction: 0.25
 --- !u!114 &1179494320
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12774,15 +13931,33 @@ MonoBehaviour:
   resultLabel: {fileID: 5344839}
   winColor: {r: 1, g: 0.9, b: 0.1, a: 1}
   loseColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}
+  diagonalPanel: {fileID: 0}
+  winDiagonalColor: {r: 0.09411765, g: 0.14117648, b: 0.84705883, a: 1}
+  loseDiagonalColor: {r: 0.3529412, g: 0.05490196, b: 0.05490196, a: 1}
+  subtitleLabel: {fileID: 0}
+  winSubtitle: "ARENA 01 \xB7 \u0E40\u0E04\u0E25\u0E35\u0E22\u0E23\u0E4C\u0E41\u0E25\u0E49\u0E27"
+  loseSubtitle: "ARENA 01 \xB7 \u0E1B\u0E32\u0E23\u0E4C\u0E15\u0E35\u0E49\u0E25\u0E49\u0E21\u0E17\u0E31\u0E49\u0E07\u0E17\u0E35\u0E21"
   timeLabel: {fileID: 305579272}
   levelLabel: {fileID: 1823227283}
   waveLabel: {fileID: 1028744893}
+  timeValueLabel: {fileID: 0}
+  levelValueLabel: {fileID: 0}
+  waveValueLabel: {fileID: 0}
   goldEarnedLabel: {fileID: 0}
   goldTotalLabel: {fileID: 0}
+  goldTotalValueLabel: {fileID: 0}
+  rewardLinePrefab: {fileID: 0}
+  rewardLinesParent: {fileID: 0}
+  partyRowPrefab: {fileID: 0}
+  partyRowsParent: {fileID: 0}
   returnButton: {fileID: 431465688}
   playAgainButton: {fileID: 0}
+  playAgainGroup: {fileID: 0}
+  waitingForHostLabel: {fileID: 0}
+  disabledButtonAlpha: 0.45
   showDelay: 1.5
   fadeInDuration: 0.8
+  goldCountUpDuration: 0.6
 --- !u!114 &1179494321
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12805,12 +13980,21 @@ MonoBehaviour:
   - {fileID: 2141751759}
   - {fileID: 179792721}
   - {fileID: 414025087}
+  titleFormat: LEVEL UP!   Level {0}
+  titleFormatNoLevel: LEVEL UP!
   timerLabel: {fileID: 158483682}
+  timerFillBar: {fileID: 0}
   timerNormalColor: {r: 1, g: 1, b: 1, a: 1}
   timerUrgentColor: {r: 1, g: 0.3, b: 0.2, a: 1}
+  timerFillColor: {r: 1, g: 0.9019608, b: 0.2, a: 1}
   urgentThreshold: 10
   waitingLabel: {fileID: 90036639}
   waitingStrip: {fileID: 0}
+  dogTags: {fileID: 0}
+  buildStrip: {fileID: 0}
+  hintLabel: {fileID: 0}
+  hintText: "1 \xB7 2 \xB7 3 \u0E2B\u0E23\u0E37\u0E2D\u0E04\u0E25\u0E34\u0E01\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E25\u0E37\u0E2D\u0E01"
+  glowOnlyOnHover: 1
 --- !u!114 &1179494322
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12906,6 +14090,7 @@ MonoBehaviour:
   chargeBarText: {fileID: 1789910356}
   qSlot:
     root: {fileID: 666062659}
+    slotBg: {fileID: 0}
     iconImage: {fileID: 1023092834}
     cooldownFill: {fileID: 918844855}
     cooldownText: {fileID: 568092920}
@@ -12913,6 +14098,7 @@ MonoBehaviour:
     activeGlow: {fileID: 1484513959}
   eSlot:
     root: {fileID: 1974024626}
+    slotBg: {fileID: 0}
     iconImage: {fileID: 1027101165}
     cooldownFill: {fileID: 1387264525}
     cooldownText: {fileID: 101424672}
@@ -13028,6 +14214,7 @@ GameObject:
   - component: {fileID: 1180451801}
   - component: {fileID: 1180451803}
   - component: {fileID: 1180451802}
+  - component: {fileID: 1180451804}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -13156,6 +14343,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1180451800}
   m_CullTransparentMesh: 1
+--- !u!114 &1180451804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1180451800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1184157640
 GameObject:
   m_ObjectHideFlags: 0
@@ -13295,6 +14505,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1141402042}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1197579162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1199407166
 GameObject:
   m_ObjectHideFlags: 0
@@ -14072,8 +15305,187 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1258579711}
+    - targetCorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1258579710}
+    - targetCorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1258579709}
+    - targetCorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1258579708}
+    - targetCorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1258579707}
+    - targetCorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1378778177}
+    - targetCorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 817464406}
+    - targetCorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1365630141}
   m_SourcePrefab: {fileID: 100100000, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+--- !u!1 &1258579699 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579700 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579701 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579702 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579703 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579704 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579705 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1258579706 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1258579698}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1258579707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1258579708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1258579709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1258579710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1258579711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1260246360
 GameObject:
   m_ObjectHideFlags: 0
@@ -14747,6 +16159,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1329355920}
+  - component: {fileID: 1329355923}
   - component: {fileID: 1329355922}
   - component: {fileID: 1329355921}
   m_Layer: 0
@@ -14919,6 +16332,29 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1329355923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1329355919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1329355921}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1337039403
 GameObject:
   m_ObjectHideFlags: 0
@@ -15181,6 +16617,7 @@ GameObject:
   - component: {fileID: 1360885733}
   - component: {fileID: 1360885734}
   - component: {fileID: 1360885735}
+  - component: {fileID: 1360885736}
   m_Layer: 5
   m_Name: LevelUpLabel
   m_TagString: Untagged
@@ -15307,6 +16744,52 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1360885736
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1360885732}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1365630141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579699}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1370777622
 GameObject:
   m_ObjectHideFlags: 0
@@ -15339,6 +16822,29 @@ Transform:
   - {fileID: 771288178}
   m_Father: {fileID: 1119889514}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1375200611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1376798366
 GameObject:
   m_ObjectHideFlags: 0
@@ -15370,6 +16876,52 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1251387756}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1378778177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258579701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1383068023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1387264522
 GameObject:
   m_ObjectHideFlags: 0
@@ -15803,6 +17355,7 @@ GameObject:
   - component: {fileID: 1417154196}
   - component: {fileID: 1417154197}
   - component: {fileID: 1417154198}
+  - component: {fileID: 1417154199}
   m_Layer: 5
   m_Name: 'Music Value Text (TMP) '
   m_TagString: Untagged
@@ -15929,6 +17482,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1417154199
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1417154195}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1422387396
 GameObject:
   m_ObjectHideFlags: 0
@@ -16456,6 +18032,29 @@ RectTransform:
   m_AnchoredPosition: {x: 399, y: -236}
   m_SizeDelta: {x: 700, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1514151258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 590487985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1530194342
 GameObject:
   m_ObjectHideFlags: 0
@@ -17271,6 +18870,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1639867175}
+  - component: {fileID: 1639867178}
   - component: {fileID: 1639867177}
   - component: {fileID: 1639867176}
   m_Layer: 0
@@ -17399,6 +18999,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1639867174}
   m_CullTransparentMesh: 1
+--- !u!114 &1639867178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1639867174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1639867176}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1650670341
 GameObject:
   m_ObjectHideFlags: 0
@@ -17857,8 +19480,187 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674945136}
+    - targetCorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674945135}
+    - targetCorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674945134}
+    - targetCorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674945133}
+    - targetCorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674945132}
+    - targetCorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1197579162}
+    - targetCorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 487718831}
+    - targetCorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 250102186}
   m_SourcePrefab: {fileID: 100100000, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+--- !u!1 &1674945124 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945125 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945126 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945127 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945128 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945129 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945130 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1674945131 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 1674945123}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1674945132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1674945133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1674945134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1674945135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &1674945136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674945131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1685179597
 GameObject:
   m_ObjectHideFlags: 0
@@ -18111,6 +19913,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1707430889}
+  - component: {fileID: 1707430892}
   - component: {fileID: 1707430891}
   - component: {fileID: 1707430890}
   m_Layer: 0
@@ -18239,6 +20042,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1707430888}
   m_CullTransparentMesh: 1
+--- !u!114 &1707430892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1707430888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1707430890}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1730206483
 GameObject:
   m_ObjectHideFlags: 0
@@ -18279,6 +20105,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1738631090}
+  - component: {fileID: 1738631091}
   - component: {fileID: 1738631089}
   - component: {fileID: 1738631088}
   m_Layer: 0
@@ -18407,6 +20234,29 @@ RectTransform:
   m_AnchoredPosition: {x: 32, y: 32}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1738631091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1738631087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1738631088}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1742642057
 GameObject:
   m_ObjectHideFlags: 0
@@ -19107,6 +20957,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1819627287}
+  - component: {fileID: 1819627290}
   - component: {fileID: 1819627288}
   - component: {fileID: 1819627289}
   m_Layer: 0
@@ -19235,6 +21086,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1819627290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1819627286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1819627289}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1823227280
 GameObject:
   m_ObjectHideFlags: 0
@@ -19246,6 +21120,7 @@ GameObject:
   - component: {fileID: 1823227281}
   - component: {fileID: 1823227282}
   - component: {fileID: 1823227283}
+  - component: {fileID: 1823227284}
   m_Layer: 5
   m_Name: levelLabel
   m_TagString: Untagged
@@ -19374,6 +21249,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1823227284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823227280}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1826004646
 GameObject:
   m_ObjectHideFlags: 0
@@ -20280,6 +22178,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1884986556}
+  - component: {fileID: 1884986559}
   - component: {fileID: 1884986557}
   - component: {fileID: 1884986558}
   m_Layer: 0
@@ -20408,6 +22307,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1884986559
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884986555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 1884986558}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &1888398857
 GameObject:
   m_ObjectHideFlags: 0
@@ -20594,6 +22516,7 @@ GameObject:
   - component: {fileID: 1895421662}
   - component: {fileID: 1895421664}
   - component: {fileID: 1895421663}
+  - component: {fileID: 1895421665}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -20720,6 +22643,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1895421661}
   m_CullTransparentMesh: 1
+--- !u!114 &1895421665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1895421661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1904279516
 GameObject:
   m_ObjectHideFlags: 0
@@ -21367,6 +23313,7 @@ GameObject:
   - component: {fileID: 1932813765}
   - component: {fileID: 1932813767}
   - component: {fileID: 1932813766}
+  - component: {fileID: 1932813768}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -21493,6 +23440,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1932813764}
   m_CullTransparentMesh: 1
+--- !u!114 &1932813768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932813764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1935397788
 GameObject:
   m_ObjectHideFlags: 0
@@ -21780,7 +23750,14 @@ MonoBehaviour:
   mainBossTimeMin: 15
   objectiveExpReward: 80
   objectiveHealAmount: 20
+  waitForAllPlayers: 1
+  startWaitTimeout: 20
   gameTime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hasStarted:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
@@ -22386,6 +24363,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2024439977}
+  - component: {fileID: 2024439980}
   - component: {fileID: 2024439978}
   - component: {fileID: 2024439979}
   m_Layer: 0
@@ -22514,6 +24492,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2024439980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2024439976}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 2024439979}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1001 &2030866376
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22861,8 +24862,187 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2039023985}
+    - targetCorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2039023984}
+    - targetCorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2039023983}
+    - targetCorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2039023982}
+    - targetCorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2039023981}
+    - targetCorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1383068023}
+    - targetCorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 772299732}
+    - targetCorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1375200611}
   m_SourcePrefab: {fileID: 100100000, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+--- !u!1 &2039023973 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 708384487526644942, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023974 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5776498077887209088, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023975 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5971288495702795965, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023976 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7372602173119151768, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023977 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6145432964756605564, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023978 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1406688797962711495, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023979 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5073720388392511635, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2039023980 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1427084378375330860, guid: 50739d6d799bfed42ae2546000566a28, type: 3}
+  m_PrefabInstance: {fileID: 2039023972}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2039023981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023976}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &2039023982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &2039023983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &2039023984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
+--- !u!114 &2039023985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039023980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &2049574760
 GameObject:
   m_ObjectHideFlags: 0

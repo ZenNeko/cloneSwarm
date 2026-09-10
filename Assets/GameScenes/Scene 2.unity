@@ -316,9 +316,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a5dd16df1131a544905dc2f5ddc3d0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameSessionManager
+  sessionSettings: {fileID: 0}
   sessionType: default-session
   availableScenes:
   - SampleScene
+  menuSceneName: MenuScene
+  spawnPoints: []
+  spawnRingRadius: 2.5
 --- !u!4 &182888344
 Transform:
   m_ObjectHideFlags: 0
@@ -475,9 +479,20 @@ MonoBehaviour:
   iconImage: {fileID: 422256885}
   nameText: {fileID: 347324930}
   descriptionText: {fileID: 2007378451}
-  stackText: {fileID: 368286729}
-  valueText: {fileID: 1723688194}
+  levelText: {fileID: 0}
   selectButton: {fileID: 271680631}
+  evolutionBadge: {fileID: 0}
+  synergyIconImages: []
+  recommendedGlowOutline: {fileID: 0}
+  recommendedRibbon: {fileID: 0}
+  cardAnimator: {fileID: 0}
+  statRowPrefab: {fileID: 0}
+  statRowsContainer: {fileID: 0}
+  cardBackground: {fileID: 0}
+  weaponColor: {r: 0.25, g: 0.45, b: 0.85, a: 1}
+  statColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
+  superColor: {r: 0.85, g: 0.6, b: 0.1, a: 1}
+  fusionColor: {r: 0.65, g: 0.2, b: 0.85, a: 1}
 --- !u!1 &275663675
 GameObject:
   m_ObjectHideFlags: 0
@@ -1004,7 +1019,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   m_Enabled: 1
-  serializedVersion: 12
+  serializedVersion: 13
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 2
@@ -1056,7 +1071,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShadowRadius: 0
+  m_ShapeRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -1230,6 +1245,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -1975,9 +1991,20 @@ MonoBehaviour:
   iconImage: {fileID: 769225641}
   nameText: {fileID: 2131574810}
   descriptionText: {fileID: 512486526}
-  stackText: {fileID: 1203291826}
-  valueText: {fileID: 2119535222}
+  levelText: {fileID: 0}
   selectButton: {fileID: 743816684}
+  evolutionBadge: {fileID: 0}
+  synergyIconImages: []
+  recommendedGlowOutline: {fileID: 0}
+  recommendedRibbon: {fileID: 0}
+  cardAnimator: {fileID: 0}
+  statRowPrefab: {fileID: 0}
+  statRowsContainer: {fileID: 0}
+  cardBackground: {fileID: 0}
+  weaponColor: {r: 0.25, g: 0.45, b: 0.85, a: 1}
+  statColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
+  superColor: {r: 0.85, g: 0.6, b: 0.1, a: 1}
+  fusionColor: {r: 0.65, g: 0.2, b: 0.85, a: 1}
 --- !u!1 &754403424
 GameObject:
   m_ObjectHideFlags: 0
@@ -2650,9 +2677,20 @@ MonoBehaviour:
   iconImage: {fileID: 781733401}
   nameText: {fileID: 1338512970}
   descriptionText: {fileID: 1525825753}
-  stackText: {fileID: 754403427}
-  valueText: {fileID: 938328292}
+  levelText: {fileID: 0}
   selectButton: {fileID: 943368175}
+  evolutionBadge: {fileID: 0}
+  synergyIconImages: []
+  recommendedGlowOutline: {fileID: 0}
+  recommendedRibbon: {fileID: 0}
+  cardAnimator: {fileID: 0}
+  statRowPrefab: {fileID: 0}
+  statRowsContainer: {fileID: 0}
+  cardBackground: {fileID: 0}
+  weaponColor: {r: 0.25, g: 0.45, b: 0.85, a: 1}
+  statColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
+  superColor: {r: 0.85, g: 0.6, b: 0.1, a: 1}
+  fusionColor: {r: 0.65, g: 0.2, b: 0.85, a: 1}
 --- !u!114 &943368175
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2791,8 +2829,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
   ShowTopMostFoldoutHeaderGroup: 1
   enemyPrefab: {fileID: 9014505396291406032, guid: a762b11ba96f2504b842435f11ce258b, type: 3}
-  spawnRate: 1
+  baseSpawnRate: 1.5
   spawnRadius: 40
+  eliteRegistry: {fileID: 0}
+  eliteSpawnRate: 0.05
+  maxStackedMods: 1
+  extraSpawnsPerTick: 0
 --- !u!4 &984074540
 Transform:
   m_ObjectHideFlags: 0
@@ -2826,6 +2868,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -2844,6 +2887,7 @@ GameObject:
   - component: {fileID: 1080303742}
   - component: {fileID: 1080303743}
   - component: {fileID: 1080303744}
+  - component: {fileID: 1080303745}
   m_Layer: 5
   m_Name: LevelUpLabel
   m_TagString: Untagged
@@ -2948,7 +2992,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -2970,6 +3014,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1080303745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1080303741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 0}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 0
 --- !u!1 &1106942653
 GameObject:
   m_ObjectHideFlags: 0
@@ -3111,9 +3178,20 @@ MonoBehaviour:
   iconImage: {fileID: 1476779720}
   nameText: {fileID: 4856783}
   descriptionText: {fileID: 474232350}
-  stackText: {fileID: 1554557380}
-  valueText: {fileID: 1442955970}
+  levelText: {fileID: 0}
   selectButton: {fileID: 1106942655}
+  evolutionBadge: {fileID: 0}
+  synergyIconImages: []
+  recommendedGlowOutline: {fileID: 0}
+  recommendedRibbon: {fileID: 0}
+  cardAnimator: {fileID: 0}
+  statRowPrefab: {fileID: 0}
+  statRowsContainer: {fileID: 0}
+  cardBackground: {fileID: 0}
+  weaponColor: {r: 0.25, g: 0.45, b: 0.85, a: 1}
+  statColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
+  superColor: {r: 0.85, g: 0.6, b: 0.1, a: 1}
+  fusionColor: {r: 0.65, g: 0.2, b: 0.85, a: 1}
 --- !u!1 &1203291824
 GameObject:
   m_ObjectHideFlags: 0
@@ -3471,9 +3549,20 @@ MonoBehaviour:
   iconImage: {fileID: 275663677}
   nameText: {fileID: 536713226}
   descriptionText: {fileID: 516345049}
-  stackText: {fileID: 2019875897}
-  valueText: {fileID: 1845255186}
+  levelText: {fileID: 0}
   selectButton: {fileID: 1312139367}
+  evolutionBadge: {fileID: 0}
+  synergyIconImages: []
+  recommendedGlowOutline: {fileID: 0}
+  recommendedRibbon: {fileID: 0}
+  cardAnimator: {fileID: 0}
+  statRowPrefab: {fileID: 0}
+  statRowsContainer: {fileID: 0}
+  cardBackground: {fileID: 0}
+  weaponColor: {r: 0.25, g: 0.45, b: 0.85, a: 1}
+  statColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
+  superColor: {r: 0.85, g: 0.6, b: 0.1, a: 1}
+  fusionColor: {r: 0.65, g: 0.2, b: 0.85, a: 1}
 --- !u!1 &1338512967
 GameObject:
   m_ObjectHideFlags: 0
@@ -4645,6 +4734,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -4684,6 +4774,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpUI
   panelRoot: {fileID: 1879487692}
+  cardsSection: {fileID: 0}
+  cardsContainer: {fileID: 0}
   levelLabel: {fileID: 1080303744}
   cardSlots:
   - {fileID: 1106942658}
@@ -4691,6 +4783,21 @@ MonoBehaviour:
   - {fileID: 1312139370}
   - {fileID: 743816687}
   - {fileID: 943368174}
+  titleFormat: LEVEL UP!   Level {0}
+  titleFormatNoLevel: LEVEL UP!
+  timerLabel: {fileID: 0}
+  timerFillBar: {fileID: 0}
+  timerNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  timerUrgentColor: {r: 1, g: 0.3, b: 0.2, a: 1}
+  timerFillColor: {r: 1, g: 0.9019608, b: 0.2, a: 1}
+  urgentThreshold: 10
+  waitingLabel: {fileID: 0}
+  waitingStrip: {fileID: 0}
+  dogTags: {fileID: 0}
+  buildStrip: {fileID: 0}
+  hintLabel: {fileID: 0}
+  hintText: "1 \xB7 2 \xB7 3 \u0E2B\u0E23\u0E37\u0E2D\u0E04\u0E25\u0E34\u0E01\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E25\u0E37\u0E2D\u0E01"
+  glowOnlyOnHover: 1
 --- !u!1 &2007378449
 GameObject:
   m_ObjectHideFlags: 0
@@ -4980,6 +5087,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2057201106}
+  - component: {fileID: 2057201109}
   - component: {fileID: 2057201108}
   - component: {fileID: 2057201107}
   m_Layer: 5
@@ -5078,7 +5186,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -5108,6 +5216,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2057201105}
   m_CullTransparentMesh: 1
+--- !u!114 &2057201109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2057201105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhEngine.ThaiTextCare::PhEngine.ThaiTextCare.ThaiTextNurse
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 2057201107}
+  lastKnownText: 
+  outputString: 
+  lastWordCount: 0
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!1 &2092146760
 GameObject:
   m_ObjectHideFlags: 0

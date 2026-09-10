@@ -198,6 +198,27 @@ namespace CloneSwarm.EditorTools
             P3RText.TryUpperCase(t);
         }
 
+        /// <summary>
+        /// เปิดให้ข้อความขึ้นบรรทัดใหม่ได้ **พร้อมตัดคำไทยให้ถูก**
+        ///
+        /// ภาษาไทยไม่มีช่องว่างระหว่างคำ TMP จึงตัดตรงไหนก็ได้ที่พอดีขอบ
+        /// ผลคือคำโดนผ่ากลาง — `บรรทัด` กลายเป็น `บร` ขึ้นบรรทัดใหม่เป็น `รทัด`
+        ///
+        /// <c>ThaiTextNurse</c> (จากแพ็กเกจ ThaiTextCare) เป็น ITextPreprocessor
+        /// ที่แทรกช่องว่างความกว้างศูนย์ตามขอบคำจากพจนานุกรม TMP จึงตัดถูกที่
+        ///
+        /// **ใช้ตัวนี้แทนการเขียน <c>textWrappingMode = Normal</c> ตรงๆ เสมอ** —
+        /// ไม่งั้นข้อความไทยที่ยาวพอจะขึ้นบรรทัดจะโดนผ่าคำโดยไม่มีใครสังเกต
+        /// จนกว่าจะมีคนอ่านภาษาไทยมาเห็น
+        /// </summary>
+        public static void Wrap(TMP_Text t)
+        {
+            if (t == null) return;
+            t.textWrappingMode = TextWrappingModes.Normal;
+            if (t.GetComponent<PhEngine.ThaiTextCare.ThaiTextNurse>() == null)
+                t.gameObject.AddComponent<PhEngine.ThaiTextCare.ThaiTextNurse>();
+        }
+
         /// <summary>ป้าย mono สำเร็จรูป — ที่พบบ่อยที่สุดในแบบ</summary>
         public static TextMeshProUGUI NewMono(string name, Transform parent, string text,
                                               float size, float emSpacing,

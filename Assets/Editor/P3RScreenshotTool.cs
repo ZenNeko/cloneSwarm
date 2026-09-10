@@ -142,7 +142,7 @@ namespace CloneSwarm.EditorTools
             // TMP คำนวณ mesh แบบ lazy — ไม่บังคับก่อน จะได้ภาพที่ตัวหนังสือหายหรือค้างเฟรมเก่า
             foreach (var root in scene.GetRootGameObjects())
                 foreach (var t in root.GetComponentsInChildren<TMP_Text>(true))
-                    t.ForceMeshUpdate();
+                    t.ForceMeshUpdate(ignoreActiveState: true, forceTextReparsing: true);
 
             Canvas.ForceUpdateCanvases();
             foreach (var c in canvases)
