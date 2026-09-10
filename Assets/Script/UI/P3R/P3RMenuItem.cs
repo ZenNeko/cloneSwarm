@@ -6,6 +6,17 @@ using UnityEngine.UI;
 namespace CloneSwarm.UI.P3R
 {
     /// <summary>
+    /// เมนูเกาะขอบไหนของจอ — กำหนดทั้งการจัดชิดตัวหนังสือ ทิศที่แถบกางออก
+    /// และทิศที่รายการไถลเข้าตอนเปิดหน้า ทั้งสามอย่างต้องไปทางเดียวกันเสมอ
+    /// ถ้าแยกกันจะได้เมนูชิดซ้ายที่แถบกางจากขวา ซึ่งดูเหมือนของพัง
+    /// </summary>
+    public enum MenuSide
+    {
+        Right = 0,
+        Left  = 1,
+    }
+
+    /// <summary>
     /// รายการเมนูหนึ่งบรรทัดสไตล์ P3R — ตัวหนังสือชิดขวา + แถบทึบที่กางออกจากขวาตอนถูกเลือก
     ///
     /// ตัวนี้ไม่ตัดสินใจอะไรเอง — <see cref="P3RMenuList"/> เป็นคนสั่งทั้งหมด
@@ -42,6 +53,10 @@ namespace CloneSwarm.UI.P3R
         // จำ theme ไว้ตอน Apply() เพื่อให้ SetSelected() ใช้ได้โดยไม่ต้องวิ่งหา list ทุกครั้ง
         // SerializeField เพื่อให้ค่าที่ Editor builder ใส่ไว้รอดข้าม domain reload
         [SerializeField, HideInInspector] private P3RTheme theme;
+
+        // ข้างที่แถวนี้เกาะ — P3RMenuList เป็นคนสั่งผ่าน Apply() · เก็บไว้เพื่อให้ค่าที่
+        // Editor builder ใส่ไว้รอดข้าม domain reload เหมือน theme
+        [SerializeField, HideInInspector] private MenuSide side = MenuSide.Right;
 
         // ── runtime ────────────────────────────────────────────────────────
         private RectTransform selfRt;
@@ -80,30 +95,59 @@ namespace CloneSwarm.UI.P3R
         /// ยัดค่าจาก theme ลงของจริง — เรียกได้ทั้งตอนรันและจาก Editor builder
         /// แยกเป็นเมธอดเดียวเพื่อให้ "เปลี่ยน theme แล้วเห็นผล" มีทางเดียว
         /// </summary>
-        public void Apply(P3RTheme t)
+        public void Apply(P3RTheme t, MenuSide menuSide = MenuSide.Right)
         {
             CacheRefs();
-            if (t == null) return;
+            if (t == null)
+            {
+                // เคยเป็น `return;` เฉยๆ แล้วบั๊กหลบอยู่สองวัน — ซีนถูกสร้างจนจบ exit 0
+                // แต่ฟอนต์ สี และแถบไม่ถูกใส่เลย โดยไม่มีอะไรฟ้อง · ดังลั่นดีกว่าเงียบ
+                Debug.LogError($"[P3R] {name}: Apply() ได้ theme เป็น null — รายการนี้จะไม่ถูกจัดรูปเลย\n" +
+                               "ถ้าเกิดใน Editor builder แปลว่าโหลด theme ไว้ก่อน EditorSceneManager.NewScene() " +
+                               "ซึ่ง batchmode จะปลด asset ทิ้งจนกลายเป็น fake-null", this);
+                return;
+            }
             theme = t;
+            side  = menuSide;
+
+            bool  right = side == MenuSide.Right;
+            float ax    = right ? 1f : 0f;   // แกนที่ทุกอย่างเกาะ — 1 = ขอบขวา · 0 = ขอบซ้าย
+
+            // แถวเกาะขอบของ list · anchoredPosition.x ยังเป็นของ builder (ปกติ 0)
+            if (selfRt != null)
+            {
+                selfRt.anchorMin = selfRt.anchorMax = new Vector2(ax, 0.5f);
+                selfRt.pivot     = new Vector2(ax, 0.5f);
+            }
 
             if (label != null)
             {
                 if (!string.IsNullOrEmpty(labelText)) label.text = labelText;
                 if (theme.font != null) label.font = theme.font;
-                label.fontSize            = theme.fontSize;
-                label.characterSpacing    = theme.characterSpacing;
-                label.alignment           = TextAlignmentOptions.Right;
-                label.textWrappingMode     = TextWrappingModes.NoWrap;
-                label.raycastTarget       = false;
-                label.rectTransform.localScale = new Vector3(theme.horizontalScale, 1f, 1f);
+                label.fontSize         = theme.fontSize;
+                label.characterSpacing = theme.characterSpacing;
+                label.alignment        = right ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
+                label.textWrappingMode = TextWrappingModes.NoWrap;
+                label.raycastTarget    = false;
+
+                var lrt = label.rectTransform;
+                lrt.anchorMin = lrt.anchorMax = new Vector2(ax, 0.5f);
+                // pivot ต้องอยู่ข้างเดียวกับที่ชิด ไม่งั้นย่อ horizontalScale แล้วขอบที่ชิดจะขยับ
+                lrt.pivot     = new Vector2(ax, 0.5f);
+                lrt.localScale = new Vector3(theme.horizontalScale, 1f, 1f);
             }
 
             if (barRt != null)
             {
                 bar.color         = theme.barColor;
                 bar.raycastTarget = false;
-                barRt.sizeDelta        = new Vector2(theme.barExtendLeft + theme.barBleedRight, theme.barHeight);
-                barRt.anchoredPosition = new Vector2(theme.barBleedRight, theme.barOffsetY);
+                barRt.anchorMin = barRt.anchorMax = new Vector2(ax, 0.5f);
+                // pivot ข้างเดียวกับที่ชิด → BarReveal (scale.x) กางออกจากขอบนั้นไปอีกฝั่ง
+                barRt.pivot     = new Vector2(ax, 0.5f);
+                barRt.sizeDelta = new Vector2(theme.barExtendLeft + theme.barBleedRight, theme.barHeight);
+                // barBleedRight = ระยะยื่นเลยขอบที่ชิดออกไปนอกจอ · ทิศกลับกันเมื่อชิดซ้าย
+                barRt.anchoredPosition = new Vector2(right ? theme.barBleedRight : -theme.barBleedRight,
+                                                     theme.barOffsetY);
             }
 
             SetSelected(false, instant: true);

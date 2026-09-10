@@ -61,7 +61,7 @@ namespace CloneSwarm.EditorTools
         private const float RowOrderGap   = 16f;
         private const float BarWidth      = 760f;
         private const float BarHeight     = 58f;
-        private const float BarLeftBleed  = -300f;  // ยื่นซ้ายออกนอกจอ
+        private const float BarLeftBleed  = 300f;   // ยื่นเลยขอบซ้ายออกนอกจอ (บวก = ออกข้างนอก)
         private const float ShearDegrees  = 9f;     // = CSS skewX(-9deg) · ดูหมายเหตุใน UIShear
 
         private const float PartyWidth    = 760f;
@@ -107,7 +107,9 @@ namespace CloneSwarm.EditorTools
         [MenuItem("Tools/Clone Swarm/Build P3R Pause Scene")]
         public static void Build()
         {
-            if (File.Exists(ScenePath) &&
+            // batchmode ไม่มีใครกดปุ่มได้ — DisplayDialog คืน false เสมอแล้ว Build() ออกเงียบๆ
+            // อาการคือรัน -executeMethod แล้ว exit 0 แต่ซีนไม่ถูกสร้างใหม่ ไม่มี error ให้เห็น
+            if (!Application.isBatchMode && File.Exists(ScenePath) &&
                 !EditorUtility.DisplayDialog(
                     "สร้างซีนต้นแบบจอ Pause ใหม่",
                     $"{ScenePath} มีอยู่แล้ว\n\nสร้างทับของเดิม? งานที่จัดมือไว้ในซีนนั้นจะหายทั้งหมด",
@@ -116,11 +118,15 @@ namespace CloneSwarm.EditorTools
 
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
+            // ต้องโหลด asset **หลัง** NewScene เสมอ — NewScene ปลด asset ที่ไม่มีใครอ้างถึงทิ้ง
+            // ใน batchmode ตัวแปรที่โหลดไว้ก่อนจึงกลายเป็น fake-null แล้ว P3RMenuItem.Apply()
+            // ออกที่เช็ก null เงียบๆ · อาการคือซีนถูกสร้างจนจบ exit 0 แต่ฟอนต์/สี/แถบไม่ถูกใส่เลย
+            // ในเอดิเตอร์ปกติไม่เจอ เพราะเอดิเตอร์ถือ asset ไว้ให้อยู่แล้ว
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
             var theme     = LoadOrCreateTheme();
             var fontMono  = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontMono);
             var scrim     = LoadOrCreateScrimSprite();
-
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             BuildCamera();
             BuildEventSystem();
@@ -164,15 +170,13 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         // THEME — asset แยกจากเมนูหลัก
         //
-        // **การแม็ปค่าแถบเลือกกับ P3RTheme (สำคัญ อ่านก่อนแก้ตัวเลข)**
-        // P3RMenuItem.Apply() คำนวณแถบแบบนี้ตายตัว:
+        // **การแม็ปค่าแถบเลือกกับ P3RTheme**
+        // P3RMenuItem.Apply() คำนวณแถบแบบนี้:
         //     sizeDelta        = (barExtendLeft + barBleedRight, barHeight)
-        //     anchoredPosition = (barBleedRight, barOffsetY)
-        // ชื่อฟิลด์ตั้งมาสำหรับเมนูหลักซึ่ง **ชิดขวา** (pivot ขวา แถบกางจากขวาไปซ้าย)
-        // จอ pause ชิดซ้าย (pivot ซ้าย แถบกางจากซ้ายไปขวา) ความหมายจึงกลับด้าน:
-        //     barBleedRight  = ระยะที่แถบยื่นเลย "ขอบซ้าย" ของรายการ · ค่าลบ = ยื่นออกนอกจอ = -300
-        //     barExtendLeft  = ตัวเติมให้ผลรวมเท่าความกว้างจริง 760  → 760 - (-300) = 1060
-        // เลือกทางนี้แทนการ hardcode rect ในตัวสร้าง เพราะจะได้มีตัวเลขชุดเดียวที่ designer จูนได้
+        //     anchoredPosition.x = barBleedRight  (ชิดขวา)  /  -barBleedRight  (ชิดซ้าย)
+        // ตั้งแต่มี MenuSide ความหมายไม่กลับด้านอีกแล้ว — barBleedRight คือ
+        // "ระยะที่แถบยื่นเลยขอบที่ชิดออกไปข้างนอก" เป็นบวกเสมอไม่ว่าจะชิดข้างไหน
+        // จอ pause: ยื่นซ้ายออกนอกจอ 300 · กว้างจริง 760 → barExtendLeft = 760 - 300 = 460
         // ═══════════════════════════════════════════════════════════════════
         private static P3RTheme LoadOrCreateTheme()
         {
@@ -200,7 +204,7 @@ namespace CloneSwarm.EditorTools
 
             t.barHeight       = BarHeight;
             t.barBleedRight   = BarLeftBleed;                 // ดูบล็อกคำอธิบายข้างบน
-            t.barExtendLeft   = BarWidth - BarLeftBleed;      // 760 - (-300) = 1060
+            t.barExtendLeft   = BarWidth - BarLeftBleed;      // 760 - 300 = 460
             t.barOffsetY      = 3f;                           // ชดเชย cap height ของ Sarabun ที่ 62px
 
             t.introSlideDistance = 260f;   // สั้นกว่าเมนูหลัก — จอนี้เป็น overlay ต้องเข้าที่ไว
@@ -370,6 +374,7 @@ namespace CloneSwarm.EditorTools
             rt.anchoredPosition = new Vector2(MarginLeft, -MenuTop);
 
             var list = rt.gameObject.AddComponent<P3RMenuList>();
+            list.side = MenuSide.Left;
             list.theme = theme;
             // ESC เป็นของ PauseMenuUI คนเดียว (ดูคำอธิบายใน PauseMenuUI.Start)
             list.listenEscape = false;
@@ -434,7 +439,7 @@ namespace CloneSwarm.EditorTools
             item.label        = label;
             item.bar          = bar;
             item.group        = group;
-            item.Apply(theme);
+            item.Apply(theme, MenuSide.Left);
 
             // Apply() ฮาร์ดโค้ด alignment = Right (เมนูหลักชิดขวา) — ทับหลังเรียกเสมอ
             // ตอนรัน PauseMenuUI.ApplyLeftAlignedRows() ทำซ้ำให้อีกครั้ง เพราะ P3RMenuList.Awake

@@ -254,11 +254,7 @@ public class PauseMenuUI : MonoBehaviour
         SyncFromSoundManager();
         if (panelRoot != null) panelRoot.SetActive(true);
 
-        // ต้องอยู่ **หลัง** SetActive(true) เสมอ — SetActive เรียก Awake/OnEnable ของ
-        // P3RMenuList ทันทีแบบ synchronous ซึ่ง Awake ตัวนั้นเรียก P3RMenuItem.Apply()
-        // ที่บังคับ label ชิดขวา · ทับทีหลังจึงเป็นทางเดียวที่ได้ผลแน่นอน
-        ApplyLeftAlignedRows();
-
+        // การจัดชิดซ้ายเป็นหน้าที่ของ P3RMenuList.side แล้ว ไม่ต้องทับหลัง SetActive อีก
         CloseSettings();
         partyTickTimer = 0f;
         RefreshParty();
@@ -286,29 +282,6 @@ public class PauseMenuUI : MonoBehaviour
                 Debug.LogWarning($"[PauseMenuUI] ไม่รู้จักรายการเมนู id = '{id}' — " +
                                  $"ต้องเป็น {MenuIdResume} / {MenuIdSettings} / {MenuIdQuit}");
                 break;
-        }
-    }
-
-    /// <summary>
-    /// จอ pause ชิดซ้าย แต่ <see cref="P3RMenuItem.Apply"/> ฮาร์ดโค้ด
-    /// <c>TextAlignmentOptions.Right</c> ไว้ (เมนูหลักชิดขวา) และถูกเรียกจาก
-    /// <c>P3RMenuList.Awake()</c> ทุกครั้งที่ panel ถูกเปิด
-    ///
-    /// **ทำไมไม่แก้ P3RMenuItem ให้รองรับชิดซ้าย:** ไฟล์นั้นเมนูหลักใช้ร่วมอยู่
-    /// การเพิ่มโหมด alignment เข้าไปแปลว่าต้องเพิ่มฟิลด์ใน P3RTheme ด้วย (theme เป็นแหล่งเดียว
-    /// ของทุกค่าที่ตาเห็น) แล้วเมนูหลักจะได้ฟิลด์ที่ไม่มีวันใช้ติดมาถาวร
-    /// ที่นี่แลกด้วยการทับค่าเดียว (alignment) หลัง Apply — สั้นกว่า และไม่แตะไฟล์ที่คนอื่นใช้อยู่
-    ///
-    /// ค่าที่เหลือทั้งหมด (ขนาดฟอนต์ 62 · แถบ 760×58 · ยื่นซ้าย -300) เดินทางมาทาง
-    /// P3RTheme_Pause.asset ตามปกติ — ดูคำอธิบายการแม็ปค่าใน P3RPauseSceneBuilder
-    /// </summary>
-    void ApplyLeftAlignedRows()
-    {
-        if (menuList == null) return;
-        foreach (var item in menuList.items)
-        {
-            if (item == null || item.label == null) continue;
-            item.label.alignment = TextAlignmentOptions.MidlineLeft;
         }
     }
 

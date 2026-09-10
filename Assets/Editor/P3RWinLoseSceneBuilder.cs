@@ -58,7 +58,9 @@ namespace CloneSwarm.EditorTools
         [MenuItem("Tools/Clone Swarm/Build P3R Win Lose Scene")]
         public static void Build()
         {
-            if (File.Exists(ScenePath) &&
+            // batchmode ไม่มีใครกดปุ่มได้ — DisplayDialog คืน false เสมอแล้ว Build() ออกเงียบๆ
+            // อาการคือรัน -executeMethod แล้ว exit 0 แต่ซีนไม่ถูกสร้างใหม่ ไม่มี error ให้เห็น
+            if (!Application.isBatchMode && File.Exists(ScenePath) &&
                 !EditorUtility.DisplayDialog("สร้างซีนต้นแบบ Win/Lose ใหม่",
                     $"{ScenePath} มีอยู่แล้ว\n\nสร้างทับของเดิม? งานที่จัดมือในซีนนั้นจะหายทั้งหมด",
                     "สร้างทับ", "ยกเลิก"))
@@ -66,12 +68,16 @@ namespace CloneSwarm.EditorTools
 
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
+            // ต้องโหลด asset **หลัง** NewScene เสมอ — NewScene ปลด asset ที่ไม่มีใครอ้างถึงทิ้ง
+            // ใน batchmode ตัวแปรที่โหลดไว้ก่อนจึงกลายเป็น fake-null แล้ว P3RMenuItem.Apply()
+            // ออกที่เช็ก null เงียบๆ · อาการคือซีนถูกสร้างจนจบ exit 0 แต่ฟอนต์/สี/แถบไม่ถูกใส่เลย
+            // ในเอดิเตอร์ปกติไม่เจอ เพราะเอดิเตอร์ถือ asset ไว้ให้อยู่แล้ว
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
             theme = AssetDatabase.LoadAssetAtPath<P3RTheme>(ThemePath);
             if (theme == null)
                 Debug.LogWarning($"[P3R] ไม่พบ {ThemePath} — จะใช้ฟอนต์ default ของ TMP แทน " +
                                  "รัน Build P3R Main Menu Scene ก่อนหนึ่งครั้งเพื่อสร้าง theme");
-
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             BuildCamera();
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));

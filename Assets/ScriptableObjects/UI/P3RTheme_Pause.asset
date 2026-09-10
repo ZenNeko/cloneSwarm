@@ -23,8 +23,8 @@ MonoBehaviour:
   characterSpacing: -3.5
   rowPitch: 88
   barHeight: 58
-  barExtendLeft: 1060
-  barBleedRight: -300
+  barExtendLeft: 460
+  barBleedRight: 300
   barOffsetY: 3
   introSlideDistance: 260
   introStagger: 0.05

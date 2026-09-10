@@ -63,7 +63,9 @@ namespace CloneSwarm.EditorTools
         [MenuItem("Tools/Clone Swarm/Build P3R Level Up Scene")]
         public static void Build()
         {
-            if (File.Exists(ScenePath) &&
+            // batchmode ไม่มีใครกดปุ่มได้ — DisplayDialog คืน false เสมอแล้ว Build() ออกเงียบๆ
+            // อาการคือรัน -executeMethod แล้ว exit 0 แต่ซีนไม่ถูกสร้างใหม่ ไม่มี error ให้เห็น
+            if (!Application.isBatchMode && File.Exists(ScenePath) &&
                 !EditorUtility.DisplayDialog(
                     "สร้างซีนต้นแบบ Level Up ใหม่",
                     $"{ScenePath} มีอยู่แล้ว\n\nสร้างทับของเดิม? งานที่จัดมือไว้ในซีนนั้นจะหายทั้งหมด",

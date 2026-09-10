@@ -61,7 +61,9 @@ namespace CloneSwarm.EditorTools
         [MenuItem("Tools/Clone Swarm/Build P3R Main Menu Scene")]
         public static void Build()
         {
-            if (File.Exists(ScenePath) &&
+            // batchmode ไม่มีใครกดปุ่มได้ — DisplayDialog คืน false เสมอแล้ว Build() ออกเงียบๆ
+            // อาการคือรัน -executeMethod แล้ว exit 0 แต่ซีนไม่ถูกสร้างใหม่ ไม่มี error ให้เห็น
+            if (!Application.isBatchMode && File.Exists(ScenePath) &&
                 !EditorUtility.DisplayDialog(
                     "สร้างซีนต้นแบบ P3R ใหม่",
                     $"{ScenePath} มีอยู่แล้ว\n\nสร้างทับของเดิม? งานที่จัดมือไว้ในซีนนั้นจะหายทั้งหมด",
@@ -70,8 +72,12 @@ namespace CloneSwarm.EditorTools
 
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
-            var theme = LoadOrCreateTheme();
+            // ต้องโหลด asset **หลัง** NewScene เสมอ — NewScene ปลด asset ที่ไม่มีใครอ้างถึงทิ้ง
+            // ใน batchmode ตัวแปรที่โหลดไว้ก่อนจึงกลายเป็น fake-null แล้ว P3RMenuItem.Apply()
+            // ออกที่เช็ก null เงียบๆ · อาการคือซีนถูกสร้างจนจบ exit 0 แต่ฟอนต์/สี/แถบไม่ถูกใส่เลย
+            // ในเอดิเตอร์ปกติไม่เจอ เพราะเอดิเตอร์ถือ asset ไว้ให้อยู่แล้ว
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var theme = LoadOrCreateTheme();
 
             BuildCamera();
             BuildEventSystem();
@@ -199,6 +205,7 @@ namespace CloneSwarm.EditorTools
             rt.anchoredPosition = new Vector2(-MarginRight, BlockOffsetY);
 
             list       = rt.gameObject.AddComponent<P3RMenuList>();
+            list.side  = MenuSide.Right;
             list.theme = theme;
             rt.gameObject.AddComponent<P3RMainMenuProto>();
 
@@ -248,7 +255,7 @@ namespace CloneSwarm.EditorTools
             item.label        = label;
             item.bar          = bar;
             item.group        = group;
-            item.Apply(theme);
+            item.Apply(theme, MenuSide.Right);
             return item;
         }
 
