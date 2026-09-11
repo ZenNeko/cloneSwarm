@@ -75,7 +75,8 @@ namespace CloneSwarm.Meta
                 tileButton.onClick.AddListener(() => onClicked?.Invoke(talent));
             }
 
-            if (nameText != null) nameText.text = t.talentName;
+            // DisplayName ไม่ใช่ talentName — talentName เป็นชื่อสำรองตอนยังไม่ผูก String Table
+            if (nameText != null) nameText.text = t.DisplayName;
 
             if (iconImage != null)
             {

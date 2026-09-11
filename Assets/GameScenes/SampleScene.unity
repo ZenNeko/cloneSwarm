@@ -11171,6 +11171,7 @@ GameObject:
   - component: {fileID: 234239681}
   - component: {fileID: 234239683}
   - component: {fileID: 234239682}
+  - component: {fileID: 234239684}
   m_Layer: 0
   m_Name: LevelText
   m_TagString: Untagged
@@ -11297,6 +11298,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 234239680}
   m_CullTransparentMesh: 1
+--- !u!114 &234239684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 234239680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 14
 --- !u!1 &234508243
 GameObject:
   m_ObjectHideFlags: 0
@@ -12215,6 +12229,7 @@ GameObject:
   - component: {fileID: 274482741}
   - component: {fileID: 274482743}
   - component: {fileID: 274482742}
+  - component: {fileID: 274482744}
   m_Layer: 0
   m_Name: Hp
   m_TagString: Untagged
@@ -12341,6 +12356,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 274482740}
   m_CullTransparentMesh: 1
+--- !u!114 &274482744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 274482740}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 8
 --- !u!1 &276417550
 GameObject:
   m_ObjectHideFlags: 0
@@ -17718,6 +17746,7 @@ GameObject:
   - component: {fileID: 412747435}
   - component: {fileID: 412747437}
   - component: {fileID: 412747436}
+  - component: {fileID: 412747438}
   m_Layer: 0
   m_Name: Sub
   m_TagString: Untagged
@@ -17844,6 +17873,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 412747434}
   m_CullTransparentMesh: 1
+--- !u!114 &412747438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 412747434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 16
 --- !u!4 &413449053 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4870167790249810, guid: 388d83314c9e51c40956fb6908979eee, type: 3}
@@ -17935,6 +17977,7 @@ GameObject:
   - component: {fileID: 424399207}
   - component: {fileID: 424399209}
   - component: {fileID: 424399208}
+  - component: {fileID: 424399210}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -18061,6 +18104,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 424399206}
   m_CullTransparentMesh: 1
+--- !u!114 &424399210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424399206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1001 &426389760
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18583,6 +18639,7 @@ GameObject:
   - component: {fileID: 443180058}
   - component: {fileID: 443180057}
   - component: {fileID: 443180056}
+  - component: {fileID: 443180059}
   m_Layer: 0
   m_Name: Tag
   m_TagString: Untagged
@@ -18731,6 +18788,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 443180054}
   m_CullTransparentMesh: 1
+--- !u!114 &443180059
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443180054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 20
 --- !u!1001 &444668023
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -20289,6 +20359,7 @@ GameObject:
   - component: {fileID: 482715635}
   - component: {fileID: 482715637}
   - component: {fileID: 482715636}
+  - component: {fileID: 482715638}
   m_Layer: 0
   m_Name: Level
   m_TagString: Untagged
@@ -20415,6 +20486,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 482715634}
   m_CullTransparentMesh: 1
+--- !u!114 &482715638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 482715634}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 10
 --- !u!1001 &487324546
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22552,6 +22636,7 @@ GameObject:
   - component: {fileID: 532922468}
   - component: {fileID: 532922470}
   - component: {fileID: 532922469}
+  - component: {fileID: 532922471}
   m_Layer: 0
   m_Name: Hp
   m_TagString: Untagged
@@ -22678,6 +22763,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 532922467}
   m_CullTransparentMesh: 1
+--- !u!114 &532922471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 532922467}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 8
 --- !u!1 &534034316
 GameObject:
   m_ObjectHideFlags: 0
@@ -23141,6 +23239,7 @@ GameObject:
   - component: {fileID: 539274272}
   - component: {fileID: 539274274}
   - component: {fileID: 539274273}
+  - component: {fileID: 539274275}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -23267,6 +23366,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 539274271}
   m_CullTransparentMesh: 1
+--- !u!114 &539274275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 539274271}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &539917978
 GameObject:
   m_ObjectHideFlags: 0
@@ -24144,6 +24256,7 @@ GameObject:
   - component: {fileID: 552461829}
   - component: {fileID: 552461831}
   - component: {fileID: 552461830}
+  - component: {fileID: 552461832}
   m_Layer: 0
   m_Name: Number
   m_TagString: Untagged
@@ -24270,6 +24383,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 552461828}
   m_CullTransparentMesh: 1
+--- !u!114 &552461832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 552461828}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -4
 --- !u!1 &555811878
 GameObject:
   m_ObjectHideFlags: 0
@@ -25956,6 +26082,7 @@ GameObject:
   - component: {fileID: 580603190}
   - component: {fileID: 580603192}
   - component: {fileID: 580603191}
+  - component: {fileID: 580603193}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -26082,6 +26209,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 580603189}
   m_CullTransparentMesh: 1
+--- !u!114 &580603193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580603189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &580880315
 GameObject:
   m_ObjectHideFlags: 0
@@ -26786,6 +26926,7 @@ GameObject:
   - component: {fileID: 600292932}
   - component: {fileID: 600292934}
   - component: {fileID: 600292933}
+  - component: {fileID: 600292935}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -26912,6 +27053,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 600292931}
   m_CullTransparentMesh: 1
+--- !u!114 &600292935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 600292931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &601149422
 GameObject:
   m_ObjectHideFlags: 0
@@ -30018,6 +30172,7 @@ GameObject:
   - component: {fileID: 666914556}
   - component: {fileID: 666914558}
   - component: {fileID: 666914557}
+  - component: {fileID: 666914559}
   m_Layer: 0
   m_Name: LevelText
   m_TagString: Untagged
@@ -30144,6 +30299,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 666914555}
   m_CullTransparentMesh: 1
+--- !u!114 &666914559
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 666914555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 14
 --- !u!1 &667762745
 GameObject:
   m_ObjectHideFlags: 0
@@ -32418,6 +32586,7 @@ GameObject:
   - component: {fileID: 717729660}
   - component: {fileID: 717729662}
   - component: {fileID: 717729661}
+  - component: {fileID: 717729663}
   m_Layer: 0
   m_Name: Name
   m_TagString: Untagged
@@ -32544,6 +32713,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 717729659}
   m_CullTransparentMesh: 1
+--- !u!114 &717729663
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 717729659}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -2
 --- !u!1001 &718028904
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -37782,6 +37964,7 @@ GameObject:
   - component: {fileID: 816175429}
   - component: {fileID: 816175428}
   - component: {fileID: 816175427}
+  - component: {fileID: 816175430}
   m_Layer: 0
   m_Name: NameText
   m_TagString: Untagged
@@ -37931,6 +38114,19 @@ MonoBehaviour:
   guiMode: 0
   guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
   isInitialized: 1
+--- !u!114 &816175430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 816175425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -3
 --- !u!1 &816936907
 GameObject:
   m_ObjectHideFlags: 0
@@ -40139,6 +40335,7 @@ GameObject:
   - component: {fileID: 879397159}
   - component: {fileID: 879397161}
   - component: {fileID: 879397160}
+  - component: {fileID: 879397162}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -40265,6 +40462,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 879397158}
   m_CullTransparentMesh: 1
+--- !u!114 &879397162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879397158}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &890422865
 GameObject:
   m_ObjectHideFlags: 0
@@ -43708,6 +43918,7 @@ GameObject:
   - component: {fileID: 992200942}
   - component: {fileID: 992200944}
   - component: {fileID: 992200943}
+  - component: {fileID: 992200945}
   m_Layer: 0
   m_Name: LevelText
   m_TagString: Untagged
@@ -43834,6 +44045,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 992200941}
   m_CullTransparentMesh: 1
+--- !u!114 &992200945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 992200941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 14
 --- !u!1001 &993082918
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -44636,6 +44860,7 @@ GameObject:
   - component: {fileID: 1009600141}
   - component: {fileID: 1009600143}
   - component: {fileID: 1009600142}
+  - component: {fileID: 1009600144}
   m_Layer: 0
   m_Name: Title
   m_TagString: Untagged
@@ -44764,6 +44989,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1009600140}
   m_CullTransparentMesh: 1
+--- !u!114 &1009600144
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1009600140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -3.5
 --- !u!1 &1009830531
 GameObject:
   m_ObjectHideFlags: 0
@@ -47704,6 +47942,7 @@ GameObject:
   - component: {fileID: 1088088722}
   - component: {fileID: 1088088721}
   - component: {fileID: 1088088720}
+  - component: {fileID: 1088088723}
   m_Layer: 0
   m_Name: NameText
   m_TagString: Untagged
@@ -47853,6 +48092,19 @@ MonoBehaviour:
   guiMode: 0
   guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
   isInitialized: 1
+--- !u!114 &1088088723
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1088088718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -3
 --- !u!1 &1088599456
 GameObject:
   m_ObjectHideFlags: 0
@@ -49813,6 +50065,7 @@ GameObject:
   - component: {fileID: 1111323937}
   - component: {fileID: 1111323939}
   - component: {fileID: 1111323938}
+  - component: {fileID: 1111323940}
   m_Layer: 0
   m_Name: ResultLabel
   m_TagString: Untagged
@@ -49939,6 +50192,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1111323936}
   m_CullTransparentMesh: 1
+--- !u!114 &1111323940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111323936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -5.5
 --- !u!1 &1111653617
 GameObject:
   m_ObjectHideFlags: 0
@@ -52725,6 +52991,7 @@ GameObject:
   - component: {fileID: 1148685128}
   - component: {fileID: 1148685127}
   - component: {fileID: 1148685126}
+  - component: {fileID: 1148685129}
   m_Layer: 0
   m_Name: NameText
   m_TagString: Untagged
@@ -52874,6 +53141,19 @@ MonoBehaviour:
   guiMode: 0
   guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
   isInitialized: 1
+--- !u!114 &1148685129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1148685124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -3
 --- !u!1001 &1148922791
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -53951,6 +54231,7 @@ GameObject:
   - component: {fileID: 1169904241}
   - component: {fileID: 1169904243}
   - component: {fileID: 1169904242}
+  - component: {fileID: 1169904244}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -54077,6 +54358,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1169904240}
   m_CullTransparentMesh: 1
+--- !u!114 &1169904244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1169904240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1001 &1172971839
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -55019,6 +55313,7 @@ GameObject:
   - component: {fileID: 1183964133}
   - component: {fileID: 1183964135}
   - component: {fileID: 1183964134}
+  - component: {fileID: 1183964136}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -55145,6 +55440,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1183964132}
   m_CullTransparentMesh: 1
+--- !u!114 &1183964136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183964132}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1185767158
 GameObject:
   m_ObjectHideFlags: 0
@@ -56805,6 +57113,7 @@ GameObject:
   - component: {fileID: 1235574025}
   - component: {fileID: 1235574027}
   - component: {fileID: 1235574026}
+  - component: {fileID: 1235574028}
   m_Layer: 0
   m_Name: Name
   m_TagString: Untagged
@@ -56931,6 +57240,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1235574024}
   m_CullTransparentMesh: 1
+--- !u!114 &1235574028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1235574024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -2
 --- !u!1001 &1237533438
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -58380,6 +58702,7 @@ GameObject:
   - component: {fileID: 1269703545}
   - component: {fileID: 1269703544}
   - component: {fileID: 1269703543}
+  - component: {fileID: 1269703546}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -58506,6 +58829,19 @@ RectTransform:
   m_AnchoredPosition: {x: 132, y: 0}
   m_SizeDelta: {x: 60, y: 0}
   m_Pivot: {x: 0, y: 0.5}
+--- !u!114 &1269703546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1269703542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1270533846
 GameObject:
   m_ObjectHideFlags: 0
@@ -61874,6 +62210,7 @@ GameObject:
   - component: {fileID: 1344262771}
   - component: {fileID: 1344262773}
   - component: {fileID: 1344262772}
+  - component: {fileID: 1344262774}
   m_Layer: 0
   m_Name: Level
   m_TagString: Untagged
@@ -62000,6 +62337,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1344262770}
   m_CullTransparentMesh: 1
+--- !u!114 &1344262774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1344262770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 10
 --- !u!1 &1344553219
 GameObject:
   m_ObjectHideFlags: 0
@@ -62264,6 +62614,7 @@ GameObject:
   - component: {fileID: 1355277409}
   - component: {fileID: 1355277411}
   - component: {fileID: 1355277410}
+  - component: {fileID: 1355277412}
   m_Layer: 0
   m_Name: Level
   m_TagString: Untagged
@@ -62390,6 +62741,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1355277408}
   m_CullTransparentMesh: 1
+--- !u!114 &1355277412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1355277408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 10
 --- !u!1 &1355995856
 GameObject:
   m_ObjectHideFlags: 0
@@ -62692,6 +63056,7 @@ GameObject:
   - component: {fileID: 1363465009}
   - component: {fileID: 1363465011}
   - component: {fileID: 1363465010}
+  - component: {fileID: 1363465012}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -62818,6 +63183,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1363465008}
   m_CullTransparentMesh: 1
+--- !u!114 &1363465012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1363465008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1001 &1365774078
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65212,6 +65590,7 @@ GameObject:
   - component: {fileID: 1418171917}
   - component: {fileID: 1418171919}
   - component: {fileID: 1418171918}
+  - component: {fileID: 1418171920}
   m_Layer: 0
   m_Name: Value
   m_TagString: Untagged
@@ -65338,6 +65717,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1418171916}
   m_CullTransparentMesh: 1
+--- !u!114 &1418171920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1418171916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1419185034
 GameObject:
   m_ObjectHideFlags: 0
@@ -66120,6 +66512,7 @@ GameObject:
   - component: {fileID: 1440632997}
   - component: {fileID: 1440632999}
   - component: {fileID: 1440632998}
+  - component: {fileID: 1440633000}
   m_Layer: 0
   m_Name: Abbrev
   m_TagString: Untagged
@@ -66246,6 +66639,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1440632996}
   m_CullTransparentMesh: 1
+--- !u!114 &1440633000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1440632996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 10
 --- !u!1 &1441281019
 GameObject:
   m_ObjectHideFlags: 0
@@ -67034,6 +67440,7 @@ GameObject:
   - component: {fileID: 1449118126}
   - component: {fileID: 1449118128}
   - component: {fileID: 1449118127}
+  - component: {fileID: 1449118129}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -67160,6 +67567,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1449118125}
   m_CullTransparentMesh: 1
+--- !u!114 &1449118129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1449118125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1449141640
 GameObject:
   m_ObjectHideFlags: 0
@@ -67587,6 +68007,7 @@ GameObject:
   - component: {fileID: 1467228645}
   - component: {fileID: 1467228647}
   - component: {fileID: 1467228646}
+  - component: {fileID: 1467228648}
   m_Layer: 0
   m_Name: Sub
   m_TagString: Untagged
@@ -67713,6 +68134,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1467228644}
   m_CullTransparentMesh: 1
+--- !u!114 &1467228648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1467228644}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 16
 --- !u!1001 &1469593422
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -69399,6 +69833,7 @@ GameObject:
   - component: {fileID: 1503699532}
   - component: {fileID: 1503699534}
   - component: {fileID: 1503699533}
+  - component: {fileID: 1503699535}
   m_Layer: 0
   m_Name: Sub
   m_TagString: Untagged
@@ -69525,6 +69960,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1503699531}
   m_CullTransparentMesh: 1
+--- !u!114 &1503699535
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1503699531}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 16
 --- !u!1 &1504088625
 GameObject:
   m_ObjectHideFlags: 0
@@ -69905,6 +70353,7 @@ GameObject:
   - component: {fileID: 1512744007}
   - component: {fileID: 1512744009}
   - component: {fileID: 1512744008}
+  - component: {fileID: 1512744010}
   m_Layer: 0
   m_Name: Sub
   m_TagString: Untagged
@@ -70031,6 +70480,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1512744006}
   m_CullTransparentMesh: 1
+--- !u!114 &1512744010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512744006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 16
 --- !u!1001 &1514122072
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -70296,6 +70758,7 @@ GameObject:
   - component: {fileID: 1521118641}
   - component: {fileID: 1521118643}
   - component: {fileID: 1521118642}
+  - component: {fileID: 1521118644}
   m_Layer: 0
   m_Name: Level
   m_TagString: Untagged
@@ -70422,6 +70885,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1521118640}
   m_CullTransparentMesh: 1
+--- !u!114 &1521118644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1521118640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 2
 --- !u!1 &1522695210
 GameObject:
   m_ObjectHideFlags: 0
@@ -72304,6 +72780,7 @@ GameObject:
   - component: {fileID: 1567745770}
   - component: {fileID: 1567745772}
   - component: {fileID: 1567745771}
+  - component: {fileID: 1567745773}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -72430,6 +72907,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1567745769}
   m_CullTransparentMesh: 1
+--- !u!114 &1567745773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567745769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1001 &1567823870
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -75801,6 +76291,7 @@ GameObject:
   - component: {fileID: 1659028318}
   - component: {fileID: 1659028320}
   - component: {fileID: 1659028319}
+  - component: {fileID: 1659028321}
   m_Layer: 0
   m_Name: Value
   m_TagString: Untagged
@@ -75927,6 +76418,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1659028317}
   m_CullTransparentMesh: 1
+--- !u!114 &1659028321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1659028317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1660101145
 GameObject:
   m_ObjectHideFlags: 0
@@ -76015,6 +76519,7 @@ GameObject:
   - component: {fileID: 1664675003}
   - component: {fileID: 1664675002}
   - component: {fileID: 1664675001}
+  - component: {fileID: 1664675004}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -76141,6 +76646,19 @@ RectTransform:
   m_AnchoredPosition: {x: 224, y: 0}
   m_SizeDelta: {x: 76, y: 0}
   m_Pivot: {x: 0, y: 0.5}
+--- !u!114 &1664675004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1664675000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1001 &1669450473
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -82823,6 +83341,7 @@ GameObject:
   - component: {fileID: 1814293572}
   - component: {fileID: 1814293574}
   - component: {fileID: 1814293573}
+  - component: {fileID: 1814293575}
   m_Layer: 0
   m_Name: After
   m_TagString: Untagged
@@ -82949,6 +83468,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1814293571}
   m_CullTransparentMesh: 1
+--- !u!114 &1814293575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814293571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1815656670
 GameObject:
   m_ObjectHideFlags: 0
@@ -84919,6 +85451,7 @@ GameObject:
   - component: {fileID: 1867859005}
   - component: {fileID: 1867859007}
   - component: {fileID: 1867859006}
+  - component: {fileID: 1867859008}
   m_Layer: 0
   m_Name: Value
   m_TagString: Untagged
@@ -85045,6 +85578,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1867859004}
   m_CullTransparentMesh: 1
+--- !u!114 &1867859008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1867859004}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1868092428
 GameObject:
   m_ObjectHideFlags: 0
@@ -86626,6 +87172,7 @@ GameObject:
   - component: {fileID: 1899519066}
   - component: {fileID: 1899519068}
   - component: {fileID: 1899519067}
+  - component: {fileID: 1899519069}
   m_Layer: 0
   m_Name: Name
   m_TagString: Untagged
@@ -86752,6 +87299,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1899519065}
   m_CullTransparentMesh: 1
+--- !u!114 &1899519069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1899519065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: -2
 --- !u!1001 &1906455236
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -89685,6 +90245,7 @@ GameObject:
   - component: {fileID: 1966759842}
   - component: {fileID: 1966759844}
   - component: {fileID: 1966759843}
+  - component: {fileID: 1966759845}
   m_Layer: 0
   m_Name: Before
   m_TagString: Untagged
@@ -89811,6 +90372,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1966759841}
   m_CullTransparentMesh: 1
+--- !u!114 &1966759845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1966759841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 6
 --- !u!1 &1968131757
 GameObject:
   m_ObjectHideFlags: 0
@@ -92367,6 +92941,7 @@ GameObject:
   - component: {fileID: 2046249619}
   - component: {fileID: 2046249621}
   - component: {fileID: 2046249620}
+  - component: {fileID: 2046249622}
   m_Layer: 0
   m_Name: Hp
   m_TagString: Untagged
@@ -92493,6 +93068,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2046249618}
   m_CullTransparentMesh: 1
+--- !u!114 &2046249622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2046249618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 8
 --- !u!1001 &2047411048
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -94999,6 +95587,7 @@ GameObject:
   - component: {fileID: 2106871014}
   - component: {fileID: 2106871016}
   - component: {fileID: 2106871015}
+  - component: {fileID: 2106871017}
   m_Layer: 0
   m_Name: Sub
   m_TagString: Untagged
@@ -95125,6 +95714,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2106871013}
   m_CullTransparentMesh: 1
+--- !u!114 &2106871017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2106871013}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 16
 --- !u!1001 &2113743330
 PrefabInstance:
   m_ObjectHideFlags: 0
