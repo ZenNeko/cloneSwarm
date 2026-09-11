@@ -23,6 +23,23 @@ public class TabBar : MonoBehaviour
 
     public static event System.Action<string> OnTabChanged;
 
+    /// <summary>
+    /// ความมองเห็นของแท็บเปลี่ยน — แถบแท็บที่วาดอยู่ตามจอต่างๆ ต้องวาดใหม่ตาม
+    ///
+    /// จอ P3R **แต่ละจอวาดแถบแท็บของตัวเอง** (P3R_TalentShop/TabBar/Tab_* ฯลฯ)
+    /// ส่วน TabBar ตัวจริงอยู่บน P3R_Hub และช่อง `button` ของมันว่างทั้งสี่
+    /// SetTabVisible จึงพลิกได้แค่ flag ในตัวเอง ไม่มีอะไรบนจอขยับ
+    /// event นี้คือสายที่ขาดอยู่ — <c>P3RTabStrip</c> เป็นตัวรับ
+    /// </summary>
+    public static event System.Action OnTabsChanged;
+
+    /// <summary>แท็บนี้ควรเห็นไหม — ไม่รู้จัก id ถือว่าเห็น</summary>
+    public bool IsVisible(string id)
+    {
+        var tab = tabs.Find(t => t != null && t.id == id);
+        return tab == null || tab.visible;
+    }
+
     private string currentTabId;
 
     private void Start()
@@ -82,6 +99,8 @@ public class TabBar : MonoBehaviour
         {
             Cycle(1);
         }
+
+        OnTabsChanged?.Invoke();
     }
 
     public void Select(string id)

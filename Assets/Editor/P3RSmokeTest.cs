@@ -141,7 +141,7 @@ namespace CloneSwarm.EditorTools
 
                     // TALENT SHOP อยู่ใต้ hub — กดแล้ว hub เปิด แล้ว TabBar เลือกแท็บ shop
                     case 4: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
-                    case 5: Verify(); CheckShop(); ShopBackFromMain(); break;
+                    case 5: Verify(); CheckShop(); CheckShopTabs(); ShopBackFromMain(); break;
                     // VerifyShopBack ตั้ง wait ไว้ให้อนิเมชันเข้าเมนูวิ่งจบก่อน — wait มีผลกับ
                     // **ขั้นถัดไป** ไม่ใช่บรรทัดถัดไป การกดในขั้นเดียวกันจึงโดนปฏิเสธเงียบๆ
                     case 6: VerifyShopBack(); break;
@@ -277,6 +277,35 @@ namespace CloneSwarm.EditorTools
             /// lobby ตรงๆ เข้าร้านจากเมนูหลักแล้วกดถอยจึงไปโผล่ที่ล็อบบี้ ซึ่งเป็นหน้าที่
             /// ผู้เล่นไม่เคยเห็นมาก่อนในเส้นทางนั้น
             /// </summary>
+            /// <summary>
+            /// เข้าร้านจากเมนูหลัก = ยังไม่มีห้อง · แท็บ LOBBY กับ MAP ต้องไม่มีให้เห็น
+            ///
+            /// `LobbyUI.Refresh()` สั่งซ่อนมาตลอด แต่คำสั่งไปไม่ถึงปุ่มที่ผู้เล่นเห็น
+            /// เพราะ `TabBar.tabs[].button` ว่างทั้งสี่ และปุ่มจริงเป็นสำเนาที่แต่ละ panel วาดเอง
+            /// ผลคือเห็นแท็บที่กดแล้วไม่ไปไหน — `TabBar.Select()` ปฏิเสธแท็บที่ไม่ visible
+            /// </summary>
+            private void CheckShopTabs()
+            {
+                var shop = Find("P3R_TalentShop");
+                if (shop == null) { Require(false, "แท็บในร้าน: หา P3R_TalentShop เจอ"); return; }
+
+                var all = shop.GetComponentsInChildren<Transform>(true);
+                GameObject Tab(string n) => all.FirstOrDefault(t => t.name == n)?.gameObject;
+
+                foreach (var n in new[] { "Tab_LOBBY", "Tab_MAP" })
+                {
+                    var go = Tab(n);
+                    Require(go != null && !go.activeInHierarchy,
+                            go == null ? $"แท็บในร้าน: หา {n} เจอ"
+                                       : $"แท็บในร้าน: {n} ถูกซ่อน (เข้ามาจากเมนูหลัก ยังไม่มีห้อง)");
+                }
+                foreach (var n in new[] { "Tab_CHARACTER", "Tab_SHOP" })
+                {
+                    var go = Tab(n);
+                    Require(go != null && go.activeInHierarchy, $"แท็บในร้าน: {n} ยังอยู่");
+                }
+            }
+
             private void ShopBackFromMain()
             {
                 var shop = Find("P3R_TalentShop");

@@ -647,6 +647,9 @@ namespace CloneSwarm.EditorTools
                 foreach (var (obj, id) in tabButtons)
                     AddTabJump(panels, panelName, obj, id, plan, apply);
 
+            foreach (var panelName in tabPanels)
+                AddTabStrip(panels, panelName, tabButtons, plan, apply);
+
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Back",    "lobby", plan, apply);
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Confirm", "lobby", plan, apply);
             // ร้านเข้าได้ทั้งจากเมนูหลักและจากล็อบบี้ — "back" ให้ P3RTabJump ตัดสินตามโหมดของ hub
@@ -666,6 +669,45 @@ namespace CloneSwarm.EditorTools
                                         captured.onAdvanceEvent, mm.ShowMain));
                 }
             }
+        }
+
+        /// <summary>
+        /// ให้แถบแท็บที่จอนี้วาดไว้ ฟังคำสั่งซ่อน/โชว์จาก <see cref="TabBar"/> ตัวจริง
+        ///
+        /// `LobbyUI.Refresh()` สั่ง `SetTabVisible("lobby", false)` ตอนเข้าร้านจากเมนูหลัก
+        /// มาตลอด แต่ `TabBar.tabs[].button` ว่างทั้งสี่ช่อง คำสั่งจึงไปไม่ถึงปุ่มที่เห็นบนจอ
+        /// (ปุ่มจริงเป็นสำเนาที่แต่ละ panel วาดเอง) · P3RTabStrip เป็นสายที่ขาดอยู่
+        /// </summary>
+        private static void AddTabStrip(Dictionary<string, GameObject> panels, string panelName,
+                                        (string obj, string id)[] tabButtons,
+                                        List<string> plan, List<System.Action> apply)
+        {
+            if (!panels.TryGetValue(panelName, out var panel) || panel == null) return;
+
+            var strip = panel.GetComponentsInChildren<Transform>(true)
+                             .FirstOrDefault(t => t.name == "TabBar");
+            if (strip == null) return;
+            if (strip.GetComponent<P3RTabStrip>() != null) return;
+
+            var found = new List<(string id, RectTransform rt)>();
+            foreach (var (obj, id) in tabButtons)
+            {
+                var b = strip.Find(obj) as RectTransform;
+                if (b != null) found.Add((id, b));
+            }
+            if (found.Count == 0) return;
+
+            plan.Add($"   ใส่ P3RTabStrip บน {panelName}/TabBar ({found.Count} แท็บ) — " +
+                     "แท็บที่ถูกซ่อนจะหายจริง ไม่ใช่ซ่อนแค่ใน flag");
+
+            var go = strip.gameObject;
+            var entries = found;
+            apply.Add(() =>
+            {
+                var comp = go.AddComponent<P3RTabStrip>();
+                foreach (var (id, rt) in entries)
+                    comp.entries.Add(new P3RTabStrip.Entry { id = id, button = rt });
+            });
         }
 
         private static void AddTabJump(Dictionary<string, GameObject> panels, string panelName,
