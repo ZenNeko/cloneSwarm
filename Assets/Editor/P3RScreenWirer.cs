@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using CloneSwarm.UI.P3R;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -79,6 +81,8 @@ namespace CloneSwarm.EditorTools
                 }
             }
 
+            AuditDeadControls(sb, scene);
+
             // ตัวคุมจอที่อยู่ผิดที่ — บน Canvas root แทนที่จะอยู่บน panel ของตัวเอง
             var strays = FindStrayControllers(scene);
             if (strays.Count > 0)
@@ -87,6 +91,68 @@ namespace CloneSwarm.EditorTools
                 foreach (var s in strays) sb.AppendLine($"      {s.GetType().Name}  บน  {HierarchyPath(s.transform)}");
             }
             sb.AppendLine();
+        }
+
+        /// <summary>
+        /// หา "ปุ่มที่กดแล้วไม่เกิดอะไร" ใน panel P3R ทุกอัน
+        ///
+        /// ปุ่มจะทำงานได้สามทาง — มี persistent listener ใน onClick, ถูก field ของ
+        /// สคริปต์ไหนสักตัวอ้างถึง (แล้วสคริปต์นั้น AddListener เองตอน OnEnable),
+        /// หรือมี component บนตัวมันเองที่ต่อให้ (เช่น <see cref="P3RTabJump"/>)
+        /// ไม่เข้าสักทาง = ปุ่มตาย · builder สร้างปุ่มสวยๆ ไว้ได้โดยไม่มีใครสังเกตว่ามันไม่ทำงาน
+        /// </summary>
+        private static void AuditDeadControls(StringBuilder sb, Scene scene)
+        {
+            var panels = FindPanels(scene);
+            if (panels.Count == 0) return;
+
+            // เก็บทุก object ที่ถูก field ไหนสักตัวในซีนอ้างถึง
+            var referenced = new HashSet<Object>();
+            foreach (var mb in AllBehaviours(scene))
+            {
+                var it = new SerializedObject(mb).GetIterator();
+                bool enter = true;
+                while (it.NextVisible(enter))
+                {
+                    enter = false;
+                    if (it.propertyType == SerializedPropertyType.ObjectReference &&
+                        it.objectReferenceValue != null)
+                        referenced.Add(it.objectReferenceValue);
+                }
+            }
+
+            var dead = new List<string>();
+            foreach (var kv in panels)
+            {
+                if (kv.Value == null) continue;
+
+                foreach (var btn in kv.Value.GetComponentsInChildren<UnityEngine.UI.Button>(true))
+                {
+                    if (btn.onClick.GetPersistentEventCount() > 0) continue;
+                    if (referenced.Contains(btn)) continue;
+                    if (btn.GetComponent<P3RTabJump>() != null) continue;
+                    dead.Add($"      {HierarchyPath(btn.transform)}");
+                }
+
+                foreach (var list in kv.Value.GetComponentsInChildren<P3RMenuList>(true))
+                {
+                    if (list.GetComponent<P3RMenuBridge>() != null) continue;
+                    if (list.onConfirmEvent.GetPersistentEventCount() > 0) continue;
+                    // ถูก field ของสคริปต์อื่นถืออยู่ก็ใช้ได้ — PauseMenuUI.menuList เป็นแบบนั้น
+                    // มัน subscribe OnConfirm เองใน OnEnable
+                    if (referenced.Contains(list)) continue;
+                    dead.Add($"      {HierarchyPath(list.transform)} (P3RMenuList ไม่มีตัวรับ)");
+                }
+            }
+
+            if (dead.Count == 0)
+            {
+                sb.AppendLine("   ปุ่มใน panel P3R ต่อครบทุกตัว");
+                return;
+            }
+
+            sb.AppendLine($"   ปุ่มที่กดแล้วไม่เกิดอะไร {dead.Count} ตัว:");
+            foreach (var d in dead) sb.AppendLine(d);
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -219,6 +285,12 @@ namespace CloneSwarm.EditorTools
                 }
             }
 
+            // ── 3.5 ต่อ "การกด" ไม่ใช่แค่สายอ้างอิง ──────────────────────────
+            // สายอ้างอิง panel ทำให้จอ **โผล่** ได้ แต่ไม่ได้ทำให้มัน **กดได้**
+            // เมนูหลัก P3R ไม่ได้ใช้ Button เลย MenuManager จึงต่อเข้าไม่ได้ตรงๆ
+            // และปุ่ม BACK/CONFIRM ของ MapSelect กับ TalentShop ถูกสร้างไว้เฉยๆ ไม่ได้ต่อกับอะไร
+            WireInteractions(scene, panels, plan, apply);
+
             // ── 4. เปิด panel ที่ต้องเปิดตอนเริ่ม ─────────────────────────────
             //
             // P3R_Main = หน้าแรกของเมนู
@@ -305,6 +377,79 @@ namespace CloneSwarm.EditorTools
             plan.Add($"   TabBar.tabs[{id}].panel  {Name(current)} → {key}");
             panelProp.objectReferenceValue = panel;
             return true;
+        }
+
+        /// <summary>
+        /// ต่อสิ่งที่ทำให้ "กดแล้วเกิดอะไรขึ้น" — คนละเรื่องกับสายที่ทำให้จอโผล่
+        /// </summary>
+        private static void WireInteractions(Scene scene, Dictionary<string, GameObject> panels,
+                                             List<string> plan, List<System.Action> apply)
+        {
+            var menuManager = Object.FindAnyObjectByType<MenuManager>(FindObjectsInactive.Include);
+
+            // ── เมนูหลัก: P3RMenuList → MenuManager ─────────────────────────
+            if (panels.TryGetValue("P3R_Main", out var main) && main != null)
+            {
+                var list = main.GetComponentInChildren<P3RMenuList>(true);
+                if (list != null && list.GetComponent<P3RMenuBridge>() == null)
+                {
+                    plan.Add("   ใส่ P3RMenuBridge บน MenuList (เมนูหลักจะกดติด)");
+                    var go = list.gameObject;
+                    apply.Add(() =>
+                    {
+                        var bridge = go.AddComponent<P3RMenuBridge>();
+                        bridge.menuManager = menuManager;
+                    });
+                }
+
+                // ตัวต้นแบบที่แค่ Debug.Log — ทิ้งไว้จะยิงซ้ำกับ bridge ตัวจริง
+                var proto = main.GetComponentInChildren<P3RMainMenuProto>(true);
+                if (proto != null)
+                {
+                    plan.Add("   ลบ P3RMainMenuProto (ตัวต้นแบบที่แค่ Debug.Log)");
+                    var captured = proto;
+                    apply.Add(() => Object.DestroyImmediate(captured));
+                }
+            }
+
+            // ── ปุ่มท้ายจอที่ยังไม่ได้ต่อ → สลับแท็บ ──────────────────────────
+            AddTabJump(panels, "P3R_MapSelect",  "Btn_Back",    "lobby", plan, apply);
+            AddTabJump(panels, "P3R_MapSelect",  "Btn_Confirm", "lobby", plan, apply);
+            AddTabJump(panels, "P3R_TalentShop", "Btn_Back",    "lobby", plan, apply);
+            AddTabJump(panels, "P3R_Character",  "Btn_Back",    "lobby", plan, apply);
+
+            // ── Title: กดอะไรก็ได้ → หน้าแรก ────────────────────────────────
+            if (panels.TryGetValue("P3R_Title", out var title) && title != null && menuManager != null)
+            {
+                var t = title.GetComponentInChildren<TitleScreenUI>(true);
+                if (t != null && t.onAdvanceEvent.GetPersistentEventCount() == 0)
+                {
+                    plan.Add("   ต่อ TitleScreenUI.onAdvanceEvent → MenuManager.ShowMain()");
+                    var captured = t;
+                    var mm = menuManager;
+                    apply.Add(() => UnityEventTools.AddVoidPersistentListener(
+                                        captured.onAdvanceEvent, mm.ShowMain));
+                }
+            }
+        }
+
+        private static void AddTabJump(Dictionary<string, GameObject> panels, string panelName,
+                                       string buttonName, string tabId,
+                                       List<string> plan, List<System.Action> apply)
+        {
+            if (!panels.TryGetValue(panelName, out var panel) || panel == null) return;
+
+            foreach (var t in panel.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name != buttonName) continue;
+                if (t.GetComponent<UnityEngine.UI.Button>() == null) continue;
+                if (t.GetComponent<P3RTabJump>() != null) return;
+
+                plan.Add($"   ใส่ P3RTabJump บน {panelName}/{buttonName} → แท็บ {tabId}");
+                var go = t.gameObject;
+                apply.Add(() => go.AddComponent<P3RTabJump>().tabId = tabId);
+                return;
+            }
         }
 
         /// <summary>

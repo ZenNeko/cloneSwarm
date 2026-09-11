@@ -135,7 +135,8 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════════════════
-    void ShowMain()
+    /// <summary>กลับหน้าแรก — public เพราะจอ P3R เรียกผ่าน P3RMenuBridge ไม่ได้ผ่านปุ่ม</summary>
+    public void ShowMain()
     {
         ShowPanel(mainPanel);
     }
@@ -152,7 +153,7 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // BUTTON CALLBACKS
     // ═══════════════════════════════════════════════════════════════════════
-    void OnPlayClicked()
+    public void OnPlayClicked()
     {
         ShowPanel(lobbyPanel);
         if (lobbyUI != null) lobbyUI.SetMode(HubMode.Lobby);
@@ -167,21 +168,21 @@ public class MenuManager : MonoBehaviour
         EnsureLobbyStateSpawned();
     }
 
-    void OnJoinRoomClicked()
+    public void OnJoinRoomClicked()
     {
         if (JoinRoomPanel.Instance != null) JoinRoomPanel.Instance.Open();
     }
 
-    void OnSettingsClicked()   => ShowPanel(settingsPanel);
+    public void OnSettingsClicked()   => ShowPanel(settingsPanel);
 
     /// ร้านเป็นแท็บใน Hub — ไม่แตะ network เลย
-    void OnTalentShopClicked()
+    public void OnTalentShopClicked()
     {
         ShowPanel(lobbyPanel);
         if (lobbyUI != null) lobbyUI.SetMode(HubMode.Shop);
     }
 
-    void OnQuitClicked()
+    public void OnQuitClicked()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
