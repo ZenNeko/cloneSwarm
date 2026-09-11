@@ -649,7 +649,8 @@ namespace CloneSwarm.EditorTools
 
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Back",    "lobby", plan, apply);
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Confirm", "lobby", plan, apply);
-            AddTabJump(panels, "P3R_TalentShop", "Btn_Back",    "lobby", plan, apply);
+            // ร้านเข้าได้ทั้งจากเมนูหลักและจากล็อบบี้ — "back" ให้ P3RTabJump ตัดสินตามโหมดของ hub
+            AddTabJump(panels, "P3R_TalentShop", "Btn_Back",    "back",  plan, apply);
             AddTabJump(panels, "P3R_Character",  "Btn_Back",    "lobby", plan, apply);
 
             // ── Title: กดอะไรก็ได้ → หน้าแรก ────────────────────────────────

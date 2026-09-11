@@ -141,27 +141,32 @@ namespace CloneSwarm.EditorTools
 
                     // TALENT SHOP อยู่ใต้ hub — กดแล้ว hub เปิด แล้ว TabBar เลือกแท็บ shop
                     case 4: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
-                    case 5: Verify(); CheckShop(); JumpTab("lobby", "P3R_Lobby"); break;
-                    case 6: Verify(); JumpTab("character", "P3R_Character"); break;
-                    case 7: Verify(); CheckCharacter(); break;
-                    case 8: CheckCharacterClick(); break;
-                    case 9: ShowMain(); break;
+                    case 5: Verify(); CheckShop(); ShopBackFromMain(); break;
+                    // VerifyShopBack ตั้ง wait ไว้ให้อนิเมชันเข้าเมนูวิ่งจบก่อน — wait มีผลกับ
+                    // **ขั้นถัดไป** ไม่ใช่บรรทัดถัดไป การกดในขั้นเดียวกันจึงโดนปฏิเสธเงียบๆ
+                    case 6: VerifyShopBack(); break;
+                    case 7: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
+                    case 8: Verify(); JumpTab("lobby", "P3R_Lobby"); break;
+                    case 9: Verify(); JumpTab("character", "P3R_Character"); break;
+                    case 10: Verify(); CheckCharacter(); break;
+                    case 11: CheckCharacterClick(); break;
+                    case 12: ShowMain(); break;
 
                     // 'play' เรียก StartHost เข้า NGO จริง — เส้นทางหลักของเกม
-                    case 10:  Press("play", "P3R_Hub", "P3R_Lobby"); break;
-                    case 11: Verify(); CheckHostStarted(); break;
+                    case 13:  Press("play", "P3R_Hub", "P3R_Lobby"); break;
+                    case 14: Verify(); CheckHostStarted(); break;
 
                     // แท็บ MAP ต้องเช็ค **หลัง** host ขึ้น — LobbyUI.Refresh ซ่อนแท็บนี้
                     // ตอนไม่ใช่ host (SetTabVisible("map", lobbyMode && isHost))
                     // เพราะ client เปลี่ยนแมพไม่ได้อยู่แล้ว · ไม่ใช่บั๊ก
-                    case 12: JumpTab("map", "P3R_MapSelect"); break;
-                    case 13: Verify(); CheckMapSelect(); break;
+                    case 15: JumpTab("map", "P3R_MapSelect"); break;
+                    case 16: Verify(); CheckMapSelect(); break;
 
                     // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
-                    case 14: GoToGameScene(); break;
-                    case 15: CheckInGameScreens(); break;
+                    case 17: GoToGameScene(); break;
+                    case 18: CheckInGameScreens(); break;
 
-                    case 16: Report(); break;
+                    case 19: Report(); break;
                 }
             }
 
@@ -263,6 +268,37 @@ namespace CloneSwarm.EditorTools
                         "การ์ดมี CharacterCardUI (กดเลือกได้)");
 
                 CheckCardLayout("ลิสต์ตัวละคร", sel.cardsContainer, sel.characters.Count, vertical: true);
+            }
+
+            /// <summary>
+            /// กดปุ่ม BACK ในร้าน **หลังเข้าร้านจากเมนูหลัก** — ต้องกลับเมนูหลัก ไม่ใช่ล็อบบี้
+            ///
+            /// ร้านเข้าได้สองทางและ BACK ต้องพากลับทางที่มา · ของเดิมผูก BACK ไว้กับแท็บ
+            /// lobby ตรงๆ เข้าร้านจากเมนูหลักแล้วกดถอยจึงไปโผล่ที่ล็อบบี้ ซึ่งเป็นหน้าที่
+            /// ผู้เล่นไม่เคยเห็นมาก่อนในเส้นทางนั้น
+            /// </summary>
+            private void ShopBackFromMain()
+            {
+                var shop = Find("P3R_TalentShop");
+                var back = shop == null ? null
+                         : shop.GetComponentsInChildren<Transform>(true)
+                               .FirstOrDefault(t => t.name == "Btn_Back");
+                var btn = back == null ? null : back.GetComponent<Button>();
+
+                if (btn == null) { Require(false, "หาปุ่ม BACK ในร้านเจอ"); return; }
+
+                lines.Add("── กด BACK ในร้าน (เข้ามาจากเมนูหลัก)");
+                btn.onClick.Invoke();
+                wait = 0.3f;
+            }
+
+            private void VerifyShopBack()
+            {
+                Require(Find("P3R_Main")?.activeInHierarchy == true,
+                        "BACK จากร้านที่เข้ามาทางเมนูหลัก → กลับเมนูหลัก");
+                Require(Find("P3R_Hub")?.activeInHierarchy != true,
+                        "BACK จากร้าน → hub ปิดลง ไม่ค้างอยู่ที่ล็อบบี้");
+                wait = 1.6f;   // P3R_Main เล่นอนิเมชันเข้าใหม่ · กดทะลุระหว่างนั้นไม่ได้
             }
 
             /// <summary>

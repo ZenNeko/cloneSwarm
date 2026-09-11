@@ -393,7 +393,8 @@ namespace CloneSwarm.EditorTools
 
             var perLevel = NewMono("PerLevel", prt, "DAMAGE +3% / LEVEL", 14f, 0.22f,
                                    TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.42f));
-            TopLeft(perLevel.rectTransform, 32f, 392f, 440f, 24f);
+            TopLeft(perLevel.rectTransform, 32f, 392f, RightW - 64f, 24f);
+            ui.detailPerLevelText = perLevel;
 
             // ── ปุ่มซื้อ ─────────────────────────────────────────────────────
             var buyRoot = NewRect("BuyButton", prt);

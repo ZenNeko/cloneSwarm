@@ -51,6 +51,8 @@ namespace CloneSwarm.Meta
 
         [Tooltip("ยอดทองที่จะเหลือหลังกดซื้อ — ช่วยให้ตัดสินใจโดยไม่ต้องคิดเลขเอง")]
         public TextMeshProUGUI afterPurchaseText;
+        [Tooltip("บรรทัด 'ได้เท่าไรต่อเลเวล' ใต้ช่อง NOW/NEXT — ปล่อยว่างได้")]
+        public TextMeshProUGUI detailPerLevelText;
 
         [Header("── Buy Button ─────────────────────────")]
         public Button          buyButton;
@@ -211,6 +213,15 @@ namespace CloneSwarm.Meta
                 if (img != null) img.color = canBuy ? buyAffordableColor : buyTooPoorColor;
             }
             if (detailCategoryText != null) detailCategoryText.text = selected.CategoryLabel;
+
+            // เคยฮาร์ดโค้ดไว้ที่ builder ว่า "DAMAGE +3% / LEVEL" แล้วไม่มีใครอัปเดต —
+            // talent ทุกตัวที่ไม่ใช่ Damage จึงโชว์ตัวเลขของคนอื่นมาตลอด
+            if (detailPerLevelText != null)
+            {
+                string perLevel = selected.FormatPerLevel();
+                detailPerLevelText.gameObject.SetActive(!string.IsNullOrEmpty(perLevel));
+                detailPerLevelText.text = perLevel;
+            }
 
             // ยอดคงเหลือหลังซื้อ — ซ่อนเมื่อซื้อไม่ได้ เพราะตัวเลขติดลบไม่ได้บอกอะไร
             if (afterPurchaseText != null)

@@ -87,6 +87,19 @@ namespace CloneSwarm.Meta
             return costPerLevel[currentLevel];
         }
 
+        /// <summary>
+        /// บรรทัด "ได้เท่าไรต่อเลเวล" ใต้ช่อง NOW/NEXT — คืนค่าว่างเมื่อไม่มีความหมาย
+        ///
+        /// แผงรายละเอียดเคยฮาร์ดโค้ดบรรทัดนี้ไว้ว่า `DAMAGE +3% / LEVEL` แล้วไม่มีใคร
+        /// อัปเดตเลย · talent ทุกตัวที่ไม่ใช่ Damage จึงโชว์ตัวเลขของคนอื่นมาตลอด
+        /// </summary>
+        public string FormatPerLevel()
+        {
+            if (mode == TalentEffectMode.SecondChance) return "";
+            if (mode == TalentEffectMode.GoldFind)     return $"+{valuePerLevel * 100f:F0}% Gold / LEVEL";
+            return $"{FormatStatValue(statType, valuePerLevel)} / LEVEL";
+        }
+
         /// <summary>ค่าผลรวมที่ level นี้</summary>
         public float GetTotalValue(int level) => valuePerLevel * Mathf.Clamp(level, 0, MaxLevel);
 
@@ -120,8 +133,9 @@ namespace CloneSwarm.Meta
         /// </summary>
         public string FormatValueShort(int level)
         {
+            // สั้นจริงๆ — ช่อง NOW/NEXT กว้าง 184px ที่ฟอนต์ 30 "1 ครั้ง/เกม" โดนตัดเป็น "1 คร้."
             if (mode == TalentEffectMode.SecondChance)
-                return level > 0 ? "1 ครั้ง/เกม" : "—";
+                return level > 0 ? "1 ครั้ง" : "—";
 
             float v = GetTotalValue(level);
             if (mode == TalentEffectMode.GoldFind) return $"+{v * 100f:F0}%";

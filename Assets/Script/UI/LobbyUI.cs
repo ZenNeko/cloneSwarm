@@ -94,6 +94,15 @@ public class LobbyUI : MonoBehaviour
     private readonly List<GameObject> spawnedPartyRows = new();
     private LobbyState lastLobbyState;
     private HubMode mode = HubMode.Lobby;
+
+    /// <summary>
+    /// โหมดที่ hub เปิดอยู่ — **บอกด้วยว่าผู้เล่นเข้ามาทางไหน**
+    ///
+    /// Shop = เข้ามาจากเมนูหลักตรงๆ (`MenuManager.OnTalentShopClicked`)
+    /// Lobby = อยู่ในล็อบบี้แล้วกดแท็บ SHOP เอา (P3RTabJump ไม่แตะโหมด)
+    /// ปุ่ม BACK ในร้านต้องพากลับคนละที่กันตามนี้
+    /// </summary>
+    public HubMode Mode => mode;
     private Coroutine copyFeedbackRoutine;
 
     private void Start()
