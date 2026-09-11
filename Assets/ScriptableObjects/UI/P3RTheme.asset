@@ -23,10 +23,10 @@ MonoBehaviour:
   thaiFontScale: 1.08
   characterSpacing: -4
   rowPitch: 96
-  barHeight: 76
+  barHeight: 68
   barExtendLeft: 400
   barBleedRight: 130
-  barOffsetY: 7
+  barOffsetY: 5
   introSlideDistance: 420
   introStagger: 0.045
   introDuration: 0.26

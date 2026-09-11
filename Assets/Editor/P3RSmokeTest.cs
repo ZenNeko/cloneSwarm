@@ -106,6 +106,24 @@ namespace CloneSwarm.EditorTools
 
             private void Update()
             {
+                // ── รอเงื่อนไขจนเป็นจริง ไม่ใช่รอเวลาแล้วเช็คครั้งเดียว ──────────
+                // การรอเวลาตายตัวทำให้เทสต์ตกสลับผ่านสลับ เวลาเครื่องสะดุด
+                // (โหลด asset · domain reload · NGO เพิ่งขึ้น) — เทสต์ที่ flake
+                // แย่กว่าไม่มีเทสต์ เพราะมันสอนให้คนเลิกเชื่อผลของมัน
+                if (waitCond != null)
+                {
+                    if (waitCond())                        { Finish(true);  }
+                    else if (Time.unscaledTime < deadline)  { return; }
+                    else                                    { Finish(false); }
+
+                    void Finish(bool ok)
+                    {
+                        onWaitDone?.Invoke(ok);
+                        waitCond = null; onWaitDone = null;
+                    }
+                    return;
+                }
+
                 if (wait > 0f) { wait -= Time.unscaledDeltaTime; return; }
 
                 switch (step++)
@@ -268,9 +286,11 @@ namespace CloneSwarm.EditorTools
             private void CheckHostStarted()
             {
                 var nm = Unity.Netcode.NetworkManager.Singleton;
-                Require(nm != null,                 "มี NetworkManager ในซีน");
-                Require(nm != null && nm.IsListening, "StartHost ขึ้นแล้ว (IsListening)");
-                wait = 0.5f;
+                Require(nm != null, "มี NetworkManager ในซีน");
+                if (nm == null) return;
+
+                WaitUntil(() => nm.IsListening,
+                          ok => Require(ok, "StartHost ขึ้นแล้ว (IsListening)" + (ok ? "" : " — หมดเวลารอ")));
             }
 
             /// <summary>
@@ -333,17 +353,52 @@ namespace CloneSwarm.EditorTools
             private string[] pending;
             private string   pendingLabel;
 
+            private System.Func<bool>     waitCond;
+            private System.Action<bool>   onWaitDone;
+            private float                 deadline;
+
+            /// <summary>รอจนเงื่อนไขเป็นจริง หรือหมดเวลา แล้วค่อยบันทึกผล</summary>
+            private void WaitUntil(System.Func<bool> cond, System.Action<bool> done, float timeout = 6f)
+            {
+                waitCond = cond; onWaitDone = done; deadline = Time.unscaledTime + timeout;
+            }
+
             private void Expect(string label, string[] names)
             {
-                pending = names; pendingLabel = label; wait = 0.35f;
+                pending = names; pendingLabel = label;
+                WaitUntil(() => names.All(n => Find(n)?.activeInHierarchy == true), _ => Verify());
             }
 
             private void Verify()
             {
                 if (pending == null) return;
                 foreach (var n in pending)
-                    Require(Find(n)?.activeInHierarchy == true, $"{pendingLabel} แล้ว {n} เปิด");
+                {
+                    var go = Find(n);
+                    bool ok = go != null && go.activeInHierarchy;
+                    Require(ok, $"{pendingLabel} แล้ว {n} เปิด");
+
+                    // ตกแล้วต้องรู้ว่าตกเพราะอะไร — ไม่เจอ object, ตัวมันปิด, หรือพ่อปิด
+                    if (!ok) lines.Add($"        └ {Diagnose(n, go)}");
+                }
                 pending = null;
+            }
+
+            /// <summary>ไล่สายพ่อขึ้นไปหาว่าใครเป็นคนปิด — สาเหตุที่พบบ่อยที่สุดคือพ่อปิด ไม่ใช่ตัวมันเอง</summary>
+            private static string Diagnose(string name, GameObject go)
+            {
+                if (go == null) return $"ไม่พบ GameObject ชื่อ {name} ในซีน";
+
+                var t = go.transform;
+                while (t != null)
+                {
+                    if (!t.gameObject.activeSelf)
+                        return t == go.transform
+                             ? $"{name} ปิดอยู่เอง"
+                             : $"{name} เปิดอยู่ แต่พ่อ '{t.name}' ปิด";
+                    t = t.parent;
+                }
+                return $"{name} เปิดอยู่ทั้งสาย แต่ activeInHierarchy ยังเป็น false (?)";
             }
 
             private void Report()
