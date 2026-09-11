@@ -327,10 +327,16 @@ namespace CloneSwarm.EditorTools
         {
             // ต้องดูทั้งก้อน ไม่ใช่แค่ root — บางจอ (เช่น CONFIG) วาง component ไว้บน panel
             // ชั้นในไม่ใช่บน Canvas root · ถ้าดูแค่ root จะรายงานว่าไม่มีตัวซ้ำทั้งที่มี
+            // เอาเฉพาะชนิดที่มี **ตัวเดียว** ในก้อนที่ย้ายมา = ตัวคุมจอ (LobbyUI · TalentShopUI)
+            // ชนิดที่มีหลายตัว (UIShear · P3RSegmentButton) เป็น widget ระดับชิ้น
+            // มันซ้ำกันเองอยู่แล้วทั้งซีน การรายงานว่าซ้ำคือเสียงรบกวนล้วนๆ
             var mine = panel.GetComponentsInChildren<MonoBehaviour>(true)
                             .Where(m => m != null)
                             .Select(m => m.GetType())
                             .Where(IsProjectType)
+                            .GroupBy(t => t)
+                            .Where(g => g.Count() == 1)
+                            .Select(g => g.Key)
                             .ToHashSet();
 
             var found = new List<string>();
