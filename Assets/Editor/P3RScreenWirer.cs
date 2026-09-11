@@ -229,6 +229,9 @@ namespace CloneSwarm.EditorTools
             var panels = FindPanels(scene);
             ReplacedPanels.Clear();
 
+            // ต้องมี hub ก่อนคำนวณแผนที่เหลือ เพราะ MenuManager.lobbyPanel ต้องชี้มัน
+            EnsureHub(scene, panels, plan);
+
             // ── 1. สลับ object reference ที่ชี้ panel เดิม ให้ชี้ panel ใหม่ ──
             foreach (var mb in AllBehaviours(scene))
             {
@@ -380,6 +383,87 @@ namespace CloneSwarm.EditorTools
         }
 
         /// <summary>
+        /// สร้าง <c>P3R_Hub</c> แล้วย้ายสี่จอที่เป็นแท็บเข้าไปข้างใน
+        ///
+        /// **ทำไมต้องมีชั้นนี้** — `MenuManager.lobbyPanel` กับ `TabBar.tabs[lobby].panel`
+        /// เป็นคนละบทบาท แต่ตอนย้ายเข้ามาแบนๆ มันกลายเป็น GameObject เดียวกัน
+        /// พอกด TALENT SHOP → `TabBar.Select("shop")` ปิดทุก panel ที่ไม่ใช่แท็บ shop
+        /// ซึ่งรวม `P3R_Lobby` ที่เป็น hub ด้วย → ทั้งหน้าหายไปเลย
+        /// ซีนเดิมแยกไว้ถูกแล้ว (`LobbyPanel` เป็น hub · `Panel_Lobby` เป็นแท็บข้างใน)
+        ///
+        /// และ `TabBar` ตัวจริงอยู่ใน `LobbyPanel` เดิมซึ่งถูกปิดไปแล้ว = ไม่ทำงาน
+        /// จึงสร้างตัวใหม่บน hub พร้อมลงทะเบียนสี่แท็บให้
+        ///
+        /// ทำทันทีไม่รอ apply เพราะแผนขั้นต่อไปต้องเห็น hub · ถ้ายกเลิกก็แค่ไม่เซฟ
+        /// </summary>
+        private static void EnsureHub(Scene scene, Dictionary<string, GameObject> panels,
+                                      List<string> plan)
+        {
+            string[] tabIds   = { "lobby",     "map",            "character",     "shop" };
+            string[] tabPanels = { "P3R_Lobby", "P3R_MapSelect", "P3R_Character", "P3R_TalentShop" };
+
+            // ไม่มีจอแท็บสักอัน = ซีนนี้ไม่ใช่เมนู ข้ามไป
+            if (!tabPanels.Any(panels.ContainsKey)) return;
+
+            if (!panels.TryGetValue("P3R_Hub", out var hub) || hub == null)
+            {
+                var anchor = panels[tabPanels.First(panels.ContainsKey)].transform.parent;
+                hub = new GameObject("P3R_Hub", typeof(RectTransform));
+                hub.transform.SetParent(anchor, false);
+
+                var rt = (RectTransform)hub.transform;
+                rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+
+                hub.SetActive(false);
+                panels["P3R_Hub"] = hub;
+                plan.Add("   สร้าง P3R_Hub (ชั้นที่ถือสี่แท็บ — ไม่งั้นกดแท็บแล้ว hub ปิดตัวเอง)");
+            }
+
+            for (int i = 0; i < tabPanels.Length; i++)
+            {
+                if (!panels.TryGetValue(tabPanels[i], out var panel) || panel == null) continue;
+                if (panel.transform.parent == hub.transform) continue;
+                plan.Add($"   ย้าย {tabPanels[i]} เข้า P3R_Hub");
+                panel.transform.SetParent(hub.transform, false);
+                StretchToParent(panel);
+            }
+
+            var bar = hub.GetComponent<TabBar>();
+            if (bar == null)
+            {
+                bar = hub.AddComponent<TabBar>();
+                plan.Add("   ใส่ TabBar บน P3R_Hub (ตัวเดิมอยู่ใน LobbyPanel ที่ถูกปิดไปแล้ว)");
+            }
+
+            bar.tabs.Clear();
+            for (int i = 0; i < tabIds.Length; i++)
+            {
+                panels.TryGetValue(tabPanels[i], out var panel);
+                bar.tabs.Add(new TabEntry { id = tabIds[i], panel = panel });
+            }
+            EditorUtility.SetDirty(bar);
+
+            // LobbyUI ใช้ tabBar สั่งซ่อน/โชว์แท็บตามสิทธิ์ host — ต้องชี้ตัวใหม่
+            var lobby = panels.TryGetValue("P3R_Lobby", out var lp) && lp != null
+                      ? lp.GetComponentInChildren<LobbyUI>(true) : null;
+            if (lobby != null && lobby.tabBar != bar)
+            {
+                plan.Add("   LobbyUI.tabBar → TabBar บน P3R_Hub");
+                lobby.tabBar = bar;
+                EditorUtility.SetDirty(lobby);
+            }
+        }
+
+        private static void StretchToParent(GameObject go)
+        {
+            if (go.transform is not RectTransform rt) return;
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+            rt.localScale = Vector3.one;
+        }
+
+        /// <summary>
         /// ต่อสิ่งที่ทำให้ "กดแล้วเกิดอะไรขึ้น" — คนละเรื่องกับสายที่ทำให้จอโผล่
         /// </summary>
         private static void WireInteractions(Scene scene, Dictionary<string, GameObject> panels,
@@ -413,6 +497,17 @@ namespace CloneSwarm.EditorTools
             }
 
             // ── ปุ่มท้ายจอที่ยังไม่ได้ต่อ → สลับแท็บ ──────────────────────────
+            // ปุ่มแท็บในทุกจอ — แต่ละจอมีแถบแท็บของตัวเอง กดข้ามไปจอไหนก็ได้
+            string[] tabPanels = { "P3R_Lobby", "P3R_MapSelect", "P3R_Character", "P3R_TalentShop" };
+            (string obj, string id)[] tabButtons =
+            {
+                ("Tab_LOBBY", "lobby"), ("Tab_MAP", "map"),
+                ("Tab_CHARACTER", "character"), ("Tab_SHOP", "shop"),
+            };
+            foreach (var panelName in tabPanels)
+                foreach (var (obj, id) in tabButtons)
+                    AddTabJump(panels, panelName, obj, id, plan, apply);
+
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Back",    "lobby", plan, apply);
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Confirm", "lobby", plan, apply);
             AddTabJump(panels, "P3R_TalentShop", "Btn_Back",    "lobby", plan, apply);
@@ -461,7 +556,7 @@ namespace CloneSwarm.EditorTools
             ["MenuManager.mainPanel"]     = "P3R_Main",
             ["MenuManager.settingsPanel"] = "P3R_Config",
             ["MenuManager.loadingPanel"]  = "P3R_Loading",
-            ["MenuManager.lobbyPanel"]    = "P3R_Lobby",
+            ["MenuManager.lobbyPanel"]    = "P3R_Hub",
         };
 
         /// <summary>panel เดิมที่เพิ่งถูกแทนที่ — เอาไว้ปิดทีหลัง</summary>

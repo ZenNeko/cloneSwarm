@@ -50,6 +50,16 @@ namespace CloneSwarm.UI.P3R
                 Debug.LogWarning($"[P3R] P3RTabJump: ไม่พบ TabBar — ปุ่มนี้กดแล้วไม่ไปไหน", this);
                 return;
             }
+
+            // แท็บ lobby กับ map ถูกซ่อนตอนอยู่โหมดร้าน (`LobbyUI.Refresh` เรียก SetTabVisible)
+            // และ `TabBar.Select` มองข้ามแท็บที่ซ่อนอยู่เงียบๆ — กดแล้วไม่ไปไหน
+            // ต้องสลับโหมดกลับก่อน ไม่งั้นปุ่ม BACK ในร้านจะกดไม่ติด
+            if (tabId is "lobby" or "map")
+            {
+                var lobby = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
+                if (lobby != null) lobby.SetMode(HubMode.Lobby);
+            }
+
             tabBar.Select(tabId);
         }
     }

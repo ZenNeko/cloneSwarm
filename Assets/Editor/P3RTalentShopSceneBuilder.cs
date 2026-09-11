@@ -126,6 +126,14 @@ namespace CloneSwarm.EditorTools
                 Stretch(bg.rectTransform);
                 Shear(bg);
 
+                // แท็บต้องกดได้จริง — P3RScreenWirer เอา P3RTabJump มาใส่ตอนย้ายลงซีนจริง
+                // ในซีนต้นแบบมันยังกดไม่ไปไหนเพราะไม่มี TabBar ให้ไป ซึ่งถูกต้องแล้ว
+                bg.raycastTarget = true;
+                var tabBtn = tab.gameObject.AddComponent<Button>();
+                tabBtn.targetGraphic = bg;
+                var tabNav = tabBtn.navigation; tabNav.mode = Navigation.Mode.None;
+                tabBtn.navigation = tabNav;
+
                 var label = NewMono("Label", tab, names[i], 16f, 0.18f, TextAlignmentOptions.Center,
                                     active ? Color.white : new Color(1f, 1f, 1f, 0.55f));
                 Stretch(label.rectTransform);
