@@ -32,6 +32,10 @@ namespace CloneSwarm.EditorTools
         private const float ColGap   = 32f;
         private const float ColW     = (RefW - PadX * 2f - ColGap) * 0.5f;   // 880
 
+        // รูปในแถวปาร์ตี้ — แถวสูง 86 เหลือขอบบนล่างข้างละ 12
+        private const float PortraitSize = 62f;
+        private const float PortraitPad  = 12f;
+
         private static readonly Color TopBar   = new Color32(0x08, 0x0B, 0x18, 0xFF);
         private static readonly Color PanelBg  = new Color32(0x0D, 0x12, 0x26, 0xFF);
         private static readonly Color RowBg    = new Color32(0x11, 0x18, 0x38, 0xFF);
@@ -465,19 +469,32 @@ namespace CloneSwarm.EditorTools
             var filled = NewRect("Filled", rt);
             Stretch(filled);
 
+            // ── รูปตัวละคร ──────────────────────────────────────────────────
+            // กรอบทึบจางคาไว้เสมอ ส่วน Image ข้างในปิดเมื่อไม่มีรูป — ตัวละครหลายตัว
+            // ยังไม่มีทั้ง icon และ portrait · ปล่อยให้ Image เปล่าโชว์จะได้สี่เหลี่ยมสีตัน
+            var faceBox = NewImage("PortraitBox", filled, Lift(RowBg, 0.06f));
+            TopLeft(faceBox.rectTransform, 20f, PortraitPad, PortraitSize, PortraitSize);
+
+            var face = NewImage("Portrait", faceBox.rectTransform, Color.white);
+            Stretch(face.rectTransform);
+            face.preserveAspect = true;
+            face.enabled = false;
+
+            float textX = 20f + PortraitSize + 16f;   // 98
+
             var slot = NewMono("Slot", filled, "PLAYER 1", 14f, 0.26f,
                                TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.5f));
-            TopLeft(slot.rectTransform, 24f, 16f, 220f, 22f);
+            TopLeft(slot.rectTransform, textX, 16f, 220f, 22f);
 
-            var hostBadge  = Badge(filled, "HostBadge", "HOST", 250f, Gold);
-            var youBadge   = Badge(filled, "YouBadge",  "YOU",  330f, Teal);
+            var hostBadge  = Badge(filled, "HostBadge", "HOST", textX + 210f, Gold);
+            var youBadge   = Badge(filled, "YouBadge",  "YOU",  textX + 290f, Teal);
 
             var name = NewText("Name", filled, "RIVEN", 26f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(name.rectTransform, 24f, 42f, 300f, 34f);
+            TopLeft(name.rectTransform, textX, 42f, 300f, 34f);
 
             var detail = NewText("Detail", filled, "HP 120", 18f, TextAlignmentOptions.MidlineLeft,
                                  new Color(1f, 1f, 1f, 0.55f));
-            TopLeft(detail.rectTransform, 330f, 46f, 240f, 28f);
+            TopLeft(detail.rectTransform, textX + 306f, 46f, 240f, 28f);
 
             var status = NewMono("Status", filled, "READY", 17f, 0.18f,
                                  TextAlignmentOptions.MidlineRight, Teal);
@@ -490,7 +507,9 @@ namespace CloneSwarm.EditorTools
                                      TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.28f));
             Stretch(emptyLabel.rectTransform);
             // เส้นประของแบบยังไม่มี sprite — ใช้กรอบทึบจางแทนไปก่อน
-            AddBorder(rt, "EmptyBorder", 1f, new Color(1f, 1f, 1f, 0.14f));
+            // **ต้องอยู่ใต้ empty ไม่ใช่ใต้ rt** — แปะไว้ที่ root แล้วกรอบจะค้างอยู่ทุกแถว
+            // รวมถึงแถวที่มีคนนั่ง ทั้งที่มันเป็นของสถานะช่องว่างอย่างเดียว
+            AddBorder(empty, "EmptyBorder", 1f, new Color(1f, 1f, 1f, 0.14f));
             empty.gameObject.SetActive(false);
 
             var row = rt.gameObject.AddComponent<LobbyPartyRowUI>();
@@ -500,6 +519,7 @@ namespace CloneSwarm.EditorTools
             row.nameLabel    = name;
             row.detailLabel  = detail;
             row.statusLabel  = status;
+            row.portraitImage = face;
             row.hostBadge    = hostBadge;
             row.youBadge     = youBadge;
             row.filledGroup  = filled.gameObject;

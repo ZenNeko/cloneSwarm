@@ -416,8 +416,8 @@ namespace CloneSwarm.EditorTools
             ui.detailAbilityName  = AbilityRow(abil, "Ability",  "ABILITY",  2);
             ui.detailUltimateName = AbilityRow(abil, "Ultimate", "ULTIMATE", 3);
 
-            // ── ปุ่ม SELECT ─────────────────────────────────────────────────
-            var selRoot = NewRect("SelectButton", prt);
+            // ── ปุ่มปลดล็อก ─────────────────────────────────────────────────
+            var selRoot = NewRect("UnlockButton", prt);
             BottomLeft(selRoot, 28f, 28f, RightW - 56f, 66f);
 
             var bg = NewImage("Bg", selRoot, Primary);
@@ -425,15 +425,28 @@ namespace CloneSwarm.EditorTools
             bg.raycastTarget = true;
             Shear(bg);
 
-            var label = NewMono("Label", selRoot, "SELECT", 22f, 0.18f, TextAlignmentOptions.Center);
+            // ข้อความจริงมาจาก RefreshLockState ("ปลดล็อก 1,000 G") — ที่เขียนไว้ตรงนี้
+            // มีผลแค่ในภาพต้นแบบ จึงต้องเป็นข้อความชุดเดียวกัน ไม่งั้นภาพโกหก
+            var label = NewMono("Label", selRoot, "ปลดล็อก 1,000 G", 22f, 0f,
+                                TextAlignmentOptions.Center);
             Stretch(label.rectTransform);
 
             var btn = selRoot.gameObject.AddComponent<Button>();
             btn.targetGraphic = bg;
             var nav = btn.navigation; nav.mode = Navigation.Mode.None; btn.navigation = nav;
-            ui.selectButton       = btn;
+            // **ไม่มีปุ่ม SELECT แล้ว** — คลิกการ์ดคือการเลือก จบในคลิกเดียว
+            // ปุ่มนี้เหลือหน้าที่เดียวคือปลดล็อกด้วยทอง ซึ่ง RefreshLockState ซ่อนให้เอง
+            // เมื่อตัวที่เลือกปลดล็อกแล้ว · ปล่อย selectButton ว่างไว้ตามนั้น
+            //
+            // เดิมปุ่มเดียวถูกใส่ทั้งสองช่อง ผลคือพอเลือกตัวที่มีอยู่แล้ว
+            // `confirmButton.SetActive(false)` ซ่อนปุ่มทิ้ง — ปุ่ม SELECT จึงหายไปเอง
+            // แล้วไม่มีทางยืนยันตัวเลือก ล็อบบี้เลยไม่เคยรู้ว่าเปลี่ยนตัวละคร
+            ui.requireSelectToConfirm = false;
             ui.confirmButton      = btn;
             ui.confirmButtonLabel = label;
+
+            // ตัวที่ปลดล็อกแล้วไม่มีปุ่มนี้ — RefreshLockState ซ่อนให้ตอนรัน
+            // ในภาพต้นแบบเปิดไว้เพราะตัวที่เลือกอยู่ (RIVEN) เป็นตัวที่ยังล็อก
 
             var status = NewMono("LockStatus", prt, "", 15f, 0.14f,
                                  TextAlignmentOptions.Center, Amber);

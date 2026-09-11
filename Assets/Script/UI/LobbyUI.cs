@@ -155,7 +155,32 @@ public class LobbyUI : MonoBehaviour
         GameSessionManager.OnSessionJoined += OnSessionChanged;
         GameSessionManager.OnSessionLeft   += Refresh;
 
+        PushSelectedCharacterToLobby();
         Refresh();
+    }
+
+    /// <summary>
+    /// ดันตัวละครที่เลือกไว้ในเครื่องขึ้น LobbyState ตอนกลับเข้ามาที่แท็บล็อบบี้
+    ///
+    /// **จำเป็นเพราะการเลือกเกิดตอนที่ล็อบบี้ปิดอยู่** — CHARACTER เป็นคนละแท็บ
+    /// การสลับแท็บปิด panel ล็อบบี้ซึ่งทำให้ OnDisable ถอด subscription ของ
+    /// `OnCharacterConfirmed` ทิ้ง · event ยิงตอนนั้นจึงไม่มีใครรับ แล้วชื่อที่เลือก
+    /// ก็ไม่เคยขึ้นเน็ตเวิร์ก ล็อบบี้เลยยังโชว์ "กำลังเลือก…" ทั้งที่ผู้เล่นเลือกไปแล้ว
+    ///
+    /// อ่านจาก static `SelectedCharacter` ซึ่งเป็นแหล่งความจริงของเครื่องนี้อยู่แล้ว
+    /// (`PlayerWeaponManager` อ่านตัวเดียวกันนี้ข้ามซีน) จึงตรงเสมอไม่ว่าเลือกตอนไหน
+    /// </summary>
+    private void PushSelectedCharacterToLobby()
+    {
+        var cd = CharacterSelectUI.SelectedCharacter;
+        if (cd == null || LobbyState.Instance == null) return;
+
+        if (LobbyState.Instance.TryGetEntry(
+                NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0,
+                out var mine) && mine.characterName.ToString() == cd.characterName)
+            return;   // ตรงอยู่แล้ว ไม่ต้องกวน server
+
+        SelectCharacter(cd.characterName);
     }
 
     private void OnDisable()
@@ -628,9 +653,13 @@ public class LobbyUI : MonoBehaviour
                           ? $"HP {Mathf.RoundToInt(charData.baseHealth)}"
                           : "";
 
+            // icon มาก่อน portrait — ช่องรูปในแถวเป็นสี่เหลี่ยมเล็ก 62px ซึ่งเป็นขนาดของ icon
+            // (CharacterData.portrait ของทุกตัวยังว่างอยู่ ใช้เป็นตัวสำรองไว้เฉยๆ)
+            Sprite face = charData != null ? (charData.icon != null ? charData.icon : charData.portrait) : null;
+
             row.Bind(slot, display, isHost: entry.clientId == 0,
                      isYou: entry.clientId == localId,
-                     ready: entry.ready, detail: detail, accent: accent);
+                     ready: entry.ready, detail: detail, accent: accent, portrait: face);
         }
     }
 }
