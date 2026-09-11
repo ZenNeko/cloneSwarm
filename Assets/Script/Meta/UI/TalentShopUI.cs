@@ -190,10 +190,12 @@ namespace CloneSwarm.Meta
             if (detailLevelText   != null) detailLevelText.text   = $"Lv {level} / {maxLv}";
 
             // ค่าปัจจุบัน  ›  ค่าหลังอัป   (ตันแล้วเหลือแค่ค่าปัจจุบัน + หมายเหตุ)
-            if (detailCurrentValue != null) detailCurrentValue.text = selected.FormatValue(level);
+            // ใช้แบบสั้น (ไม่มีชื่อสเตตัส) — ช่อง NOW กับ NEXT วางเรียงกันในแนวนอน
+            // ชื่อเต็มสองรอบล้นแผงจนตัวเลขทับกัน และชื่อมีอยู่แล้วที่บรรทัด "… / LEVEL"
+            if (detailCurrentValue != null) detailCurrentValue.text = selected.FormatValueShort(level);
             if (detailNextValue    != null)
             {
-                detailNextValue.text = selected.FormatNextValue(level);
+                detailNextValue.text = selected.FormatNextValueShort(level);
                 detailNextValue.gameObject.SetActive(!maxed);
             }
             if (detailArrow     != null) detailArrow.SetActive(!maxed);

@@ -327,14 +327,36 @@ namespace CloneSwarm.EditorTools
             // ปิดไว้ = Instance เป็น null ตลอดรอบ = จอเลเวลอัปกับจอจบเกมไม่ขึ้นเลย
             // ทั้งสามตัวสั่ง panelRoot.SetActive(false) ให้ตัวเองใน Awake/Start อยู่แล้ว
             // เปิด panel นอกจึงไม่ได้แปลว่าผู้เล่นจะเห็นจอค้างอยู่
-            foreach (var name in new[] { "P3R_Main", "P3R_LevelUp", "P3R_Pause", "P3R_WinLose" })
+            foreach (var name in new[] { "P3R_Main", "P3R_JoinRoom", "P3R_LevelUp", "P3R_Pause", "P3R_WinLose" })
             {
                 if (!panels.TryGetValue(name, out var go) || go == null || go.activeSelf) continue;
                 string why = name == "P3R_Main" ? "หน้าแรกของเมนู"
+                                              : name == "P3R_JoinRoom" ? "modal ที่ Awake ตั้ง Instance · ตัวที่เปิด/ปิดคือลูกชื่อ PanelRoot"
                                                 : "singleton ตั้ง Instance ใน Awake ซึ่งไม่วิ่งตอนปิดอยู่";
                 plan.Add($"   เปิด {name} ({why})");
                 var captured = go;
                 apply.Add(() => captured.SetActive(true));
+            }
+
+            // ── 4.1 ปิด panel ที่ต้องปิดตอนเริ่ม ───────────────────────────────
+            //
+            // สถานะเริ่มต้นของซีนต้อง **บังคับทั้งสองทาง** ไม่ใช่แค่ทางเปิด
+            // ที่ผ่านมามีแต่รายชื่อ "ต้องเปิด" panel อื่นจึงเป็นอะไรก็ได้ตามที่บังเอิญค้างไว้
+            // และเคยเปลี่ยนเองระหว่างรันไปป์ไลน์โดยไม่มีใครสั่ง — สถานะที่ไม่มีใครยืนยัน
+            // คือสถานะที่ไล่ต้นเหตุไม่ได้เวลามันผิด
+            //
+            // P3R_Title ปิดไว้เพราะ **ยังไม่มีใครปิดมันตอนรัน** — onAdvanceEvent เรียก
+            // MenuManager.ShowMain() ซึ่งเปิด P3R_Main แต่ไม่แตะ P3R_Title
+            // เปิดค้างไว้ = จอไตเติลคลุมเมนูตลอดไป · เปิดได้เมื่อมีคนสั่งปิดมันแล้วเท่านั้น
+            foreach (var name in new[] { "P3R_Title", "P3R_Config", "P3R_Loading", "P3R_Hub" })
+            {
+                if (!panels.TryGetValue(name, out var go) || go == null || !go.activeSelf) continue;
+                string why = name == "P3R_Title"
+                    ? "ยังไม่มีใครสั่งปิดมันตอนรัน — เปิดไว้แล้วจะคลุมเมนูถาวร"
+                    : "เปิดเมื่อผู้เล่นสั่งเท่านั้น";
+                plan.Add($"   ปิด {name} ({why})");
+                var captured = go;
+                apply.Add(() => captured.SetActive(false));
             }
         }
 
@@ -764,6 +786,12 @@ namespace CloneSwarm.EditorTools
             "MenuManager", "LobbyUI", "MapSelectUI", "CharacterSelectUI", "TalentShopUI",
             "SettingsMenuUI", "LevelUpUI", "PauseMenuUI", "WinLoseUI",
             "LoadingScreenUI", "TitleScreenUI",
+
+            // JoinRoomPanel เป็น **singleton ที่ตั้ง Instance ใน Awake** และตัวเก่าอยู่บน Canvas
+            // ซึ่ง active ตลอด · ปล่อยไว้คู่กับตัวบน P3R_JoinRoom แล้วสองตัวจะแย่งกันเป็น Instance
+            // ตัวที่ Awake ก่อนชนะ ซึ่งไม่มีใครคุมลำดับได้ · อาการคือปุ่ม JOIN บางรอบเปิดจอเก่า
+            // บางรอบเปิดจอใหม่ บางรอบไม่เปิดเลย แล้วแต่ลำดับที่ Unity เรียก Awake
+            "JoinRoomPanel",
         };
 
         private static bool IsController(System.Type t) => ControllerNames.Contains(t.Name);

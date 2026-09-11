@@ -339,31 +339,55 @@ namespace CloneSwarm.EditorTools
             }
 
             // ── NOW › NEXT ──────────────────────────────────────────────────
+            //
+            // สามช่องนี้วางเรียงกันในแนวนอนบนความกว้าง 556px ที่แผงมี — ทุกช่องจึงต้อง
+            // **กว้างตายตัวและไม่ทับกัน** และตัวหนังสือต้องตัดด้วย `…` ไม่ใช่ล้นออกไป
+            //
+            // เคยพังเพราะ builder ตั้งความกว้างจากตัวอย่าง `+9%` แต่ของจริงที่ TalentShopUI
+            // เขียนลงไปคือ `+0% PICKUP RADIUS` ซึ่งยาวกว่าช่องเท่าตัว · NOW เลยไหลไปทับ NEXT
+            // ตัวเลขสองชุดซ้อนกันอ่านไม่ออกทั้งคู่ · แก้ที่ต้นทางด้วย FormatValueShort
+            // แล้วกันซ้ำอีกชั้นที่นี่ด้วยความกว้างตายตัว + Ellipsis
+            const float ValW  = 184f;   // 32 + 184 + 40(arrow) + 184 = 440 · เหลือขอบอีก 116
+            const float ArrowW = 40f;
+            const float NextX = 32f + ValW + ArrowW;
+
             var nowHead = NewMono("NowHead", prt, "NOW", 13f, 0.26f,
                                   TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.4f));
             TopLeft(nowHead.rectTransform, 32f, 320f, 120f, 22f);
 
             var now = NewMono("NowValue", prt, "+9%", 30f, 0.04f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(now.rectTransform, 32f, 342f, 220f, 40f);
+            TopLeft(now.rectTransform, 32f, 342f, ValW, 40f);
+            now.overflowMode = TextOverflowModes.Ellipsis;
             ui.detailCurrentValue = now;
 
             var arrow = NewText("Arrow", prt, "›", 34f, TextAlignmentOptions.Center,
                                 new Color(1f, 1f, 1f, 0.4f));
-            TopLeft(arrow.rectTransform, 244f, 342f, 48f, 40f);
+            TopLeft(arrow.rectTransform, 32f + ValW, 342f, ArrowW, 40f);
             ui.detailArrow = arrow.gameObject;
-
-            var nextHead = NewMono("NextHead", prt, "NEXT", 13f, 0.26f,
-                                   TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.4f));
-            TopLeft(nextHead.rectTransform, 306f, 320f, 120f, 22f);
 
             var next = NewMono("NextValue", prt, "+12%", 30f, 0.04f,
                                TextAlignmentOptions.MidlineLeft, Teal);
-            TopLeft(next.rectTransform, 306f, 342f, 240f, 40f);
+            TopLeft(next.rectTransform, NextX, 342f, ValW, 40f);
+            next.overflowMode = TextOverflowModes.Ellipsis;
             ui.detailNextValue = next;
 
+            // หัวข้อ NEXT เป็น **ลูกของช่องค่า** ไม่ใช่พี่น้องกัน — TalentShopUI ซ่อนช่องค่า
+            // ตอนตันเลเวล (`detailNextValue.gameObject.SetActive(false)`) หัวข้อจึงต้องหายไปด้วย
+            // ไม่งั้นจะเหลือคำว่า NEXT ลอยอยู่เหนือที่ว่าง ทั้งที่ไม่มีเลเวลถัดไปแล้ว
+            var nextHead = NewMono("Head", next.rectTransform, "NEXT", 13f, 0.26f,
+                                   TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.4f));
+            var nhrt = nextHead.rectTransform;
+            nhrt.anchorMin = new Vector2(0f, 1f); nhrt.anchorMax = new Vector2(0f, 1f);
+            nhrt.pivot = new Vector2(0f, 0f);
+            nhrt.sizeDelta = new Vector2(120f, 22f);
+            nhrt.anchoredPosition = Vector2.zero;
+
+            // หมายเหตุตันเลเวลไปอยู่ **ช่องของ NEXT** ไม่ใช่ทับ NOW
+            // ของเดิมวางที่ x=32 y=342 ซึ่งเป็นพิกัดเดียวกับ NowValue เป๊ะ · ตอนตันจึงเห็น
+            // ข้อความเขียวซ้อนตัวเลขขาวอยู่ที่เดียวกัน · ผู้เล่นยังควรเห็นค่าปัจจุบันของตัวเอง
             var maxed = NewMono("MaxedNote", prt, "ถึงเลเวลสูงสุดแล้ว", 18f, 0f,
                                 TextAlignmentOptions.MidlineLeft, Teal);
-            TopLeft(maxed.rectTransform, 32f, 342f, 420f, 40f);
+            TopLeft(maxed.rectTransform, NextX, 342f, RightW - 64f - NextX + 32f, 40f);
             ui.detailMaxedNote = maxed.gameObject;
             maxed.gameObject.SetActive(false);
 

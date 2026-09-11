@@ -77,9 +77,32 @@ namespace CloneSwarm.EditorTools
             var rowPrefab  = BuildPartyRowPrefab();
             var chipPrefab = BuildAbilityChipPrefab();
 
-            BuildLeftColumn(root, chipPrefab);
+            BuildLeftColumn(root, ui, chipPrefab);
             BuildRightColumn(root, ui, rowPrefab);
             BuildBottomBar(root, ui);
+            BuildBusyOverlay(root, ui);
+        }
+
+        /// <summary>
+        /// แผ่นทึบคลุมทั้งจอตอนกำลังคุยกับเซิร์ฟเวอร์ — เปิดห้อง · เข้าห้อง · ออกจากห้อง
+        ///
+        /// สามงานนั้นเป็น async ที่กินเวลาเป็นวินาที · ไม่มีแผ่นนี้แล้วจอจะนิ่งสนิท
+        /// ไม่มีอะไรบอกว่ากำลังทำงานอยู่ ผู้เล่นกดซ้ำ แล้ว `IsBusy` เงียบๆ ทิ้งการกดที่สอง
+        /// มันยังกันคลิกไม่ให้ทะลุไปโดนปุ่มข้างหลังระหว่างนั้นด้วย (Image รับ raycast)
+        /// </summary>
+        private static void BuildBusyOverlay(RectTransform root, LobbyUI ui)
+        {
+            var dim = NewImage("BusyOverlay", root, new Color(6 / 255f, 8 / 255f, 18 / 255f, 0.82f));
+            Stretch(dim.rectTransform);
+            dim.raycastTarget = true;
+
+            var msg = NewMono("BusyText", dim.rectTransform, "กำลังเปิดห้อง…", 26f, 0.06f,
+                              TextAlignmentOptions.Center);
+            Stretch(msg.rectTransform);
+
+            ui.busyOverlay = dim.gameObject;
+            ui.busyText    = msg;
+            dim.gameObject.SetActive(false);
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -96,36 +119,62 @@ namespace CloneSwarm.EditorTools
                                 TextAlignmentOptions.MidlineLeft);
             TopLeft(title.rectTransform, PadX, 26f, 460f, 34f);
 
-            // ── ยอดทอง · รหัสห้อง · ปุ่มคัดลอก ชิดขวา ────────────────────────
+            // ── แถวควบคุมห้อง ชิดขวา · เรียงจากขวาไปซ้าย ─────────────────────
+            //
+            //   [รหัส 7K4M2P] [COPY] [เชิญเพื่อน]      8,420 G
+            //
+            // **ปุ่มเชิญเพื่อนคือทางเดียวที่จะเปิดห้องออนไลน์ได้** — `LobbyUI.OnInviteClicked`
+            // เรียก `GameSessionManager.CreateSessionAsync()` และไม่มีใครอื่นเรียกมันเลย
+            // ทั้งเกม · builder เดิมไม่เคยสร้างปุ่มนี้ ช่อง inviteButton จึงว่างตลอด
+            // แปลว่าเล่นหลายคนไม่ได้เลยแม้โค้ดฝั่งเน็ตเวิร์กจะพร้อมมานานแล้ว
+            // ยอดทองอยู่ขวาสุดเหมือนทุกจอ — ตำแหน่งของมันต้องเดาได้โดยไม่ต้องมอง
             var gold = NewMono("Gold", brt, "8,420 G", 22f, 0.10f,
                                TextAlignmentOptions.MidlineRight, Gold);
-            TopRight(gold.rectTransform, PadX + 360f, 26f, 220f, 34f);
+            TopRight(gold.rectTransform, PadX, 26f, 220f, 34f);
             ui.goldText = gold;
-
-            var copyRoot = NewRect("CopyCode", brt);
-            TopRight(copyRoot, PadX + 190f, 22f, 140f, 40f);
-            var copyBg = NewImage("Bg", copyRoot, Lift(TopBar, 0.10f));
-            Stretch(copyBg.rectTransform);
-            copyBg.raycastTarget = true;
-            Shear(copyBg);
-            var copyLabel = NewMono("Label", copyRoot, "COPY", 15f, 0.22f,
-                                    TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.8f));
-            Stretch(copyLabel.rectTransform);
-            var copyBtn = copyRoot.gameObject.AddComponent<Button>();
-            copyBtn.targetGraphic = copyBg;
-            var cnav = copyBtn.navigation; cnav.mode = Navigation.Mode.None; copyBtn.navigation = cnav;
-            ui.copyCodeButton = copyBtn;
 
             var code = NewMono("RoomCode", brt, "7K4M2P", 22f, 0.24f,
                                TextAlignmentOptions.MidlineRight);
-            TopRight(code.rectTransform, PadX, 26f, 180f, 34f);
+            TopRight(code.rectTransform, PadX + 250f, 26f, 180f, 34f);
             ui.roomCodeLabel = code;
+
+            var copyBtn = TopBarButton(brt, "CopyCode", "COPY", PadX + 450f, 140f,
+                                       new Color(1f, 1f, 1f, 0.8f), out var copyLabel);
+            ui.copyCodeButton     = copyBtn;
+            ui.copyCodeButtonText = copyLabel;
+
+            var inviteBtn = TopBarButton(brt, "Invite", "เชิญเพื่อน", PadX + 610f, 200f,
+                                         Teal, out var inviteLabel);
+            ui.inviteButton     = inviteBtn;
+            ui.inviteButtonText = inviteLabel;
 
             var rule = NewImage("Rule", brt, FaintLine);
             var rrt = rule.rectTransform;
             rrt.anchorMin = new Vector2(0f, 0f); rrt.anchorMax = new Vector2(1f, 0f);
             rrt.pivot = new Vector2(0.5f, 0f);
             rrt.sizeDelta = new Vector2(0f, 1f); rrt.anchoredPosition = Vector2.zero;
+        }
+
+        /// <summary>ปุ่มเล็กบนแถบบน — เอียงตามธีม ป้ายตรงกลาง คืนป้ายออกมาให้ต่อสายได้</summary>
+        private static Button TopBarButton(RectTransform bar, string name, string text,
+                                           float xFromRight, float w, Color tint,
+                                           out TextMeshProUGUI label)
+        {
+            var root = NewRect(name, bar);
+            TopRight(root, xFromRight, 22f, w, 40f);
+
+            var bg = NewImage("Bg", root, Over(tint, TopBar, 0.14f));
+            Stretch(bg.rectTransform);
+            bg.raycastTarget = true;
+            Shear(bg);
+
+            label = NewMono("Label", root, text, 15f, 0.22f, TextAlignmentOptions.Center, tint);
+            Stretch(label.rectTransform);
+
+            var btn = root.gameObject.AddComponent<Button>();
+            btn.targetGraphic = bg;
+            var nav = btn.navigation; nav.mode = Navigation.Mode.None; btn.navigation = nav;
+            return btn;
         }
 
         /// <summary>
@@ -174,7 +223,7 @@ namespace CloneSwarm.EditorTools
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        private static void BuildLeftColumn(RectTransform root, LobbyAbilityChipUI chipPrefab)
+        private static void BuildLeftColumn(RectTransform root, LobbyUI ui, LobbyAbilityChipUI chipPrefab)
         {
             float h = RefH - ContentY - BottomH - 24f;
 
@@ -187,6 +236,8 @@ namespace CloneSwarm.EditorTools
             // พอร์เทรต — ปิด Image ไว้เพราะยังไม่มี sprite (Char_Hunter/Gunner ยังไม่มี portrait)
             var portrait = NewImage("Portrait", crt, Lift(PanelBg, 0.06f));
             TopLeft(portrait.rectTransform, 0f, 0f, ColW, 470f);
+
+            ui.characterImage = portrait;
 
             var portraitHint = NewMono("PortraitHint", portrait.rectTransform, "PORTRAIT", 15f, 0.3f,
                                        TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.18f));
@@ -312,6 +363,14 @@ namespace CloneSwarm.EditorTools
             ui.mapImage = mapBox;
             mapBox.enabled = true;      // ยังไม่มี sprite — เป็นกล่องเปล่าให้เห็นระยะ
 
+            // กดพรีวิวแล้วไปแท็บ MAP — LobbyUI ซ่อนแท็บนั้นให้เองเมื่อไม่ใช่ host
+            mapBox.raycastTarget = true;
+            var mapBtn = mapBox.gameObject.AddComponent<Button>();
+            mapBtn.targetGraphic = mapBox;
+            mapBtn.transition    = Selectable.Transition.None;
+            var mnav = mapBtn.navigation; mnav.mode = Navigation.Mode.None; mapBtn.navigation = mnav;
+            ui.mapButton = mapBtn;
+
             var mapHint = NewMono("MapHint", mapBox.rectTransform, "MAP PREVIEW", 15f, 0.3f,
                                   TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.18f));
             Stretch(mapHint.rectTransform);
@@ -342,8 +401,17 @@ namespace CloneSwarm.EditorTools
             bar.sizeDelta = new Vector2(0f, BottomH);
             bar.anchoredPosition = Vector2.zero;
 
+            // **แถบล่างต้องต่อสาย** — SetMode() ซ่อนมันตอนสลับไปโหมดร้าน
+            // ปล่อยว่างแล้วปุ่ม READY / START RUN จะค้างอยู่บนหน้าร้าน Talent
+            ui.bottomBar = bar.gameObject;
+
             ui.backButton = BarButton(bar, "Back", "BACK", left: true, x: PadX,
                                       w: 220f, filled: false, tint: new Color(1f, 1f, 1f, 0.7f));
+
+            // เข้าห้องเพื่อนได้จากในล็อบบี้ ไม่ต้องถอยกลับไปเมนูหลักก่อน —
+            // `OnLobbyJoinClicked` ปิด offline host ให้เองก่อนต่อเป็น client
+            ui.lobbyJoinButton = BarButton(bar, "Join", "เข้าห้องเพื่อน", left: true, x: PadX + 240f,
+                                           w: 240f, filled: false, tint: Teal);
 
             ui.readyButton     = BarButton(bar, "Ready", "READY", left: false, x: PadX + 300f,
                                            w: 260f, filled: false, tint: Teal);

@@ -52,6 +52,8 @@ public class LobbyUI : MonoBehaviour
     [Tooltip("รหัสห้องแยกออกมาเป็นป้ายของตัวเอง — เดิมไปปนอยู่บนป้ายปุ่ม Invite")]
     public TextMeshProUGUI roomCodeLabel;
     public Button copyCodeButton;
+    [Tooltip("ป้ายบนปุ่มคัดลอก — ใช้โชว์ 'คัดลอกแล้ว' สั้นๆ แล้วคืนค่าเดิม")]
+    public TextMeshProUGUI copyCodeButtonText;
     [Tooltip("PARTY · 3 / 4")]
     public TextMeshProUGUI partyCountLabel;
     [Tooltip("2 READY")]
@@ -114,6 +116,13 @@ public class LobbyUI : MonoBehaviour
         if (inviteButton != null)
         {
             inviteButton.onClick.AddListener(OnInviteButtonClicked);
+        }
+
+        // เคยลืมต่อตัวนี้ — ปุ่มโผล่มาให้กดตอนมีห้องแล้ว แต่กดเท่าไรก็ไม่มีอะไรเกิดขึ้น
+        // Refresh() แค่เปิด/ปิดมันเท่านั้น ไม่เคยมีใครผูก listener ให้
+        if (copyCodeButton != null)
+        {
+            copyCodeButton.onClick.AddListener(CopyRoomCode);
         }
 
         if (lobbyJoinButton != null)
@@ -364,9 +373,12 @@ public class LobbyUI : MonoBehaviour
 
     private IEnumerator ShowCopiedThenRestore()
     {
-        if (inviteButtonText != null) inviteButtonText.text = "คัดลอกแล้ว";
+        // โชว์บนปุ่มที่ถูกกดจริง — ถ้ามีปุ่มคัดลอกแยกอยู่ ป้ายบนปุ่มเชิญไม่ควรกะพริบตาม
+        var label = copyCodeButtonText != null ? copyCodeButtonText : inviteButtonText;
+        if (label != null) label.text = "คัดลอกแล้ว";
         yield return new WaitForSecondsRealtime(1.2f);
         copyFeedbackRoutine = null;
+        if (copyCodeButtonText != null) copyCodeButtonText.text = "COPY";
         Refresh();
     }
 

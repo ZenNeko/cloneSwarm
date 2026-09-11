@@ -94,6 +94,10 @@ namespace CloneSwarm.EditorTools
                 "ต่อเข้า MenuManager.loadingPanel · loadingText ของเดิมยังใช้ได้หรือชี้ไป\n" +
                 "   LoadingScreenUI.contextLabel ก็ได้"),
 
+            ["JOIN ROOM"] = new Screen("Proto_JoinRoom", MenuScene, "P3R_JoinRoom",
+                "**ต้องเปิดค้างไว้** — JoinRoomPanel.Awake ตั้ง Instance ซึ่งไม่วิ่งบน GameObject ที่ปิด · " +
+                "MenuManager.OnJoinRoomClicked() กับ LobbyUI.OnLobbyJoinClicked() เรียกผ่าน Instance ทั้งคู่"),
+
             ["LEVEL UP"] = new Screen("Proto_LevelUp", SampleScene, "P3R_LevelUp",
                 "LevelUpUI อยู่ใน SampleScene แล้ว — ต่อสายที่เรียกใช้ให้ชี้ตัวใหม่ แล้วลบตัวเก่า"),
 

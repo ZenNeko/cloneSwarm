@@ -53,6 +53,7 @@ namespace CloneSwarm.EditorTools
             new("TALENT SHOP",  "P3RTalentShopSceneBuilder", "Proto_TalentShop",  "P3R_TalentShop",  MenuScene),
             new("CONFIG",       "P3RConfigSceneBuilder",     "Proto_Config",      "P3R_Config",      MenuScene),
             new("LOADING",      "P3RLoadingSceneBuilder",    "Proto_Loading",     "P3R_Loading",     MenuScene),
+            new("JOIN ROOM",    "P3RJoinRoomSceneBuilder",   "Proto_JoinRoom",    "P3R_JoinRoom",    MenuScene),
             new("LEVEL UP",     "P3RLevelUpSceneBuilder",    "Proto_LevelUp",     "P3R_LevelUp",     SampleScene),
             new("WIN / LOSE",   "P3RWinLoseSceneBuilder",    "Proto_WinLose",     "P3R_WinLose",     SampleScene),
             new("PAUSED",       "P3RPauseSceneBuilder",      "Proto_Pause",       "P3R_Pause",       SampleScene),

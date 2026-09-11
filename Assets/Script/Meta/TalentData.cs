@@ -109,6 +109,30 @@ namespace CloneSwarm.Meta
         public string FormatNextValue(int level)
             => level >= MaxLevel ? "" : FormatValue(level + 1);
 
+        /// <summary>
+        /// เฉพาะ **ตัวเลข** ไม่มีชื่อสเตตัส — `"+9%"` แทน `"+9% Damage"`
+        ///
+        /// แผงรายละเอียดวาง `NOW ‹ค่า› › NEXT ‹ค่า›` ไว้เรียงกันในแนวนอน กว้างรวม 556px
+        /// ชื่อสเตตัสเต็มยาวเกินกว่าจะใส่ได้สองรอบ (`+0% PICKUP RADIUS` อย่างเดียวก็ล้นแล้ว)
+        /// และมันซ้ำกับบรรทัด `DAMAGE +3% / LEVEL` ที่อยู่ใต้ลงไปอีกสองบรรทัด
+        ///
+        /// เทียบ `FormatValue` ที่ยังคืนชื่อเต็ม — การ์ดอัปเกรดในเกมโชว์ทีละใบ มีที่ให้ชื่อ
+        /// </summary>
+        public string FormatValueShort(int level)
+        {
+            if (mode == TalentEffectMode.SecondChance)
+                return level > 0 ? "1 ครั้ง/เกม" : "—";
+
+            float v = GetTotalValue(level);
+            if (mode == TalentEffectMode.GoldFind) return $"+{v * 100f:F0}%";
+
+            return FormatStatMagnitude(statType, v);
+        }
+
+        /// <summary>คู่กับ <see cref="FormatValueShort"/> — คืนค่าว่างเมื่อตันแล้ว</summary>
+        public string FormatNextValueShort(int level)
+            => level >= MaxLevel ? "" : FormatValueShort(level + 1);
+
         /// <summary>ข้อความสรุปผลที่ level นี้ เช่น "+9% Damage" — ร้านค้าใช้</summary>
         public string FormatValue(int level)
         {
@@ -129,23 +153,53 @@ namespace CloneSwarm.Meta
         /// </summary>
         public static string FormatStatValue(StatType type, float v)
         {
+            string label = StatLabel(type);
+            string mag   = FormatStatMagnitude(type, v);
+            return string.IsNullOrEmpty(label) ? mag : $"{mag} {label}";
+        }
+
+        /// <summary>
+        /// ตัวเลขกับหน่วยของมัน ไม่มีชื่อสเตตัส — `"+9%"` · `"+5"` · `"+1.5"`
+        /// แยกจาก <see cref="StatLabel"/> เพื่อให้ที่แคบโชว์แค่ตัวเลขได้ โดยที่
+        /// ตารางหน่วยยังอยู่ที่เดียว · ต่อกลับเป็นข้อความเต็มได้เสมอด้วย FormatStatValue
+        /// </summary>
+        public static string FormatStatMagnitude(StatType type, float v)
+        {
             string sign = v >= 0f ? "+" : "";
             return type switch
             {
-                StatType.Damage          => $"{sign}{v * 100f:F0}% Damage",
-                StatType.AbilityHaste    => $"{sign}{v:F0} Ability Haste",
-                StatType.CriticalChance  => $"{sign}{v * 100f:F0}% Crit Chance",
-                StatType.AreaSize        => $"{sign}{v * 100f:F0}% Area Size",
-                StatType.ProjectileCount => $"{sign}{v:F0} Projectile",
-                StatType.Duration        => $"{sign}{v * 100f:F0}% Duration",
-                StatType.MaxHealth       => $"{sign}{v:F0} Max HP",
-                StatType.Armor           => $"{sign}{v:F0} Armor",
-                StatType.HealthRegen     => $"{sign}{v:F1} HP/s",
-                StatType.MoveSpeed       => $"{sign}{v * 100f:F0}% Move Speed",
-                StatType.PickupRadius    => $"{sign}{v * 100f:F0}% Pickup Radius",
-                StatType.ExpBonus        => $"{sign}{v * 100f:F0}% EXP",
+                StatType.Damage          => $"{sign}{v * 100f:F0}%",
+                StatType.CriticalChance  => $"{sign}{v * 100f:F0}%",
+                StatType.AreaSize        => $"{sign}{v * 100f:F0}%",
+                StatType.Duration        => $"{sign}{v * 100f:F0}%",
+                StatType.MoveSpeed       => $"{sign}{v * 100f:F0}%",
+                StatType.PickupRadius    => $"{sign}{v * 100f:F0}%",
+                StatType.ExpBonus        => $"{sign}{v * 100f:F0}%",
+                StatType.AbilityHaste    => $"{sign}{v:F0}",
+                StatType.ProjectileCount => $"{sign}{v:F0}",
+                StatType.MaxHealth       => $"{sign}{v:F0}",
+                StatType.Armor           => $"{sign}{v:F0}",
+                StatType.HealthRegen     => $"{sign}{v:F1}",
                 _                        => $"{sign}{v:F2}",
             };
         }
+
+        /// <summary>ชื่อสเตตัสที่ต่อท้ายตัวเลข — ค่าว่างแปลว่าตัวเลขอ่านได้ด้วยตัวเอง</summary>
+        public static string StatLabel(StatType type) => type switch
+        {
+            StatType.Damage          => "Damage",
+            StatType.AbilityHaste    => "Ability Haste",
+            StatType.CriticalChance  => "Crit Chance",
+            StatType.AreaSize        => "Area Size",
+            StatType.ProjectileCount => "Projectile",
+            StatType.Duration        => "Duration",
+            StatType.MaxHealth       => "Max HP",
+            StatType.Armor           => "Armor",
+            StatType.HealthRegen     => "HP/s",
+            StatType.MoveSpeed       => "Move Speed",
+            StatType.PickupRadius    => "Pickup Radius",
+            StatType.ExpBonus        => "EXP",
+            _                        => "",
+        };
     }
 }
