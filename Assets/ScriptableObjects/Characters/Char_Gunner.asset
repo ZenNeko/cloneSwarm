@@ -13,11 +13,32 @@ MonoBehaviour:
   m_Name: Char_Gunner
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   characterName: Gunner
-  description: "\u0E19\u0E31\u0E01\u0E22\u0E34\u0E07\u0E1B\u0E37\u0E19 \u0E40\u0E0A\u0E35\u0E48\u0E22\u0E27\u0E0A\u0E32\u0E0D\u0E2D\u0E32\u0E27\u0E38\u0E18\u0E23\u0E30\u0E22\u0E30\u0E44\u0E01\u0E25"
-  portrait: {fileID: 0}
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Gunner.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Gunner.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  portrait: {fileID: 21300000, guid: e5e49028b50de3743811b861edc0de68, type: 3}
   icon: {fileID: 21300000, guid: d0591002486aeec4c994d5d39ce80101, type: 3}
   baseHealth: 100
   baseMoveSpeed: 5
+  baseAttack: 0
+  baseDefense: 0
+  baseCritRate: 0.05
+  baseCritDamage: 0.5
   unlockedByDefault: 0
   unlockCost: 100
   characterModelPrefab: {fileID: 3794016916180676343, guid: 2dd75623f577fd7469000d418cb7bf2d, type: 3}
@@ -28,5 +49,24 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 40d26a4b1dcfb144b8822b6f26fbaf48, type: 2}
   - {fileID: 11400000, guid: 4f14fe56702ce994c921a1edabb31c36, type: 2}
   passiveIcon: {fileID: 0}
-  passiveName: 
-  passiveDescription: "\u0E17\u0E38\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E06\u0E48\u0E32\u0E04\u0E23\u0E1A 30 enemy \u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A MOVE SPPED 50% \u0E41\u0E25\u0E30 AbilityHaste 50 \u0E40\u0E1B\u0E47\u0E19\u0E40\u0E27\u0E25\u0E32 10 \u0E27\u0E34"
+  passiveName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  passiveDescription:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: character.Gunner.passiveDesc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  references:
+    version: 2
+    RefIds: []

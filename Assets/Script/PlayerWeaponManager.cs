@@ -897,6 +897,9 @@ public class PlayerWeaponManager : NetworkBehaviour
             mp.isCrit    = isCrit;
 
             // Lookup weapon slot to override VFX keys from WeaponBase prefab configuration
+            // mapping: weaponVfxType = วงระเบิด · secondaryVfxType = กองไฟที่ค้างพื้น
+            // ชื่อสองช่องนี้เป็นชื่อกลางใช้ร่วมกันทั้งโปรเจกต์ ความหมายจึงต่างกันไปตามอาวุธ
+            // และมองไม่ออกจากใน Inspector — จึงต้องเตือนเมื่อตั้งจนซ้ำกัน
             var slot = slots.Find(s => s.data != null && s.data.weaponName == weaponName);
             if (slot != null && slot.script != null)
             {
@@ -904,6 +907,14 @@ public class PlayerWeaponManager : NetworkBehaviour
                     mp.explosionVfxKey = slot.script.weaponVfxType;
                 if (!string.IsNullOrEmpty(slot.script.secondaryVfxType) && slot.script.secondaryVfxType != "None")
                     mp.zoneVfxKey = slot.script.secondaryVfxType;
+            }
+
+            if (mp.explosionVfxKey == mp.zoneVfxKey && mp.explosionVfxKey != "None")
+            {
+                Debug.LogWarning(
+                    $"[WeaponManager] '{weaponName}' วงระเบิดกับกองไฟใช้ VFX เดียวกัน ('{mp.explosionVfxKey}') — " +
+                    "จะเห็นเป็นสองวงซ้อนกันในเฟรมเดียว · weaponVfxType คุมวงระเบิด " +
+                    "secondaryVfxType คุมกองไฟ ตั้งให้ต่างกันหรือปล่อยช่องใดช่องหนึ่งเป็น None");
             }
         }
         go.GetComponent<NetworkObject>()?.Spawn(true);
@@ -1573,22 +1584,65 @@ public class PlayerWeaponManager : NetworkBehaviour
         return best;
     }
 
+    /// <param name="vfxStartDelay">หน่วงก่อนเล่น VFX ของโซนครั้งแรก (วินาที)
+    /// ผู้เรียกที่มี VFX ระเบิดของตัวเองอยู่แล้ว (Molotov/Napalm ยิง explosionVfxKey ที่จุดเดียวกัน
+    /// ในเฟรมเดียวกัน) ให้หน่วงไว้ ไม่งั้นจะเห็นเป็นสองวงซ้อนกันตอนระเบิด</param>
     public void SpawnDamageZone(Vector3 position, int ticks, float tickInterval, float radius, float damage, bool isCrit, string weaponName, string zoneVfx,
-        float burnDuration = 0f, float burnDmgPerTick = 0f, float burnInterval = 1f)
+        float burnDuration = 0f, float burnDmgPerTick = 0f, float burnInterval = 1f, float vfxStartDelay = 0f)
     {
-        StartCoroutine(SpawnLightningZonesServerSide(new List<Vector3> { position }, ticks, tickInterval, radius, damage, isCrit, weaponName, zoneVfx, burnDuration, burnDmgPerTick, burnInterval));
+        StartCoroutine(SpawnLightningZonesServerSide(new List<Vector3> { position }, ticks, tickInterval, radius, damage, isCrit, weaponName, zoneVfx, burnDuration, burnDmgPerTick, burnInterval, vfxStartDelay));
     }
 
     private System.Collections.IEnumerator SpawnLightningZonesServerSide(
         List<Vector3> positions, int zoneTicks, float zoneTickInterval,
         float zoneRadius, float zoneDamage, bool isCrit, string weaponName, string zoneVfx,
-        float burnDuration = 0f, float burnDmgPerTick = 0f, float burnInterval = 1f)
+        float burnDuration = 0f, float burnDmgPerTick = 0f, float burnInterval = 1f, float vfxStartDelay = 0f)
     {
+        if (zoneTicks <= 0) yield break;
+
         float effectiveZoneDmg = zoneDamage;
+
+        // ── resolve VFX ครั้งเดียว ─────────────────────────────────────────
+        // ของเดิมคิดใหม่ทุก tick ทุก pos ทั้งที่ผลลัพธ์ไม่ขึ้นกับสองอย่างนั้นเลย
+        var    pool      = NetworkedVFXPool.Instance;
+        string activeVfx = zoneVfx;
+        if (pool != null && !pool.HasMapping(activeVfx)) activeVfx = "O_AoE_RadiantAura";
+
+        float scale = 1f;
+        if (pool != null && zoneRadius > 0f)
+        {
+            float designed = pool.GetDesignedRadius(activeVfx);
+            if (designed > 0f) scale = zoneRadius / designed;
+        }
+
+        void PlayZoneVfx()
+        {
+            foreach (var p in positions)
+                BroadcastVfxTypeClientRpc(p + Vector3.up * 0.5f, activeVfx, scale);
+        }
+
+        // ── ต่ออายุ VFX ตามอายุของมันเอง ไม่ใช่ตามจังหวะดาเมจ ──────────────
+        // ของเดิม spawn ก้อนใหม่ทุก tick ลง "พิกัดเดิม" ทั้งที่ก้อนก่อนหน้ายังไม่หมดอายุ
+        //   Stormcaller  ticks 3 × 0.3s = โซนอยู่ 0.9s · VFX อยู่ ~5.1s → เดิม 3 ก้อน ตอนนี้ 1
+        //   Molotov/Napalm ticks 5 × 1.0s = โซนอยู่ 5s · VFX ~5.1s     → เดิม 5 ก้อน ตอนนี้ 1
+        // ทุกก้อนทับกันสนิทจึงไม่ได้ให้ข้อมูลอะไรเพิ่ม แค่บวกความสว่างจนจอขาว
+        // (Napalm ยังคูณด้วย childPoolsCount อีกชั้น)
+        // ดาเมจเป็นเรื่องกลไก VFX เป็นเรื่องการนำเสนอ ไม่มีเหตุผลให้ผูกจังหวะกัน
+        float vfxTtl = pool != null ? pool.GetVfxDuration(activeVfx) : 0f;
+        if (vfxTtl <= 0f) vfxTtl = 3f;   // ไม่รู้จัก key → เดาแบบเดียวกับ CalcTTL
+
+        // หน่วงได้ไม่เกินอายุโซน ไม่งั้น VFX จะไม่ได้เล่นเลย
+        float zoneLifetime = zoneTicks * zoneTickInterval;
+        vfxStartDelay = Mathf.Clamp(vfxStartDelay, 0f, zoneLifetime - 0.01f);
+
+        bool  vfxStarted = vfxStartDelay <= 0f;
+        float sinceVfx   = 0f;
+        if (vfxStarted) PlayZoneVfx();
 
         for (int tick = 0; tick < zoneTicks; tick++)
         {
             yield return new WaitForSeconds(zoneTickInterval);
+
             foreach (var pos in positions)
             {
                 foreach (var c in OverlapEnemy(pos + Vector3.up * 0.5f, zoneRadius))
@@ -1605,19 +1659,27 @@ public class PlayerWeaponManager : NetworkBehaviour
                         }
                     }
                 }
-                string activeVfx = zoneVfx;
-                if (NetworkedVFXPool.Instance != null && !NetworkedVFXPool.Instance.HasMapping(activeVfx))
-                {
-                    activeVfx = "O_AoE_RadiantAura";
-                }
+            }
 
-                float scale = 1f;
-                if (NetworkedVFXPool.Instance != null && zoneRadius > 0f)
+            if (!vfxStarted)
+            {
+                // ยังไม่ถึงเวลาเริ่ม — รอให้ VFX ระเบิดของผู้เรียกเล่นจบจังหวะแรกก่อน
+                if ((tick + 1) * zoneTickInterval >= vfxStartDelay)
                 {
-                    float designed = NetworkedVFXPool.Instance.GetDesignedRadius(activeVfx);
-                    if (designed > 0f) scale = zoneRadius / designed;
+                    PlayZoneVfx();
+                    vfxStarted = true;
+                    sinceVfx   = 0f;
                 }
-                BroadcastVfxTypeClientRpc(pos + Vector3.up * 0.5f, activeVfx, scale);
+                continue;
+            }
+
+            // ต่ออายุ "ก่อน" ตัวเดิมหมด ไม่ใช่หลัง — ไม่งั้นโซนวูบหายระหว่างรอ tick ถัดไป
+            // ไม่ต่อถ้าไม่มี tick ถัดไปแล้ว เพราะโซนจบพอดี
+            sinceVfx += zoneTickInterval;
+            if (tick < zoneTicks - 1 && sinceVfx + zoneTickInterval >= vfxTtl)
+            {
+                PlayZoneVfx();
+                sinceVfx = 0f;
             }
         }
     }

@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.TalentData
   talentId: talent_revive
   talentName: Second Chance
-  description: "\u0E0A\u0E38\u0E1A\u0E0A\u0E35\u0E27\u0E34\u0E15\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34 1 \u0E04\u0E23\u0E31\u0E49\u0E07\u0E15\u0E48\u0E2D\u0E40\u0E01\u0E21 \u0E17\u0E35\u0E48 HP 30%"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_revive.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_revive.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   mode: 2
   statType: 0
@@ -23,3 +40,6 @@ MonoBehaviour:
   category: 3
   sortOrder: 5
   tintColor: {r: 0.7529412, g: 0.5176471, b: 0.9882353, a: 1}
+  references:
+    version: 2
+    RefIds: []

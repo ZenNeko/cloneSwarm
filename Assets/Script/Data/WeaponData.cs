@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 public enum WeaponTier { Normal, Super, Fusion }
 
@@ -56,12 +57,36 @@ public class WeaponLevelData
 [CreateAssetMenu(fileName = "Weapon_New", menuName = "LoL Swarm/Weapon Data")]
 public class WeaponData : ScriptableObject
 {
-    [Header("Identity")]
+    [Header("Identity — ห้ามแปล ห้ามเปลี่ยนหลังปล่อยเกม")]
+    [Tooltip("รหัสประจำอาวุธ ไม่ใช่ชื่อที่โชว์บนจอ — ใช้เป็นคีย์จริงใน:\n" +
+             "  1. ServerRpc (AddWeaponServerRpc / UpgradeWeaponServerRpc / SpawnPassiveWeaponServerRpc)\n" +
+             "  2. dictionary ของ damage ฝั่ง server (_serverWeaponDamages)\n" +
+             "  3. FindWeaponDataByName ที่เทียบด้วย ==\n" +
+             "แปลเมื่อไหร่ = host กับ client ส่งคนละสตริง อาวุธหาไม่เจอและ sync ไม่ตรง\n" +
+             "ชื่อที่โชว์ให้ใส่ displayName ข้างล่าง (แพตเทิร์นเดียวกับ CharacterData)")]
     public string     weaponName;
-    [TextArea(1, 3)]
-    public string     description;
+
+    [Header("Display — แปลได้")]
+    [Tooltip("ว่าง = ใช้ weaponName แทน · ตั้งอัตโนมัติด้วย Tools > Clone Swarm > Localization > 2. Relink")]
+    public LocalizedString displayName;
+
+    [Tooltip("คำอธิบายที่โชว์บนการ์ด/แผงรายละเอียด — ชี้ไป entry ใน String Table 'Content' · " +
+             "ตั้งอัตโนมัติได้ด้วย Tools > Clone Swarm > Localization > 2. Relink")]
+    public LocalizedString description;
     public Sprite     icon;
     public WeaponTier tier = WeaponTier.Normal;
+
+    /// <summary>คำอธิบายที่แปลแล้วตาม locale ปัจจุบัน — คืนค่าว่างเมื่อยังไม่ได้ผูก entry
+    ///
+    /// ทุกที่ที่เอาคำอธิบายไปแสดงต้องอ่านตัวนี้ ไม่ใช่ field description ตรงๆ
+    /// (GetLocalizedString เป็น sync — ใช้ได้เพราะ table ถูก preload ตอนเริ่มเกม)</summary>
+    public string Description => description.IsEmpty ? "" : description.GetLocalizedString();
+
+    /// <summary>ชื่อที่เอาไปโชว์บนจอ — ตกกลับไปใช้ weaponName เมื่อยังไม่ได้ตั้ง displayName
+    ///
+    /// ทุกที่ที่เอาชื่อไปแสดงต้องอ่านตัวนี้ ห้ามอ่าน weaponName ตรงๆ
+    /// (จุดที่ส่งขึ้น ServerRpc / ใช้เป็น dictionary key / เทียบค่า ยังต้องใช้ weaponName เหมือนเดิม)</summary>
+    public string DisplayName => displayName.IsEmpty ? weaponName : displayName.GetLocalizedString();
 
     [Header("Prefab")]
     [Tooltip("GameObject ที่มี WeaponBase component — จะ Instantiate เป็น child ของ player")]

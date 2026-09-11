@@ -18,9 +18,6 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class ValorWeapon : AbilityBase, IHUDAbility
 {
-    [Header("Input Key")]
-    [Tooltip("ปุ่มที่กดเพื่อใช้สกิล")]
-    public Key activateKey = Key.Q;
 
     [Header("Dash")]
     [Tooltip("เวลาที่ใช้ dash (วินาที) — คงที่ ไม่ผูกกับ MoveSpeed - ระยะทางมาจาก AbilityData.range")]
@@ -43,7 +40,7 @@ public class ValorWeapon : AbilityBase, IHUDAbility
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
     public string HUDSlotKey       => "Q";   // Valor ของ Riven อยู่ Q เสมอ
-    public string HUDKeyLabel      => activateKey.ToString();
+    public string HUDKeyLabel      => AbilityKeyLabel;   // อ่านจาก binding จริงใน AbilityInputActions
     public bool   IsActiveMode     => false;
     public float  ActiveRemaining  => 0f;
     public float  ActiveMax        => 0f;
@@ -64,11 +61,8 @@ public class ValorWeapon : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || isDashing) return;
-        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
-        var kb = Keyboard.current;
-        if (kb == null) return;
-        if (kb[activateKey].wasPressedThisFrame)
+        if (AbilityPressedThisFrame)
             Activate();
     }
 

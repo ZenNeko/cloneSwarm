@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_MagicMissile
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: MagicMissile
-  description: "\u0E22\u0E34\u0E07\u0E25\u0E39\u0E01\u0E28\u0E23\u0E19\u0E33\u0E27\u0E34\u0E16\u0E35\u0E44\u0E25\u0E48\u0E15\u0E32\u0E21\u0E28\u0E31\u0E15\u0E23\u0E39 \u0E17\u0E33\u0E43\u0E2B\u0E49\u0E40\u0E1B\u0E49\u0E32\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E14\u0E34\u0E19\u0E0A\u0E49\u0E32\u0E25\u0E07\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E42\u0E14\u0E19"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.MagicMissile.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.MagicMissile.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -18191649, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   tier: 0
   prefab: {fileID: 5870177359670468093, guid: c90117d6cb2c6654c9fcd99a70cf197f, type: 3}
@@ -68,3 +85,6 @@ MonoBehaviour:
     requiredWeapon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

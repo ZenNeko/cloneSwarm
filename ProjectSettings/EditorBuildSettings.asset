@@ -11,16 +11,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/GameScenes/SampleScene.unity
     guid: 0ca8c34988b58184d875df9c246ee5b1
-  - enabled: 1
+  - enabled: 0
     path: Assets/GameScenes/SampleScene black.unity
     guid: b79fcf0437f39ad46b54b340f16fbf5a
-  - enabled: 1
+  - enabled: 0
     path: Assets/GameScenes/Scene 2.unity
     guid: a3c396bf1e63daf4ebbf6dbe73891f19
-  - enabled: 1
+  - enabled: 0
     path: Assets/GameScenes/WeaponTestScene.unity
     guid: 5169bcb8ee3bcb64f9eb9ca6baf1ab72
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 781671729fada32489a6ca19920380ce, type: 2}
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings: {fileID: 11400000, guid: 9e7be553448fa2546aea5752021cbcf7, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.localization.settings: {fileID: 11400000, guid: 1e8a49489e1b51a428f7d7d17dd94efd, type: 2}

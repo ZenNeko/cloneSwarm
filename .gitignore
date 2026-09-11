@@ -94,3 +94,6 @@ GeneratedAssets/
 
 # Multi-agent loop scratch output (unity-check.ps1)
 /scratch/
+
+# ภาพที่ P3RScreenshotTool เรนเดอร์ออกมา — เป็นผลลัพธ์ ไม่ใช่ต้นฉบับ
+/Screenshots/

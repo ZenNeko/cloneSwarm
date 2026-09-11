@@ -99,12 +99,25 @@ public class Enemy : NetworkBehaviour
         _meshRenderer = GetComponentInChildren<MeshRenderer>();
         if (rb != null)
         {
+            // การเดินของ enemy เป็น server-authoritative ทั้งหมด (Update มี IsServer ครอบ
+            // และใช้ rb.MovePosition) client จึงต้อง kinematic ไม่งั้น physics ฝั่ง client
+            // จะดันตัวมันเองจากการชนกับ enemy ตัวอื่น/ผู้เล่น/รถ แล้วตำแหน่งเพี้ยนจาก server
+            // ตัวที่มี NetworkTransform ก็ยังแย่งกันเขียน transform อีก
+            // (ระเบียบเดียวกับที่ playermove ทำ — kinematic บน non-owner ให้ NT ขับ)
+            rb.isKinematic            = !IsServer;
+            rb.useGravity             = false;
             // non-kinematic + Discrete — ถูกกว่า ContinuousDynamic ~4× สำหรับ enemy เดินช้า
             // (ถ้า tunnel ทะลุ wall บางที → ลอง ContinuousSpeculative)
-            rb.isKinematic            = false;
-            rb.useGravity             = false;
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
             rb.interpolation          = RigidbodyInterpolation.Interpolate;   // smooth visual บน client
+        }
+
+        // เตือนเมื่อ prefab ไม่มี NetworkTransform — ตำแหน่งจะไม่ถูก replicate เลย
+        // client จะเห็นตัวนี้ค้างอยู่ที่จุดเกิด ส่วน host เห็นมันวิ่งไล่ตามปกติ
+        if (!IsServer && GetComponent<Unity.Netcode.Components.NetworkTransform>() == null)
+        {
+            Debug.LogWarning($"[Enemy] '{name}' ไม่มี NetworkTransform — ตำแหน่งไม่ถูกส่งมาที่ client " +
+                             "ตัวนี้จะค้างอยู่กับที่บนเครื่องที่ไม่ใช่ host · เพิ่ม component ใน prefab");
         }
 
         if (!IsServer) return;

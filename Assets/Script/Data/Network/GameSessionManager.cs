@@ -31,6 +31,19 @@ public class GameSessionManager : MonoBehaviour
     [Tooltip("ชื่อซีนเมนู/ล็อบบี้ — ซีนนี้จะไม่ spawn player เพราะยังเลือกตัวละครไม่เสร็จ")]
     public string menuSceneName = "MenuScene";
 
+    [Tooltip("จุดเกิดของผู้เล่น เรียงตาม slot ของ PlayerSlotRegistry\nว่างไว้ = กระจายเป็นวงรอบตำแหน่งเดิมของ playerPrefab เอง")]
+    public Transform[] spawnPoints;
+
+    [Tooltip("รัศมีวงกระจาย ตอนไม่ได้ตั้ง spawnPoints (หน่วย Unity)")]
+    public float spawnRingRadius = 2.5f;
+
+    /// <summary>ตัวนับสำรอง ใช้เมื่อ PlayerSlotRegistry ยังไม่พร้อมตอน spawn</summary>
+    private int _spawnFallbackIndex;
+
+    /// <summary>จุดเกิดที่จองไว้ต่อ client — คิดครั้งเดียวแล้วใช้ซ้ำตอน respawn
+    /// ไม่งั้น fallback index จะเดินหน้าทุกครั้งที่ถาม แล้วได้คนละจุด</summary>
+    private readonly Dictionary<ulong, Vector3> _spawnPositions = new();
+
     // ── Static Events สำหรับ game code subscribe ─────────────────────────
     /// <summary>ข้อความสถานะ — UI subscribe แทนที่จะให้ manager ไปยุ่งกับ Text</summary>
     public static event Action<string> OnStatus;
@@ -220,7 +233,7 @@ public class GameSessionManager : MonoBehaviour
         if (nm.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
             return;
 
-        var go = Instantiate(playerPrefab);
+        var go = Instantiate(playerPrefab, GetSpawnPosition(clientId), Quaternion.identity);
         var no = go.GetComponent<NetworkObject>();
         if (no == null)
         {
@@ -230,7 +243,44 @@ public class GameSessionManager : MonoBehaviour
         }
 
         no.SpawnAsPlayerObject(clientId);
-        Debug.Log($"[Session] spawn player ให้ client {clientId} แล้ว");
+        Debug.Log($"[Session] spawn player ให้ client {clientId} แล้ว ที่ {go.transform.position}");
+    }
+
+    /// <summary>
+    /// จุดเกิดแยกต่อผู้เล่น — ของเดิม Instantiate เปล่าๆ ทุกคนจึงเกิดที่พิกัดเดียวกัน
+    /// ของ playerPrefab แล้วซ้อนทับกันหมด
+    ///
+    /// index มาจาก PlayerSlotRegistry ตาม CLAUDE.md ข้อ 11 (ห้ามใช้ clientId % 4
+    /// เพราะ clientId ไม่ได้เรียงต่อกัน — log จริงมี client 0 กับ client 6)
+    /// </summary>
+    /// <summary>จุดเกิดของ client นี้ — คงที่ตลอดเกม เรียกซ้ำได้ (playermove ใช้ตอน respawn)</summary>
+    public Vector3 GetSpawnPosition(ulong clientId)
+    {
+        if (_spawnPositions.TryGetValue(clientId, out var cached)) return cached;
+
+        var pos = ComputeSpawnPosition(clientId);
+        _spawnPositions[clientId] = pos;
+        return pos;
+    }
+
+    Vector3 ComputeSpawnPosition(ulong clientId)
+    {
+        int slot = PlayerSlotRegistry.Instance != null
+                 ? PlayerSlotRegistry.Instance.GetSlot(clientId) : -1;
+
+        // registry ยังไม่ทันลงทะเบียน — ใช้ลำดับการ spawn แทน ดีกว่าทับกัน
+        if (slot < 0) slot = _spawnFallbackIndex++;
+
+        if (spawnPoints != null && spawnPoints.Length > 0)
+        {
+            var t = spawnPoints[slot % spawnPoints.Length];
+            if (t != null) return t.position;
+        }
+
+        // ไม่ได้ตั้งจุดเกิดไว้ — กระจายเป็นวงรอบตำแหน่งของ prefab (4 คน = 4 ทิศ)
+        float ang = slot * Mathf.PI * 0.5f;
+        return playerPrefab.transform.position
+             + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * spawnRingRadius;
     }
 
     // ── Session Observer Events ───────────────────────────────────────────
@@ -474,12 +524,14 @@ public class GameSessionManager : MonoBehaviour
 
     /// <summary>Host กด Start Game → โหลด scene ให้ทุก client อัตโนมัติ</summary>
     /// <param name="sceneName">ชื่อ scene ที่จะโหลด — ถ้าไม่ส่งจะใช้ availableScenes[0]</param>
-    public void StartGame(string sceneName = null)
+    /// <returns>false = ไม่ได้เริ่มโหลดซีน (ไม่ใช่ host หรือ NGO ยังไม่ start)
+    /// ผู้เรียกเอาไปคืนสถานะปุ่มได้ ไม่งั้นจะค้างจอที่กดอะไรไม่ได้</returns>
+    public bool StartGame(string sceneName = null)
     {
         if (!IsHost)
         {
             Debug.LogWarning("[Session] StartGame: ต้องเป็น Host เท่านั้น");
-            return;
+            return false;
         }
 
         var nm = NetworkManager.Singleton;
@@ -488,11 +540,31 @@ public class GameSessionManager : MonoBehaviour
         if (nm == null || !nm.IsListening)
         {
             Debug.LogError("[Session] StartGame: NetworkManager ยังไม่ได้ start — ตรวจสอบ SessionSettings → createNetworkSession = true");
-            return;
+            return false;
         }
+
+        // ── ล้าง player ของรันก่อนหน้าก่อนโหลดซีน ────────────────────────────
+        // SpawnAsPlayerObject ใช้ destroyWithScene = false (ค่า default ของ NGO) player object
+        // จึงรอดข้าม LoadSceneMode.Single แล้ว SpawnPlayerIfMissing เห็น PlayerObject != null
+        // เลย return ทิ้ง — รันใหม่ได้ตัวเดิมทั้งดุ้น ทั้ง isDead ที่ยังเป็น true (ตอนแพ้ไม่มีใคร
+        // เรียก Respawn ให้), อาวุธกับสเตตัสของรันเก่า และตำแหน่งที่ตาย เพราะ GetSpawnPosition
+        // ไม่เคยถูกเรียก · อาการคือกด Play Again แล้วเกิดมาตายอยู่ ขยับไม่ได้
+        //
+        // วางไว้ตรงนี้เพื่อครอบทุกเส้นทางที่เริ่มรัน — กดจากล็อบบี้ยังไม่มี player ก็เป็น no-op
+        // และ RespawnCoroutine ที่ค้างอยู่จะตายไปพร้อม component ไม่ไปวาร์ปคนในรันใหม่
+        var stale = new List<NetworkObject>();
+        foreach (var c in nm.ConnectedClientsList)
+            if (c.PlayerObject != null) stale.Add(c.PlayerObject);
+
+        foreach (var po in stale)
+            if (po != null && po.IsSpawned) po.Despawn(true);
+
+        if (stale.Count > 0)
+            Debug.Log($"[Session] ล้าง player ของรันก่อนหน้า {stale.Count} ตัว ก่อนโหลดซีนใหม่");
 
         string target = sceneName ?? (availableScenes.Length > 0 ? availableScenes[0] : "SampleScene");
         Debug.Log($"[Session] StartGame → โหลด '{target}'");
         nm.SceneManager.LoadScene(target, LoadSceneMode.Single);
+        return true;
     }
 }

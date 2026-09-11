@@ -23,6 +23,42 @@ public class LobbyUI : MonoBehaviour
     public Transform partyContainer;
     public GameObject partyRowTemplate;
 
+    // ── แถวปาร์ตี้แบบ P3R (ของใหม่ · ไม่บังคับ) ────────────────────────────
+    // ทั้งหมดนี้ "ต่อก็ใช้ ไม่ต่อก็ได้" — ซีน MenuScene เดิมต่อไว้กับ partyRowTemplate
+    // ที่เป็น TMP บรรทัดเดียว ถ้าเปลี่ยนไปเลยสายในซีนจะขาดเงียบๆ โดยคอมไพเลอร์ไม่ฟ้อง
+    // Refresh() จึงเลือกทางเองตามว่ามีอะไรต่ออยู่
+    [Header("── P3R Party Rows (ปล่อยว่างได้) ──────")]
+    [Tooltip("แถวเต็มรูปแบบ P3R — ต่อแล้วจะถูกใช้แทน partyRowTemplate")]
+    public CloneSwarm.UI.P3R.LobbyPartyRowUI partyRowPrefab;
+
+    [Tooltip("จำนวนช่องที่โชว์ทั้งหมด · ช่องที่เกินจำนวนผู้เล่นจะเป็นช่องว่างเส้นประ")]
+    public int partySlotCount = 4;
+
+    [Tooltip("ระยะห่างระหว่างแถว (px) — container ไม่มี LayoutGroup แถวถูกวางด้วยโค้ด")]
+    public float partyRowSpacing = 10f;
+
+    [Tooltip("สีขอบซ้ายของแต่ละช่อง — index ตรงกับ PlayerSlotRegistry.GetSlot() ไม่ใช่ clientId")]
+    public Color[] slotColors =
+    {
+        new Color32(0x40, 0x73, 0xD9, 0xFF),
+        new Color32(0x2C, 0xC5, 0xA0, 0xFF),
+        new Color32(0xFF, 0xE6, 0x33, 0xFF),
+        new Color32(0xF0, 0x86, 0x54, 0xFF),
+    };
+
+    [Header("── P3R Header (ปล่อยว่างได้) ───────────")]
+    [Tooltip("ยอดทองบนแถบบน — MetaProgression.OnGoldChanged มีอยู่แล้ว แค่ยังไม่มีที่โชว์")]
+    public TextMeshProUGUI goldText;
+    [Tooltip("รหัสห้องแยกออกมาเป็นป้ายของตัวเอง — เดิมไปปนอยู่บนป้ายปุ่ม Invite")]
+    public TextMeshProUGUI roomCodeLabel;
+    public Button copyCodeButton;
+    [Tooltip("ป้ายบนปุ่มคัดลอก — ใช้โชว์ 'คัดลอกแล้ว' สั้นๆ แล้วคืนค่าเดิม")]
+    public TextMeshProUGUI copyCodeButtonText;
+    [Tooltip("PARTY · 3 / 4")]
+    public TextMeshProUGUI partyCountLabel;
+    [Tooltip("2 READY")]
+    public TextMeshProUGUI readyCountLabel;
+
     [Header("Controls")]
     public Button readyButton;
     public TextMeshProUGUI readyButtonText;
@@ -58,6 +94,15 @@ public class LobbyUI : MonoBehaviour
     private readonly List<GameObject> spawnedPartyRows = new();
     private LobbyState lastLobbyState;
     private HubMode mode = HubMode.Lobby;
+
+    /// <summary>
+    /// โหมดที่ hub เปิดอยู่ — **บอกด้วยว่าผู้เล่นเข้ามาทางไหน**
+    ///
+    /// Shop = เข้ามาจากเมนูหลักตรงๆ (`MenuManager.OnTalentShopClicked`)
+    /// Lobby = อยู่ในล็อบบี้แล้วกดแท็บ SHOP เอา (P3RTabJump ไม่แตะโหมด)
+    /// ปุ่ม BACK ในร้านต้องพากลับคนละที่กันตามนี้
+    /// </summary>
+    public HubMode Mode => mode;
     private Coroutine copyFeedbackRoutine;
 
     private void Start()
@@ -82,6 +127,13 @@ public class LobbyUI : MonoBehaviour
             inviteButton.onClick.AddListener(OnInviteButtonClicked);
         }
 
+        // เคยลืมต่อตัวนี้ — ปุ่มโผล่มาให้กดตอนมีห้องแล้ว แต่กดเท่าไรก็ไม่มีอะไรเกิดขึ้น
+        // Refresh() แค่เปิด/ปิดมันเท่านั้น ไม่เคยมีใครผูก listener ให้
+        if (copyCodeButton != null)
+        {
+            copyCodeButton.onClick.AddListener(CopyRoomCode);
+        }
+
         if (lobbyJoinButton != null)
         {
             lobbyJoinButton.onClick.AddListener(OnLobbyJoinClicked);
@@ -103,7 +155,32 @@ public class LobbyUI : MonoBehaviour
         GameSessionManager.OnSessionJoined += OnSessionChanged;
         GameSessionManager.OnSessionLeft   += Refresh;
 
+        PushSelectedCharacterToLobby();
         Refresh();
+    }
+
+    /// <summary>
+    /// ดันตัวละครที่เลือกไว้ในเครื่องขึ้น LobbyState ตอนกลับเข้ามาที่แท็บล็อบบี้
+    ///
+    /// **จำเป็นเพราะการเลือกเกิดตอนที่ล็อบบี้ปิดอยู่** — CHARACTER เป็นคนละแท็บ
+    /// การสลับแท็บปิด panel ล็อบบี้ซึ่งทำให้ OnDisable ถอด subscription ของ
+    /// `OnCharacterConfirmed` ทิ้ง · event ยิงตอนนั้นจึงไม่มีใครรับ แล้วชื่อที่เลือก
+    /// ก็ไม่เคยขึ้นเน็ตเวิร์ก ล็อบบี้เลยยังโชว์ "กำลังเลือก…" ทั้งที่ผู้เล่นเลือกไปแล้ว
+    ///
+    /// อ่านจาก static `SelectedCharacter` ซึ่งเป็นแหล่งความจริงของเครื่องนี้อยู่แล้ว
+    /// (`PlayerWeaponManager` อ่านตัวเดียวกันนี้ข้ามซีน) จึงตรงเสมอไม่ว่าเลือกตอนไหน
+    /// </summary>
+    private void PushSelectedCharacterToLobby()
+    {
+        var cd = CharacterSelectUI.SelectedCharacter;
+        if (cd == null || LobbyState.Instance == null) return;
+
+        if (LobbyState.Instance.TryGetEntry(
+                NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0,
+                out var mine) && mine.characterName.ToString() == cd.characterName)
+            return;   // ตรงอยู่แล้ว ไม่ต้องกวน server
+
+        SelectCharacter(cd.characterName);
     }
 
     private void OnDisable()
@@ -138,6 +215,27 @@ public class LobbyUI : MonoBehaviour
         if (cd != null) SelectCharacter(cd.characterName);
     }
 
+    /// <summary>host เท่านั้นที่เปลี่ยนแมพ/ความยากได้ — LobbyState ทิ้ง ServerRpc ของคนอื่นเงียบๆ
+    /// อ่านสองแหล่งเพราะช่วงกำลังต่อ session ตัวใดตัวหนึ่งยังไม่พร้อม</summary>
+    public bool IsHost =>
+        (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost) ||
+        (GameSessionManager.Instance != null && GameSessionManager.Instance.IsHost);
+
+    /// <summary>true = มีล็อบบี้บนเน็ตเวิร์กอยู่ และเครื่องนี้ไม่ใช่ host → เปลี่ยนแมพ/ความยากไม่ได้
+    ///
+    /// ต้องเช็ค LobbyState ด้วย ไม่ใช่ !IsHost เฉยๆ — MapSelectUI อยู่บน Canvas ที่ root
+    /// Start() ของมันจึงรันตั้งแต่ซีนโหลด ก่อนมี session ใดๆ ตอนนั้น IsHost เป็น false เสมอ
+    /// ถ้าบล็อกด้วย !IsHost ค่าเริ่มต้นที่ Start() ตั้งให้จะไม่ถูกเขียนลง RunSetup
+    /// แล้ว PushLocalSelectionsToLobby จะไม่มีอะไรส่งขึ้น server → SelectedMapId ว่าง
+    /// → GetSelectedMap คืน null → Map_Image ถูกปิดทิ้งใน Refresh()</summary>
+    public bool MapLocked => LobbyState.Instance != null && !IsHost;
+
+    /// <summary>แมพที่ server ถืออยู่จริง — ไม่ใช่ตัวที่ผู้เล่นเครื่องนี้เพิ่งเลื่อนผ่าน</summary>
+    public MapData NetworkSelectedMap =>
+        LobbyState.Instance != null
+            ? GetSelectedMap(LobbyState.Instance.SelectedMapId.Value.ToString())
+            : null;
+
     public void SelectCharacter(string characterName)
     {
         if (LobbyState.Instance != null)
@@ -149,6 +247,16 @@ public class LobbyUI : MonoBehaviour
     public void SelectMap(MapData map)
     {
         if (map == null) return;
+
+        // SetMapServerRpc ทิ้ง request ที่ไม่ใช่ host เงียบๆ — ถ้าเขียน RunSetup ก่อนส่ง
+        // เครื่อง client จะเห็นแมพเปลี่ยนในจอตัวเอง แล้วเข้าเกมได้แมพของ host แทน
+        // ให้ host เป็นคนเดียวที่เขียน · client รับแมพจริงจาก LobbyState ใน Refresh()
+        if (MapLocked)
+        {
+            Refresh();
+            return;
+        }
+
         RunSetup.Set(map, RunSetup.Difficulty);
         if (LobbyState.Instance != null) LobbyState.Instance.SetMapServerRpc(map.mapId);
         Refresh();
@@ -156,6 +264,13 @@ public class LobbyUI : MonoBehaviour
 
     public void SelectDifficulty(DifficultyTier tier)
     {
+        // SetDifficultyServerRpc รับเฉพาะ host เหมือนกัน — เหตุผลเดียวกับ SelectMap
+        if (MapLocked)
+        {
+            Refresh();
+            return;
+        }
+
         RunSetup.Set(RunSetup.Map, tier);
         if (LobbyState.Instance != null) LobbyState.Instance.SetDifficultyServerRpc(tier);
         Refresh();
@@ -292,16 +407,18 @@ public class LobbyUI : MonoBehaviour
 
     private IEnumerator ShowCopiedThenRestore()
     {
-        if (inviteButtonText != null) inviteButtonText.text = "คัดลอกแล้ว";
+        // โชว์บนปุ่มที่ถูกกดจริง — ถ้ามีปุ่มคัดลอกแยกอยู่ ป้ายบนปุ่มเชิญไม่ควรกะพริบตาม
+        var label = copyCodeButtonText != null ? copyCodeButtonText : inviteButtonText;
+        if (label != null) label.text = "คัดลอกแล้ว";
         yield return new WaitForSecondsRealtime(1.2f);
         copyFeedbackRoutine = null;
+        if (copyCodeButtonText != null) copyCodeButtonText.text = "COPY";
         Refresh();
     }
 
     public void Refresh()
     {
-        bool isHost = (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost) ||
-                      (GameSessionManager.Instance != null && GameSessionManager.Instance.IsHost);
+        bool isHost = IsHost;
 
         if (tabBar != null)
         {
@@ -338,7 +455,15 @@ public class LobbyUI : MonoBehaviour
             return;
         }
 
-        if (partyContainer != null && partyRowTemplate != null)
+        RefreshP3RHeader();
+
+        if (partyContainer != null && partyRowPrefab != null)
+        {
+            // ทางใหม่ — แถวเต็มรูปแบบ P3R · แม่แบบเก่าถ้ามีก็ปิดทิ้ง
+            if (partyRowTemplate != null) partyRowTemplate.SetActive(false);
+            RefreshP3RPartyRows();
+        }
+        else if (partyContainer != null && partyRowTemplate != null)
         {
             partyRowTemplate.SetActive(false);
             foreach (var row in spawnedPartyRows)
@@ -362,7 +487,9 @@ public class LobbyUI : MonoBehaviour
                 var textComp = go.GetComponentInChildren<TextMeshProUGUI>();
                 if (textComp != null)
                 {
-                    string displayName = charData != null ? charData.characterName : (string.IsNullOrEmpty(charName) ? "Selecting..." : charName);
+                    // charName เป็น ID ที่มาจากเน็ตเวิร์ก — ใช้เป็น fallback ได้ แต่ถ้าหา CharacterData เจอ
+                    // ต้องโชว์ DisplayName ไม่ใช่ characterName
+                    string displayName = charData != null ? charData.DisplayName : (string.IsNullOrEmpty(charName) ? "Selecting..." : charName);
                     int slot = PlayerSlotRegistry.Instance != null ? PlayerSlotRegistry.Instance.GetSlot(entry.clientId) : -1;
                     string slotText = slot >= 0 ? (slot + 1).ToString() : "?";
                     textComp.text = $"Player {slotText}: {displayName} [{(entry.ready ? "READY" : "NOT READY")}]";
@@ -380,9 +507,17 @@ public class LobbyUI : MonoBehaviour
 
         string mapId = LobbyState.Instance.SelectedMapId.Value.ToString();
         MapData map = GetSelectedMap(mapId);
+
+        // client ไม่ได้เขียน RunSetup เองแล้ว (ดู SelectMap) จึงต้องรับค่าที่ server ถืออยู่มาใส่
+        // ไม่งั้น RunSetup.Map ฝั่ง client ค้าง null ทั้งรัน แล้ว WinLoseUI/WaveManager อ่านผิด
+        // host ไม่แตะตรงนี้ — RunSetup ของ host คือต้นทางอยู่แล้ว การเขียนทับจะเปิดช่องค่าเก่า
+        if (!isHost && map != null)
+        {
+            RunSetup.Set(map, LobbyState.Instance.SelectedDifficulty.Value);
+        }
         if (mapNameLabel != null)
         {
-            mapNameLabel.text = map != null ? map.displayName : (string.IsNullOrEmpty(mapId) ? "Select Map" : mapId);
+            mapNameLabel.text = map != null ? map.DisplayName : (string.IsNullOrEmpty(mapId) ? "Select Map" : mapId);
         }
         if (difficultyLabel != null)
         {
@@ -425,5 +560,106 @@ public class LobbyUI : MonoBehaviour
     {
         if (maps == null || string.IsNullOrEmpty(mapId)) return null;
         return maps.Find(m => m != null && m.mapId == mapId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // P3R HEADER / PARTY — ทั้งบล็อกนี้ทำงานเฉพาะเมื่อมีการต่อสายไว้
+    // ═══════════════════════════════════════════════════════════════════════
+    private readonly List<CloneSwarm.UI.P3R.LobbyPartyRowUI> p3rRows = new();
+
+    private void RefreshP3RHeader()
+    {
+        if (goldText != null)
+            goldText.text = $"{CloneSwarm.Meta.MetaProgression.Gold:N0} G";
+
+        bool hasSession = GameSessionManager.Instance != null
+                       && GameSessionManager.Instance.CurrentSession != null;
+
+        if (roomCodeLabel != null)
+            roomCodeLabel.text = hasSession ? GameSessionManager.Instance.SessionCode : "—";
+
+        // ไม่มีห้อง = ไม่มีรหัสให้คัดลอก · ซ่อนดีกว่าให้กดแล้วไม่เกิดอะไร
+        if (copyCodeButton != null) copyCodeButton.gameObject.SetActive(hasSession);
+
+        if (LobbyState.Instance == null) return;
+
+        int count = LobbyState.Instance.Players.Count;
+        int ready = 0;
+        for (int i = 0; i < count; i++)
+            if (LobbyState.Instance.Players[i].ready) ready++;
+
+        if (partyCountLabel != null) partyCountLabel.text = $"PARTY · {count} / {partySlotCount}";
+        if (readyCountLabel != null) readyCountLabel.text = $"{ready} READY";
+    }
+
+    /// <summary>
+    /// สร้างแถวให้ครบ <see cref="partySlotCount"/> ช่องเสมอ — ช่องที่ยังไม่มีคนเป็นเส้นประ
+    /// แบบวาดไว้แบบนี้เพื่อให้เห็นว่าห้องยังรับได้อีกกี่คน ไม่ใช่แค่ว่ามีใครอยู่บ้าง
+    /// </summary>
+    private void RefreshP3RPartyRows()
+    {
+        if (partyRowPrefab == null || partyContainer == null) return;
+
+        // ล้าง **ทุกลูก** ไม่ใช่แค่ที่ตัวเองสร้าง — builder วางแถวตัวอย่างไว้ในซีนให้เห็น
+        // หน้าตาตอนยังไม่กด Play แถวพวกนั้นไม่ได้อยู่ใน p3rRows
+        // ล้างแค่ของตัวเองแล้วตอนรันจะได้แถวสองชุดซ้อนกันจนอ่านไม่ออก
+        for (int i = partyContainer.childCount - 1; i >= 0; i--)
+            Destroy(partyContainer.GetChild(i).gameObject);
+        p3rRows.Clear();
+
+        var  players    = LobbyState.Instance != null ? LobbyState.Instance.Players : null;
+        int  playerCount = players != null ? players.Count : 0;
+        ulong localId   = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0;
+        int  total      = Mathf.Max(partySlotCount, playerCount);
+
+        for (int i = 0; i < total; i++)
+        {
+            var row = Instantiate(partyRowPrefab, partyContainer);
+            row.gameObject.SetActive(true);
+            p3rRows.Add(row);
+
+            // ต้องวางตำแหน่งเอง — ไม่มี LayoutGroup บน container
+            // ไม่วาง = ทุกแถวไปกองอยู่ที่เดียวกันตามตำแหน่งใน prefab
+            var rt = (RectTransform)row.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot     = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(0f, -i * (rt.sizeDelta.y + partyRowSpacing));
+
+            if (i >= playerCount) { row.SetEmpty(); continue; }
+
+            var entry    = players[i];
+            var charName = entry.characterName.ToString();
+            var charData = !string.IsNullOrEmpty(charName) && MetaDatabase.Instance != null
+                         ? MetaDatabase.Instance.GetCharacter(charName)
+                         : null;
+
+            // charName เป็น ID บนเน็ตเวิร์ก — ที่โชว์ต้องเป็น DisplayName เสมอ
+            string display = charData != null
+                           ? charData.DisplayName
+                           : (string.IsNullOrEmpty(charName) ? "กำลังเลือก…" : charName);
+
+            // สีประจำช่องต้องมาจาก PlayerSlotRegistry ไม่ใช่ clientId % 4 (CLAUDE.md ข้อ 11)
+            int slot = PlayerSlotRegistry.Instance != null
+                     ? PlayerSlotRegistry.Instance.GetSlot(entry.clientId)
+                     : i;
+
+            Color accent = slotColors != null && slotColors.Length > 0
+                         ? slotColors[Mathf.Abs(slot < 0 ? i : slot) % slotColors.Length]
+                         : Color.white;
+
+            // HP ยังไม่มีให้อ่านตอนอยู่ล็อบบี้ — ตัวละครยังไม่ถูก spawn
+            // โชว์ค่าฐานจาก CharacterData แทน ซึ่งเป็นค่าที่จะได้ตอนเกิดจริง
+            string detail = charData != null
+                          ? $"HP {Mathf.RoundToInt(charData.baseHealth)}"
+                          : "";
+
+            // icon มาก่อน portrait — ช่องรูปในแถวเป็นสี่เหลี่ยมเล็ก 62px ซึ่งเป็นขนาดของ icon
+            // (CharacterData.portrait ของทุกตัวยังว่างอยู่ ใช้เป็นตัวสำรองไว้เฉยๆ)
+            Sprite face = charData != null ? (charData.icon != null ? charData.icon : charData.portrait) : null;
+
+            row.Bind(slot, display, isHost: entry.clientId == 0,
+                     isYou: entry.clientId == localId,
+                     ready: entry.ready, detail: detail, accent: accent, portrait: face);
+        }
     }
 }

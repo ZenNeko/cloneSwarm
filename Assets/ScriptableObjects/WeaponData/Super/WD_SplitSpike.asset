@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: WD_SplitSpike
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: SplitSpikeWeapon
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Spike \u2014 \u0E40\u0E21\u0E37\u0E48\u0E2D\u0E40\u0E14\u0E49\u0E07\u0E01\u0E31\u0E1A\u0E01\u0E33\u0E41\u0E1E\u0E07\u0E08\u0E30\u0E41\u0E22\u0E01\u0E23\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E2D\u0E07\u0E2B\u0E19\u0E32\u0E21\u0E40\u0E09\u0E35\u0E22\u0E07\u0E2D\u0E2D\u0E01"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.SplitSpikeWeapon.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.SplitSpikeWeapon.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: -735812979, guid: 8904238ff4fddbc46a3e6f04bd2ce810, type: 3}
   tier: 1
   prefab: {fileID: 2993357391548470966, guid: 6baeb5b1a3c104342b354c7442f9f629, type: 3}
@@ -32,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 150
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

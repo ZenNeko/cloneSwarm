@@ -1,0 +1,716 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Content Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Content
+  m_TableCollectionNameGuidString: 9e69529d31d158540a1b4848bdcb39fd
+  m_Entries:
+  - m_Id: 2627712393216
+    m_Key: weapon.Cluster_Bomb.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627750141952
+    m_Key: weapon.Cluster_Bomb.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627754336256
+    m_Key: weapon.CycloneBlade.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627754336257
+    m_Key: weapon.CycloneBlade.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530560
+    m_Key: weapon.Orbital_Cannon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530561
+    m_Key: weapon.Orbital_Cannon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530562
+    m_Key: weapon.ThunderRail.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530563
+    m_Key: weapon.ThunderRail.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530564
+    m_Key: weapon.Bunny_Hop.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530565
+    m_Key: weapon.Bunny_Hop.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530566
+    m_Key: weapon.GunnerWeapon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530567
+    m_Key: weapon.GunnerWeapon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530568
+    m_Key: weapon.Laser.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530569
+    m_Key: weapon.Laser.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530570
+    m_Key: weapon.RabbitHop.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530571
+    m_Key: weapon.RabbitHop.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530572
+    m_Key: weapon.GunnerPassiveWeapon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530573
+    m_Key: weapon.GunnerPassiveWeapon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530574
+    m_Key: weapon.Hunter_Passive.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530575
+    m_Key: weapon.Hunter_Passive.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530576
+    m_Key: weapon.BladeStorm.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530577
+    m_Key: weapon.BladeStorm.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530578
+    m_Key: weapon.Blunderbuss.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530579
+    m_Key: weapon.Blunderbuss.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530580
+    m_Key: weapon.DeathField.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530581
+    m_Key: weapon.DeathField.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530582
+    m_Key: weapon.Magnum.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530583
+    m_Key: weapon.Magnum.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530584
+    m_Key: weapon.NapalmBomb.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530585
+    m_Key: weapon.NapalmBomb.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530586
+    m_Key: weapon.Railgun.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530587
+    m_Key: weapon.Railgun.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530588
+    m_Key: weapon.SpiralGalaxy.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530589
+    m_Key: weapon.SpiralGalaxy.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530590
+    m_Key: weapon.SplitSpikeWeapon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530591
+    m_Key: weapon.SplitSpikeWeapon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724864
+    m_Key: weapon.splitter_bomb.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724865
+    m_Key: weapon.splitter_bomb.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724866
+    m_Key: weapon.Star_Ring.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724867
+    m_Key: weapon.Star_Ring.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724868
+    m_Key: weapon.Stormcaller.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724869
+    m_Key: weapon.Stormcaller.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724870
+    m_Key: weapon.Superbig_aoe.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724871
+    m_Key: weapon.Superbig_aoe.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724872
+    m_Key: weapon.SuperBigCannon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724873
+    m_Key: weapon.SuperBigCannon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724874
+    m_Key: weapon.Spider_Fence.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724875
+    m_Key: weapon.Spider_Fence.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724876
+    m_Key: weapon.superMagicMissile.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724877
+    m_Key: weapon.superMagicMissile.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724878
+    m_Key: weapon.superOrbitalStrike.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724879
+    m_Key: weapon.superOrbitalStrike.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724880
+    m_Key: weapon.superSupportArena.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724881
+    m_Key: weapon.superSupportArena.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724882
+    m_Key: weapon.TendrilStorm.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724883
+    m_Key: weapon.TendrilStorm.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724884
+    m_Key: weapon.TriRang.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724885
+    m_Key: weapon.TriRang.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724886
+    m_Key: weapon.WD_BigAoE.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724887
+    m_Key: weapon.WD_BigAoE.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724888
+    m_Key: weapon.WD_BigCannon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724889
+    m_Key: weapon.WD_BigCannon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724890
+    m_Key: weapon.Boomerang.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724891
+    m_Key: weapon.Boomerang.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724892
+    m_Key: weapon.DualSlash.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724893
+    m_Key: weapon.DualSlash.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724894
+    m_Key: weapon.Fence.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724895
+    m_Key: weapon.Fence.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724896
+    m_Key: weapon.Grenade.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724897
+    m_Key: weapon.Grenade.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724898
+    m_Key: weapon.Lance.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724899
+    m_Key: weapon.Lance.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724900
+    m_Key: weapon.LightningChain.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724901
+    m_Key: weapon.LightningChain.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724902
+    m_Key: weapon.MagicMissile.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724903
+    m_Key: weapon.MagicMissile.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724904
+    m_Key: weapon.Molotov.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724905
+    m_Key: weapon.Molotov.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724906
+    m_Key: weapon.OrbitalStrike.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724907
+    m_Key: weapon.OrbitalStrike.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724908
+    m_Key: weapon.Orbiter.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724909
+    m_Key: weapon.Orbiter.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724910
+    m_Key: weapon.RadiantAura.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724911
+    m_Key: weapon.RadiantAura.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724912
+    m_Key: weapon.Shotgun.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724913
+    m_Key: weapon.Shotgun.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724914
+    m_Key: weapon.Spike.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724915
+    m_Key: weapon.Spike.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724916
+    m_Key: weapon.SupportArena.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724917
+    m_Key: weapon.SupportArena.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724918
+    m_Key: weapon.Vortex_Flame.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724919
+    m_Key: weapon.Vortex_Flame.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165376
+    m_Key: ability.Giant_Rocket.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165377
+    m_Key: ability.Giant_Rocket.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165378
+    m_Key: ability.Rocket_Mode.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165379
+    m_Key: ability.Rocket_Mode.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165380
+    m_Key: ability.Homing_Missiles.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165381
+    m_Key: ability.Homing_Missiles.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165382
+    m_Key: ability.Funnel_Storm.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165383
+    m_Key: ability.Funnel_Storm.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165384
+    m_Key: ability.Blade_of_Exile.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165385
+    m_Key: ability.Blade_of_Exile.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165386
+    m_Key: ability.Valor.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165387
+    m_Key: ability.Valor.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411584
+    m_Key: character.Gunner.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411585
+    m_Key: character.Gunner.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411586
+    m_Key: character.Gunner.passiveDesc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411587
+    m_Key: character.Hunter.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411588
+    m_Key: character.Hunter.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411589
+    m_Key: character.Hunter.passiveDesc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411590
+    m_Key: character.Riven.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411591
+    m_Key: character.Riven.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411592
+    m_Key: character.Riven.passiveName
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411593
+    m_Key: character.Riven.passiveDesc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628106657792
+    m_Key: map.arena01.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628106657793
+    m_Key: map.arena01.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098304
+    m_Key: stat.AbilityHaste.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098305
+    m_Key: stat.AbilityHaste.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098306
+    m_Key: stat.AreaSize.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098307
+    m_Key: stat.AreaSize.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098308
+    m_Key: stat.Armor.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098309
+    m_Key: stat.Armor.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098310
+    m_Key: stat.CriticalChance.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098311
+    m_Key: stat.CriticalChance.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098312
+    m_Key: stat.Damage.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098313
+    m_Key: stat.Damage.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098314
+    m_Key: stat.Duration.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098315
+    m_Key: stat.Duration.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098316
+    m_Key: stat.ExpBonus.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098317
+    m_Key: stat.ExpBonus.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628299595776
+    m_Key: stat.Gain_25_Gold.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628299595777
+    m_Key: stat.Gain_25_Gold.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761600
+    m_Key: stat.Heal_25_HP.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761601
+    m_Key: stat.Heal_25_HP.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761602
+    m_Key: stat.HealthRegen.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761603
+    m_Key: stat.HealthRegen.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761604
+    m_Key: stat.MaxHealth.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761605
+    m_Key: stat.MaxHealth.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761606
+    m_Key: stat.MoveSpeed.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761607
+    m_Key: stat.MoveSpeed.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761608
+    m_Key: stat.PickupRadius.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761609
+    m_Key: stat.PickupRadius.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761610
+    m_Key: stat.ProjectileCount.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761611
+    m_Key: stat.ProjectileCount.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950848
+    m_Key: talent.talent_area.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950849
+    m_Key: talent.talent_area.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950850
+    m_Key: talent.talent_armor.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950851
+    m_Key: talent.talent_armor.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950852
+    m_Key: talent.talent_attack.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950853
+    m_Key: talent.talent_attack.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950854
+    m_Key: talent.talent_crit.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950855
+    m_Key: talent.talent_crit.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950856
+    m_Key: talent.talent_duration.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950857
+    m_Key: talent.talent_duration.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950858
+    m_Key: talent.talent_exp.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950859
+    m_Key: talent.talent_exp.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950860
+    m_Key: talent.talent_gold.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950861
+    m_Key: talent.talent_gold.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950862
+    m_Key: talent.talent_haste.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950863
+    m_Key: talent.talent_haste.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950864
+    m_Key: talent.talent_health.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950865
+    m_Key: talent.talent_health.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950866
+    m_Key: talent.talent_magnet.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950867
+    m_Key: talent.talent_magnet.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950868
+    m_Key: talent.talent_movespeed.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950869
+    m_Key: talent.talent_movespeed.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950870
+    m_Key: talent.talent_projectile.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950871
+    m_Key: talent.talent_projectile.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950872
+    m_Key: talent.talent_regen.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950873
+    m_Key: talent.talent_regen.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628484145152
+    m_Key: talent.talent_revive.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628484145153
+    m_Key: talent.talent_revive.desc
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 4763815712042516858
+  references:
+    version: 2
+    RefIds:
+    - rid: 4763815712042516858
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1788772849916

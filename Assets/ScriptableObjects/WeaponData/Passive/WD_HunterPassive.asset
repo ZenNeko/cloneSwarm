@@ -13,11 +13,29 @@ MonoBehaviour:
   m_Name: WD_HunterPassive
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Hunter Passive
-  description: "\u0E17\u0E38\u0E01 50 \u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E15\u0E35\u0E42\u0E14\u0E19 \u0E2A\u0E31\u0E48\u0E07\u0E22\u0E34\u0E07\u0E2D\u0E32\u0E27\u0E38\u0E18\u0E17\u0E38\u0E01\u0E0A\u0E34\u0E49\u0E19\u0E17\u0E35\u0E48\u0E1E\u0E01\u0E2D\u0E22\u0E39\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E01\u0E31\u0E19\u0E17\u0E31\u0E19\u0E17\u0E35"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Hunter_Passive.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Hunter_Passive.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   tier: 0
   prefab: {fileID: 4688751792051821304, guid: 6967f5e7ef96e1542989803a7036db08, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 0
     cooldown: 1
@@ -31,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 100
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

@@ -13,11 +13,29 @@ MonoBehaviour:
   m_Name: WD_Stormcaller
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Stormcaller
-  description: "\u0E23\u0E48\u0E32\u0E07\u0E1E\u0E31\u0E12\u0E19\u0E32\u0E02\u0E2D\u0E07 Lightning Chain \u2014 \u0E01\u0E23\u0E30\u0E42\u0E14\u0E14\u0E15\u0E48\u0E2D\u0E44\u0E14\u0E49\u0E44\u0E01\u0E25\u0E02\u0E36\u0E49\u0E19 \u0E41\u0E25\u0E30\u0E17\u0E34\u0E49\u0E07\u0E27\u0E07\u0E2A\u0E32\u0E22\u0E1F\u0E49\u0E32\u0E44\u0E27\u0E49\u0E17\u0E35\u0E48\u0E17\u0E38\u0E01\u0E40\u0E1B\u0E49\u0E32\u0E2B\u0E21\u0E32\u0E22"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Stormcaller.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Stormcaller.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 21300000, guid: 4409646a5d92cb24090a1f2908152a91, type: 3}
   tier: 1
   prefab: {fileID: 3857138112386556378, guid: 457af63d404aea1498a095a4e355429d, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 85
     cooldown: 0.9
@@ -31,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 150
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

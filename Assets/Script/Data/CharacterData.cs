@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 /// <summary>
 /// ข้อมูลตัวละคร — Assets > Create > LoL Swarm > Character Data
@@ -6,12 +7,30 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Char_New", menuName = "LoL Swarm/Character Data")]
 public class CharacterData : ScriptableObject
 {
-    [Header("Identity")]
+    [Header("Identity — ห้ามแปล ห้ามเปลี่ยนหลังปล่อยเกม")]
+    [Tooltip("รหัสประจำตัวละคร ไม่ใช่ชื่อที่โชว์บนจอ — ใช้เป็นคีย์จริงในสามที่:\n" +
+             "  1. บนเน็ตเวิร์ก (LobbyState.characterName, CLAUDE.md ข้อ 10)\n" +
+             "  2. คีย์ในไฟล์เซฟ (SaveData / MetaProgression)\n" +
+             "  3. dimension ของ analytics\n" +
+             "แปลเมื่อไหร่ = host กับ client ส่งคนละสตริง, ของที่ปลดล็อกไว้หาย, " +
+             "และข้อมูล analytics ถูกแยกตามภาษา · ชื่อที่โชว์ให้ใส่ displayName ข้างล่าง")]
     public string characterName = "Unnamed";
-    [TextArea(1, 3)]
-    public string description;
+
+    [Header("Display — แปลได้ ชี้ไป String Table 'Content'")]
+    [Tooltip("ว่าง = ใช้ characterName แทน · ตั้งอัตโนมัติด้วย Tools > Clone Swarm > Localization > 2. Relink")]
+    public LocalizedString displayName;
+    public LocalizedString description;
     public Sprite portrait;
     public Sprite icon;
+
+    /// <summary>ชื่อที่เอาไปโชว์บนจอ — ตกกลับไปใช้ characterName เมื่อยังไม่ได้ตั้ง displayName
+    ///
+    /// ทุกที่ที่เอาชื่อไปแสดงต้องอ่านตัวนี้ ห้ามอ่าน characterName ตรงๆ
+    /// (จุดที่เทียบค่า/ส่งขึ้นเน็ตเวิร์ก/เขียนลงเซฟ ยังต้องใช้ characterName เหมือนเดิม)</summary>
+    public string DisplayName => displayName.IsEmpty ? characterName : displayName.GetLocalizedString();
+    public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
+    public string PassiveName  => passiveName.IsEmpty ? "" : passiveName.GetLocalizedString();
+    public string PassiveDesc  => passiveDescription.IsEmpty ? "" : passiveDescription.GetLocalizedString();
 
     [Header("Base Stats")]
     public float baseHealth    = 100f;
@@ -62,9 +81,8 @@ public class CharacterData : ScriptableObject
     public AbilityData[] abilities;
 
     // ─────────────────────────────────────────────────────────────────────
-    [Header("Passive")]
-    public Sprite  passiveIcon;
-    public string  passiveName;
-    [TextArea(1, 3)]
-    public string  passiveDescription;
+    [Header("Passive — ข้อความแปลได้ ชี้ไป String Table 'Content'")]
+    public Sprite          passiveIcon;
+    public LocalizedString passiveName;
+    public LocalizedString passiveDescription;
 }

@@ -46,7 +46,7 @@ public class WeaponStation : MonoBehaviour
     void Start()
     {
         if (weaponLabel != null && weaponData != null)
-            weaponLabel.text = $"{weaponData.tier}\n{weaponData.weaponName}";
+            weaponLabel.text = $"{weaponData.tier}\n{weaponData.DisplayName}";
     }
 
     void OnTriggerEnter(Collider other)

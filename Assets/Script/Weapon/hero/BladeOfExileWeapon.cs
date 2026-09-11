@@ -16,9 +16,6 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class BladeOfExileWeapon : AbilityBase, IHUDAbility
 {
-    [Header("Input Key")]
-    [Tooltip("ปุ่มที่กดเพื่อใช้สกิล")]
-    public Key activateKey = Key.E;
 
     [Header("Exile Stats")]
     [Tooltip("move speed bonus ขณะ exile active (+0.5 = +50%)")]
@@ -41,7 +38,7 @@ public class BladeOfExileWeapon : AbilityBase, IHUDAbility
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
     public string HUDSlotKey      => "E";   // Blade of Exile ของ Riven อยู่ E เสมอ
-    public string HUDKeyLabel     => activateKey.ToString();
+    public string HUDKeyLabel     => AbilityKeyLabel;   // อ่านจาก binding จริงใน AbilityInputActions
     public bool   IsActiveMode    => IsExileActive;
     public float  ActiveRemaining => ExileRemaining;
     public float  ActiveMax       => ActiveExileDuration;
@@ -74,11 +71,8 @@ public class BladeOfExileWeapon : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || IsExileActive) return;
-        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
-        var kb = Keyboard.current;
-        if (kb == null) return;
-        if (kb[activateKey].wasPressedThisFrame)
+        if (AbilityPressedThisFrame)
             Activate();
     }
 

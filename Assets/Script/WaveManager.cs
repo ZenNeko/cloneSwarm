@@ -93,6 +93,12 @@ public class WaveManager : NetworkBehaviour
     // ── Wave Loop (Server-only logic, ไม่มี announcement) ────────────────
     IEnumerator WaveLoop()
     {
+        // ไม่ปล่อยศัตรูจนกว่านาฬิกาเกมจะเริ่มจริง (GameTimeline รอให้ทุกคน spawn เสร็จก่อน)
+        // ของเดิม wave เริ่มนับจาก OnNetworkSpawn ของตัวเอง ศัตรูจึงออกมาก่อนผู้เล่นโหลดเสร็จ
+        // เช็ค Instance != null ด้วย เพราะซีนอย่าง WeaponTestScene ไม่มี GameTimeline
+        while (GameTimeline.Instance != null && !GameTimeline.Instance.hasStarted.Value)
+            yield return null;
+
         // รอก่อนเริ่ม wave แรก
         yield return new WaitForSeconds(startDelay);
 

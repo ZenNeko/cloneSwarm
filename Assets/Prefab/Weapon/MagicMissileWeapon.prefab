@@ -49,7 +49,7 @@ MonoBehaviour:
   manager: {fileID: 0}
   aimMode: 0
   tempCooldownMult: 1
-  weaponVfxType: MeteorAoE
+  weaponVfxType: AOE_ICEMiss
   secondaryVfxType: None
   fireSfx: []
   hitSfx: []
@@ -57,7 +57,7 @@ MonoBehaviour:
   hitVolume: 0.6
   pitchVariance: 0.05
   missilePrefab: {fileID: 1367524025346344, guid: 68128af9ff75e2841a87a4791272524e, type: 3}
-  impactRadius: 2.5
+  impactRadius: 1
   slowPercent: 0.5
   slowDuration: 2
   evoEnabled: 0

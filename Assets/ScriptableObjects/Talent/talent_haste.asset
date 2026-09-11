@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.TalentData
   talentId: talent_haste
   talentName: Haste Speed
-  description: "\u0E25\u0E14\u0E04\u0E39\u0E25\u0E14\u0E32\u0E27\u0E19\u0E4C\u0E2D\u0E32\u0E27\u0E38\u0E18/\u0E2A\u0E01\u0E34\u0E25 +5 Haste \u0E15\u0E48\u0E2D\u0E40\u0E25\u0E40\u0E27\u0E25"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_haste.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_haste.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   mode: 0
   statType: 1
@@ -23,3 +40,6 @@ MonoBehaviour:
   category: 0
   sortOrder: 2
   tintColor: {r: 0.9411765, g: 0.5254902, b: 0.29411766, a: 1}
+  references:
+    version: 2
+    RefIds: []

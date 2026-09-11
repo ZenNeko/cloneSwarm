@@ -24,6 +24,9 @@ public class MolotovProjectile : NetworkBehaviour
     [HideInInspector]
     public string explosionVfxKey   = "GrenadeExplosion";
 
+    [Tooltip("หน่วงก่อนกองไฟโผล่ (วินาที) - 0 = พร้อมระเบิดเลย\nตั้งไว้ราว 0.3-0.4 ถ้า explosionVfxKey กับ zoneVfxKey เป็นวงคล้ายกัน\nไม่งั้นจะเห็นเป็นสองวงซ้อนกันตอนระเบิด")]
+    public float  zoneVfxDelay      = 0f;
+
     [Header("Super (Napalm) Settings")]
     [Tooltip("จำนวนกองไฟย่อยที่กระจายออกรอบวง (0 = ไม่กระจายย่อย)")]
     public int   childPoolsCount    = 0;
@@ -92,7 +95,7 @@ public class MolotovProjectile : NetworkBehaviour
         {
             float tickDmg   = damage * zoneDamagePercent;
             float burnTickDmg = tickDmg * burnDamageRatio;
-            weaponManager.SpawnDamageZone(targetPos, zoneTicks, zoneTickInterval, radius, tickDmg, isCrit, weaponName, zoneVfxKey, burnDuration, burnTickDmg, burnTickInterval);
+            weaponManager.SpawnDamageZone(targetPos, zoneTicks, zoneTickInterval, radius, tickDmg, isCrit, weaponName, zoneVfxKey, burnDuration, burnTickDmg, burnTickInterval, zoneVfxDelay);
 
             // กระจายกองไฟย่อยรอบจุดตก (เช่น สำหรับ Napalm Bomb)
             if (childPoolsCount > 0)
@@ -103,7 +106,7 @@ public class MolotovProjectile : NetworkBehaviour
                     Vector3 offsetDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
                     Vector3 childPos = targetPos + offsetDir * childPoolOffset;
                     // ความแรงและขนาดของกองย่อยเป็น 70% ของตัวแม่
-                    weaponManager.SpawnDamageZone(childPos, zoneTicks, zoneTickInterval, radius * 0.7f, tickDmg * 0.7f, isCrit, weaponName, zoneVfxKey, burnDuration, burnTickDmg * 0.7f, burnTickInterval);
+                    weaponManager.SpawnDamageZone(childPos, zoneTicks, zoneTickInterval, radius * 0.7f, tickDmg * 0.7f, isCrit, weaponName, zoneVfxKey, burnDuration, burnTickDmg * 0.7f, burnTickInterval, zoneVfxDelay);
                 }
             }
         }

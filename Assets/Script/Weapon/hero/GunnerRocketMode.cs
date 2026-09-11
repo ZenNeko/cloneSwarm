@@ -14,8 +14,6 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class GunnerRocketMode : AbilityBase, IHUDAbility
 {
-    [Header("Input Key")]
-    public Key activateKey = Key.Q;
 
     // ── State ─────────────────────────────────────────────────────────────
     public bool  IsRocketModeActive { get; private set; }
@@ -28,7 +26,7 @@ public class GunnerRocketMode : AbilityBase, IHUDAbility
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
     public string HUDSlotKey      => "Q";   // Rocket Mode ของ Gunner อยู่ Q เสมอ
-    public string HUDKeyLabel     => activateKey.ToString();
+    public string HUDKeyLabel     => AbilityKeyLabel;   // อ่านจาก binding จริงใน AbilityInputActions
     public bool   IsActiveMode    => IsRocketModeActive;
     public float  ActiveRemaining => ModeRemaining;
     public float  ActiveMax       => ModeMax;
@@ -59,11 +57,8 @@ public class GunnerRocketMode : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || IsRocketModeActive) return;
-        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
-        var kb = Keyboard.current;
-        if (kb == null) return;
-        if (kb[activateKey].wasPressedThisFrame)
+        if (AbilityPressedThisFrame)
             Activate();
     }
 

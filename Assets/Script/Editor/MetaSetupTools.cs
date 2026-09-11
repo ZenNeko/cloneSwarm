@@ -313,7 +313,7 @@ public static class MetaSetupTools
         var t = ScriptableObject.CreateInstance<TalentData>();
         t.talentId      = id;
         t.talentName    = name;
-        t.description   = desc;
+        // t.description   = desc;   // ← ย้ายไป String Table แล้ว
         t.mode          = mode;
         t.statType      = stat;
         t.valuePerLevel = valuePerLevel;

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 public enum StatType
 {
@@ -28,12 +29,29 @@ public enum StatType
 [CreateAssetMenu(fileName = "Stat_New", menuName = "LoL Swarm/Stat Data")]
 public class StatData : ScriptableObject
 {
-    [Header("Identity")]
+    [Header("Identity — ใช้ใน log ไม่ต้องแปล")]
     public string   statName;
-    [TextArea(1, 3)]
-    public string   description;
+
+    [Header("Display — แปลได้ ชี้ไป String Table 'Content'")]
+    [Tooltip("ว่าง = ใช้ statName แทน · ตั้งอัตโนมัติด้วย Tools > Clone Swarm > Localization > 2. Relink")]
+    public LocalizedString displayName;
+    public LocalizedString description;
     public Sprite   icon;
+
+    /// <summary>ข้อความที่แปลแล้วตาม locale ปัจจุบัน — ว่างเมื่อยังไม่ได้ผูก entry
+    /// ทุกที่ที่เอาไปแสดงต้องอ่าน property พวกนี้ ไม่ใช่ field ตรงๆ</summary>
+    public string DisplayName => displayName.IsEmpty ? statName : displayName.GetLocalizedString();
+    public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
     public StatType statType;
+
+    /// <summary>
+    /// รูปที่ต้องเอาไปแสดง — ช่อง <see cref="icon"/> ของ asset นี้ชนะก่อน
+    /// ไม่ได้ใส่ก็ตกไปใช้รูปกลางของ <see cref="statType"/> ใน <see cref="StatIconSet"/>
+    ///
+    /// **ที่แสดงผลต้องอ่านตัวนี้ ไม่ใช่ `icon` ตรงๆ** — ไม่งั้นสเตตัสเดียวกัน
+    /// จะมีไอคอนคนละแบบระหว่างการ์ดในเกม ร้าน talent และแผงสเตตัสผู้เล่น
+    /// </summary>
+    public Sprite Icon => icon != null ? icon : StatIconSet.For(statType);
 
     [Header("Value Per Level  (index 0 = Lv1)")]
     [Tooltip(

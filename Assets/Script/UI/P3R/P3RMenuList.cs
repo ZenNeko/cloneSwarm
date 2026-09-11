@@ -26,6 +26,11 @@ namespace CloneSwarm.UI.P3R
         [Tooltip("เรียงบนลงล่างตามที่เห็นบนจอ · builder เติมให้อัตโนมัติ")]
         public List<P3RMenuItem> items = new();
 
+        [Header("── Layout ─────────────────────────────")]
+        [Tooltip("เมนูเกาะขอบไหนของจอ — เมนูหลักชิดขวา · จอ pause ชิดซ้าย\n" +
+                 "เปลี่ยนแล้วตัวหนังสือ แถบ และทิศที่ไถลเข้าจะกลับข้างพร้อมกันทั้งชุด")]
+        public MenuSide side = MenuSide.Right;
+
         [Header("── Behaviour ──────────────────────────")]
         [Tooltip("เล่นอนิเมชันไถลเข้าทุกครั้งที่ panel ถูกเปิด")]
         public bool playIntroOnEnable = true;
@@ -52,12 +57,38 @@ namespace CloneSwarm.UI.P3R
 
         public P3RMenuItem Current => (index >= 0 && index < items.Count) ? items[index] : null;
 
+        /// <summary>
+        /// ระยะไถลเข้าแบบมีเครื่องหมาย — เมนูชิดซ้ายต้องไถลมาจากซ้าย ไม่ใช่จากขวา
+        /// ถ้าไม่กลับเครื่องหมาย รายการจะบินข้ามจอมาจากอีกฝั่งซึ่งดูเหมือนของหลุด
+        /// </summary>
+        private float IntroDistance
+            => theme == null ? 0f
+             : theme.introSlideDistance * (side == MenuSide.Left ? -1f : 1f);
+
+        /// <summary>ยัด theme + ข้างที่เกาะ ลงทุกรายการ — จุดเดียวที่ทำเรื่องนี้</summary>
+        private void ApplyToAllItems()
+        {
+            foreach (var it in items) if (it != null) it.Apply(theme, side);
+        }
+
+        /// <summary>
+        /// สลับข้างตอนรัน — ใช้ได้ทั้งตอนทำ setting ให้ผู้เล่นเลือก และตอนจูนดูเฉยๆ
+        /// เก็บ index ที่เลือกอยู่ไว้ แล้ววาดสถานะกลับทันทีโดยไม่เล่นอนิเมชันเข้าใหม่
+        /// </summary>
+        public void SetSide(MenuSide newSide)
+        {
+            if (side == newSide) return;
+            side = newSide;
+            ApplyToAllItems();
+            if (Current != null) Current.SetSelected(true, instant: true);
+        }
+
         // ═══════════════════════════════════════════════════════════════════
         // LIFECYCLE
         // ═══════════════════════════════════════════════════════════════════
         private void Awake()
         {
-            foreach (var it in items) if (it != null) it.Apply(theme);
+            ApplyToAllItems();
         }
 
         private void OnEnable()
@@ -235,7 +266,7 @@ namespace CloneSwarm.UI.P3R
             if (theme == null || items.Count == 0) yield break;
             introPlaying = true;
 
-            foreach (var it in items) if (it != null) it.SetIntroProgress(0f, theme.introSlideDistance);
+            foreach (var it in items) if (it != null) it.SetIntroProgress(0f, IntroDistance);
 
             float total = theme.introStagger * Mathf.Max(0, items.Count - 1) + theme.introDuration;
             float t = 0f;
@@ -247,12 +278,12 @@ namespace CloneSwarm.UI.P3R
                     if (items[i] == null) continue;
                     float local = (t - i * theme.introStagger) / Mathf.Max(0.0001f, theme.introDuration);
                     local = Mathf.Clamp01(local);
-                    items[i].SetIntroProgress(theme.EaseOutBack(local), theme.introSlideDistance);
+                    items[i].SetIntroProgress(theme.EaseOutBack(local), IntroDistance);
                 }
                 yield return null;
             }
 
-            foreach (var it in items) if (it != null) it.SetIntroProgress(1f, theme.introSlideDistance);
+            foreach (var it in items) if (it != null) it.SetIntroProgress(1f, IntroDistance);
             introPlaying = false;
             introRoutine = null;
         }
@@ -274,7 +305,7 @@ namespace CloneSwarm.UI.P3R
             foreach (var it in items)
             {
                 if (it == null) continue;
-                it.Apply(theme);
+                it.Apply(theme, side);
                 UnityEditor.EditorUtility.SetDirty(it);
             }
             UnityEditor.EditorUtility.SetDirty(this);

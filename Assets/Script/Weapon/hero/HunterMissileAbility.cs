@@ -12,8 +12,6 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class HunterMissileAbility : AbilityBase, IHUDAbility
 {
-    [Header("Input Key")]
-    public Key activateKey = Key.Q;
 
     [Header("Missile Config")]
     public int   missileCount      = 5;
@@ -22,7 +20,7 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
     public string HUDSlotKey      => "Q";   // Missile ของ Hunter อยู่ Q เสมอ
-    public string HUDKeyLabel     => activateKey.ToString();
+    public string HUDKeyLabel     => AbilityKeyLabel;   // อ่านจาก binding จริงใน AbilityInputActions
     public bool   IsActiveMode    => false;
     public float  ActiveRemaining => 0f;
     public float  ActiveMax       => 0f;
@@ -49,9 +47,8 @@ public class HunterMissileAbility : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown) return;
-        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
-        if (Keyboard.current != null && Keyboard.current[activateKey].wasPressedThisFrame)
+        if (AbilityPressedThisFrame)
             Fire();
     }
 

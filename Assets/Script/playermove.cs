@@ -11,6 +11,9 @@ public class playermove : NetworkBehaviour
     public float moveSpeed = 5f;
 
     [Header("Health")]
+    /// <summary>HP สูงสุดฝั่ง server เท่านั้น — GainMaxHealth/SetBaseStats เขียนตัวนี้ใต้ IsServer
+    /// **client ต้องอ่าน netMaxHealth แทน** ค่าตัวนี้บน client ค้างตั้งแต่ตอน spawn
+    /// (ระเบียบเดียวกับ Enemy.maxHealth vs Enemy.netMaxHealth)</summary>
     public float maxHealth = 100f;
     public UnityEvent onDeath;
 
@@ -35,6 +38,17 @@ public class playermove : NetworkBehaviour
     public NetworkVariable<bool>  isDead           = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     /// <summary>เลขลำดับจาก LimitCutAction — 0 = ไม่มีเลข · ทุก client อ่านได้เพื่อโชว์เหนือหัวกันและกัน</summary>
     public NetworkVariable<int>   limitCutNumber   = new(0,     NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    [Header("Respawn")]
+    [Tooltip("DeathSpot = จุดที่ตาย\nSpawnPoint = จุดเกิดเดิมของตัวเอง (จาก GameSessionManager)\nNextToTeammate = ข้างเพื่อนที่ยังรอด")]
+    public RespawnPlace respawnPlace = RespawnPlace.DeathSpot;
+
+    [Tooltip("วินาทีที่อมตะหลังเกิดใหม่ - 0 = ปิด\nจำเป็นเมื่อเกิดที่จุดที่ตาย เพราะกองศัตรูที่ฆ่าเราไปยังอยู่ที่เดิม")]
+    public float respawnInvulnSeconds = 2f;
+
+    /// <summary>จุดที่จะไปโผล่หลังนับถอยหลังจบ — DeathSpot อยู่ลำดับแรกให้มีค่า 0
+    /// prefab/scene ที่ยังไม่มีค่านี้จึงได้ DeathSpot เป็น default อัตโนมัติ</summary>
+    public enum RespawnPlace { DeathSpot, SpawnPoint, NextToTeammate }
+
     /// <summary>วินาทีที่เหลือก่อน respawn — 0 = ไม่ได้ตาย</summary>
     public NetworkVariable<float> respawnCountdown = new(0f,   NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -101,8 +115,14 @@ public class playermove : NetworkBehaviour
         // Damage feedback (owner only) — fires when HP decreases
         if (curr < prev && IsOwner)
         {
-            float dmg       = prev - curr;
-            float intensity = Mathf.Clamp01(dmg / maxHealth * 3f); // small hits = small flash
+            float dmg = prev - curr;
+
+            // ต้องอ่าน netMaxHealth ไม่ใช่ field maxHealth — GainMaxHealth มี if (!IsServer) return
+            // ค่า maxHealth บน client จึงค้างที่ baseHealth ตอน spawn ตลอดรัน (remote player ค้างที่
+            // ค่า default ของ prefab ด้วยซ้ำ เพราะ SetBaseStats เป็น owner-only)
+            // ใช้ค่าค้างทำให้ vignette แรงเกินจริงเฉพาะบนเครื่อง client — host ไม่เจอเพราะเป็น server
+            float maxHp     = netMaxHealth.Value > 0f ? netMaxHealth.Value : maxHealth;
+            float intensity = Mathf.Clamp01(dmg / maxHp * 3f); // small hits = small flash
             DamageFeedbackUI.Instance?.ShowFlash(intensity);
             CameraShake.Instance?.Shake(0.2f, 0.25f * Mathf.Max(intensity, 0.4f));
         }
@@ -184,6 +204,10 @@ public class playermove : NetworkBehaviour
     {
         if (!IsServer || isDead.Value) return;
 
+        // อมตะสั้นๆ หลังเกิดใหม่ — เกิดที่จุดที่ตายแปลว่าโผล่กลางกองเดิมที่เพิ่งฆ่าเรา
+        // ไม่มีช่วงนี้จะโดนตีตายซ้ำก่อนขยับทัน (โปรเจกต์นี้ไม่เคยมี i-frame ให้ player มาก่อน)
+        if (_invulnUntil > 0f && Time.time < _invulnUntil) return;
+
         var status = GetComponent<PlayerStatusManager>();
         if (status != null) amount *= status.GetDamageTakenMult();
 
@@ -204,6 +228,12 @@ public class playermove : NetworkBehaviour
         if (netHealth.Value <= 0f) Die();
     }
 
+    /// <summary>พิกัดตอนล้ม — บันทึกเองแทนการอ่าน transform ตอน respawn
+    /// เพราะศพยังมี Rigidbody ที่ไม่ kinematic กองศัตรูดันให้เลื่อนได้ระหว่างรอเกิด</summary>
+    private Vector3 _deathPosition;
+    /// <summary>เวลาที่หมดอมตะ (Time.time ฝั่ง server) — 0 = ไม่ได้อมตะ</summary>
+    private float   _invulnUntil;
+
     void Die()
     {
         // ── Second Chance (Talent ถาวร) — ชุบชีวิตทันที 1 ครั้งต่อเกม ─────
@@ -217,6 +247,7 @@ public class playermove : NetworkBehaviour
             return;
         }
 
+        _deathPosition         = transform.position;
         isDead.Value           = true;
         respawnCountdown.Value = 0f;
 
@@ -266,22 +297,65 @@ public class playermove : NetworkBehaviour
 
     void Respawn()
     {
-        // Spawn ใกล้ผู้เล่นที่รอดอยู่
-        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            var pm = c.PlayerObject?.GetComponent<playermove>();
-            if (pm != null && !pm.isDead.Value)
-            {
-                Vector2 rnd = Random.insideUnitCircle.normalized * 3f;
-                transform.position = pm.transform.position + new Vector3(rnd.x, 0f, rnd.y);
-                break;
-            }
-        }
+        // ย้ายตำแหน่งต้องผ่าน owner — NetworkTransform ของ player เป็น AuthorityMode: Owner
+        // server เขียน transform.position ตรงๆ จะถูก owner เขียนทับทันที (ของเดิมทำแบบนั้น
+        // จึงได้ผลเฉพาะบน host) · ทางเดียวกับ ApplyKnockbackClientRpc ที่ CLAUDE.md ระบุไว้
+        //
+        // ส่ง teleport ก่อนปลด isDead — ระหว่างที่ยังตายอยู่ FixedUpdate ของ owner return ทันที
+        // จึงไม่มีอะไรมาแย่งเขียน velocity ตอนวาร์ป
+        TeleportClientRpc(GetRespawnPosition());
 
         netHealth.Value        = maxHealth * 0.3f;
         isDead.Value           = false;
         respawnCountdown.Value = 0f;
-        Debug.Log($"[Player] Respawn HP={netHealth.Value:F0}/{maxHealth:F0}");
+        _invulnUntil           = respawnInvulnSeconds > 0f ? Time.time + respawnInvulnSeconds : 0f;
+        Debug.Log($"[Player] Respawn HP={netHealth.Value:F0}/{maxHealth:F0} ที่ {respawnPlace} " +
+                  $"· อมตะ {respawnInvulnSeconds:F1}s");
+    }
+
+    /// <summary>จุดที่จะไปเกิด — จุดเกิดเดิมของตัวเอง หรือข้างเพื่อนถ้าปิดตัวเลือกไว้</summary>
+    Vector3 GetRespawnPosition()
+    {
+        if (respawnPlace == RespawnPlace.DeathSpot) return _deathPosition;
+
+        if (respawnPlace == RespawnPlace.SpawnPoint)
+        {
+            var session = GameSessionManager.Instance;
+            if (session != null) return session.GetSpawnPosition(OwnerClientId);
+
+            Debug.LogWarning("[Player] ไม่พบ GameSessionManager — ตกไปใช้จุดเกิดข้างเพื่อนแทน");
+        }
+
+        // เกิดข้างผู้เล่นที่ยังรอด (พฤติกรรมเดิม)
+        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var po = c.PlayerObject;
+            if (po == null) continue;
+
+            var pm = po.GetComponent<playermove>();
+            if (pm == null || pm == this || pm.isDead.Value) continue;
+
+            Vector2 rnd = Random.insideUnitCircle.normalized * 3f;
+            return pm.transform.position + new Vector3(rnd.x, 0f, rnd.y);
+        }
+
+        return transform.position;   // ไม่เหลือใครเลย — อยู่ที่เดิม
+    }
+
+    /// <summary>วาร์ปผู้เล่นไปพิกัดที่ server กำหนด — เฉพาะ owner เท่านั้นที่ขยับตัวเองได้</summary>
+    [ClientRpc]
+    void TeleportClientRpc(Vector3 pos)
+    {
+        if (!IsOwner) return;
+
+        // เคลียร์ velocity ด้วย ไม่งั้นความเร็วก่อนตายจะพาลอยต่อจากจุดใหม่
+        if (rb != null)
+        {
+            rb.linearVelocity  = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.position        = pos;
+        }
+        transform.position = pos;
     }
 
     /// <summary>เรียกจาก UpgradeManager ผ่าน ServerRpc</summary>

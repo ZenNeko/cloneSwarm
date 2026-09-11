@@ -108,7 +108,15 @@ public class MenuManager : MonoBehaviour
         EnsureLobbyStateSpawned();
     }
 
-    void HandleJoined() => ShowPanel(lobbyPanel);
+    void HandleJoined()
+    {
+        ShowPanel(lobbyPanel);
+
+        // ต้องตั้งโหมดด้วย ไม่ใช่แค่เปิดแผง — ร้าน Talent เป็นแท็บใน lobbyPanel ตัวเดียวกัน
+        // ถ้าเพิ่งเข้าร้านมา mode ยังค้างเป็น Shop แผงจะเปิดมาเป็นหน้าร้าน
+        // ไม่มีแท็บล็อบบี้และไม่มี bottomBar (เทียบ OnPlayClicked ที่ตั้งให้อยู่แล้ว)
+        if (lobbyUI != null) lobbyUI.SetMode(HubMode.Lobby);
+    }
 
     void HandleJoinFailed()
     {
@@ -127,7 +135,8 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════════════════
-    void ShowMain()
+    /// <summary>กลับหน้าแรก — public เพราะจอ P3R เรียกผ่าน P3RMenuBridge ไม่ได้ผ่านปุ่ม</summary>
+    public void ShowMain()
     {
         ShowPanel(mainPanel);
     }
@@ -144,7 +153,7 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // BUTTON CALLBACKS
     // ═══════════════════════════════════════════════════════════════════════
-    void OnPlayClicked()
+    public void OnPlayClicked()
     {
         ShowPanel(lobbyPanel);
         if (lobbyUI != null) lobbyUI.SetMode(HubMode.Lobby);
@@ -159,21 +168,21 @@ public class MenuManager : MonoBehaviour
         EnsureLobbyStateSpawned();
     }
 
-    void OnJoinRoomClicked()
+    public void OnJoinRoomClicked()
     {
         if (JoinRoomPanel.Instance != null) JoinRoomPanel.Instance.Open();
     }
 
-    void OnSettingsClicked()   => ShowPanel(settingsPanel);
+    public void OnSettingsClicked()   => ShowPanel(settingsPanel);
 
     /// ร้านเป็นแท็บใน Hub — ไม่แตะ network เลย
-    void OnTalentShopClicked()
+    public void OnTalentShopClicked()
     {
         ShowPanel(lobbyPanel);
         if (lobbyUI != null) lobbyUI.SetMode(HubMode.Shop);
     }
 
-    void OnQuitClicked()
+    public void OnQuitClicked()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;

@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.Meta.TalentData
   talentId: talent_gold
   talentName: Gold Finder
-  description: "\u0E44\u0E14\u0E49\u0E17\u0E2D\u0E07\u0E17\u0E49\u0E32\u0E22\u0E40\u0E01\u0E21\u0E40\u0E1E\u0E34\u0E48\u0E21 +10% \u0E15\u0E48\u0E2D\u0E40\u0E25\u0E40\u0E27\u0E25"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_gold.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: talent.talent_gold.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   mode: 1
   statType: 0
@@ -23,3 +40,6 @@ MonoBehaviour:
   category: 3
   sortOrder: 4
   tintColor: {r: 0.9411765, g: 0.7058824, b: 0.16078432, a: 1}
+  references:
+    version: 2
+    RefIds: []

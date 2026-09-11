@@ -256,7 +256,7 @@ public static class SwarmAssetGenerator
         if (existing != null)
         {
             existing.statName      = type.ToString();
-            existing.description   = desc;
+            // existing.description   = desc;   // ← ย้ายไป String Table แล้ว
             existing.statType      = type;
             existing.valuePerLevel = values;
             existing.weight        = weight;
@@ -266,7 +266,7 @@ public static class SwarmAssetGenerator
 
         var sd = ScriptableObject.CreateInstance<StatData>();
         sd.statName      = type.ToString();
-        sd.description   = desc;
+        // sd.description   = desc;   // ← ย้ายไป String Table แล้ว
         sd.statType      = type;
         sd.valuePerLevel = values;
         sd.weight        = weight;
@@ -311,24 +311,24 @@ public static class SwarmAssetGenerator
         if (existing != null)
         {
             existing.characterName      = charName;
-            existing.description        = desc;
+            // existing.description        = desc;   // ← ย้ายไป String Table แล้ว
             existing.startingWeapon     = startWep;
             existing.passiveWeapons  = passiveWeapons;
             existing.baseHealth         = hp;
             existing.baseMoveSpeed      = speed;
-            existing.passiveDescription = passive;
+            // existing.passiveDescription = passive;   // ← ย้ายไป String Table แล้ว
             EditorUtility.SetDirty(existing);
             return existing;
         }
 
         var cd = ScriptableObject.CreateInstance<CharacterData>();
         cd.characterName      = charName;
-        cd.description        = desc;
+        // cd.description        = desc;   // ← ย้ายไป String Table แล้ว
         cd.startingWeapon     = startWep;
         cd.passiveWeapons  = passiveWeapons;
         cd.baseHealth         = hp;
         cd.baseMoveSpeed      = speed;
-        cd.passiveDescription = passive;
+        // cd.passiveDescription = passive;   // ← ย้ายไป String Table แล้ว
         AssetDatabase.CreateAsset(cd, path);
         Debug.Log($"[Generator] Created {path}");
         return cd;

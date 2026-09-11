@@ -12,21 +12,22 @@ using UnityEngine.UI;
 ///   3. (Optional) ลาก panel (parent GameObject) เข้า field — จะถูก hide เมื่อ carry == 0
 ///   4. (Optional) ใส่ icon (Image) — แสดงคู่กับเลข
 ///
-/// แสดงผลแบบ "★ 3" — hide panel เมื่อ player ไม่ถืออะไร
+/// แสดงผลแบบ "x 3" — hide panel เมื่อ player ไม่ถืออะไร
 /// </summary>
 public class QuestCarryHUD : MonoBehaviour
 {
     [Header("UI Refs")]
     [Tooltip("Panel parent — auto hide เมื่อ player ไม่ถือ item")]
     public GameObject panel;
-    [Tooltip("Text แสดงจำนวน — รองรับ format \"★ {0}\"")]
+    [Tooltip("Text แสดงจำนวน — ใช้ได้เฉพาะตัวอักษรที่ฟอนต์มีจริง · " +
+             "ทั้ง LiberationSans และ Sarabun ไม่มี STAR/WARN/BOLT/TIMER glyph")]
     public TextMeshProUGUI label;
     [Tooltip("Icon (optional)")]
     public Image iconImage;
 
     [Header("Display")]
     [Tooltip("Format string — {0} = จำนวน")]
-    public string format = "★ {0}";
+    public string format = "x {0}";
 
     // ── Internal ──────────────────────────────────────────────────────────
     playermove cachedLocalPlayer;

@@ -9,8 +9,9 @@ using TMPro;
 /// รายชื่อแมพอ่านจาก LobbyUI.maps ไม่ถือลิสต์เอง — ไม่งั้นจะมีสองที่ที่ต้องจำอัปเดต
 /// และ LobbyUI คือคนที่ส่งค่าขึ้นเน็ตเวิร์กอยู่แล้ว
 ///
-/// วางบน Canvas ได้ (เหมือน CharacterSelectUI) ส่วน MapCarousel จะถูกวางบน "แผง"
-/// ซึ่งคือ parent ของ cardsContainer — เพราะ event ลาก/ลูกกลิ้งไปไม่ถึง Canvas
+/// วางบน Canvas ได้ (เหมือน CharacterSelectUI) ส่วน MapCarousel ต้องอยู่บน "แผงที่ลาก"
+/// ซึ่งเป็น ancestor ตัวใดก็ได้เหนือ cardsContainer — เพราะ event ลาก/ลูกกลิ้งไปไม่ถึง Canvas
+/// แต่ส่งถึงทุก ancestor ระหว่างทาง (ซีนจริงอยู่บน LeftPanel ไม่ใช่ Viewport)
 /// </summary>
 public class MapSelectUI : MonoBehaviour
 {
@@ -31,6 +32,29 @@ public class MapSelectUI : MonoBehaviour
     [Tooltip("ป้ายชื่อซีนที่จะโหลด — ปล่อยว่างได้")]
     public TextMeshProUGUI detailSceneName;
 
+    // ── ป้ายแบบ P3R (ของเพิ่ม · ปล่อยว่างได้ทั้งหมด) ───────────────────────
+    [Header("── P3R Labels (ปล่อยว่างได้) ───────────")]
+    [Tooltip("ประเภทแมพ เช่น OPEN FIELD — ยังไม่มีฟิลด์ใน MapData จึงตั้งค่าคงที่ไว้ที่นี่ก่อน")]
+    public TextMeshProUGUI mapTypeLabel;
+
+    [Tooltip("ความยาวรอบที่โชว์บนจอ · **ต้องตรงกับ GameTimeline.mainBossTimeMin เอง**\n" +
+             "GameTimeline อยู่ในซีนเกม อ่านข้ามซีนจากเมนูไม่ได้ ค่านี้จึงเป็นสำเนา\n" +
+             "แก้ค่าในซีนเกมแล้วอย่าลืมแก้ตรงนี้ด้วย")]
+    public int runLengthMinutes = 15;
+    public TextMeshProUGUI runLengthLabel;
+
+    [Tooltip("ตัวคูณ HP ศัตรูตามระดับความยาก — **เกมยังไม่มีระบบนี้**\n" +
+             "DifficultyTier เป็น enum เปล่า ไม่มีตัวคูณให้อ่าน จึงโชว์ '—' ไม่ใช่ '×1.0'\n" +
+             "การโชว์ ×1.0 จะเป็นการบอกผู้เล่นว่ามีระบบที่ยังไม่มีอยู่จริง")]
+    public TextMeshProUGUI enemyHpMultLabel;
+    public TextMeshProUGUI goldMultLabel;
+
+    [Tooltip("จำนวนแมพที่ยังล็อก — **ยังไม่มีระบบปลดล็อกแมพ** ปล่อยว่างไว้จนกว่าจะมี")]
+    public TextMeshProUGUI lockedLabel;
+
+    [Tooltip("ปุ่มเลือกระดับความยาก — ส่งค่าต่อผ่าน LobbyUI.SelectDifficulty()")]
+    public CloneSwarm.UI.P3R.P3RDifficultySelector difficultySelector;
+
     [Header("── Card Colors ─────────────────────────")]
     public Color selectedColor = new Color(0.3f, 0.7f, 1f);
     public Color normalColor   = new Color(0.2f, 0.2f, 0.25f, 1f);
@@ -43,7 +67,7 @@ public class MapSelectUI : MonoBehaviour
 
     void Log(string msg) { if (verboseLog) Debug.Log("[MapSelect] " + msg); }
 
-    static string Name(MapData m) => m != null ? m.displayName : "(null)";
+    static string Name(MapData m) => m != null ? m.DisplayName : "(null)";
 
     // ══════════════════════════════════════════════════════════════════════
     void Start()
@@ -106,12 +130,17 @@ public class MapSelectUI : MonoBehaviour
             return;
         }
 
-        carousel = host.GetComponent<MapCarousel>();
+        // ค้นขึ้นไปทั้งสาย ไม่ใช่แค่พ่อของ cardsContainer โดยตรง
+        // ซีนจริงเป็น LeftPanel > Viewport > cardsContainer และ component อยู่บน LeftPanel
+        // ตามที่ CarouselBase เขียนไว้เองว่า "ต้องวางบน object ของแผงที่จะลาก"
+        // ของเดิมหาแค่ host (= Viewport) ไม่เจอ แล้ว AddComponent ตัวใหม่ที่ reference ว่าง
+        // ทับไปเงียบๆ — ตัวที่ต่อสายไว้ใน Editor จึงไม่เคยถูก Setup เลย
+        carousel = rect.GetComponentInParent<MapCarousel>(true);
         if (carousel == null)
         {
             carousel = host.gameObject.AddComponent<MapCarousel>();
-            Debug.LogWarning("[MapSelect] ไม่พบ MapCarousel บน '" + host.name + "' จึงเพิ่มให้ตอนรัน — " +
-                             "ช่องภาพใหญ่กับปุ่มลูกศรจะว่าง ถ้าต้องการใช้ ให้เพิ่ม component นี้ใน Editor แล้วลาก reference");
+            Debug.LogWarning("[MapSelect] ไม่พบ MapCarousel เหนือ '" + rect.name + "' ขึ้นไปเลย จึงเพิ่มให้บน '" +
+                             host.name + "' ตอนรัน — ช่องภาพใหญ่กับปุ่มลูกศรจะว่าง ถ้าต้องการใช้ ให้เพิ่ม component นี้ใน Editor แล้วลาก reference");
         }
 
         carousel.OnSettled -= OnCarouselSettled;
@@ -130,6 +159,32 @@ public class MapSelectUI : MonoBehaviour
     {
         Log("── SelectMap('" + Name(map) + "') · จาก: " + source + " ──");
 
+        // เฉพาะ host เปลี่ยนแมพได้ — LobbyState ทิ้ง ServerRpc ของ client เงียบๆ
+        // ถ้าปล่อยให้ commit เครื่อง client จะเห็นแมพหนึ่ง แต่เข้าเกมได้อีกแมพหนึ่ง
+        // จึงดีด carousel กลับไปที่แมพที่ server ถืออยู่แทน
+        if (lobbyUI != null && lobbyUI.MapLocked)
+        {
+            var serverMap = lobbyUI.NetworkSelectedMap;
+            if (serverMap != null && serverMap != map)
+            {
+                Log("ไม่ใช่ host — ดีดกลับไปแมพของ host: '" + Name(serverMap) + "'");
+                selected = serverMap;
+                RefreshDetail();
+                if (carousel != null)
+                {
+                    int back = carousel.IndexOf(serverMap);
+                    // JumpTo ไม่ยิง OnSettled จึงไม่วนกลับเข้ามาที่นี่อีก
+                    if (back >= 0) carousel.JumpTo(back);
+                }
+                return;
+            }
+
+            // server ยังไม่ได้เลือกแมพ — โชว์ในเครื่องได้ แต่ไม่ส่งขึ้นเน็ตเวิร์ก
+            selected = map;
+            RefreshDetail();
+            return;
+        }
+
         selected = map;
         RefreshDetail();
 
@@ -144,7 +199,7 @@ public class MapSelectUI : MonoBehaviour
         if (selected == null) return;
 
         // ภาพพรีวิวต้องมีเจ้าของเดียว — ถ้า carousel ถือภาพใหญ่อยู่ ปล่อยให้มันวาด
-        bool previewOwnedByCarousel = carousel != null && carousel.previewImage != null;
+        bool previewOwnedByCarousel = carousel != null && carousel.featuredImage != null;
         if (!previewOwnedByCarousel)
         {
             if (detailPreview != null)
@@ -153,13 +208,13 @@ public class MapSelectUI : MonoBehaviour
                 detailPreview.enabled = selected.previewImage != null;
             }
         }
-        else if (detailPreview != null && detailPreview != carousel.previewImage)
+        else if (detailPreview != null && detailPreview != carousel.featuredImage)
         {
             detailPreview.enabled = false;
         }
 
-        if (detailName      != null) detailName.text      = selected.displayName;
-        if (detailDesc      != null) detailDesc.text      = selected.description;
+        if (detailName      != null) detailName.text      = selected.DisplayName;
+        if (detailDesc      != null) detailDesc.text      = selected.Description;
         if (detailSceneName != null) detailSceneName.text = selected.sceneName;
     }
 }

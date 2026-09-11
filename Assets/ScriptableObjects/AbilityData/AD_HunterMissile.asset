@@ -12,8 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e367e6df91c0e6d448fb785f3eb399ab, type: 3}
   m_Name: AD_HunterMissile
   m_EditorClassIdentifier: Assembly-CSharp::AbilityData
-  abilityName: AD_HunterMissile
-  description: AD_HunterMissile
+  abilityName: Homing Missiles
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Homing_Missiles.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: ability.Homing_Missiles.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 21300000, guid: f3228481da0e5d24c9fa01cb06cf0719, type: 3}
   slotType: 0
   prefab: {fileID: 3900651202789033190, guid: 93a00aa2d46e17d4e93fa90f539272e8, type: 3}
@@ -23,3 +40,6 @@ MonoBehaviour:
     duration: 0
     range: 30
     levelUpText: 
+  references:
+    version: 2
+    RefIds: []

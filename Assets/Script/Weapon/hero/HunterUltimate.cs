@@ -11,8 +11,6 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class HunterUltimate : AbilityBase, IHUDAbility
 {
-    [Header("Input Key")]
-    public Key activateKey = Key.R;
 
     [Header("Ultimate Config")]
     public int   funnelCount         = 5;
@@ -23,7 +21,7 @@ public class HunterUltimate : AbilityBase, IHUDAbility
 
     // ── IHUDAbility ───────────────────────────────────────────────────────
     public string HUDSlotKey      => "E";   // Ultimate ของ Hunter อยู่ E เสมอ
-    public string HUDKeyLabel     => activateKey.ToString();
+    public string HUDKeyLabel     => AbilityKeyLabel;   // อ่านจาก binding จริงใน AbilityInputActions
     public bool   IsActiveMode    => IsActive;
     // ActiveRemaining / ActiveMax ใช้ร่วมกับ property ด้านล่าง ✓
 
@@ -61,9 +59,8 @@ public class HunterUltimate : AbilityBase, IHUDAbility
         if (manager == null || !manager.IsOwner) return;
         if (manager.playerMove != null && manager.playerMove.isDead.Value) return;
         if (IsOnCooldown || IsActive) return;
-        if (GamePause.LocalInputSuspended) return;   // host เปิดเมนู pause ใน multiplayer
 
-        if (Keyboard.current != null && Keyboard.current[activateKey].wasPressedThisFrame)
+        if (AbilityPressedThisFrame)
             Activate();
     }
 

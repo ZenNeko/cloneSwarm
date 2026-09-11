@@ -13,11 +13,29 @@ MonoBehaviour:
   m_Name: WD_ClusterBomb
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: Cluster Bomb
-  description: "\u0E1F\u0E34\u0E27\u0E0A\u0E31\u0E19 Blunderbuss + Splitter Bomb \u2014 \u0E22\u0E34\u0E07\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E01\u0E23\u0E30\u0E08\u0E32\u0E22\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14 \u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E15\u0E32\u0E22\u0E41\u0E15\u0E01\u0E40\u0E1B\u0E47\u0E19\u0E25\u0E39\u0E01\u0E23\u0E30\u0E40\u0E1A\u0E34\u0E14\u0E15\u0E48\u0E2D"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Cluster_Bomb.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: weapon.Cluster_Bomb.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   tier: 2
   prefab: {fileID: 2534804657557489891, guid: 9d22da100dff5e74aafe8c2af83336ee, type: 3}
   aimMode: 0
+  randomNearCandidates: 3
   levels:
   - damage: 100
     cooldown: 2.5
@@ -31,3 +49,6 @@ MonoBehaviour:
   superConditions: []
   weight: 200
   exclusiveCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

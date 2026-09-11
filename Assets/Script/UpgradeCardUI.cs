@@ -52,8 +52,14 @@ public class UpgradeCardUI : MonoBehaviour
         if (levelText)       levelText.text       = card.DisplayLevelText;
 
         // ได้ครั้งแรก -> คำอธิบายอย่างเดียว · level up -> สเตตัสที่เพิ่มอย่างเดียว
-        // สองอย่างนี้ไม่เคยโชว์พร้อมกัน ทั้งคู่อ่านกฎจาก card.IsFirstAcquisition
-        bool showDescription = card.IsFirstAcquisition;
+        // สองอย่างนี้ไม่เคยโชว์พร้อมกัน กฎหลักอ่านจาก card.IsFirstAcquisition
+        //
+        // ข้อยกเว้นเดียว: level up ที่ไม่มีฟิลด์ไหนใน WeaponLevelData เปลี่ยนเลย
+        // (เช่น WD_GunnerPassiveWeapon ที่ตั้งค่าเท่ากันทุกเลเวล) จะได้การ์ดว่างทั้งใบ
+        // เพราะคำอธิบายก็ถูกซ่อน แถวสเตตัสก็ไม่มี — เคสนี้ตกกลับไปโชว์คำอธิบายแทน
+        // จึงต้องคิด changes ก่อน แล้วค่อยตัดสินใจว่าจะโชว์คำอธิบายไหม
+        var changes = GetStatChanges(card);
+        bool showDescription = card.IsFirstAcquisition || changes.Count == 0;
         if (descriptionText)
         {
             descriptionText.gameObject.SetActive(showDescription);
@@ -81,7 +87,6 @@ public class UpgradeCardUI : MonoBehaviour
         // 2. สร้างแถวใหม่ตามจำนวนสเตตัสที่อัปเกรด
         if (statRowPrefab != null && statRowsContainer != null)
         {
-            var changes = GetStatChanges(card);
             foreach (var change in changes)
             {
                 var row = Instantiate(statRowPrefab, statRowsContainer);
@@ -236,6 +241,33 @@ public class UpgradeCardUI : MonoBehaviour
                         statName = "Speed",
                         beforeValue = curLd.projectileSpeed.ToString("F0"),
                         afterValue = nextLd.projectileSpeed.ToString("F0")
+                    });
+                }
+
+                // radius / duration ที่เป็น 0 แปลว่า "ใช้ค่าเริ่มต้นใน Script" ไม่ใช่ศูนย์จริง
+                // (ดู tooltip ใน WeaponLevelData) โชว์เป็น "-" แทนเลข 0 จะได้ไม่โกหกตัวเลข
+                if (curLd.radius != nextLd.radius)
+                {
+                    list.Add(new StatChangeInfo {
+                        statName = "Area",
+                        beforeValue = curLd.radius  > 0f ? curLd.radius.ToString("F1")  + "m" : "-",
+                        afterValue  = nextLd.radius > 0f ? nextLd.radius.ToString("F1") + "m" : "-"
+                    });
+                }
+                if (curLd.duration != nextLd.duration)
+                {
+                    list.Add(new StatChangeInfo {
+                        statName = "Duration",
+                        beforeValue = curLd.duration  > 0f ? curLd.duration.ToString("F1")  + "s" : "-",
+                        afterValue  = nextLd.duration > 0f ? nextLd.duration.ToString("F1") + "s" : "-"
+                    });
+                }
+                if (curLd.piercing != nextLd.piercing)
+                {
+                    list.Add(new StatChangeInfo {
+                        statName = "Piercing",
+                        beforeValue = curLd.piercing  ? "Yes" : "No",
+                        afterValue  = nextLd.piercing ? "Yes" : "No"
                     });
                 }
             }

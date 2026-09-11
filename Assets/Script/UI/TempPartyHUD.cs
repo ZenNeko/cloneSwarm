@@ -182,7 +182,7 @@ public class TempPartyHUD : MonoBehaviour
             var cd = visual.GetCharacterData(visual.CharacterIndex);
             if (cd != null && !string.IsNullOrEmpty(cd.characterName))
             {
-                charName = cd.characterName;
+                charName = cd.DisplayName;   // ชื่อที่โชว์ ไม่ใช่ ID
             }
         }
 

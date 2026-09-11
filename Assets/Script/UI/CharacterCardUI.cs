@@ -20,13 +20,17 @@ public class CharacterCardUI : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI weaponText;
 
+    [Tooltip("แถบสีบางที่ขอบซ้ายการ์ด — ลูกชื่อ Accent · เปลี่ยนสีตอนถูกเลือก · " +
+             "เป็นตัวที่บอกว่าใบไหนถูกเลือกได้ชัดกว่าสีพื้น ซึ่งต่างกันน้อยมากบนพื้นมืด")]
+    public Image           accentImage;
+    public Color           accentSelected = new Color32(0x2C, 0x3C, 0xFF, 0xFF);
+    public Color           accentNormal   = new Color(1f, 1f, 1f, 0.10f);
+
     [Header("Lock Overlay (auto-find: child ชื่อ LockOverlay / LockCostText)")]
     [Tooltip("แผ่นทึบ + ไอคอนกุญแจ ที่คลุมการ์ดตอนยังไม่ปลดล็อก")]
     public GameObject      lockOverlay;
     [Tooltip("ข้อความราคาบน overlay เช่น \"1,000 G\"")]
     public TextMeshProUGUI lockCostText;
-    [Tooltip("สีไอคอนตอนล็อก — ทำให้เป็นเงาดำ")]
-    public Color           lockedIconTint = new Color(0.12f, 0.12f, 0.14f, 1f);
 
     private Color selectedColor = new Color(0.3f, 0.7f, 1f);
     private Color normalColor   = new Color(0.2f, 0.2f, 0.25f, 1f);
@@ -40,6 +44,7 @@ public class CharacterCardUI : MonoBehaviour
         if (iconImage == null) iconImage = transform.Find("Icon")?.GetComponent<Image>();
         if (nameText  == null) nameText  = transform.Find("NameText")?.GetComponent<TextMeshProUGUI>();
         if (weaponText == null) weaponText = transform.Find("WeaponText")?.GetComponent<TextMeshProUGUI>();
+        if (accentImage == null) accentImage = transform.Find("Accent")?.GetComponent<Image>();
         if (lockOverlay == null) lockOverlay = transform.Find("LockOverlay")?.gameObject;
         if (lockCostText == null)
             lockCostText = transform.Find("LockCostText")?.GetComponent<TextMeshProUGUI>()
@@ -53,11 +58,11 @@ public class CharacterCardUI : MonoBehaviour
         normalColor   = normColor;
 
         if (nameText != null)
-            nameText.text = cd.characterName;
+            nameText.text = cd.DisplayName;   // ชื่อที่โชว์ ไม่ใช่ characterName ที่เป็น ID
 
         if (weaponText != null)
         {
-            string wName = cd.startingWeapon != null ? cd.startingWeapon.weaponName : "—";
+            string wName = cd.startingWeapon != null ? cd.startingWeapon.DisplayName : "—";
             weaponText.text = wName;
         }
 
@@ -77,6 +82,8 @@ public class CharacterCardUI : MonoBehaviour
     {
         if (bgImage != null)
             bgImage.color = on ? selectedColor : normalColor;
+        if (accentImage != null)
+            accentImage.color = on ? accentSelected : accentNormal;
     }
 
     /// <summary>แสดง/ซ่อน overlay ล็อก + ราคา</summary>
@@ -87,9 +94,10 @@ public class CharacterCardUI : MonoBehaviour
         if (lockOverlay  != null) lockOverlay.SetActive(locked);
         if (lockCostText != null) lockCostText.text = locked ? $"{cost:N0} G" : "";
 
-        // ถ้าไม่มี overlay prefab ก็ยังเห็นความต่างได้จากไอคอนที่มืดลง
-        if (iconImage != null)
-            iconImage.color = locked ? lockedIconTint : Color.white;
+        // **ไม่ย้อมภาพตัวละคร** — สีของ Image คูณเข้ากับพิกเซลของ sprite
+        // ภาพที่ถูกย้อมคือภาพที่ไม่ตรงกับที่คนวาดส่งมา · ความต่างตอนล็อกมาจาก
+        // lockOverlay ซึ่งเป็นแผ่นทึบทับทั้งใบอยู่แล้ว ไม่ต้องแตะตัวภาพ
+        if (iconImage != null) iconImage.color = Color.white;
     }
 
 }

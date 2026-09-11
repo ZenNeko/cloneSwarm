@@ -13,8 +13,10 @@ using UnityEngine;
 public class ObjectiveOrb : NetworkBehaviour
 {
     [Header("Visuals")]
-    [Tooltip("Effect ที่เล่นก่อน destroy (optional)")]
-    public GameObject collectEffect;
+    [Tooltip("VFX เสริมตอนเก็บ — เลือก key จาก VFXDatabase · None = ไม่เล่นอะไรเพิ่ม · " +
+             "(OrbVisual.PlayCollectEffect หรือ OrbPickup ด้านล่างเล่นอยู่แล้ว ตัวนี้เป็นของแถม)")]
+    [VFXKey]
+    public string collectVfxKey = "None";
 
     [Header("Pickup")]
     [Tooltip("ระยะ base ที่ orb เริ่มวิ่งเข้าหา player")]
@@ -142,8 +144,12 @@ public class ObjectiveOrb : NetworkBehaviour
             VFXFactory.Play("OrbPickup", transform.position);
         }
 
-        // Spawn local collect effect
-        if (collectEffect != null)
-            Instantiate(collectEffect, transform.position, Quaternion.identity);
+        // VFX เสริม — ผ่าน pool ตาม CLAUDE.md ข้อ 2 ห้าม Instantiate prefab ตรงๆ
+        //
+        // ของเดิมเป็นช่อง GameObject collectEffect ที่ Instantiate ดิบๆ และ prefab ที่ต่อไว้
+        // (Sparks blue.prefab) ถูกลบไปตั้งแต่ commit bdad616c — โค้ดเช็ค null แล้วข้ามเงียบ
+        // เลยไม่มีใครรู้ว่ามันหายไป · เปลี่ยนเป็น key แล้วปัญหาหมดทั้งสองอย่างพร้อมกัน
+        if (!string.IsNullOrEmpty(collectVfxKey) && collectVfxKey != "None")
+            VFXFactory.Play(collectVfxKey, transform.position);
     }
 }

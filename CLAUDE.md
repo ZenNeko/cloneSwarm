@@ -111,7 +111,7 @@ When writing or reviewing code:
 9. **Lobby state**: all lobby state lives in `LobbyState` — clients update via ServerRpc only
 10. **Character ID on network**: use `CharacterData.characterName` (string) — NEVER use int index
 11. **Player color**: resolve player color index via `PlayerSlotRegistry.GetSlot()` — NEVER use `clientId % 4`
-12. **Q/E key handling**: Q/E cycles tabs in menu UI by design — intentionally shares keybindings with in-game ability slots
+12. **Ability input**: every binding lives in `Assets/ScriptableObjects/Resources/AbilityInputActions.inputactions` — actions are named `SlotQ` / `SlotE` / `SlotR` to match `IHUDAbility.HUDSlotKey`, and `AbilityBase` resolves its own action from that key. Never poll `Keyboard.current` in an ability; use `AbilityPressedThisFrame` / `AbilityHeld`, which also carry the pause guard. Slot names stayed Q/E/R as *slot identity* after the move to mouse buttons — `HUDKeyLabel` reports the real binding. Q/E still cycle tabs in menu UI, and no longer collide with ability input
 
 ## Custom skills available in this project
 
@@ -123,5 +123,6 @@ Project-level skills under `.claude/skills/`:
 | `create-ability` | "add ability X" / "scaffold Q/E skill" — scaffolds `AbilityBase` subclass |
 | `create-enemy` | "add enemy" / "create mini boss" — scaffolds Enemy/MiniBoss prefab config |
 | `review-ngo` | "review NGO code" / "audit multiplayer" — checks authority, RPCs, NetworkVariables, project conventions |
+| `game-ui` | "add/change a screen or HUD element" / "UI doesn't match the design" / "this button isn't clickable" — the uGUI screen-builder pipeline, the prefab-vs-builder line, and the failure modes it produces |
 
 Each skill's `SKILL.md` documents its workflow and pitfalls; the skill files themselves are the authoritative reference when scaffolding new content.

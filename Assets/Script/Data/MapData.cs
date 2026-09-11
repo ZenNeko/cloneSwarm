@@ -1,11 +1,19 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 [CreateAssetMenu(fileName = "Map_New", menuName = "LoL Swarm/Map Data")]
 public class MapData : ScriptableObject
 {
     public string mapId = "arena01";        // รหัสบนสาย ห้ามซ้ำ
-    public string displayName = "Arena 01";
-    [TextArea(1, 3)] public string description;
+    // Display — แปลได้ ชี้ไป String Table 'Content'
+    public LocalizedString displayName;
+    public LocalizedString description;
+
+    /// <summary>ข้อความที่แปลแล้วตาม locale ปัจจุบัน — ว่างเมื่อยังไม่ได้ผูก entry
+    /// ทุกที่ที่เอาไปแสดงต้องอ่าน property พวกนี้ ไม่ใช่ field ตรงๆ</summary>
+    public string DisplayName => displayName.IsEmpty ? mapId : displayName.GetLocalizedString();
+    public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
+
     public Sprite previewImage;
     public string sceneName = "SampleScene"; // ต้องอยู่ใน Build Settings
 
