@@ -42,18 +42,31 @@ namespace CloneSwarm.EditorTools
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
+            // ตัวคูณขนาดตัวไทยเป็นค่าของทั้งระบบ อยู่ที่ P3RTheme ที่เดียว
+            var theme = AssetDatabase.LoadAssetAtPath<CloneSwarm.UI.P3R.P3RTheme>(P3RBuilderKit.ThemePath);
+            float thaiScale = theme != null ? theme.thaiFontScale : 1.08f;
+
             int total = 0;
             foreach (var path in Scenes)
             {
                 var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
                 int added = 0;
 
-                foreach (var tmp in CollectRiskyLabels(scene))
+                // ใส่ให้ **ทุกช่องที่สคริปต์ถือไว้** ไม่ใช่เฉพาะที่ถ่างระยะ
+                // เพราะการชดเชยขนาดตัวไทยจำเป็นแม้ช่องนั้นถ่างระยะเป็นศูนย์อยู่แล้ว
+                foreach (var tmp in Scan(scene, spacedOnly: false).Select(h => h.label).Distinct())
                 {
-                    if (tmp.GetComponent<CloneSwarm.UI.P3R.P3RThaiTracking>() != null) continue;
-                    var guard = tmp.gameObject.AddComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
-                    guard.latinSpacing = tmp.characterSpacing;
-                    added++;
+                    var guard = tmp.GetComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
+                    if (guard == null)
+                    {
+                        guard = tmp.gameObject.AddComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
+                        added++;
+                    }
+                    // เก็บค่าที่ builder ตั้งไว้เป็นค่าของ "ข้อความละติน"
+                    guard.latinSpacing  = tmp.characterSpacing;
+                    guard.latinFontSize = tmp.fontSize;
+                    guard.thaiFontScale = thaiScale;
+                    EditorUtility.SetDirty(guard);
                 }
 
                 if (added > 0)
@@ -62,7 +75,7 @@ namespace CloneSwarm.EditorTools
                     EditorSceneManager.SaveScene(scene);
                 }
                 Debug.Log($"[ThaiRisk] {System.IO.Path.GetFileNameWithoutExtension(path)}: " +
-                          $"ใส่ตัวเฝ้า {added} ช่อง");
+                          $"ใส่ตัวเฝ้าใหม่ {added} ช่อง (ตัวที่มีอยู่แล้วอัปเดตค่าให้)");
                 total += added;
             }
             Debug.Log($"[ThaiRisk] รวม {total} ช่อง — ตอนนี้ระยะถ่างจะถูกคิดใหม่ทุกครั้งที่ข้อความเปลี่ยน");
@@ -102,7 +115,8 @@ namespace CloneSwarm.EditorTools
         /// ช่องที่ **ถ่างระยะอยู่** และ **มีสคริปต์ของโปรเจกต์ถือไว้**
         /// สองเงื่อนไขนี้คือสิ่งที่ทำให้อาการเกิดได้ — ถ่างแต่ไม่มีใครถือ ข้อความก็ไม่มีทางเปลี่ยน
         /// </summary>
-        private static List<(MonoBehaviour owner, string field, TMP_Text label)> Scan(Scene scene)
+        private static List<(MonoBehaviour owner, string field, TMP_Text label)> Scan(
+            Scene scene, bool spacedOnly = true)
         {
             var hits = new List<(MonoBehaviour, string, TMP_Text)>();
 
@@ -122,15 +136,12 @@ namespace CloneSwarm.EditorTools
                     enter = false;
                     if (it.propertyType != SerializedPropertyType.ObjectReference) continue;
                     if (it.objectReferenceValue is not TMP_Text tmp) continue;
-                    if (Mathf.Abs(tmp.characterSpacing) < 0.01f) continue;
+                    if (spacedOnly && Mathf.Abs(tmp.characterSpacing) < 0.01f) continue;
                     hits.Add((mb, it.name, tmp));
                 }
             }
             return hits;
         }
-
-        private static IEnumerable<TMP_Text> CollectRiskyLabels(Scene scene)
-            => Scan(scene).Select(h => h.label).Distinct();
 
         private static string Trim(string s)
         {

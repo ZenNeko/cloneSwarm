@@ -354,6 +354,17 @@ namespace CloneSwarm.EditorTools
             // CarryOverAssetData (ซึ่งยกเฉพาะ asset) · ผลคือช่องนั้นว่างตลอดไปแบบเงียบๆ
             if (current == null)
             {
+                // ช่องที่ชี้ panel แล้ว panel นั้นถูกสร้างใหม่ (ย้ายจอซ้ำ) จะกลายเป็น null
+                // ตารางชื่อรู้อยู่แล้วว่าช่องนี้ควรชี้ panel ไหน — เติมกลับให้ตรงนั้นเลย
+                string mapKeyEmpty = $"{owner.GetType().Name}.{prop.name}";
+                if (PanelFieldMap.TryGetValue(mapKeyEmpty, out var wantPanel) &&
+                    panels.TryGetValue(wantPanel, out var panelGo) && panelGo != null)
+                {
+                    plan.Add($"   เติมช่องว่าง {mapKeyEmpty} → {wantPanel}");
+                    prop.objectReferenceValue = panelGo;
+                    return true;
+                }
+
                 var field = owner.GetType().GetField(prop.name,
                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
                 if (field == null || !IsController(field.FieldType)) return false;

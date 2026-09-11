@@ -20,12 +20,13 @@ MonoBehaviour:
   font: {fileID: 11400000, guid: 6a0e3523062cb5042b7ed24220fb70fb, type: 2}
   fontSize: 62
   horizontalScale: 1
+  thaiFontScale: 1.08
   characterSpacing: -3.5
   rowPitch: 88
-  barHeight: 58
+  barHeight: 72
   barExtendLeft: 460
   barBleedRight: 300
-  barOffsetY: 3
+  barOffsetY: 6
   introSlideDistance: 260
   introStagger: 0.05
   introDuration: 0.24

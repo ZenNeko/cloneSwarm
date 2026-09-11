@@ -124,7 +124,17 @@ namespace CloneSwarm.UI.P3R
             {
                 if (!string.IsNullOrEmpty(labelText)) label.text = labelText;
                 if (theme.font != null) label.font = theme.font;
-                label.fontSize         = theme.fontSize;
+
+                // **จงใจไม่ชดเชยขนาดตัวไทยตรงนี้** — ต่างจากป้ายอื่นที่ใช้ theme.thaiFontScale
+                //
+                // การชดเชยมีไว้แก้ตอนไทยวางข้างละติน ALL-CAPS แล้วดูเบากว่า (English / ไทย)
+                // แต่รายการเมนูเป็นบล็อกภาษาเดียวทั้งคอลัมน์ ไม่มีอะไรให้เทียบ
+                // ขยายแล้วได้แต่ผลเสีย — rowPitch เป็นค่าคงที่ แถวจะชนกัน
+                // (`ตั้งค่า` กับ `ออกไปเมนูหลัก` วรรณยุกต์กับสระเกยกันทันทีที่ขยาย 8%)
+                //
+                // ความสูงของไทยจัดการที่ barHeight ของ theme แทน ซึ่งเป็นที่ที่ถูกกว่า
+                label.fontSize = theme.fontSize;
+
                 P3RText.SetTracking(label, theme.characterSpacing);
                 label.alignment        = right ? TextAlignmentOptions.Right : TextAlignmentOptions.Left;
                 label.textWrappingMode = TextWrappingModes.NoWrap;
