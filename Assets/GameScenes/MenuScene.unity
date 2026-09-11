@@ -52361,7 +52361,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5a4cc9dd41dc2140b12266e83662e59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RDifficultySelector
-  lobbyUI: {fileID: 0}
+  lobbyUI: {fileID: 331473698}
   segmentTemplate: {fileID: 1063768929}
   segmentContainer: {fileID: 1526340287}
   tiers: 0000000001000000020000000300000004000000i
@@ -58799,7 +58799,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abafa0a7537d62a4483c532d47e2ec21, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapSelectUI
-  lobbyUI: {fileID: 0}
+  lobbyUI: {fileID: 331473698}
   cardsContainer: {fileID: 493509094}
   cardTemplate: {fileID: 2132438177}
   detailPreview: {fileID: 1584426114}

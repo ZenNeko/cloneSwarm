@@ -347,7 +347,24 @@ namespace CloneSwarm.EditorTools
                                         List<string> plan, List<System.Action> apply)
         {
             var current = prop.objectReferenceValue;
-            if (current == null) return false;
+
+            // ── ช่องที่ **ว่างอยู่** ก็ต้องเติม ไม่ใช่ข้าม ───────────────────
+            // component ที่ builder สร้างเริ่มต้นด้วยช่องว่างหลายช่อง (MapSelectUI.lobbyUI)
+            // ตัวเดิมที่ถูกลบเคยถือค่าไว้ แต่ค่านั้นชี้ของใน scene จึงไม่ถูกยกมาด้วย
+            // CarryOverAssetData (ซึ่งยกเฉพาะ asset) · ผลคือช่องนั้นว่างตลอดไปแบบเงียบๆ
+            if (current == null)
+            {
+                var field = owner.GetType().GetField(prop.name,
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (field == null || !IsController(field.FieldType)) return false;
+
+                var fill = FindInPanels(panels, field.FieldType);
+                if (fill == null) return false;
+
+                plan.Add($"   เติมช่องว่าง {owner.GetType().Name}.{prop.name} → {Name(fill)}");
+                prop.objectReferenceValue = fill;
+                return true;
+            }
 
             // field ที่ชี้ component (เช่น MenuManager.lobbyUI) → หาตัวเดียวกันบน panel ใหม่
             if (current is Component comp)

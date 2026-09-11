@@ -127,7 +127,21 @@ namespace CloneSwarm.EditorTools
                     case 7: Verify(); CheckCharacter(); break;
                     case 8: ShowMain(); break;
 
-                    case 9: Report(); break;
+                    // 'play' เรียก StartHost เข้า NGO จริง — เส้นทางหลักของเกม
+                    case 9:  Press("play", "P3R_Hub", "P3R_Lobby"); break;
+                    case 10: Verify(); CheckHostStarted(); break;
+
+                    // แท็บ MAP ต้องเช็ค **หลัง** host ขึ้น — LobbyUI.Refresh ซ่อนแท็บนี้
+                    // ตอนไม่ใช่ host (SetTabVisible("map", lobbyMode && isHost))
+                    // เพราะ client เปลี่ยนแมพไม่ได้อยู่แล้ว · ไม่ใช่บั๊ก
+                    case 11: JumpTab("map", "P3R_MapSelect"); break;
+                    case 12: Verify(); CheckMapSelect(); break;
+
+                    // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
+                    case 13: GoToGameScene(); break;
+                    case 14: CheckInGameScreens(); break;
+
+                    case 15: Report(); break;
                 }
             }
 
@@ -227,6 +241,79 @@ namespace CloneSwarm.EditorTools
                 Require(kids.All(t => !t.name.StartsWith("Sample_")), "ไม่มีการ์ดตัวอย่างค้างอยู่");
                 Require(kids.Any(t => t.GetComponent<CharacterCardUI>() != null),
                         "การ์ดมี CharacterCardUI (กดเลือกได้)");
+            }
+
+            /// <summary>จอเลือกแมพ — รายการแมพต้องถูกยกมาจากตัวคุมเดิมเหมือนจอตัวละคร</summary>
+            private void CheckMapSelect()
+            {
+                var panel = Find("P3R_MapSelect");
+                var ui    = panel == null ? null : panel.GetComponentInChildren<MapSelectUI>(true);
+
+                Require(ui != null, "หา MapSelectUI เจอ");
+                if (ui == null) return;
+
+                Require(ui.lobbyUI != null, "MapSelectUI.lobbyUI ต่อไว้ (ไม่งั้นเลือกแมพแล้วไม่ส่งขึ้นเน็ตเวิร์ก)");
+
+                var lobby = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
+                Require(lobby != null && lobby.maps.Count > 0,
+                        $"LobbyUI มีรายการแมพ ({lobby?.maps.Count ?? 0} แมพ)");
+
+                if (ui.cardsContainer == null) { Require(false, "cardsContainer ต่อไว้"); return; }
+                var kids = ui.cardsContainer.Cast<Transform>()
+                             .Where(t => t.gameObject.activeSelf).ToList();
+                Require(kids.All(t => !t.name.StartsWith("Sample_")), "ไม่มีการ์ดแมพตัวอย่างค้างอยู่");
+            }
+
+            /// <summary>'play' ต้องสั่ง NGO ขึ้นจริง ไม่ใช่แค่สลับหน้า</summary>
+            private void CheckHostStarted()
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                Require(nm != null,                 "มี NetworkManager ในซีน");
+                Require(nm != null && nm.IsListening, "StartHost ขึ้นแล้ว (IsListening)");
+                wait = 0.5f;
+            }
+
+            /// <summary>
+            /// ปิด NGO แล้วเปลี่ยนไปซีนเกม
+            /// ต้อง Shutdown ก่อน ไม่งั้น NGO จะพยายามซิงค์ซีนให้ แล้วชนกับการโหลดตรงๆ
+            /// </summary>
+            private void GoToGameScene()
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm != null && nm.IsListening) nm.Shutdown();
+
+                lines.Add("── เปลี่ยนไปซีน SampleScene");
+                UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
+                wait = 2.5f;                       // ให้ Awake/Start ของทั้งซีนวิ่งจบ
+            }
+
+            /// <summary>
+            /// สามจอในเกม — ตรวจสองบั๊กที่เพิ่งแก้ตรงนี้
+            ///   singleton ตั้ง Instance ใน Awake ได้ไหม (panel ต้อง active ตอนโหลดซีน)
+            ///   component หายจากการก๊อปข้ามซีนไหม (คลาสรองในไฟล์เดียวกัน)
+            /// </summary>
+            private void CheckInGameScreens()
+            {
+                Require(LevelUpUI.Instance  != null, "LevelUpUI.Instance ไม่เป็น null");
+                Require(WinLoseUI.Instance  != null, "WinLoseUI.Instance ไม่เป็น null");
+                Require(FindAnyObjectByType<PauseMenuUI>(FindObjectsInactive.Include) != null,
+                        "หา PauseMenuUI เจอ");
+
+                // แถบ build — ช่องเคยกลายเป็น script หายทั้งแถบ
+                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
+                Require(strip != null, "หา BuildStripUI เจอ");
+                Require(strip != null && strip.slotTemplate != null,
+                        "BuildStripUI.slotTemplate ไม่หลุด (คลาสรองข้ามซีนแล้วเคยกลายเป็น null)");
+
+                // component ที่สคริปต์หายจะโผล่เป็น null ใน GetComponents
+                int broken = 0;
+                foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>())
+                {
+                    if (!go.scene.IsValid()) continue;
+                    foreach (var c in go.GetComponents<Component>())
+                        if (c == null) broken++;
+                }
+                Require(broken == 0, $"ไม่มี component ที่สคริปต์หายในซีนเกม (เจอ {broken})");
             }
 
             private void ShowMain()
