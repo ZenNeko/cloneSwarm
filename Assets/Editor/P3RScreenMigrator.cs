@@ -67,40 +67,40 @@ namespace CloneSwarm.EditorTools
 
         private static readonly Dictionary<string, Screen> Screens = new()
         {
-            ["TITLE"] = new Screen("Proto_Title", MenuScene, "Panel_Title",
+            ["TITLE"] = new Screen("Proto_Title", MenuScene, "P3R_Title",
                 "ยังไม่มี field รองรับ — ต้องตัดสินก่อนว่าจะให้ MenuManager ถือ หรือให้ Title\n" +
                 "   เป็นตัวเปิดเกมแล้วเรียก ShowPanel(mainPanel) ผ่าน TitleScreenUI.onAdvanceEvent"),
 
-            ["MAIN MENU"] = new Screen("Proto_P3RMenu", MenuScene, "Panel_Main",
+            ["MAIN MENU"] = new Screen("Proto_P3RMenu", MenuScene, "P3R_Main",
                 "ต่อเข้า MenuManager.mainPanel (ของเดิมชี้ไป panel เก่าอยู่)"),
 
-            ["CHARACTER"] = new Screen("Proto_Character", MenuScene, "Panel_Character",
+            ["CHARACTER"] = new Screen("Proto_Character", MenuScene, "P3R_Character",
                 "ต่อเข้า TabBar.tabs[id=\"character\"].panel"),
 
-            ["LOBBY"] = new Screen("Proto_Lobby", MenuScene, "Panel_Lobby",
+            ["LOBBY"] = new Screen("Proto_Lobby", MenuScene, "P3R_Lobby",
                 "ต่อเข้า MenuManager.lobbyPanel และ MenuManager.lobbyUI (LobbyUI อยู่บน panel นี้)\n" +
                 "   และ TabBar.tabs[id=\"lobby\"].panel"),
 
-            ["MAP SELECT"] = new Screen("Proto_MapSelect", MenuScene, "Panel_MapSelect",
+            ["MAP SELECT"] = new Screen("Proto_MapSelect", MenuScene, "P3R_MapSelect",
                 "ต่อเข้า TabBar.tabs[id=\"map\"].panel · และตั้ง MapSelectUI.lobbyUI ให้ชี้ LobbyUI ตัวจริง"),
 
-            ["TALENT SHOP"] = new Screen("Proto_TalentShop", MenuScene, "Panel_TalentShop",
+            ["TALENT SHOP"] = new Screen("Proto_TalentShop", MenuScene, "P3R_TalentShop",
                 "ต่อเข้า TabBar.tabs[id=\"shop\"].panel"),
 
-            ["CONFIG"] = new Screen("Proto_Config", MenuScene, "Panel_Config",
+            ["CONFIG"] = new Screen("Proto_Config", MenuScene, "P3R_Config",
                 "ต่อเข้า MenuManager.settingsPanel และ MenuManager.settingsMenuUI"),
 
-            ["LOADING"] = new Screen("Proto_Loading", MenuScene, "Panel_Loading",
+            ["LOADING"] = new Screen("Proto_Loading", MenuScene, "P3R_Loading",
                 "ต่อเข้า MenuManager.loadingPanel · loadingText ของเดิมยังใช้ได้หรือชี้ไป\n" +
                 "   LoadingScreenUI.contextLabel ก็ได้"),
 
-            ["LEVEL UP"] = new Screen("Proto_LevelUp", SampleScene, "Panel_LevelUp",
+            ["LEVEL UP"] = new Screen("Proto_LevelUp", SampleScene, "P3R_LevelUp",
                 "LevelUpUI อยู่ใน SampleScene แล้ว — ต่อสายที่เรียกใช้ให้ชี้ตัวใหม่ แล้วลบตัวเก่า"),
 
-            ["PAUSED"] = new Screen("Proto_Pause", SampleScene, "Panel_Pause",
+            ["PAUSED"] = new Screen("Proto_Pause", SampleScene, "P3R_Pause",
                 "PauseMenuUI อยู่ใน SampleScene แล้ว — สลับสายแล้วลบตัวเก่า"),
 
-            ["WIN / LOSE"] = new Screen("Proto_WinLose", SampleScene, "Panel_WinLose",
+            ["WIN / LOSE"] = new Screen("Proto_WinLose", SampleScene, "P3R_WinLose",
                 "WinLoseUI อยู่ใน SampleScene แล้ว — สลับสายแล้วลบตัวเก่า"),
         };
 
