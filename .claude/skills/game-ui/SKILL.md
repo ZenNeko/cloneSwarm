@@ -147,51 +147,31 @@ scroll events only reach the object under the pointer and its ancestors.
 
 ## Thai text
 
-- Thai combining marks are zero-width. `characterSpacing > 0` detaches them from their
-  consonants. **Thai must always be spacing 0.**
-- Thai has no uppercase, so it reads lighter beside Latin ALL-CAPS. `P3RTheme.thaiFontScale`
-  (1.08) compensates. `P3RMenuItem` deliberately does **not** apply it — `rowPitch` is a constant
-  and 8% makes menu rows collide.
-- Any label a script writes at runtime needs `P3RThaiTracking` on it — the builder's decision was
-  made when the text was still the English placeholder. `Tools > Clone Swarm > Fix Thai Risk (ใส่ตัวเฝ้าระยะถ่าง)`
-  attaches it to every label a project script holds.
-- Fonts must be baked with `includeFontFeatures: true` or tone marks stack on top of vowels.
-  `Tools > Clone Swarm > Fix Thai Fonts`.
-- Sarabun has no `✓ ⚠ ✗`. Draw them as `Image` shapes.
+**See the `thai-text` skill** — tracking, tone-mark baking, word breaking, and the String Table
+workflow all live there, because they apply outside these screens too.
+
+Two things specific to P3R screens:
+
+- Every label a builder creates needs `P3RThaiTracking` if any script rewrites its text later. The
+  builder's own call to `P3RText` decided while the text was still an English placeholder.
+- `P3RMenuItem` deliberately does **not** apply `thaiFontScale` — `rowPitch` is a constant and 8%
+  makes menu rows collide.
 
 ## Verifying
 
-Three kinds of verification catch three disjoint sets of bugs. A change is not done until all
-three are green.
+**See the `unity-verify` skill** for the compile check that works while the Editor is open, the
+batchmode flags that fail silently, and how to report what was and was not tested.
 
-| Kind | Tool | Catches |
-|---|---|---|
-| Visual | `P3RScreenshotTool.CaptureAll` → read the PNG | wrong spacing, colour, hierarchy, overflow |
-| Structural | YAML scan / `P3RScreenWirer.Report` | broken refs, `m_Script: {fileID: 0}`, duplicate panels |
-| Behavioural | `P3RSmokeTest.Run` | dead buttons, wrong layout at runtime, missing singletons |
+What that skill's layers mean *here*: visual (`P3RScreenshotTool.CaptureAll` → read the PNG)
+catches spacing, colour, hierarchy and overflow; structural (YAML scan / `P3RScreenWirer.Report`)
+catches broken refs, `m_Script: {fileID: 0}` and duplicate panels; behavioural
+(`P3RSmokeTest.Run`) catches dead buttons, missing singletons and wrong runtime layout. A screen
+is not done until all three are green — this project has shipped bugs that only one of them saw.
 
 `P3RSmokeTest` asserts **layout and clicks**, not just structure — card count vs data count, cards
 inside the mask, ordering along the axis, and a real `EventSystem.RaycastAll` at the card's screen
 position followed by `ExecuteEvents.ExecuteHierarchy`. Add a check there whenever a UI bug reaches
 the user; every check in it is there because something shipped broken.
-
-## Compile-checking while the Editor is open
-
-`Temp/UnityLockfile` blocks batchmode most of the time (the owner works with the Editor open).
-Drive Roslyn with Unity's own build-graph response file instead:
-
-```bash
-RSP=$(ls -t Library/Bee/artifacts/*.dag/Assembly-CSharp.rsp | head -1)
-sed -e 's#^-out:.*#-out:"<SCRATCH>/AC.dll"#' -e 's#^-refout:.*#-refout:"<SCRATCH>/AC.ref.dll"#' \
-    "$RSP" > <SCRATCH>/AC.rsp
-dotnet "E:/Zenity Why not/Unity/6000.7.0a2/Editor/Data/DotNetSdk/sdk/8.0.318/Roslyn/bincore/csc.dll" \
-    "@<SCRATCH>/AC.rsp"
-```
-
-For `Assembly-CSharp-Editor.rsp`, also repoint its `-r:` for `Assembly-CSharp.ref.dll` at the
-freshly built one, or it compiles against the Editor's stale DLL and reports phantom errors.
-The `.dag` hash changes when Unity regenerates the build graph — glob for it, never hardcode.
-The source list is only valid while no `.cs` file was added or deleted.
 
 ---
 
