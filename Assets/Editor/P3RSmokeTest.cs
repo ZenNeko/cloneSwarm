@@ -268,6 +268,10 @@ namespace CloneSwarm.EditorTools
                         "การ์ดมี CharacterCardUI (กดเลือกได้)");
 
                 CheckCardLayout("ลิสต์ตัวละคร", sel.cardsContainer, sel.characters.Count, vertical: true);
+
+                // เข้ามาทางล็อบบี้ — ปุ่มถอยต้องบอกปลายทางจริง ไม่ใช่คำว่า "ถอย" ลอยๆ
+                Require(BackLabel(panel) == "BACK TO LOBBY",
+                        $"ป้ายปุ่มถอยในจอตัวละคร = 'BACK TO LOBBY' (เข้ามาทางล็อบบี้) · ได้ '{BackLabel(panel)}'");
             }
 
             /// <summary>
@@ -304,6 +308,19 @@ namespace CloneSwarm.EditorTools
                     var go = Tab(n);
                     Require(go != null && go.activeInHierarchy, $"แท็บในร้าน: {n} ยังอยู่");
                 }
+
+                Require(BackLabel(shop) == "BACK",
+                        $"ป้ายปุ่มถอยในร้าน = 'BACK' (เข้ามาจากเมนูหลัก) · ได้ '{BackLabel(shop)}'");
+            }
+
+            /// <summary>ข้อความบนปุ่ม Btn_Back ของ panel นี้ — "" เมื่อหาไม่เจอ</summary>
+            private static string BackLabel(GameObject panel)
+            {
+                var back = panel == null ? null
+                         : panel.GetComponentsInChildren<Transform>(true)
+                                .FirstOrDefault(t => t.name == "Btn_Back");
+                var tmp = back == null ? null : back.GetComponentInChildren<TMPro.TMP_Text>(true);
+                return tmp != null ? tmp.text : "";
             }
 
             private void ShopBackFromMain()

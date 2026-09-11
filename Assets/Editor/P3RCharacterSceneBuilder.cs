@@ -131,6 +131,21 @@ namespace CloneSwarm.EditorTools
                 Stretch(label.rectTransform);
                 x += 186f;
             }
+
+            // ปุ่มถอย มุมขวาบนของแถบแท็บ — ที่เดียวกับจอ TALENT SHOP เพื่อให้หาเจอที่เดิม
+            // กว้างพอสำหรับป้าย "BACK TO LOBBY" ที่ P3RTabJump เปลี่ยนให้ตอนเข้ามาจากล็อบบี้
+            var back = NewRect("Btn_Back", tabs);
+            TopRight(back, PadX, 10f, 240f, 42f);
+            var bbg = NewImage("Bg", back, Lift(InkDeep, 0.08f));
+            Stretch(bbg.rectTransform);
+            bbg.raycastTarget = true;
+            Shear(bbg);
+            var blabel = NewMono("Label", back, "BACK", 16f, 0.2f, TextAlignmentOptions.Center,
+                                 new Color(1f, 1f, 1f, 0.75f));
+            Stretch(blabel.rectTransform);
+            var bbtn = back.gameObject.AddComponent<Button>();
+            bbtn.targetGraphic = bbg;
+            var bnav = bbtn.navigation; bnav.mode = Navigation.Mode.None; bbtn.navigation = bnav;
         }
 
         // ═══════════════════════════════════════════════════════════════════

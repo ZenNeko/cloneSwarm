@@ -650,11 +650,13 @@ namespace CloneSwarm.EditorTools
             foreach (var panelName in tabPanels)
                 AddTabStrip(panels, panelName, tabButtons, plan, apply);
 
-            AddTabJump(panels, "P3R_MapSelect",  "Btn_Back",    "lobby", plan, apply);
+            AddTabJump(panels, "P3R_MapSelect",  "Btn_Back",    "back",  plan, apply);
             AddTabJump(panels, "P3R_MapSelect",  "Btn_Confirm", "lobby", plan, apply);
-            // ร้านเข้าได้ทั้งจากเมนูหลักและจากล็อบบี้ — "back" ให้ P3RTabJump ตัดสินตามโหมดของ hub
+            // ทั้งสามจอเข้าได้ทั้งจากเมนูหลักและจากล็อบบี้ — ร้านเข้าตรงจากเมนูหลักได้
+            // ส่วน CHARACTER กดจากแถบแท็บในร้านได้ (Tab_CHARACTER ไม่ถูกซ่อนตอนโหมด Shop)
+            // "back" ให้ P3RTabJump ตัดสินปลายทาง **และป้ายบนปุ่ม** ตามโหมดของ hub
             AddTabJump(panels, "P3R_TalentShop", "Btn_Back",    "back",  plan, apply);
-            AddTabJump(panels, "P3R_Character",  "Btn_Back",    "lobby", plan, apply);
+            AddTabJump(panels, "P3R_Character",  "Btn_Back",    "back",  plan, apply);
 
             // ── Title: กดอะไรก็ได้ → หน้าแรก ────────────────────────────────
             if (panels.TryGetValue("P3R_Title", out var title) && title != null && menuManager != null)
@@ -720,7 +722,19 @@ namespace CloneSwarm.EditorTools
             {
                 if (t.name != buttonName) continue;
                 if (t.GetComponent<UnityEngine.UI.Button>() == null) continue;
-                if (t.GetComponent<P3RTabJump>() != null) return;
+
+                // มีอยู่แล้วแต่ชี้ผิดที่ก็ต้องแก้ — เคย `return` ทิ้งเฉยๆ แล้วปุ่มที่เคย
+                // ต่อไว้ผิดจะค้างผิดตลอดไป เพราะการต่อสายรอบถัดไปมองว่า "ต่อแล้ว"
+                var existing = t.GetComponent<P3RTabJump>();
+                if (existing != null)
+                {
+                    if (existing.tabId == tabId) return;
+                    plan.Add($"   แก้ P3RTabJump บน {panelName}/{buttonName}  " +
+                             $"{existing.tabId} → {tabId}");
+                    var captured = existing;
+                    apply.Add(() => captured.tabId = tabId);
+                    return;
+                }
 
                 plan.Add($"   ใส่ P3RTabJump บน {panelName}/{buttonName} → แท็บ {tabId}");
                 var go = t.gameObject;

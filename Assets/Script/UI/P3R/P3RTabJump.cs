@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +26,16 @@ namespace CloneSwarm.UI.P3R
                  "หรือ \"back\" = ย้อนกลับหนึ่งชั้น ซึ่งไปคนละที่กันตามทางที่เข้ามา")]
         public string tabId = "lobby";
 
+        [Header("── ป้ายปุ่ม (ใช้เฉพาะ tabId \"back\") ────")]
+        [Tooltip("ปล่อยว่างได้ — จะหาลูกชื่อ Label เอง")]
+        public TMP_Text label;
+
+        [Tooltip("ป้ายตอนที่กดแล้วกลับเมนูหลัก")]
+        public string backToMainText = "BACK";
+
+        [Tooltip("ป้ายตอนที่กดแล้วกลับล็อบบี้")]
+        public string backToLobbyText = "BACK TO LOBBY";
+
         private Button button;
 
         private void Awake()
@@ -32,16 +43,41 @@ namespace CloneSwarm.UI.P3R
             button = GetComponent<Button>();
             if (tabBar == null)
                 tabBar = FindAnyObjectByType<TabBar>(FindObjectsInactive.Include);
+            if (label == null) label = GetComponentInChildren<TMP_Text>(true);
         }
 
         private void OnEnable()
         {
             if (button != null) button.onClick.AddListener(Jump);
+
+            // ป้ายต้องบอกปลายทางจริง ไม่ใช่คำว่า "ถอย" ลอยๆ — ปลายทางต่างกันตามทางที่เข้ามา
+            // โหมดถูกตั้งก่อน panel เปิด (MenuManager สั่ง SetMode ทันทีหลัง ShowPanel)
+            // จึงอ่านตอน OnEnable ได้ตรง · และ TabBar.OnTabsChanged ยิงทุกครั้งที่ Refresh
+            // ซึ่งคือทุกครั้งที่โหมดเปลี่ยน จึงพอสำหรับการอัปเดตระหว่างอยู่ในจอ
+            TabBar.OnTabsChanged += RefreshLabel;
+            RefreshLabel();
         }
 
         private void OnDisable()
         {
             if (button != null) button.onClick.RemoveListener(Jump);
+            TabBar.OnTabsChanged -= RefreshLabel;
+        }
+
+        private void RefreshLabel()
+        {
+            if (tabId != "back" || label == null) return;
+            label.text = BackGoesToMain() ? backToMainText : backToLobbyText;
+        }
+
+        /// <summary>
+        /// โหมด Shop = เข้า hub มาจากเมนูหลักตรงๆ (`MenuManager.OnTalentShopClicked`)
+        /// ไม่ใช่จากล็อบบี้ · การถอยจึงคือออกจาก hub ไม่ใช่กลับไปแท็บ lobby
+        /// </summary>
+        private static bool BackGoesToMain()
+        {
+            var hub = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
+            return hub != null && hub.Mode == HubMode.Shop;
         }
 
         private void Jump()
@@ -56,8 +92,7 @@ namespace CloneSwarm.UI.P3R
             // จึงไปโผล่ที่ล็อบบี้ ซึ่งเป็นหน้าที่ผู้เล่นไม่เคยเห็นมาก่อนในเส้นทางนั้น
             if (tabId == "back")
             {
-                var hub = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
-                if (hub != null && hub.Mode == HubMode.Shop)
+                if (BackGoesToMain())
                 {
                     var menu = FindAnyObjectByType<MenuManager>(FindObjectsInactive.Include);
                     if (menu != null) { menu.ShowMain(); return; }

@@ -141,8 +141,9 @@ namespace CloneSwarm.EditorTools
             }
 
             // ปุ่ม BACK มุมขวาบนของแถบแท็บ
+            // กว้างพอสำหรับป้าย "BACK TO LOBBY" ที่ P3RTabJump เปลี่ยนให้ตอนเข้ามาจากล็อบบี้
             var back = NewRect("Btn_Back", tabs);
-            TopRight(back, PadX, 10f, 180f, 42f);
+            TopRight(back, PadX, 10f, 240f, 42f);
             var bbg = NewImage("Bg", back, Lift(InkDeep, 0.08f));
             Stretch(bbg.rectTransform);
             bbg.raycastTarget = true;
