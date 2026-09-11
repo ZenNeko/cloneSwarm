@@ -26,6 +26,16 @@ public class CharacterCardUI : MonoBehaviour
     public Color           accentSelected = new Color32(0x2C, 0x3C, 0xFF, 0xFF);
     public Color           accentNormal   = new Color(1f, 1f, 1f, 0.10f);
 
+    [Header("Status Badge (auto-find: child ชื่อ State)")]
+    [Tooltip("ป้ายมุมขวาของการ์ด — บอกว่าปลดล็อกแล้วหรือยัง")]
+    public TextMeshProUGUI stateText;
+    [Tooltip("ข้อความตอนปลดล็อกแล้ว · ปล่อยว่าง = ซ่อนป้าย")]
+    public string stateOwnedLabel  = "OWNED";
+    [Tooltip("ข้อความตอนยังล็อกอยู่ · ปล่อยว่าง = ซ่อนป้าย")]
+    public string stateLockedLabel = "LOCKED";
+    public Color  stateOwnedColor  = new Color32(0x2C, 0xC5, 0xA0, 0xFF);
+    public Color  stateLockedColor = new Color32(0x8C, 0x86, 0x78, 0xFF);
+
     [Header("Lock Overlay (auto-find: child ชื่อ LockOverlay / LockCostText)")]
     [Tooltip("แผ่นทึบ + ไอคอนกุญแจ ที่คลุมการ์ดตอนยังไม่ปลดล็อก")]
     public GameObject      lockOverlay;
@@ -45,6 +55,7 @@ public class CharacterCardUI : MonoBehaviour
         if (nameText  == null) nameText  = transform.Find("NameText")?.GetComponent<TextMeshProUGUI>();
         if (weaponText == null) weaponText = transform.Find("WeaponText")?.GetComponent<TextMeshProUGUI>();
         if (accentImage == null) accentImage = transform.Find("Accent")?.GetComponent<Image>();
+        if (stateText == null) stateText = transform.Find("State")?.GetComponent<TextMeshProUGUI>();
         if (lockOverlay == null) lockOverlay = transform.Find("LockOverlay")?.gameObject;
         if (lockCostText == null)
             lockCostText = transform.Find("LockCostText")?.GetComponent<TextMeshProUGUI>()
@@ -93,6 +104,17 @@ public class CharacterCardUI : MonoBehaviour
 
         if (lockOverlay  != null) lockOverlay.SetActive(locked);
         if (lockCostText != null) lockCostText.text = locked ? $"{cost:N0} G" : "";
+
+        // ป้ายสถานะ — แม่แบบเขียน "OWNED" ไว้ตายตัว ใบที่ล็อกอยู่จึงเคยขึ้น OWNED ทับ
+        // overlay กุญแจของตัวเอง · ไม่มี "COMING SOON" เพราะไม่มีข้อมูลไหนในเกมบอกได้ว่า
+        // ตัวละครไหน "กำลังจะมา" — ป้ายที่ไม่มีที่มาคือการบอกผู้เล่นว่ามีระบบที่ยังไม่มีจริง
+        if (stateText != null)
+        {
+            string label = locked ? stateLockedLabel : stateOwnedLabel;
+            stateText.text    = label;
+            stateText.color   = locked ? stateLockedColor : stateOwnedColor;
+            stateText.enabled = !string.IsNullOrEmpty(label);
+        }
 
         // **ไม่ย้อมภาพตัวละคร** — สีของ Image คูณเข้ากับพิกเซลของ sprite
         // ภาพที่ถูกย้อมคือภาพที่ไม่ตรงกับที่คนวาดส่งมา · ความต่างตอนล็อกมาจาก

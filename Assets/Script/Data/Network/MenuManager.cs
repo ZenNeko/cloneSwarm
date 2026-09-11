@@ -22,6 +22,8 @@ public class MenuManager : MonoBehaviour
     // PANELS
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Panels ──────────────────────────────")]
+    [Tooltip("จอ Title — ปล่อยว่างได้ ถ้าว่างเกมจะเปิดมาที่ Main เลยเหมือนเดิม")]
+    public GameObject titlePanel;
     public GameObject mainPanel;
     public GameObject settingsPanel;
     public GameObject loadingPanel;
@@ -100,7 +102,12 @@ public class MenuManager : MonoBehaviour
         if (talentShopButton) talentShopButton.onClick.AddListener(OnTalentShopClicked);
 
         RefreshGold();
-        ShowMain();
+
+        // จอแรกคือ Title ถ้ามี — ไม่มีก็เข้า Main เลย
+        // panel ถูกปล่อยให้เปิดค้างไว้ในซีนเพื่อให้ Awake ของลูกๆ วิ่งตอนโหลด
+        // ShowPanel ตัวแรกนี้คือคนที่ปิดตัวที่ไม่ใช่จอแรกทิ้ง
+        if (titlePanel != null) ShowTitle();
+        else                    ShowMain();
     }
 
     void HandleSessionJoined(ISession _)
@@ -135,14 +142,29 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════════════════
+    /// <summary>เปิดจอ Title — ทางกลับมาหลังจบรอบก็ใช้ตัวนี้ได้</summary>
+    public void ShowTitle()
+    {
+        ShowPanel(titlePanel);
+    }
+
     /// <summary>กลับหน้าแรก — public เพราะจอ P3R เรียกผ่าน P3RMenuBridge ไม่ได้ผ่านปุ่ม</summary>
     public void ShowMain()
     {
         ShowPanel(mainPanel);
     }
 
+    /// <summary>
+    /// เปิดหนึ่ง ปิดที่เหลือ
+    ///
+    /// **panel ใหม่ทุกตัวต้องมาเข้าแถวนี้** ไม่งั้นจะไม่มีใครปิดมันได้เลย
+    /// `titlePanel` เคยขาดไปและเป็นเหตุที่จอไตเติลคลุมเมนูถาวร — อาการคือจอเปิดค้าง
+    /// โดยไม่มี error สักบรรทัด เพราะ `onAdvanceEvent → ShowMain()` ทำงานถูกทุกอย่าง
+    /// ยกเว้นไม่มีบรรทัดไหนแตะตัวมันเอง
+    /// </summary>
     void ShowPanel(GameObject target)
     {
+        titlePanel?.SetActive(false);
         mainPanel?.SetActive(false);
         settingsPanel?.SetActive(false);
         loadingPanel?.SetActive(false);

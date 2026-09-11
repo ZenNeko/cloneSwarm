@@ -134,7 +134,7 @@ namespace CloneSwarm.EditorTools
                         wait = 1.2f;                       // ปล่อยให้อนิเมชันเข้าเมนูวิ่งจบก่อน
                         break;
 
-                    case 1: CheckStartState(); break;
+                    case 1: CheckTitleGate(); CheckStartState(); break;
 
                     case 2: Press("settings", "P3R_Config"); break;
                     case 3: Verify(); ShowMain(); break;
@@ -171,9 +171,38 @@ namespace CloneSwarm.EditorTools
             }
 
             // ── ขั้นตอน ─────────────────────────────────────────────────────
+            /// <summary>
+            /// จอไตเติลต้อง **คลุมเมนูตอนเริ่ม แล้วหายไปตอนกด**
+            ///
+            /// เคยพังทั้งสองทาง: `MenuManager.ShowPanel()` ไม่รู้จัก `titlePanel` เลย
+            /// จึงไม่มีใครเปิดมันตอนบูต และไม่มีใครปิดมันหลัง `ShowMain()`
+            /// ทางแก้ชั่วคราวตอนนั้นคือให้ wirer บังคับปิดไว้ในซีน = จอนี้ไม่เคยถูกเห็น
+            ///
+            /// ยิง `onAdvanceEvent` ตรงๆ แทนการอัดปุ่ม เพราะสิ่งที่ต้องพิสูจน์คือ
+            /// **ปลายสายพาไปไหน** ไม่ใช่ว่า `Keyboard.current` อ่านได้ไหม
+            /// </summary>
+            private void CheckTitleGate()
+            {
+                var title = Find("P3R_Title");
+                if (title == null) { Require(false, "หา P3R_Title ในซีนเจอ"); return; }
+
+                Require(title.activeInHierarchy,                      "P3R_Title เปิดอยู่ตอนเริ่ม");
+                Require(Find("P3R_Main")?.activeInHierarchy != true,   "P3R_Main ปิดอยู่ตอนอยู่จอไตเติล");
+
+                var t = title.GetComponentInChildren<TitleScreenUI>(true);
+                Require(t != null,                                     "P3R_Title มี TitleScreenUI");
+                Require(t != null && t.onAdvanceEvent.GetPersistentEventCount() > 0,
+                        "TitleScreenUI.onAdvanceEvent ต่อสายไว้แล้ว");
+                if (t == null) return;
+
+                t.onAdvanceEvent.Invoke();
+                lines.Add("── ยิง TitleScreenUI.onAdvanceEvent");
+                Require(!title.activeInHierarchy,                      "กดแล้ว P3R_Title ปิดลงจริง");
+            }
+
             private void CheckStartState()
             {
-                Require(Find("P3R_Main")?.activeInHierarchy == true,   "P3R_Main เปิดอยู่ตอนเริ่ม");
+                Require(Find("P3R_Main")?.activeInHierarchy == true,   "P3R_Main เปิดหลังผ่านจอไตเติล");
                 Require(Find("P3R_Config")?.activeInHierarchy != true, "P3R_Config ปิดอยู่ตอนเริ่ม");
                 Require(Find("P3R_Hub")?.activeInHierarchy != true,    "P3R_Hub ปิดอยู่ตอนเริ่ม");
 
@@ -183,11 +212,47 @@ namespace CloneSwarm.EditorTools
                         "MenuList มี P3RMenuBridge");
                 Require(list != null && list.items.Count > 0,          "MenuList มีรายการ");
 
+                CheckMenuBarsCoverLabels(list);
+
                 var bar = Find("P3R_Hub")?.GetComponent<TabBar>();
                 Require(bar != null && bar.tabs.Count == 4,            "P3R_Hub มี TabBar ครบสี่แท็บ");
                 Require(bar != null && bar.tabs.All(t => t.panel != null),
                         "ทุกแท็บชี้ panel จริง");
                 wait = 0.2f;
+            }
+
+            /// <summary>
+            /// ไม่มีคำไหนยื่นออกนอกแถบของตัวเอง — เหตุผลทั้งหมดที่เมนูหลักเลือกโหมด "แถบกอดคำ"
+            ///
+            /// `TALENT SHOP` ยาวเกิน `barExtendLeft` ที่ตั้งไว้ 320 · ภาพ PNG จับได้ก็จริง
+            /// แต่ต้องมีคนเปิดดูและสังเกตเอง และมันจะกลับมาใหม่ทุกครั้งที่มีคนเพิ่มรายการยาวๆ
+            /// หรือแปลเป็นภาษาที่คำยาวกว่าเดิม · วัดเป็นตัวเลขไว้ตรงนี้แทน
+            ///
+            /// วัดที่ `sizeDelta` ไม่ใช่ `rect.width` เพราะแถบถูกย่อ `localScale.x` ตอนหุบ
+            /// รายการที่ไม่ได้ถูกเลือกอยู่จึงกว้าง 0 ทั้งที่ขนาดจริงถูกต้อง
+            ///
+            /// ความกว้างที่คลุมคำได้จริงคือ `sizeDelta.x` **ลบส่วนที่ยื่นออกนอกจอ** — แถบเกาะ
+            /// ขอบเดียวกับตัวอักษรแล้วเลื่อนออกไปอีก `barBleedRight` ระยะนั้นอยู่คนละฝั่งกับคำ
+            /// อ่านค่ากลับจาก `anchoredPosition.x` เพราะ theme เป็น private ของ P3RMenuItem
+            /// </summary>
+            private void CheckMenuBarsCoverLabels(P3RMenuList list)
+            {
+                if (list == null) return;
+
+                foreach (var item in list.items)
+                {
+                    if (item == null || !item.barHugsLabel) continue;
+                    if (item.label == null || item.bar == null) continue;
+
+                    float textWidth = item.label.GetPreferredValues(item.label.text).x
+                                    * item.label.rectTransform.localScale.x;
+                    var   barRt     = item.bar.rectTransform;
+                    float covering  = barRt.sizeDelta.x - Mathf.Abs(barRt.anchoredPosition.x);
+
+                    Require(covering >= textWidth,
+                            $"แถบของ '{item.id}' คลุมคำได้หมด " +
+                            $"(แถบส่วนที่อยู่ในจอ {covering:0} · คำ {textWidth:0})");
+                }
             }
 
             /// <summary>กดรายการเมนูจริงผ่าน API เดียวกับที่เมาส์ใช้</summary>
@@ -268,6 +333,18 @@ namespace CloneSwarm.EditorTools
                         "การ์ดมี CharacterCardUI (กดเลือกได้)");
 
                 CheckCardLayout("ลิสต์ตัวละคร", sel.cardsContainer, sel.characters.Count, vertical: true);
+
+                // ป้ายสถานะต้องตรงกับ overlay กุญแจของใบเดียวกัน — แม่แบบเขียน "OWNED" ไว้
+                // ตายตัวและไม่เคยถูกต่อสาย ใบที่ล็อกอยู่จึงขึ้น OWNED ทับกุญแจของตัวเอง
+                foreach (var card in kids.Select(t => t.GetComponent<CharacterCardUI>())
+                                         .Where(c => c != null && c.stateText != null))
+                {
+                    bool showsLocked = card.stateText.text == card.stateLockedLabel;
+                    bool isLocked    = card.lockOverlay != null && card.lockOverlay.activeSelf;
+                    Require(showsLocked == isLocked,
+                            $"ป้ายสถานะของ '{card.name}' ตรงกับสถานะล็อกจริง " +
+                            $"(ป้าย '{card.stateText.text}' · overlay {(isLocked ? "เปิด" : "ปิด")})");
+                }
 
                 // เข้ามาทางล็อบบี้ — ปุ่มถอยต้องบอกปลายทางจริง ไม่ใช่คำว่า "ถอย" ลอยๆ
                 Require(BackLabel(panel) == "BACK TO LOBBY",

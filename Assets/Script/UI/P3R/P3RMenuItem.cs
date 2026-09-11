@@ -45,6 +45,16 @@ namespace CloneSwarm.UI.P3R
         [Tooltip("กดได้ไหม — false จะเป็นสีเทาและถูกข้ามตอนเลื่อนขึ้น/ลง")]
         public bool interactable = true;
 
+        [Header("── Bar sizing ─────────────────────────")]
+        [Tooltip("แถบกอดความยาวคำ (ตัวเลือก A ของแบบ) แทนที่จะกว้างคงที่ตาม theme.barExtendLeft (B)\n\n" +
+                 "เปิด = เมนูหลัก · ปิด = จอ pause ซึ่งแถบเป็นสแลบขนาดตายตัวที่มีเลขลำดับอยู่ข้างใน\n" +
+                 "ความกว้างคงที่จูนให้พอดีได้ทีละภาษาเท่านั้น พอแปลแล้วความยาวคำเปลี่ยนหมด\n" +
+                 "และคำที่ยื่นออกนอกแถบของตัวเองอ่านเป็นของพัง ไม่ใช่สไตล์")]
+        public bool barHugsLabel;
+
+        [Tooltip("ระยะที่แถบเผื่อเลยตัวอักษรไปอีกข้างเมื่อ barHugsLabel เปิด")]
+        public float barLabelPadding = 56f;
+
         [Header("── Wiring ─────────────────────────────")]
         public TextMeshProUGUI label;
         public Image           bar;
@@ -63,6 +73,8 @@ namespace CloneSwarm.UI.P3R
         private RectTransform barRt;
         private float baseX;
         private bool  baseXCaptured;
+        private string lastMeasured;
+        private float  lastFontSize;
 
         /// <summary>0 = แถบหุบสนิท · 1 = กางเต็ม — P3RMenuList เป็นคนไล่ค่าให้</summary>
         public float BarReveal
@@ -154,13 +166,56 @@ namespace CloneSwarm.UI.P3R
                 barRt.anchorMin = barRt.anchorMax = new Vector2(ax, 0.5f);
                 // pivot ข้างเดียวกับที่ชิด → BarReveal (scale.x) กางออกจากขอบนั้นไปอีกฝั่ง
                 barRt.pivot     = new Vector2(ax, 0.5f);
-                barRt.sizeDelta = new Vector2(theme.barExtendLeft + theme.barBleedRight, theme.barHeight);
+                barRt.sizeDelta = new Vector2(MeasureBarWidth(), theme.barHeight);
                 // barBleedRight = ระยะยื่นเลยขอบที่ชิดออกไปนอกจอ · ทิศกลับกันเมื่อชิดซ้าย
                 barRt.anchoredPosition = new Vector2(right ? theme.barBleedRight : -theme.barBleedRight,
                                                      theme.barOffsetY);
             }
 
             SetSelected(false, instant: true);
+            lastMeasured = label != null ? label.text : null;
+            lastFontSize = label != null ? label.fontSize : 0f;
+        }
+
+        /// <summary>
+        /// ความกว้างของแถบ — ตัวเลือก A ของแบบคือ "กอดคำ" ตัวเลือก B คือ "กว้างคงที่"
+        ///
+        /// เลือก A แต่ **ยังคงความกว้างเดิมไว้เป็นพื้น** (`Mathf.Max`) ไม่ใช่กอดเปลือย
+        /// คำสั้นอย่าง `PLAY` จะได้ไม่กลายเป็นแถบกุด และทุกรายการที่วันนี้พอดีอยู่แล้ว
+        /// ก็ยังหน้าตาเหมือนเดิมเป๊ะ · ที่โตขึ้นจริงมีแต่ตัวที่เคยล้นออกนอกแถบ เช่น TALENT SHOP
+        ///
+        /// วัดผ่าน <c>GetPreferredValues</c> ไม่ใช่ <c>preferredWidth</c> — ตัวหลังเป็นค่าจาก
+        /// การจัดหน้ารอบก่อน ซึ่งตอนถูกเรียกจาก <see cref="Apply"/> ยังเป็นของข้อความเก่าอยู่
+        /// แล้วคูณ <c>horizontalScale</c> เพราะการบีบตัวอักษรทำที่ <c>localScale.x</c> ของ label
+        /// ซึ่ง TMP ไม่รู้ด้วย
+        /// </summary>
+        private float MeasureBarWidth()
+        {
+            float fixedWidth = theme.barExtendLeft + theme.barBleedRight;
+            if (!barHugsLabel || label == null) return fixedWidth;
+
+            float textWidth = label.GetPreferredValues(label.text).x * theme.horizontalScale;
+            return Mathf.Max(fixedWidth, textWidth + barLabelPadding + theme.barBleedRight);
+        }
+
+        /// <summary>
+        /// ข้อความเมนูเปลี่ยนได้ตอนรัน (สลับภาษา) และ <see cref="P3RThaiTracking"/> ยังเปลี่ยน
+        /// ขนาดตัวอักษรตามภาษาอีกชั้น — แถบที่วัดไว้ตอน <see cref="Apply"/> จึงค้างอยู่กับคำเก่า
+        ///
+        /// เฝ้าทั้งสองค่าเพราะลำดับการวิ่งของ LateUpdate ระหว่างสองคลาสนี้ไม่มีใครรับประกัน
+        /// รอบที่ตัวเฝ้าไทยเปลี่ยนขนาดทีหลัง จะถูกจับได้ในเฟรมถัดไปจาก fontSize ที่ต่างไป
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (!barHugsLabel || label == null || barRt == null || theme == null) return;
+
+            string now = label.text;
+            if ((ReferenceEquals(now, lastMeasured) || now == lastMeasured) &&
+                Mathf.Approximately(label.fontSize, lastFontSize)) return;
+
+            lastMeasured = now;
+            lastFontSize = label.fontSize;
+            barRt.sizeDelta = new Vector2(MeasureBarWidth(), theme.barHeight);
         }
 
         public void SetSelected(bool on, bool instant)

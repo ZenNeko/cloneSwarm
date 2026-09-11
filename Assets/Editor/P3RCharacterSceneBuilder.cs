@@ -294,6 +294,10 @@ namespace CloneSwarm.EditorTools
             var state = NewMono("State", rt, "OWNED", 13f, 0.22f,
                                 TextAlignmentOptions.MidlineRight, Teal);
             TopRight(state.rectTransform, 20f, belowY, 200f, 22f);
+            // ป้ายนี้ถูก CharacterCardUI.SetLocked() เขียนทับตอนรัน — ระยะถ่าง .22em ที่ใส่ไว้
+            // ตอนนี้ตัดสินจากคำว่า "OWNED" ซึ่งเป็นแค่ค่าตัวอย่าง · P3RThaiRiskAudit สแกนแต่ซีน
+            // ไม่เห็น prefab จึงต้องแปะตัวเฝ้าให้ที่นี่เอง ไม่งั้นวันที่ใส่ข้อความไทยสระจะหลุด
+            state.gameObject.AddComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
 
             var lockOverlay = NewImage("LockOverlay", rt, new Color(6 / 255f, 8 / 255f, 18 / 255f, 0.6f));
             Stretch(lockOverlay.rectTransform);
@@ -311,6 +315,7 @@ namespace CloneSwarm.EditorTools
             card.iconImage    = icon;
             card.nameText     = name;
             card.weaponText   = role;
+            card.stateText    = state;
             card.lockOverlay  = lockOverlay.gameObject;
             card.lockCostText = lockCost;
 

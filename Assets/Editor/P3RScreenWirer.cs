@@ -327,10 +327,11 @@ namespace CloneSwarm.EditorTools
             // ปิดไว้ = Instance เป็น null ตลอดรอบ = จอเลเวลอัปกับจอจบเกมไม่ขึ้นเลย
             // ทั้งสามตัวสั่ง panelRoot.SetActive(false) ให้ตัวเองใน Awake/Start อยู่แล้ว
             // เปิด panel นอกจึงไม่ได้แปลว่าผู้เล่นจะเห็นจอค้างอยู่
-            foreach (var name in new[] { "P3R_Main", "P3R_JoinRoom", "P3R_LevelUp", "P3R_Pause", "P3R_WinLose" })
+            foreach (var name in new[] { "P3R_Title", "P3R_Main", "P3R_JoinRoom", "P3R_LevelUp", "P3R_Pause", "P3R_WinLose" })
             {
                 if (!panels.TryGetValue(name, out var go) || go == null || go.activeSelf) continue;
-                string why = name == "P3R_Main" ? "หน้าแรกของเมนู"
+                string why = name == "P3R_Title" ? "จอแรกที่ผู้เล่นเห็น — MenuManager.Start() เป็นคนปิดตัวที่เหลือ"
+                                              : name == "P3R_Main" ? "ต้องเปิดค้างตอนโหลดให้ Awake ของลูกวิ่ง · Start() ปิดให้เองถ้ามีจอ Title"
                                               : name == "P3R_JoinRoom" ? "modal ที่ Awake ตั้ง Instance · ตัวที่เปิด/ปิดคือลูกชื่อ PanelRoot"
                                                 : "singleton ตั้ง Instance ใน Awake ซึ่งไม่วิ่งตอนปิดอยู่";
                 plan.Add($"   เปิด {name} ({why})");
@@ -345,15 +346,14 @@ namespace CloneSwarm.EditorTools
             // และเคยเปลี่ยนเองระหว่างรันไปป์ไลน์โดยไม่มีใครสั่ง — สถานะที่ไม่มีใครยืนยัน
             // คือสถานะที่ไล่ต้นเหตุไม่ได้เวลามันผิด
             //
-            // P3R_Title ปิดไว้เพราะ **ยังไม่มีใครปิดมันตอนรัน** — onAdvanceEvent เรียก
-            // MenuManager.ShowMain() ซึ่งเปิด P3R_Main แต่ไม่แตะ P3R_Title
-            // เปิดค้างไว้ = จอไตเติลคลุมเมนูตลอดไป · เปิดได้เมื่อมีคนสั่งปิดมันแล้วเท่านั้น
-            foreach (var name in new[] { "P3R_Title", "P3R_Config", "P3R_Loading", "P3R_Hub" })
+            // P3R_Title เคยอยู่ในรายชื่อนี้ เพราะตอนนั้นไม่มีใครสั่งปิดมันตอนรัน —
+            // `onAdvanceEvent → MenuManager.ShowMain()` เปิด P3R_Main แต่ไม่แตะไตเติล
+            // แก้ที่ต้นเหตุแล้ว: `MenuManager.titlePanel` เข้ากลุ่ม `ShowPanel()` ปกติ
+            // จอไตเติลจึงกลับไปอยู่ฝั่ง "ต้องเปิดตอนเริ่ม" ได้ตามที่ควรเป็น
+            foreach (var name in new[] { "P3R_Config", "P3R_Loading", "P3R_Hub" })
             {
                 if (!panels.TryGetValue(name, out var go) || go == null || !go.activeSelf) continue;
-                string why = name == "P3R_Title"
-                    ? "ยังไม่มีใครสั่งปิดมันตอนรัน — เปิดไว้แล้วจะคลุมเมนูถาวร"
-                    : "เปิดเมื่อผู้เล่นสั่งเท่านั้น";
+                string why = "เปิดเมื่อผู้เล่นสั่งเท่านั้น";
                 plan.Add($"   ปิด {name} ({why})");
                 var captured = go;
                 apply.Add(() => captured.SetActive(false));
@@ -749,6 +749,7 @@ namespace CloneSwarm.EditorTools
         /// </summary>
         private static readonly Dictionary<string, string> PanelFieldMap = new()
         {
+            ["MenuManager.titlePanel"]    = "P3R_Title",
             ["MenuManager.mainPanel"]     = "P3R_Main",
             ["MenuManager.settingsPanel"] = "P3R_Config",
             ["MenuManager.loadingPanel"]  = "P3R_Loading",
