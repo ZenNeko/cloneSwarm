@@ -80,9 +80,14 @@ namespace CloneSwarm.Meta
 
             if (iconImage != null)
             {
-                iconImage.sprite  = t.icon;
-                iconImage.enabled = t.icon != null;
-                iconImage.color   = t.tintColor;   // สีบอกหมวด — ใช้แม้ตอนไม่มี sprite
+                // Icon ตัวพิมพ์ใหญ่ = ตกไปใช้รูปกลางของ StatIconSet ให้เมื่อ talent ไม่ได้ใส่เอง
+                var spr = t.Icon;
+                iconImage.sprite  = spr;
+                iconImage.enabled = true;
+                // มีรูป = ขาวล้วน ห้ามย้อม · ไม่มีรูป = สีหมวดทำหน้าที่เป็นบล็อกแทนรูป
+                // (ของเดิมตั้ง enabled = false ตอนไม่มีรูป สีหมวดจึงไม่เคยได้วาดเลย
+                //  ทั้งที่คอมเมนต์เขียนไว้ว่า "ใช้แม้ตอนไม่มี sprite")
+                iconImage.color   = spr != null ? Color.white : t.tintColor;
             }
 
             Refresh();

@@ -181,9 +181,13 @@ namespace CloneSwarm.Meta
 
             if (detailIcon != null)
             {
-                detailIcon.sprite  = selected.icon;
-                detailIcon.enabled = selected.icon != null;
-                detailIcon.color   = selected.tintColor;
+                // Icon ไม่ใช่ icon — ตัวพิมพ์ใหญ่คือตัวที่ตกไปใช้รูปกลางของ StatIconSet ให้
+                var spr = selected.Icon;
+                detailIcon.sprite  = spr;
+                detailIcon.enabled = true;
+                // มีรูป = ขาวล้วน ห้ามย้อม (สีคูณเข้ากับพิกเซลของ sprite)
+                // ไม่มีรูป = ใช้สีหมวดเป็นบล็อกแทนไปก่อน
+                detailIcon.color   = spr != null ? Color.white : selected.tintColor;
             }
             // DisplayName ไม่ใช่ talentName — talentName เป็นชื่อสำรองตอนยังไม่ผูก String Table
             // ใช้ตัวดิบแล้วจอนี้จะเป็นภาษาอังกฤษอยู่จอเดียวตอนสลับเป็นไทย

@@ -45,7 +45,7 @@ public class UpgradeCardInfo
     public Sprite DisplayIcon => type switch
     {
         UpgradeCardType.Augment => augment?.icon,
-        UpgradeCardType.Stat    => stat?.icon,
+        UpgradeCardType.Stat    => stat?.Icon,   // Icon = ตกไปใช้รูปกลางของ StatIconSet ให้
         _                       => weapon?.icon,
     };
 

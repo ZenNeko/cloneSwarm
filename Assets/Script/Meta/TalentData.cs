@@ -54,6 +54,18 @@ namespace CloneSwarm.Meta
         public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
         public Sprite icon;
 
+        /// <summary>
+        /// รูปที่ต้องเอาไปแสดง — ช่อง <see cref="icon"/> ของ talent นี้ชนะก่อน
+        /// ไม่ได้ใส่และเป็น talent แบบสเตตัส ก็ตกไปใช้รูปกลางของ <see cref="StatIconSet"/>
+        /// ตัวเดียวกับที่การ์ดอัปเกรดในเกมใช้ · "ดาเมจ" จึงหน้าตาเดียวกันทั้งสองที่
+        ///
+        /// mode ที่ไม่ใช่สเตตัส (GoldFind · SecondChance) ไม่มี StatType ให้อ้าง
+        /// ต้องใส่ <see cref="icon"/> ของตัวเองเท่านั้น
+        /// </summary>
+        public Sprite Icon => icon != null                    ? icon
+                            : mode == TalentEffectMode.Stat   ? StatIconSet.For(statType)
+                                                              : null;
+
         [Header("Effect")]
         [Tooltip("ปกติใช้ Stat — อีก 2 อันไว้สำหรับผลที่ไม่ใช่สเตตัส")]
         public TalentEffectMode mode = TalentEffectMode.Stat;
