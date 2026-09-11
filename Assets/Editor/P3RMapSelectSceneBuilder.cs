@@ -346,7 +346,9 @@ namespace CloneSwarm.EditorTools
             var btnNav = btn.navigation; btnNav.mode = Navigation.Mode.None;
             btn.navigation = btnNav;
 
-            var preview = NewImage("Preview", rt, Lift(CardBg, 0.05f));
+            // **ขาวล้วนเสมอ** — Image ที่ใส่งานศิลป์ห้ามย้อม สีจะไปคูณกับพิกเซลของ sprite
+            // (ค่านี้คือสิ่งที่ถูกแก้ไว้ในเอดิเตอร์แล้ว ย้ายมาไว้ในโค้ดจะได้ไม่โดนรีบิลด์ทับอีก)
+            var preview = NewImage("Preview", rt, Color.white);
             var prt = preview.rectTransform;
             prt.anchorMin = new Vector2(0f, 1f); prt.anchorMax = new Vector2(1f, 1f);
             prt.pivot = new Vector2(0.5f, 1f);

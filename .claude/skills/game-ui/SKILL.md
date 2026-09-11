@@ -86,6 +86,22 @@ private static CharacterCardUI BuildCardPrefab()
 Then put mock copies in the proto scene with `SpawnSample(prefab, parent, bind)` so the PNG shows
 a populated screen. The wirer deletes every `Sample_*` when the panel lands in the real scene.
 
+**Never hand-edit these prefabs — `SavePrefab` regenerates them on every build.** A guard now
+refuses to overwrite a prefab whose bytes differ from what the builder last wrote
+(hashes in `Assets/Prefab/UI/P3R/.p3r-prefab-hashes.txt`); batchmode logs an error and skips
+the file unless you pass `-forceprefab`. It exists because two prefabs were hand-tuned and then
+silently destroyed by a rebuild that happened to reproduce the previous commit byte-for-byte, so
+git recorded no diff and there was nothing to recover. When you want a change to stick, put it in
+the builder. Every builder must route through `P3RBuilderKit.SavePrefab` — a local copy of it
+bypasses the guard, which is how `ResultPartyRow` stayed unprotected after the rest were fixed.
+
+**Artwork images are `Color.white`, always.** An `Image`'s colour multiplies into the sprite, so
+any tint means the art no longer matches what the artist drew and nobody can find where the shift
+came from. Dim a locked card with an overlay on top, never by tinting its portrait.
+`P3RBuilderKit.PortraitWithName` enforces this and lays out the shared **8:1** portrait box with
+the name overlaid on its bottom-left — the ratio comes from the result screen's 470×58 box and is
+the same in every row and card so one set of character art fits everywhere uncropped.
+
 A controller's `cardTemplate` field must point at the **prefab asset**, not a scene object — a
 scene reference is a `fileID` that changes every time the panel is re-migrated, and the template
 gets destroyed along with the old panel.

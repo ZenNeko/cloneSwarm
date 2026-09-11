@@ -1,0 +1,8 @@
+# แฮชของ prefab ที่ P3R builder เขียนไว้ล่าสุด — ห้ามแก้ด้วยมือ
+# ไฟล์ไหนแฮชไม่ตรง แปลว่ามีคนแก้หลัง builder เขียน SavePrefab จะไม่ทับให้
+Assets/Prefab/UI/P3R/CharacterCard.prefab|jn15upOnkgCwfPxAjixY3g==
+Assets/Prefab/UI/P3R/LobbyAbilityChip.prefab|C+L3m8ueA+nZNnFt5un7PQ==
+Assets/Prefab/UI/P3R/LobbyPartyRow.prefab|rV7gvQWdU1u/5gTkenS64w==
+Assets/Prefab/UI/P3R/MapCard.prefab|cTL3wcbM7Q4YTLE0fn7dtQ==
+Assets/Prefab/UI/P3R/ResultPartyRow.prefab|8fcoMbDODziM7i25Iocoow==
+Assets/Prefab/UI/P3R/RewardLine.prefab|8qzwAywHjgUw/v1ao0rexA==

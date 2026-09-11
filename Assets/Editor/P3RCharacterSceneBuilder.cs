@@ -36,6 +36,9 @@ namespace CloneSwarm.EditorTools
         private const float CardH    = 108f;
         private const float CardGap  = 10f;
 
+        // พอร์เทรตเป็น 8:1 — ความกว้างที่ได้คือ PortraitH * 8 ต้องไม่เกินการ์ด (332 - 40 = 292)
+        private const float PortraitH = 36f;
+
         private static readonly Color TopBar  = new Color32(0x08, 0x0B, 0x18, 0xFF);
         private static readonly Color PanelBg = new Color32(0x0D, 0x12, 0x26, 0xFF);
         private static readonly Color CardBg  = new Color32(0x11, 0x18, 0x38, 0xFF);
@@ -278,19 +281,19 @@ namespace CloneSwarm.EditorTools
 
             var accent = AccentBar(rt, AccentNormal);
 
-            var icon = NewImage("Icon", rt, Lift(CardBg, 0.06f));
-            TopLeft(icon.rectTransform, 20f, 20f, 68f, 68f);
+            // พอร์เทรต 8:1 ชิดซ้าย + ชื่อทับมุมซ้ายล่างของมัน — โครงเดียวกับแถวปาร์ตี้
+            // และแถวจอสรุปผล · ภาพชุดเดียวจึงใส่ได้ทั้งสามที่โดยไม่ต้อง crop ใหม่
+            var icon = PortraitWithName(rt, 20f, 12f, PortraitH, "HUNTER", 20f, out var name,
+                                        boxTint: Lift(CardBg, 0.06f));
 
-            var name = NewMono("Name", rt, "HUNTER", 22f, 0.14f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(name.rectTransform, 102f, 22f, 200f, 30f);
-
+            float belowY = 12f + PortraitH + 8f;
             var role = NewMono("Role", rt, "RANGED", 13f, 0.22f,
                                TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.45f));
-            TopLeft(role.rectTransform, 102f, 52f, 200f, 22f);
+            TopLeft(role.rectTransform, 20f, belowY, 200f, 22f);
 
             var state = NewMono("State", rt, "OWNED", 13f, 0.22f,
-                                TextAlignmentOptions.MidlineLeft, Teal);
-            TopLeft(state.rectTransform, 102f, 74f, 200f, 22f);
+                                TextAlignmentOptions.MidlineRight, Teal);
+            TopRight(state.rectTransform, 20f, belowY, 200f, 22f);
 
             var lockOverlay = NewImage("LockOverlay", rt, new Color(6 / 255f, 8 / 255f, 18 / 255f, 0.6f));
             Stretch(lockOverlay.rectTransform);

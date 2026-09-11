@@ -390,17 +390,17 @@ namespace CloneSwarm.EditorTools
             art.pivot = new Vector2(0f, 0.5f);
             art.sizeDelta = new Vector2(6f, 0f); art.anchoredPosition = Vector2.zero;
 
-            // พอร์เทรต 470×58 — แถบยาวแนวนอน ไม่ใช่จัตุรัส (handoff เน้นข้อนี้)
-            var port = NewImage("Portrait", rt, new Color(1f, 1f, 1f, 0.07f));
-            TopLeft(port.rectTransform, 22f, 18f, 470f, 58f);
+            // พอร์เทรต 8:1 — แถบยาวแนวนอน ไม่ใช่จัตุรัส (handoff เน้นข้อนี้)
+            // 58 × 8 = 464 ใกล้ 470 ที่ handoff เขียนไว้ · ใช้ค่าที่หารลงตัวเพื่อให้
+            // ทุกที่ในเกมใช้อัตราส่วนเดียวกันเป๊ะ ภาพชุดเดียวจึงใส่ได้หมด
+            const float PortH = 58f;
+            var port = P3RBuilderKit.PortraitWithName(rt, 22f, 18f, PortH, "Riven", 28f, out var name);
 
-            var name = NewText("Name", rt, "Riven", 28f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(name.rectTransform, 512f, 16f, 260f, 36f);
-
+            float subX = 22f + PortH * P3RBuilderKit.PortraitAspect + 26f;
             var sub = NewText("Sub", rt, "P1 · HOST", 15f, TextAlignmentOptions.MidlineLeft);
             Mono(sub, 0.16f);
             sub.color = new Color(1f, 1f, 1f, 0.6f);
-            TopLeft(sub.rectTransform, 512f, 54f, 260f, 24f);
+            TopLeft(sub.rectTransform, subX, 36f, 260f, 24f);
 
             var row = rt.gameObject.AddComponent<ResultPartyRowUI>();
             row.accentBar = accent; row.portrait = port;
@@ -434,20 +434,13 @@ namespace CloneSwarm.EditorTools
             return SavePrefab(rt.gameObject, RewardPrefab).GetComponent<RewardLineUI>();
         }
 
-        /// <summary>เซฟแม่แบบเป็น prefab asset แล้วลบตัวในซีนทิ้ง — ซีนจะได้ไม่มีของค้าง</summary>
+        /// <summary>
+        /// เรียกตัวของ kit — **ห้ามเขียนเองซ้ำ** ตัวของ kit มีตัวกันไม่ให้ทับงานที่แก้ด้วยมือ
+        /// สำเนาที่เคยอยู่ตรงนี้ไม่มีตัวกัน ResultPartyRow กับ RewardLine จึงยังโดนทับได้
+        /// ทั้งที่ prefab ตัวอื่นปลอดภัยแล้ว — เป็นกับดักแบบเดียวกับที่ P3RBuilderKit เกิดมาแก้
+        /// </summary>
         private static GameObject SavePrefab(GameObject template, string path)
-        {
-            // ต้องสร้างผ่าน AssetDatabase ไม่ใช่ Directory.CreateDirectory
-            // ไม่งั้นโฟลเดอร์ยังไม่มี .meta ตอน SaveAsPrefabAsset แล้วเซฟไม่ลง
-            if (!AssetDatabase.IsValidFolder("Assets/Prefab/UI"))
-                AssetDatabase.CreateFolder("Assets/Prefab", "UI");
-            if (!AssetDatabase.IsValidFolder(PrefabDir))
-                AssetDatabase.CreateFolder("Assets/Prefab/UI", "P3R");
-
-            var asset = PrefabUtility.SaveAsPrefabAsset(template, path);
-            Object.DestroyImmediate(template);
-            return asset;
-        }
+            => P3RBuilderKit.SavePrefab(template, path);
 
         /// <summary>วางตัวอย่างในซีนให้ดูเหมือน mockup — ตอนรันโค้ดล้างทิ้งแล้วสร้างใหม่จากข้อมูลจริง</summary>
         private static void SpawnSample<T>(T prefab, RectTransform parent, System.Action<T> bind)

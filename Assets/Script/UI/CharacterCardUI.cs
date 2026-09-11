@@ -31,8 +31,6 @@ public class CharacterCardUI : MonoBehaviour
     public GameObject      lockOverlay;
     [Tooltip("ข้อความราคาบน overlay เช่น \"1,000 G\"")]
     public TextMeshProUGUI lockCostText;
-    [Tooltip("สีไอคอนตอนล็อก — ทำให้เป็นเงาดำ")]
-    public Color           lockedIconTint = new Color(0.12f, 0.12f, 0.14f, 1f);
 
     private Color selectedColor = new Color(0.3f, 0.7f, 1f);
     private Color normalColor   = new Color(0.2f, 0.2f, 0.25f, 1f);
@@ -96,9 +94,10 @@ public class CharacterCardUI : MonoBehaviour
         if (lockOverlay  != null) lockOverlay.SetActive(locked);
         if (lockCostText != null) lockCostText.text = locked ? $"{cost:N0} G" : "";
 
-        // ถ้าไม่มี overlay prefab ก็ยังเห็นความต่างได้จากไอคอนที่มืดลง
-        if (iconImage != null)
-            iconImage.color = locked ? lockedIconTint : Color.white;
+        // **ไม่ย้อมภาพตัวละคร** — สีของ Image คูณเข้ากับพิกเซลของ sprite
+        // ภาพที่ถูกย้อมคือภาพที่ไม่ตรงกับที่คนวาดส่งมา · ความต่างตอนล็อกมาจาก
+        // lockOverlay ซึ่งเป็นแผ่นทึบทับทั้งใบอยู่แล้ว ไม่ต้องแตะตัวภาพ
+        if (iconImage != null) iconImage.color = Color.white;
     }
 
 }

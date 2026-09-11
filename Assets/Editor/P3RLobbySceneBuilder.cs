@@ -33,8 +33,9 @@ namespace CloneSwarm.EditorTools
         private const float ColW     = (RefW - PadX * 2f - ColGap) * 0.5f;   // 880
 
         // รูปในแถวปาร์ตี้ — แถวสูง 86 เหลือขอบบนล่างข้างละ 12
-        private const float PortraitSize = 62f;
-        private const float PortraitPad  = 12f;
+        // 8:1 — กว้าง = PortraitH * 8 = 448 · แถวกว้าง 824 เหลือ 346 ให้คอลัมน์ขวา
+        private const float PortraitH   = 56f;
+        private const float PortraitPad = 15f;
 
         private static readonly Color TopBar   = new Color32(0x08, 0x0B, 0x18, 0xFF);
         private static readonly Color PanelBg  = new Color32(0x0D, 0x12, 0x26, 0xFF);
@@ -469,32 +470,25 @@ namespace CloneSwarm.EditorTools
             var filled = NewRect("Filled", rt);
             Stretch(filled);
 
-            // ── รูปตัวละคร ──────────────────────────────────────────────────
-            // กรอบทึบจางคาไว้เสมอ ส่วน Image ข้างในปิดเมื่อไม่มีรูป — ตัวละครหลายตัว
-            // ยังไม่มีทั้ง icon และ portrait · ปล่อยให้ Image เปล่าโชว์จะได้สี่เหลี่ยมสีตัน
-            var faceBox = NewImage("PortraitBox", filled, Lift(RowBg, 0.06f));
-            TopLeft(faceBox.rectTransform, 20f, PortraitPad, PortraitSize, PortraitSize);
+            // ── พอร์เทรต 8:1 ชิดซ้าย + ชื่อทับมุมซ้ายล่าง ──────────────────
+            var face = PortraitWithName(filled, 14f, PortraitPad, PortraitH, "RIVEN", 24f,
+                                        out var name, boxTint: Lift(RowBg, 0.06f));
 
-            var face = NewImage("Portrait", faceBox.rectTransform, Color.white);
-            Stretch(face.rectTransform);
-            face.preserveAspect = true;
-            face.enabled = false;
+            float textX = 14f + PortraitH * PortraitAspect + 16f;
 
-            float textX = 20f + PortraitSize + 16f;   // 98
-
+            // ป้ายนี้จะกลายเป็น **ชื่อผู้เล่น** เมื่อมีที่เก็บชื่อบนเน็ตเวิร์ก
+            // ตอนนี้ยังไม่มี จึงโชว์ PLAYER n ไปก่อน — LobbyPartyRowUI.Bind รับชื่อมาทับได้แล้ว
             var slot = NewMono("Slot", filled, "PLAYER 1", 14f, 0.26f,
                                TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.5f));
-            TopLeft(slot.rectTransform, textX, 16f, 220f, 22f);
+            TopLeft(slot.rectTransform, textX, 16f, 170f, 22f);
 
-            var hostBadge  = Badge(filled, "HostBadge", "HOST", textX + 210f, Gold);
-            var youBadge   = Badge(filled, "YouBadge",  "YOU",  textX + 290f, Teal);
-
-            var name = NewText("Name", filled, "RIVEN", 26f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(name.rectTransform, textX, 42f, 300f, 34f);
+            // **ไม่มีป้าย YOU แล้ว** — แถวของตัวเองดูออกจากบริบทอยู่แล้ว (มันคือแถวที่
+            // ตรงกับตัวละครในคอลัมน์ซ้าย) ป้ายเพิ่มมาแค่ทำให้แถวรก
+            var hostBadge = Badge(filled, "HostBadge", "HOST", textX + 180f, Gold);
 
             var detail = NewText("Detail", filled, "HP 120", 18f, TextAlignmentOptions.MidlineLeft,
                                  new Color(1f, 1f, 1f, 0.55f));
-            TopLeft(detail.rectTransform, textX + 306f, 46f, 240f, 28f);
+            TopLeft(detail.rectTransform, textX, 48f, 170f, 28f);
 
             var status = NewMono("Status", filled, "READY", 17f, 0.18f,
                                  TextAlignmentOptions.MidlineRight, Teal);
@@ -521,7 +515,6 @@ namespace CloneSwarm.EditorTools
             row.statusLabel  = status;
             row.portraitImage = face;
             row.hostBadge    = hostBadge;
-            row.youBadge     = youBadge;
             row.filledGroup  = filled.gameObject;
             row.emptyGroup   = empty.gameObject;
 

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using CloneSwarm.UI.P3R;
 using TMPro;
@@ -77,6 +79,61 @@ namespace CloneSwarm.EditorTools
 
         /// <summary>ยกพื้นให้สว่างขึ้นด้วยขาวจางๆ — เคสที่พบบ่อยที่สุดของ <see cref="Over"/></summary>
         public static Color Lift(Color under, float alpha) => Over(Color.white, under, alpha);
+
+        // ═══════════════════════════════════════════════════════════════════
+        // PORTRAIT
+        // ═══════════════════════════════════════════════════════════════════
+        /// <summary>
+        /// อัตราส่วนกล่องพอร์เทรตที่ใช้ทั้งเกม — **กว้าง 8 ต่อ สูง 1**
+        ///
+        /// มาจากกล่อง 470×58 ของจอสรุปผลซึ่งเป็นตัวแรกที่ออกแบบไว้ · แถวและการ์ดทุกใบ
+        /// ใช้ค่าเดียวกันเพื่อให้ภาพตัวละครที่วาดมาชุดเดียวใส่ได้ทุกที่โดยไม่ต้อง crop ใหม่
+        /// ถ้าที่ไหนใช้อัตราส่วนอื่น ภาพชุดนั้นจะยืดหรือถูกตัดเฉพาะที่นั่น
+        /// </summary>
+        public const float PortraitAspect = 8f;
+
+        /// <summary>
+        /// กล่องพอร์เทรตชิดซ้าย พร้อมชื่อทับมุม**ซ้ายล่าง**ของกล่อง
+        ///
+        /// ชื่ออยู่บนภาพ ไม่ใช่ข้างภาพ — ภาพกว้าง 8 เท่าของความสูงอยู่แล้ว วางชื่อไว้ข้างๆ
+        /// จะเหลือที่ให้ข้อมูลอื่นน้อยมาก · และการวางทับทำให้ชื่อกับหน้าตาอ่านเป็นก้อนเดียวกัน
+        ///
+        /// <paramref name="height"/> เป็นตัวกำหนดทุกอย่าง — ความกว้างคำนวณจาก
+        /// <see cref="PortraitAspect"/> ให้เอง ผู้เรียกจึงเปลี่ยนอัตราส่วนพลาดไม่ได้
+        ///
+        /// Image ของรูปปิดไว้ (<c>enabled = false</c>) จนกว่าจะมีรูปจริง — เปิดค้างแล้วจะได้
+        /// สี่เหลี่ยมสีตันเต็มกล่อง ซึ่งดูเหมือนของพังมากกว่าช่องว่างที่ตั้งใจ
+        /// </summary>
+        public static Image PortraitWithName(RectTransform parent, float x, float y, float height,
+                                             string sampleName, float nameSize,
+                                             out TextMeshProUGUI nameLabel,
+                                             Color? boxTint = null)
+        {
+            float w = height * PortraitAspect;
+
+            var box = NewImage("PortraitBox", parent, boxTint ?? new Color(1f, 1f, 1f, 0.07f));
+            TopLeft(box.rectTransform, x, y, w, height);
+
+            // **สีขาวล้วนเสมอ ห้ามย้อม** — สีของ Image คูณเข้ากับพิกเซลของ sprite
+            // ย้อมแม้แต่นิดเดียวคืองานศิลป์ออกมาไม่ตรงกับที่วาดมา และคนวาดจะไล่หาไม่เจอ
+            // ว่าสีเพี้ยนมาจากไหน · อยากให้ดูจางตอนล็อก ให้เอาแผ่นทึบมาทับ อย่าไปย้อมภาพ
+            var art = NewImage("Portrait", box.rectTransform, Color.white);
+            Stretch(art.rectTransform);
+            art.preserveAspect = true;
+            art.enabled = false;
+
+            // ชื่อเกาะมุมซ้ายล่างของ **กล่อง** ไม่ใช่ของแถว — ย้ายกล่องแล้วชื่อตามไปเอง
+            nameLabel = NewText("Name", box.rectTransform, sampleName, nameSize,
+                                TextAlignmentOptions.BottomLeft);
+            var nrt = nameLabel.rectTransform;
+            nrt.anchorMin = new Vector2(0f, 0f);
+            nrt.anchorMax = new Vector2(1f, 0f);
+            nrt.pivot     = new Vector2(0f, 0f);
+            nrt.sizeDelta = new Vector2(-24f, nameSize * 1.5f);
+            nrt.anchoredPosition = new Vector2(12f, 6f);
+
+            return art;
+        }
 
         // ═══════════════════════════════════════════════════════════════════
         // SCENE LIFECYCLE
@@ -386,9 +443,105 @@ namespace CloneSwarm.EditorTools
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets/Prefab/UI", "P3R");
 
+            if (!MayOverwritePrefab(path))
+            {
+                Object.DestroyImmediate(template);
+                return AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            }
+
             var asset = PrefabUtility.SaveAsPrefabAsset(template, path);
             Object.DestroyImmediate(template);
+            RecordPrefabHash(path);
             return asset;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // ตัวกันไม่ให้ builder ทับงานที่แก้ด้วยมือ
+        // ═══════════════════════════════════════════════════════════════════
+        //
+        // prefab พวกนี้เป็น **output ของ builder** — SavePrefab เขียนทับทุกครั้งที่รัน
+        // เคยเกิดของจริงแล้ว: แก้ CharacterCard กับ LobbyPartyRow ไว้ในเอดิเตอร์
+        // แล้วรีบิลด์ทับ · output ออกมาเหมือน commit ก่อนหน้าเป๊ะ git จึงไม่เห็น diff
+        // งานที่แก้ไว้หายโดยไม่ทิ้งร่องรอยให้กู้เลยแม้แต่ใน reflog
+        //
+        // วิธีกัน: จำ hash ของ "ไฟล์ที่ตัวเองเพิ่งเขียน" ไว้ · รอบถัดไปถ้าไฟล์บนดิสก์
+        // ไม่ตรงกับ hash นั้น แปลว่ามีคนแก้หลังจากที่ builder เขียนไป → **ไม่ทับ**
+        //
+        // จงใจไม่เทียบ "เนื้อหาที่จะเขียน" กับของเดิม — prefab renumber fileID ทุกครั้งที่เซฟ
+        // เทียบแบบนั้นจะเตือนทุกรอบจนไม่มีใครอ่าน
+
+        /// <summary>ตารางแฮช — ขึ้นต้นด้วยจุด Unity จึงไม่ import ไม่มี .meta ให้ดูแล</summary>
+        private const string HashFile = PrefabDir + "/.p3r-prefab-hashes.txt";
+
+        /// <summary>ข้าม dialog แล้วทับเลย — ใส่ -forceprefab ตอนรัน batchmode</summary>
+        private static bool ForceOverwrite =>
+            System.Environment.GetCommandLineArgs().Contains("-forceprefab");
+
+        private static bool MayOverwritePrefab(string path)
+        {
+            if (!File.Exists(path)) return true;              // ยังไม่มี = เขียนได้เลย
+            if (ForceOverwrite) return true;
+
+            string recorded = ReadRecordedHash(path);
+            if (string.IsNullOrEmpty(recorded)) return true;  // ไม่เคยจดไว้ = ตัดสินไม่ได้ ปล่อยผ่าน
+            if (recorded == FileHash(path)) return true;      // ตรง = ของ builder ล้วน
+
+            string msg =
+                $"'{Path.GetFileName(path)}' ถูกแก้หลังจาก builder เขียนครั้งล่าสุด\n\n" +
+                "เขียนทับ = งานที่แก้ไว้หายถาวร กู้จาก git ไม่ได้ ถ้ายังไม่ commit\n\n" +
+                "ทางที่ถูกคือย้ายค่าที่แก้ไปไว้ในโค้ด builder แล้วค่อยรีบิลด์";
+
+            if (Application.isBatchMode)
+            {
+                Debug.LogError($"[P3R] ไม่เขียนทับ {path} — {msg}\n" +
+                               "ยืนยันว่าจะทับจริงให้ใส่ -forceprefab");
+                return false;
+            }
+
+            bool overwrite = EditorUtility.DisplayDialog(
+                "prefab ถูกแก้ด้วยมือ", msg, "ทับเลย (งานที่แก้หาย)", "ไม่ทับ");
+            if (!overwrite)
+                Debug.LogWarning($"[P3R] ข้าม {path} ไว้ตามเดิม — prefab นี้ยังเป็นของที่แก้ด้วยมือ " +
+                                 "ส่วนที่เหลือของจอถูกสร้างใหม่ตามปกติ",
+                                 AssetDatabase.LoadAssetAtPath<GameObject>(path));
+            return overwrite;
+        }
+
+        private static string FileHash(string path)
+        {
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            return System.Convert.ToBase64String(md5.ComputeHash(File.ReadAllBytes(path)));
+        }
+
+        private static Dictionary<string, string> ReadHashTable()
+        {
+            var table = new Dictionary<string, string>();
+            if (!File.Exists(HashFile)) return table;
+            foreach (var line in File.ReadAllLines(HashFile))
+            {
+                int bar = line.IndexOf('|');
+                if (bar > 0) table[line.Substring(0, bar)] = line.Substring(bar + 1);
+            }
+            return table;
+        }
+
+        private static string ReadRecordedHash(string path)
+            => ReadHashTable().TryGetValue(path, out var h) ? h : null;
+
+        private static void RecordPrefabHash(string path)
+        {
+            // ต้องอ่านไฟล์ **หลัง** SaveAsPrefabAsset เขียนเสร็จ — จดแฮชของสิ่งที่อยู่บนดิสก์จริง
+            // ไม่ใช่ของสิ่งที่ตั้งใจจะเขียน ไม่งั้นรอบหน้าจะไม่ตรงแล้วเตือนผิดทุกครั้ง
+            if (!File.Exists(path)) return;
+            var table = ReadHashTable();
+            table[path] = FileHash(path);
+
+            var sb = new System.Text.StringBuilder(
+                "# แฮชของ prefab ที่ P3R builder เขียนไว้ล่าสุด — ห้ามแก้ด้วยมือ" + System.Environment.NewLine +
+                "# ไฟล์ไหนแฮชไม่ตรง แปลว่ามีคนแก้หลัง builder เขียน SavePrefab จะไม่ทับให้" + System.Environment.NewLine);
+            foreach (var kv in table.OrderBy(k => k.Key))
+                sb.AppendLine($"{kv.Key}|{kv.Value}");
+            File.WriteAllText(HashFile, sb.ToString());
         }
 
         /// <summary>วางตัวอย่างในซีนให้ดูเหมือน mockup — ตอนรันโค้ดจริงล้างทิ้งแล้วสร้างใหม่</summary>
