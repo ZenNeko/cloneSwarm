@@ -162,13 +162,17 @@ namespace CloneSwarm.EditorTools
                     case 15: JumpTab("map", "P3R_MapSelect"); break;
                     case 16: Verify(); CheckMapSelect(); break;
 
-                    case 17: CheckStartRunGate(); break;
+                    // ต้องกลับแท็บ LOBBY ก่อน — ปุ่ม READY/START RUN อยู่ใน P3R_Lobby
+                    // และ LobbyUI ก็อยู่บน panel เดียวกัน · อยู่แท็บอื่น = มันถูกปิด
+                    // แล้ว OnDisable ถอด LobbyState.OnLobbyChanged ออกไปแล้ว
+                    case 17: JumpTab("lobby", "P3R_Lobby"); break;
+                    case 18: Verify(); CheckStartRunGate(); break;
 
                     // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
-                    case 18: GoToGameScene(); break;
-                    case 19: CheckInGameScreens(); break;
+                    case 19: GoToGameScene(); break;
+                    case 20: CheckInGameScreens(); break;
 
-                    case 20: Report(); break;
+                    case 21: Report(); break;
                 }
             }
 
@@ -623,6 +627,16 @@ namespace CloneSwarm.EditorTools
                     return;
                 }
 
+                // ปุ่มสองตัวนี้อยู่ใน P3R_Lobby เหมือนกับ LobbyUI เอง · อยู่แท็บอื่นแปลว่า
+                // LobbyUI ถูกปิดและถอด LobbyState.OnLobbyChanged ไปแล้ว กดได้แต่จอไม่อัปเดต
+                // ผู้เล่นจริงเข้าสถานะนี้ไม่ได้ (ปุ่มถูกซ่อนไปด้วย) — ถ้าเช็คนี้ตก แปลว่า
+                // ลำดับขั้นในเทสต์ถูกสลับ ไม่ใช่เกมพัง
+                if (!lobby.isActiveAndEnabled)
+                {
+                    Require(false, "อยู่แท็บ LOBBY ตอนตรวจปุ่ม START RUN (LobbyUI ต้องเปิดอยู่)");
+                    return;
+                }
+
                 bool allReady = LobbyState.Instance != null && LobbyState.Instance.AllReady();
                 Require(lobby.startRunButton.interactable == allReady,
                         $"START RUN เปิด/ปิดตรงกับสถานะ ready จริง (ปุ่ม " +
@@ -634,8 +648,35 @@ namespace CloneSwarm.EditorTools
                           ok =>
                           {
                               Require(ok, "กด READY แล้ว START RUN กดได้" + (ok ? "" : " — หมดเวลารอ"));
+                              if (!ok) lines.Add($"        └ {DiagnoseReadyGate(lobby)}");
                               CheckLoadingCoversLobby(mm);
                           });
+            }
+
+            /// <summary>
+            /// ปุ่มไม่เปิดแล้วต้องรู้ว่าติดข้อไหน — เงื่อนไขมีสามชั้น (host · ready ครบ · ไม่ได้กดไปแล้ว)
+            /// บอกแค่ "หมดเวลารอ" แปลว่าต้องมานั่งเดาทีละชั้นทุกครั้ง
+            /// </summary>
+            private static string DiagnoseReadyGate(LobbyUI lobby)
+            {
+                var ls = LobbyState.Instance;
+                if (ls == null) return "LobbyState.Instance เป็น null — ล็อบบี้ยังไม่ถูก spawn บนเน็ตเวิร์ก";
+
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                var sb = new StringBuilder();
+                sb.Append($"IsHost={lobby.IsHost}");
+                sb.Append($" · NGO IsHost={(nm != null && nm.IsHost)}");
+                sb.Append($" · LocalClientId={(nm != null ? nm.LocalClientId.ToString() : "?")}");
+                sb.Append($" · AllReady={ls.AllReady()}");
+                sb.Append($" · ผู้เล่น {ls.Players.Count} คน [");
+                for (int i = 0; i < ls.Players.Count; i++)
+                {
+                    var e = ls.Players[i];
+                    if (i > 0) sb.Append(", ");
+                    sb.Append($"id={e.clientId} ready={e.ready} ตัวละคร='{e.characterName}'");
+                }
+                sb.Append(']');
+                return sb.ToString();
             }
 
             /// <summary>
