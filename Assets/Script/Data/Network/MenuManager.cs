@@ -61,8 +61,9 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Loading ─────────────────────────────")]
     public TextMeshProUGUI loadingText;
-    [Tooltip("ชื่อ Game Scene ใน Build Settings")]
-    public string          gameSceneName = "SampleScene";
+    [Tooltip("จอโหลดสไตล์ P3R บน loadingPanel — ปล่อยว่างได้ จะเหลือแค่ loadingText แบบเดิม\n" +
+             "P3RScreenWirer เติมช่องนี้ให้เองเพราะ LoadingScreenUI อยู่ในรายชื่อตัวคุมจอ")]
+    public CloneSwarm.UI.P3R.LoadingScreenUI loadingScreenUI;
 
     // ═══════════════════════════════════════════════════════════════════════
     // LIFECYCLE
@@ -77,6 +78,7 @@ public class MenuManager : MonoBehaviour
         CloneSwarm.Meta.MetaProgression.OnGoldChanged += HandleGoldChanged;
         SettingsMenuUI.OnBack                         += ShowMain;
         LobbyUI.OnBack                                += ShowMain;
+        LobbyUI.OnRunStarting                          += ShowLoading;
         JoinRoomPanel.OnJoined                         += HandleJoined;
         JoinRoomPanel.OnJoinFailed                     += HandleJoinFailed;
         GameSessionManager.OnSessionJoined             += HandleSessionJoined;
@@ -87,6 +89,7 @@ public class MenuManager : MonoBehaviour
         CloneSwarm.Meta.MetaProgression.OnGoldChanged -= HandleGoldChanged;
         SettingsMenuUI.OnBack                         -= ShowMain;
         LobbyUI.OnBack                                -= ShowMain;
+        LobbyUI.OnRunStarting                          -= ShowLoading;
         JoinRoomPanel.OnJoined                         -= HandleJoined;
         JoinRoomPanel.OnJoinFailed                     -= HandleJoinFailed;
         GameSessionManager.OnSessionJoined             -= HandleSessionJoined;
@@ -152,6 +155,33 @@ public class MenuManager : MonoBehaviour
     public void ShowMain()
     {
         ShowPanel(mainPanel);
+    }
+
+    /// <summary>
+    /// คลุมช่วงรอยต่อระหว่างกด START RUN กับซีนเกมโผล่
+    ///
+    /// **จอนี้เคยถูกสร้าง ย้าย และต่อสายครบ แต่ไม่มีบรรทัดไหนเปิดมันเลย** — `loadingPanel`
+    /// ถูกอ้างถึงสามที่และทั้งสามที่คือการปิด · ผู้เล่นจึงมองล็อบบี้ค้างอยู่ตลอดช่วงโหลด
+    /// ซึ่งแยกไม่ออกจาก "กดแล้วไม่มีอะไรเกิดขึ้น"
+    ///
+    /// `NetworkManager.SceneManager.LoadScene` ใช้ `LoadSceneMode.Single` ทั้ง MenuScene
+    /// จะถูกทิ้งอยู่แล้ว จอนี้จึงไม่ต้องมีใครสั่งปิด — มันหายไปพร้อมซีน
+    /// แถบความคืบหน้าเป็นแบบกวาด เพราะ NGO รายงานเป็นช่วงๆ ไม่มีค่าต่อเนื่องให้ดึง
+    /// (ดูเหตุผลเต็มใน <see cref="CloneSwarm.UI.P3R.LoadingScreenUI"/>)
+    /// </summary>
+    public void ShowLoading(MapData map, DifficultyTier tier)
+    {
+        ShowPanel(loadingPanel);
+
+        if (loadingScreenUI != null)
+        {
+            loadingScreenUI.SetContext(map != null ? map.DisplayName : "", tier.ToString());
+            loadingScreenUI.SetArt(map != null ? map.previewImage : null);
+        }
+
+        // ป้ายเดิมของ MenuManager — ซีนที่ยังไม่ได้ต่อ LoadingScreenUI ยังได้ข้อความบอกสถานะ
+        if (loadingText != null)
+            loadingText.text = map != null ? $"กำลังโหลด {map.DisplayName}…" : "กำลังโหลด…";
     }
 
     /// <summary>

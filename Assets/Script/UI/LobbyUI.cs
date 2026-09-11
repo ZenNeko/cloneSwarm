@@ -15,6 +15,13 @@ public class LobbyUI : MonoBehaviour
     /// <summary>ยิงเมื่อออกจากล็อบบี้เรียบร้อยแล้ว — MenuManager subscribe เพื่อกลับหน้า Main</summary>
     public static event System.Action OnBack;
 
+    /// <summary>
+    /// ยิงเมื่อ server **รับคำสั่งโหลดซีนไปแล้วจริง** — MenuManager เอาไปเปิดจอโหลด
+    /// ยิงหลัง <c>StartGame()</c> คืน true เท่านั้น · รอบที่มันปฏิเสธจะไม่ยิง
+    /// ไม่งั้นจอโหลดจะขึ้นคลุมล็อบบี้ค้างไว้ทั้งที่ไม่มีซีนไหนกำลังโหลด
+    /// </summary>
+    public static event System.Action<MapData, DifficultyTier> OnRunStarting;
+
     [Header("TabBar & Maps")]
     public TabBar tabBar;
     public List<MapData> maps = new();
@@ -104,6 +111,10 @@ public class LobbyUI : MonoBehaviour
     /// </summary>
     public HubMode Mode => mode;
     private Coroutine copyFeedbackRoutine;
+    private Coroutine busyFlashRoutine;
+
+    /// <summary>กด START RUN ไปแล้วและ server รับคำสั่งแล้ว — กันกดซ้ำจนกว่าซีนจะสลับ</summary>
+    private bool startRequested;
 
     private void Start()
     {
@@ -298,14 +309,61 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ประตูเข้าเกม — คลิกเดียวที่ทุกเซสชันต้องผ่าน
+    ///
+    /// เดิมทิ้งค่าคืนของ <c>StartGame()</c> ทั้งที่ doc ของมันเขียนไว้เองว่าผู้เรียกต้องเอาไป
+    /// คืนสถานะปุ่ม · รอบที่มันปฏิเสธ (ไม่ใช่ host / NGO ยังไม่ start) จึงเงียบสนิท
+    /// ไม่มีทั้งข้อความและการเปลี่ยนแปลงบนจอ แยกไม่ออกจาก "ปุ่มเสีย"
+    ///
+    /// <c>LoadScene</c> เป็น async ปุ่มยังรับคลิกได้จนกว่าซีนจะสลับจริง — `startRequested`
+    /// กันกดซ้ำ และ <see cref="Refresh"/> ต้องเคารพมันด้วย ไม่งั้นรอบที่ LobbyState เปลี่ยน
+    /// จะเปิดปุ่มคืนให้เอง (เส้นทางเดียวกับที่ WinLoseUI กันไว้แล้วตอนกด Play Again)
+    /// </summary>
     private void OnStartRunClicked()
     {
+        if (startRequested) return;
+
+        var gsm = GameSessionManager.Instance;
+        if (gsm == null)
+        {
+            FlashBusy("ยังไม่มีเซสชัน — เริ่มรันไม่ได้");
+            return;
+        }
+
         MapData selectedMap = RunSetup.Map;
         string sceneName = selectedMap != null ? selectedMap.sceneName : "SampleScene";
-        if (GameSessionManager.Instance != null)
+
+        startRequested = true;
+        if (startRunButton != null) startRunButton.interactable = false;
+
+        if (!gsm.StartGame(sceneName))
         {
-            GameSessionManager.Instance.StartGame(sceneName);
+            startRequested = false;
+            if (startRunButton != null) startRunButton.interactable = true;
+            FlashBusy("เริ่มรันไม่ได้ — ดูรายละเอียดใน Console");
+            return;
         }
+
+        OnRunStarting?.Invoke(selectedMap, RunSetup.Difficulty);
+    }
+
+    /// <summary>
+    /// ข้อความแจ้งเตือนสั้นๆ แล้วเก็บเอง — ต่างจาก <see cref="ShowBusy"/> ที่คลุมค้างไว้
+    /// จนกว่างาน async จะจบ · ที่นี่ไม่มีงานให้รอ ถ้าไม่เก็บเองมันจะบังจอถาวร
+    /// </summary>
+    private void FlashBusy(string msg)
+    {
+        ShowBusy(msg);
+        if (busyFlashRoutine != null) StopCoroutine(busyFlashRoutine);
+        busyFlashRoutine = StartCoroutine(HideBusyAfter(2.5f));
+    }
+
+    private IEnumerator HideBusyAfter(float seconds)
+    {
+        yield return new WaitForSecondsRealtime(seconds);
+        HideBusy();
+        busyFlashRoutine = null;
     }
 
     private async void OnBackClicked()
@@ -552,7 +610,11 @@ public class LobbyUI : MonoBehaviour
 
         if (startRunButton != null)
         {
-            startRunButton.interactable = isHost && LobbyState.Instance.AllReady();
+            // `!startRequested` ต้องมาก่อน — Refresh() วิ่งทุกครั้งที่ LobbyState เปลี่ยน
+            // ถ้าไม่เคารพธงนี้ ปุ่มจะถูกเปิดคืนระหว่างที่ซีนกำลังโหลด แล้วกดซ้ำได้
+            startRunButton.interactable = !startRequested
+                                       && isHost
+                                       && LobbyState.Instance.AllReady();
         }
     }
 

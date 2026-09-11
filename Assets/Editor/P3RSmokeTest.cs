@@ -162,11 +162,13 @@ namespace CloneSwarm.EditorTools
                     case 15: JumpTab("map", "P3R_MapSelect"); break;
                     case 16: Verify(); CheckMapSelect(); break;
 
-                    // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
-                    case 17: GoToGameScene(); break;
-                    case 18: CheckInGameScreens(); break;
+                    case 17: CheckStartRunGate(); break;
 
-                    case 19: Report(); break;
+                    // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
+                    case 18: GoToGameScene(); break;
+                    case 19: CheckInGameScreens(); break;
+
+                    case 20: Report(); break;
                 }
             }
 
@@ -586,6 +588,67 @@ namespace CloneSwarm.EditorTools
 
                 WaitUntil(() => nm.IsListening,
                           ok => Require(ok, "StartHost ขึ้นแล้ว (IsListening)" + (ok ? "" : " — หมดเวลารอ")));
+            }
+
+            /// <summary>
+            /// ประตูเข้าเกม — จอโหลดต่อสายครบไหม และปุ่ม START RUN เปิดตรงกับสถานะ ready ไหม
+            ///
+            /// จอ LOADING เคยถูกสร้าง ย้าย และต่อสายครบ แต่ **ไม่มีบรรทัดไหนเปิดมันเลย**
+            /// `MenuManager.loadingPanel` ถูกอ้างถึงสามที่และทั้งสามที่คือการปิด
+            /// ไม่มีชั้นไหนจับได้ — ภาพก็ถูก (จอต้นแบบเรนเดอร์สวย) โครงสร้างก็ถูก (สายครบ)
+            /// สิ่งที่ผิดคือ "ไม่มีใครเรียก" ซึ่งเห็นได้ตอนรันเท่านั้น
+            ///
+            /// **ครอบแค่ไหน** — พิสูจน์ว่าจอโหลดเปิดได้จริงและคลุมล็อบบี้ · ไม่ได้พิสูจน์ว่า
+            /// การกด START RUN จริงพาไปถึงมัน เพราะเส้นทางนั้นเรียก
+            /// `NetworkManager.SceneManager.LoadScene` ซึ่งพาออกจากซีนเมนูไปเลย
+            /// เส้นทางเต็มยังต้องเทสต์ด้วยมือ และสองเครื่องยังไม่ถูกครอบอยู่ดี
+            /// </summary>
+            private void CheckStartRunGate()
+            {
+                var mm    = FindAnyObjectByType<MenuManager>(FindObjectsInactive.Include);
+                var lobby = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
+                if (mm == null || lobby == null)
+                {
+                    Require(false, "หา MenuManager กับ LobbyUI เจอ");
+                    return;
+                }
+
+                Require(mm.loadingPanel != null,                 "MenuManager.loadingPanel ต่อไว้แล้ว");
+                Require(mm.loadingPanel == Find("P3R_Loading"),  "loadingPanel ชี้ P3R_Loading ตัวจริง");
+                Require(mm.loadingScreenUI != null,              "MenuManager.loadingScreenUI ต่อไว้แล้ว");
+
+                if (lobby.startRunButton == null || lobby.readyButton == null)
+                {
+                    Require(false, "startRunButton กับ readyButton ต่อไว้");
+                    return;
+                }
+
+                bool allReady = LobbyState.Instance != null && LobbyState.Instance.AllReady();
+                Require(lobby.startRunButton.interactable == allReady,
+                        $"START RUN เปิด/ปิดตรงกับสถานะ ready จริง (ปุ่ม " +
+                        $"{(lobby.startRunButton.interactable ? "เปิด" : "ปิด")} · AllReady {allReady})");
+
+                // กด READY จริงผ่านปุ่ม — SetReadyServerRpc ไปกลับใช้เวลา จึงรอเงื่อนไข ไม่รอเวลา
+                lobby.readyButton.onClick.Invoke();
+                WaitUntil(() => lobby.startRunButton.interactable,
+                          ok =>
+                          {
+                              Require(ok, "กด READY แล้ว START RUN กดได้" + (ok ? "" : " — หมดเวลารอ"));
+                              CheckLoadingCoversLobby(mm);
+                          });
+            }
+
+            /// <summary>
+            /// จอโหลดต้อง **คลุม** ล็อบบี้ ไม่ใช่แค่เปิดขึ้นมาซ้อน — `ShowPanel` ปิดตัวที่เหลือ
+            /// ให้อยู่แล้ว แต่ panel ที่ไม่ได้อยู่ในกลุ่มนั้นจะรอดมาทับกัน (บั๊กเดียวกับจอไตเติล)
+            /// </summary>
+            private void CheckLoadingCoversLobby(MenuManager mm)
+            {
+                mm.ShowLoading(RunSetup.Map, RunSetup.Difficulty);
+                Require(Find("P3R_Loading")?.activeInHierarchy == true, "ShowLoading() เปิดจอโหลดจริง");
+                Require(Find("P3R_Hub")?.activeInHierarchy != true,     "จอโหลดคลุมล็อบบี้ (P3R_Hub ปิด)");
+
+                mm.ShowMain();   // คืนสถานะ ไม่ให้ขั้นถัดไปเริ่มจากจอโหลดค้าง
             }
 
             /// <summary>
