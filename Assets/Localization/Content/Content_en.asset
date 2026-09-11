@@ -366,6 +366,346 @@ MonoBehaviour:
     m_Localized: Second Chance
     m_Metadata:
       m_Items: []
+  - m_Id: 2627750141952
+    m_Localized: "Fusion of Blunderbuss + Splitter Bomb \u2014 fires a spread of explosive shot, and enemies killed burst into more bombs."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627754336257
+    m_Localized: "Fusion of Blade Storm + Chainsaw \u2014 alternates between spinning slashes all around you and a double strike straight ahead."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530561
+    m_Localized: "Fusion of Magnum + Star Ring \u2014 orbs circle you and also fire shots at the nearest enemy."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530563
+    m_Localized: "Fusion of Stormcaller + Railgun \u2014 a piercing beam that chains lightning outward and leaves electric fields along its path."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530565
+    m_Localized: "Dash, then strike all around you in a full 360. Uses a charge gauge instead of a cooldown \u00B7 part of the damage dealt becomes a shield."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530567
+    m_Localized: A single handgun. Fast firing, aims with the mouse.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530569
+    m_Localized: Fires a straight beam that hits every enemy in its path.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530571
+    m_Localized: "Evolved form of Bunny Hop \u2014 the second dash strikes twice in a row."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530573
+    m_Localized: Every 30 enemies killed, briefly grants yourself extra move speed and reduced cooldowns.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530575
+    m_Localized: Every 50 hits landed, every weapon you carry fires at once.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530577
+    m_Localized: "Evolved form of Dual Slash \u2014 three rapid wide sweeps, alternating front-back-front."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530579
+    m_Localized: "Evolved form of Shotgun \u2014 the pellets burst in a blast on impact."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530581
+    m_Localized: "Evolved form of Radiant Aura \u2014 a wider field, and enemies that die inside it explode onto their own kind."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530583
+    m_Localized: "Evolved form of the handgun \u2014 fires in bursts, far stronger and far faster than before."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530585
+    m_Localized: "Evolved form of Molotov \u2014 a giant blast that leaves a wide pool of fire burning in the field."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530587
+    m_Localized: "Evolved form of Laser \u2014 an instant piercing beam across the screen that also benefits from Projectile count."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530589
+    m_Localized: "Evolved form of Vortex \u2014 fire and ice streams spiral in turn; the ice stream slows and freezes enemies."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627758530591
+    m_Localized: "Evolved form of Spike \u2014 on bouncing off a wall it splits into two spikes flying out at an angle."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724865
+    m_Localized: "Evolved form of Grenade \u2014 drops several bombs around you, each splitting into smaller ones."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724867
+    m_Localized: "Evolved form of Orbiter \u2014 orbs circle in two nested rings, covering the space around you far more tightly."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724869
+    m_Localized: "Evolved form of Lightning Chain \u2014 chains further, and leaves a lightning field on every target."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724871
+    m_Localized: "Evolved form of Big AoE \u2014 a giant blast that upgrades EXP lying in the area and briefly boosts the whole team damage."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724873
+    m_Localized: "Evolved form of Big Cannon \u2014 a bigger, stronger shell that pierces deeper than before."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724875
+    m_Localized: "Evolved form of Fence \u2014 every nearby post links to every other, forming an electric web."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724877
+    m_Localized: "Evolved form of Magic Missile \u2014 fires faster, with a chance to freeze whatever it hits."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724879
+    m_Localized: "Evolved form of Orbital Strike \u2014 the warning ring pulls enemies toward its centre, followed by several more blasts."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724881
+    m_Localized: "Evolved form of Support Arena \u2014 stronger buffs across the board, and overhealed HP becomes a shield."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724883
+    m_Localized: "Evolved form of Lance \u2014 the main tendril stabs forward, then branches out in every direction."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724885
+    m_Localized: "Evolved form of Boomerang \u2014 throws three at once, each bursting when it flies back into your hand."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724887
+    m_Localized: Charges for a moment, then detonates a very wide area around you. High damage, long cooldown.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724889
+    m_Localized: Fires a large shell that pierces a line of enemies, auto-aimed at the nearest target.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724891
+    m_Localized: Throws a projectile at a nearby enemy, then it flies back to you.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724893
+    m_Localized: Slashes twice in the direction you are facing.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724895
+    m_Localized: Drops posts along your path and strings lasers between them, burning enemies that cross.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724897
+    m_Localized: Throws a grenade.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724899
+    m_Localized: Stabs a long tendril straight ahead. At max level it knocks enemies back.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724901
+    m_Localized: Strikes the enemy with the most HP, then chains onward from target to target.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724903
+    m_Localized: Fires homing bolts that chase enemies and slow whatever they hit.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724905
+    m_Localized: Throws a firebomb that leaves a burning patch, damaging enemies standing in it over time.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724907
+    m_Localized: Calls a beam down on an enemy position, with a warning ring on the ground before impact.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724909
+    m_Localized: Summons orbs that circle you, damaging enemies they touch.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724911
+    m_Localized: Damages enemies around you.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724913
+    m_Localized: Fires a spread of pellets in the aimed direction. The closer you are, the more of them land.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724915
+    m_Localized: Fires a spike that pierces enemies and ricochets off walls to keep going.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724917
+    m_Localized: Plants a post that creates a support zone. Allies standing inside gain damage, speed and health.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627762724919
+    m_Localized: Sprays streams of flame spiralling around you; the number of streams grows with level.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165377
+    m_Localized: Fire a huge rocket toward the cursor that bursts on impact. The lower your own HP, the more damage it deals (up to 3x).
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165379
+    m_Localized: "Enter Rocket Mode briefly \u2014 your main gun fires Sticky Rockets for the duration."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165381
+    m_Localized: Launch 5 homing missiles at the 5 nearest enemies, each bursting on arrival.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165383
+    m_Localized: Release a swarm of Funnels that fight alongside you and clear out enemies.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165385
+    m_Localized: "Enter Exile Mode \u2014 move 50% faster and build charge twice as fast for the duration."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627880165387
+    m_Localized: Leap toward the aim direction and slam down on landing, damaging and stunning enemies in the blast for 2 seconds.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411585
+    m_Localized: A gunslinger who excels with ranged weapons.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411586
+    m_Localized: Every 30 enemies killed grants +50% Move Speed and +50 Ability Haste for 10 seconds.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411588
+    m_Localized: A swift hunter built for the chase. Fights mainly with the Laser.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411589
+    m_Localized: After dealing a set amount of damage, every equipped weapon fires again immediately.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411591
+    m_Localized: "A blade fighter \u2014 builds CHARGE while moving, then Dash + Slash."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2627993411593
+    m_Localized: Dash every 20 units travelled. Deals +0-15% damage based on distance, and gains a Shield worth 25% of the damage dealt.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098305
+    m_Localized: Reduces cooldowns (Haste Formula) +10/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098307
+    m_Localized: Increases radius/range of every weapon +5%/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098309
+    m_Localized: +8 Armor, reduces damage taken/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098311
+    m_Localized: Critical hit chance +10%/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098313
+    m_Localized: Increases damage of every weapon +10%/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628224098315
+    m_Localized: Increases Duration +12%/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628299595777
+    m_Localized: Gain 25 Gold at max level (Full Build Bonus)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761601
+    m_Localized: Heal 25% HP at max level (Full Build Bonus)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761603
+    m_Localized: Regenerate +2 HP/second per lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761605
+    m_Localized: +150 Max HP/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761607
+    m_Localized: +5% Move Speed/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761609
+    m_Localized: +35% EXP pickup radius/lv
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628324761611
+    m_Localized: Increases Projectile count for every weapon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950849
+    m_Localized: AoE size / attack range +4% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950851
+    m_Localized: Permanently reduces damage taken +3 per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950853
+    m_Localized: Permanent attack power +3% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950855
+    m_Localized: Permanent critical chance +5% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950857
+    m_Localized: Projectile flight range / lifetime +5% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950859
+    m_Localized: EXP gained +5% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950861
+    m_Localized: End-of-run gold +10% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950863
+    m_Localized: Weapon and ability cooldowns +5 Haste per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950865
+    m_Localized: Permanent Max HP +100 per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950867
+    m_Localized: EXP and item pickup radius +10% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950869
+    m_Localized: Permanent move speed +2% per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950871
+    m_Localized: Permanent +1 projectile on every weapon (can only be bought once)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628479950873
+    m_Localized: Permanent HP regen +0.5 per second, per level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2628484145153
+    m_Localized: Automatically revive once per run at 30% HP
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
