@@ -34,6 +34,9 @@ public class LobbyUI : MonoBehaviour
     [Tooltip("จำนวนช่องที่โชว์ทั้งหมด · ช่องที่เกินจำนวนผู้เล่นจะเป็นช่องว่างเส้นประ")]
     public int partySlotCount = 4;
 
+    [Tooltip("ระยะห่างระหว่างแถว (px) — container ไม่มี LayoutGroup แถวถูกวางด้วยโค้ด")]
+    public float partyRowSpacing = 10f;
+
     [Tooltip("สีขอบซ้ายของแต่ละช่อง — index ตรงกับ PlayerSlotRegistry.GetSlot() ไม่ใช่ clientId")]
     public Color[] slotColors =
     {
@@ -549,11 +552,14 @@ public class LobbyUI : MonoBehaviour
     /// </summary>
     private void RefreshP3RPartyRows()
     {
-        foreach (var row in p3rRows)
-            if (row != null) Destroy(row.gameObject);
-        p3rRows.Clear();
-
         if (partyRowPrefab == null || partyContainer == null) return;
+
+        // ล้าง **ทุกลูก** ไม่ใช่แค่ที่ตัวเองสร้าง — builder วางแถวตัวอย่างไว้ในซีนให้เห็น
+        // หน้าตาตอนยังไม่กด Play แถวพวกนั้นไม่ได้อยู่ใน p3rRows
+        // ล้างแค่ของตัวเองแล้วตอนรันจะได้แถวสองชุดซ้อนกันจนอ่านไม่ออก
+        for (int i = partyContainer.childCount - 1; i >= 0; i--)
+            Destroy(partyContainer.GetChild(i).gameObject);
+        p3rRows.Clear();
 
         var  players    = LobbyState.Instance != null ? LobbyState.Instance.Players : null;
         int  playerCount = players != null ? players.Count : 0;
@@ -565,6 +571,13 @@ public class LobbyUI : MonoBehaviour
             var row = Instantiate(partyRowPrefab, partyContainer);
             row.gameObject.SetActive(true);
             p3rRows.Add(row);
+
+            // ต้องวางตำแหน่งเอง — ไม่มี LayoutGroup บน container
+            // ไม่วาง = ทุกแถวไปกองอยู่ที่เดียวกันตามตำแหน่งใน prefab
+            var rt = (RectTransform)row.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot     = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(0f, -i * (rt.sizeDelta.y + partyRowSpacing));
 
             if (i >= playerCount) { row.SetEmpty(); continue; }
 

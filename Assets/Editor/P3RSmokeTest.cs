@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using CloneSwarm.Meta;
 using CloneSwarm.UI.P3R;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CloneSwarm.EditorTools
 {
@@ -120,10 +122,12 @@ namespace CloneSwarm.EditorTools
 
                     // TALENT SHOP อยู่ใต้ hub — กดแล้ว hub เปิด แล้ว TabBar เลือกแท็บ shop
                     case 4: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
-                    case 5: Verify(); JumpTab("lobby", "P3R_Lobby"); break;
-                    case 6: Verify(); ShowMain(); break;
+                    case 5: Verify(); CheckShop(); JumpTab("lobby", "P3R_Lobby"); break;
+                    case 6: Verify(); JumpTab("character", "P3R_Character"); break;
+                    case 7: Verify(); CheckCharacter(); break;
+                    case 8: ShowMain(); break;
 
-                    case 7: Report(); break;
+                    case 9: Report(); break;
                 }
             }
 
@@ -177,6 +181,52 @@ namespace CloneSwarm.EditorTools
                 bar.Select(tabId);
                 lines.Add($"── สลับไปแท็บ '{tabId}'");
                 Expect($"แท็บ '{tabId}'", expectActive);
+            }
+
+            /// <summary>
+            /// ร้าน talent — ช่องต้องมาจาก MetaDatabase จริง ไม่ใช่ของตัวอย่างที่ builder วางไว้
+            /// เคยเจอทั้งสองชุดซ้อนกัน เพราะ BuildTiles ล้างเฉพาะช่องที่ตัวเองสร้าง
+            /// </summary>
+            private void CheckShop()
+            {
+                var panel = Find("P3R_TalentShop");
+                var shop  = panel == null ? null : panel.GetComponentInChildren<TalentShopUI>(true);
+
+                Require(shop != null, "หา TalentShopUI เจอ");
+                if (shop?.tilesContainer == null) { Require(false, "tilesContainer ต่อไว้"); return; }
+
+                var kids = shop.tilesContainer.Cast<Transform>()
+                               .Where(t => t.gameObject.activeSelf).ToList();
+
+                Require(kids.Count > 0,                              "ร้านสร้างช่อง talent ออกมา");
+                Require(kids.All(t => !t.name.StartsWith("Sample_")), "ไม่มีช่องตัวอย่างค้างอยู่");
+                Require(kids.All(t => t.name.StartsWith("Tile_")),    "ทุกช่องมาจากข้อมูลจริง (Tile_*)");
+                Require(shop.tilesContainer.GetComponent<GridLayoutGroup>() != null,
+                        "tilesContainer มี GridLayoutGroup (ไม่งั้นช่องกองทับกัน)");
+            }
+
+            /// <summary>
+            /// จอเลือกตัวละคร — รายการต้องถูกยกมาจากตัวคุมเดิมตอนต่อสาย
+            /// ถ้าว่าง carousel จะไม่สร้างการ์ดเลย เหลือแต่ของตัวอย่างที่กดไม่ได้
+            /// </summary>
+            private void CheckCharacter()
+            {
+                var panel = Find("P3R_Character");
+                var sel   = panel == null ? null : panel.GetComponentInChildren<CharacterSelectUI>(true);
+
+                Require(sel != null,                        "หา CharacterSelectUI เจอ");
+                Require(sel != null && sel.characters.Count > 0,
+                        $"มีรายการตัวละคร ({sel?.characters.Count ?? 0} ตัว)");
+
+                if (sel?.cardsContainer == null) { Require(false, "cardsContainer ต่อไว้"); return; }
+
+                var kids = sel.cardsContainer.Cast<Transform>()
+                              .Where(t => t.gameObject.activeSelf).ToList();
+
+                Require(kids.Count > 0,                              "carousel สร้างการ์ดออกมา");
+                Require(kids.All(t => !t.name.StartsWith("Sample_")), "ไม่มีการ์ดตัวอย่างค้างอยู่");
+                Require(kids.Any(t => t.GetComponent<CharacterCardUI>() != null),
+                        "การ์ดมี CharacterCardUI (กดเลือกได้)");
             }
 
             private void ShowMain()

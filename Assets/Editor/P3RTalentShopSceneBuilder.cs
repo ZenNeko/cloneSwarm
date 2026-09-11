@@ -168,11 +168,24 @@ namespace CloneSwarm.EditorTools
             Inset(tiles, 20f, 20f, 20f, 20f);
             ui.tilesContainer = tiles;
 
+            float tileW = (w - 40f - 16f) * 0.5f;
+
+            // **ต้องมี GridLayoutGroup** — TalentShopUI.BuildTiles() Instantiate ช่องเข้ามา
+            // เฉยๆ ไม่ได้วางตำแหน่งให้ · ไม่มี layout = ช่องจริงทั้ง 14 ไปกองทับกันที่จุดเดียว
+            var grid = tiles.gameObject.AddComponent<GridLayoutGroup>();
+            grid.cellSize        = new Vector2(tileW, 82f);
+            grid.spacing         = new Vector2(16f, 10f);
+            grid.constraint      = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 2;
+            grid.startCorner     = GridLayoutGroup.Corner.UpperLeft;
+            grid.startAxis       = GridLayoutGroup.Axis.Horizontal;
+            grid.childAlignment  = TextAnchor.UpperLeft;
+
             var template = BuildTileTemplate(tiles);
             ui.tileTemplate = template.gameObject;
 
-            // ── ตัวอย่างในซีน 14 ช่อง สองคอลัมน์ ────────────────────────────
-            float tileW = (w - 40f - 16f) * 0.5f;
+            // ── ตัวอย่างในซีน 14 ช่อง ────────────────────────────────────────
+            // GridLayoutGroup จัดตำแหน่งให้เอง ที่ตั้งไว้ในลูปเป็นแค่ขนาด
             for (int i = 0; i < TalentNames.Length; i++)
             {
                 var tile = Object.Instantiate(template, tiles);

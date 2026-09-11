@@ -276,6 +276,13 @@ namespace CloneSwarm.EditorTools
             {
                 if (panels.Values.Any(p => p != null && HasComponentOfType(p, stray.GetType())))
                 {
+                    // **ยกข้อมูลมาก่อนลบ** — ตัวเดิมถือรายการที่คนตั้งไว้ใน Inspector
+                    // (CharacterSelectUI.characters · LobbyUI.maps) ตัวใหม่ที่ builder สร้าง
+                    // ไม่มีข้อมูลพวกนี้ · ลบทิ้งเฉยๆ = จอเลือกตัวละครว่างเปล่า กดอะไรไม่ได้
+                    var replacement = FindInPanels(panels, stray.GetType());
+                    if (replacement is MonoBehaviour target)
+                        CarryOverAssetData(stray, target, plan);
+
                     plan.Add($"   ลบ {stray.GetType().Name} ออกจาก {HierarchyPath(stray.transform)}  " +
                              "(panel ใหม่มีตัวนี้แล้ว)");
                     var captured = stray;
@@ -293,6 +300,23 @@ namespace CloneSwarm.EditorTools
             // เมนูหลัก P3R ไม่ได้ใช้ Button เลย MenuManager จึงต่อเข้าไม่ได้ตรงๆ
             // และปุ่ม BACK/CONFIRM ของ MapSelect กับ TalentShop ถูกสร้างไว้เฉยๆ ไม่ได้ต่อกับอะไร
             WireInteractions(scene, panels, plan, apply);
+
+            // ── 3.7 ลบของตัวอย่างที่ builder วางไว้ ───────────────────────────
+            // ตัวคุมจอส่วนใหญ่ล้างเฉพาะของที่ **ตัวเองสร้าง** ตอนรัน
+            // (TalentShopUI ล้างจาก tiles list · CarouselBase ล้างจาก views ของตัวเอง)
+            // ของตัวอย่างจาก builder ไม่ได้อยู่ในลิสต์พวกนั้น เลยค้างอยู่แล้วซ้อนกับของจริง
+            // ในซีนต้นแบบมันมีประโยชน์ (เห็นหน้าตาโดยไม่ต้อง Play) ในซีนจริงมันคือขยะ
+            foreach (var panel in panels.Values)
+            {
+                if (panel == null) continue;
+                foreach (var t in panel.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!t.name.StartsWith("Sample_")) continue;
+                    plan.Add($"   ลบของตัวอย่าง {HierarchyPath(t)}");
+                    var go = t.gameObject;
+                    apply.Add(() => { if (go != null) Object.DestroyImmediate(go); });
+                }
+            }
 
             // ── 4. เปิด panel ที่ต้องเปิดตอนเริ่ม ─────────────────────────────
             //
@@ -453,6 +477,71 @@ namespace CloneSwarm.EditorTools
                 lobby.tabBar = bar;
                 EditorUtility.SetDirty(lobby);
             }
+        }
+
+        /// <summary>
+        /// ยกค่าที่ชี้ไป **asset** จากตัวเดิมมาใส่ตัวใหม่ เฉพาะช่องที่ตัวใหม่ยังว่าง
+        ///
+        /// ทำเฉพาะ asset (ScriptableObject · prefab · sprite) ไม่ยกของที่ชี้ใน scene
+        /// เพราะของใน scene ของตัวใหม่คือลูกของ panel ตัวเอง ซึ่งถูกต้องอยู่แล้ว
+        /// การยกมาทับจะทำให้ตัวใหม่ไปชี้ของในจอเก่าที่กำลังจะถูกปิด
+        ///
+        /// ทำทันทีไม่รอ apply เพราะเป็นการเติมค่า ไม่ใช่การทำลาย · ยกเลิกก็แค่ไม่เซฟ
+        /// </summary>
+        private static void CarryOverAssetData(MonoBehaviour from, MonoBehaviour to, List<string> plan)
+        {
+            var src = new SerializedObject(from);
+            var dst = new SerializedObject(to);
+            bool changed = false;
+
+            var it = src.GetIterator();
+            bool enter = true;
+            while (it.NextVisible(enter))
+            {
+                enter = false;
+                if (it.name == "m_Script") continue;
+
+                var d = dst.FindProperty(it.propertyPath);
+                if (d == null) continue;
+
+                // ลิสต์ของ asset — ยกทั้งลิสต์เมื่อตัวใหม่ว่าง
+                if (it.isArray && it.propertyType == SerializedPropertyType.Generic)
+                {
+                    if (it.arraySize == 0 || d.arraySize > 0) continue;
+                    if (!AllPersistentRefs(it)) continue;
+
+                    d.arraySize = it.arraySize;
+                    for (int i = 0; i < it.arraySize; i++)
+                        d.GetArrayElementAtIndex(i).objectReferenceValue =
+                            it.GetArrayElementAtIndex(i).objectReferenceValue;
+
+                    plan.Add($"   ยก {from.GetType().Name}.{it.name} ({it.arraySize} รายการ) มาใส่ตัวใหม่");
+                    changed = true;
+                }
+                else if (it.propertyType == SerializedPropertyType.ObjectReference)
+                {
+                    if (it.objectReferenceValue == null || d.objectReferenceValue != null) continue;
+                    if (!EditorUtility.IsPersistent(it.objectReferenceValue)) continue;
+
+                    d.objectReferenceValue = it.objectReferenceValue;
+                    plan.Add($"   ยก {from.GetType().Name}.{it.name} → {it.objectReferenceValue.name}");
+                    changed = true;
+                }
+            }
+
+            if (changed) dst.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static bool AllPersistentRefs(SerializedProperty arrayProp)
+        {
+            for (int i = 0; i < arrayProp.arraySize; i++)
+            {
+                var e = arrayProp.GetArrayElementAtIndex(i);
+                if (e.propertyType != SerializedPropertyType.ObjectReference) return false;
+                if (e.objectReferenceValue != null && !EditorUtility.IsPersistent(e.objectReferenceValue))
+                    return false;
+            }
+            return true;
         }
 
         private static void StretchToParent(GameObject go)
