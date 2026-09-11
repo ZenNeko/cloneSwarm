@@ -19,6 +19,10 @@ public class MapCardUI : MonoBehaviour
     [Tooltip("ชื่อแมพ — ลูกชื่อ NameText")]
     public TextMeshProUGUI nameText;
 
+    [Tooltip("กรอบเรืองแสงที่โผล่เฉพาะตอนถูกเลือก — ลูกชื่อ SelectedBorder · " +
+             "แยกจากสีพื้นเพราะสีพื้นอย่างเดียวแยกใบที่เลือกไม่ออกบนพื้นมืด")]
+    public GameObject      selectedMarker;
+
     [Header("Colors")]
     public Color selectedColor = new Color(0.3f, 0.7f, 1f);
     public Color normalColor   = new Color(0.2f, 0.2f, 0.25f, 1f);
@@ -30,6 +34,7 @@ public class MapCardUI : MonoBehaviour
             previewImage = transform.Find("Preview")?.GetComponent<Image>()
                         ?? transform.Find("Icon")?.GetComponent<Image>();
         if (nameText == null) nameText = transform.Find("NameText")?.GetComponent<TextMeshProUGUI>();
+        if (selectedMarker == null) selectedMarker = transform.Find("SelectedBorder")?.gameObject;
     }
 
     public void SetData(MapData map, Color selColor, Color normColor)
@@ -53,5 +58,7 @@ public class MapCardUI : MonoBehaviour
     {
         if (bgImage != null)
             bgImage.color = on ? selectedColor : normalColor;
+        if (selectedMarker != null && selectedMarker.activeSelf != on)
+            selectedMarker.SetActive(on);
     }
 }

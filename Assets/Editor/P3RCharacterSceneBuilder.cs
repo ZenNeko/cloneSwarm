@@ -20,7 +20,8 @@ namespace CloneSwarm.EditorTools
     /// </summary>
     public static class P3RCharacterSceneBuilder
     {
-        private const string ScenePath = "Assets/GameScenes/Proto_Character.unity";
+        private const string ScenePath  = "Assets/GameScenes/Proto_Character.unity";
+        private const string CardPrefab = PrefabDir + "/CharacterCard.prefab";
 
         private const float TopBarH  = 84f;
         private const float TabBarH  = 62f;
@@ -30,9 +31,15 @@ namespace CloneSwarm.EditorTools
         private const float RightW   = 480f;
         private const float Gap      = 24f;
 
+        // ขนาดการ์ดกับช่องไฟ — CarouselBase.pitch ต้องเท่าผลรวมสองค่านี้เป๊ะ
+        // ไม่งั้นการ์ดจะห่างเกินหรือทับกัน · อยู่ที่เดียวเพื่อให้แก้แล้วตรงกันทั้งจอ
+        private const float CardH    = 108f;
+        private const float CardGap  = 10f;
+
         private static readonly Color TopBar  = new Color32(0x08, 0x0B, 0x18, 0xFF);
         private static readonly Color PanelBg = new Color32(0x0D, 0x12, 0x26, 0xFF);
         private static readonly Color CardBg  = new Color32(0x11, 0x18, 0x38, 0xFF);
+        private static readonly Color AccentNormal = new Color(1f, 1f, 1f, 0.10f);
 
         [MenuItem("Tools/Clone Swarm/Build P3R Character Scene")]
         public static void Build()
@@ -138,8 +145,34 @@ namespace CloneSwarm.EditorTools
             Inset(cards, 14f, 14f, 14f, 14f);
             ui.cardsContainer = cards;
 
-            var template = BuildCardTemplate(cards);
-            ui.cardTemplate = template.gameObject;
+            // แม่แบบการ์ดเป็น **prefab** ไม่ใช่ object ในซีน — ดูเหตุผลที่ BuildCardPrefab
+            var cardPrefab = BuildCardPrefab();
+            ui.cardTemplate = cardPrefab.gameObject;
+
+            // สีการ์ด — ปล่อยไว้จะได้ค่า default ของสคริปต์ซึ่งเป็นฟ้าสด (0.3, 0.7, 1)
+            // ที่ไม่มีอยู่ในจานสีของจอนี้เลย · ใบที่เลือกใช้น้ำเงินของธีมผสมกับพื้นการ์ด
+            ui.normalColor   = CardBg;
+            ui.selectedColor = Over(Primary, CardBg, 0.5f);
+
+            // ── ตัวจัดลิสต์ ─────────────────────────────────────────────────
+            // **ต้องสร้างที่นี่** ไม่ใช่ปล่อยให้ CharacterSelectUI.BuildCarousel แปะเองตอนรัน
+            // ตัวที่มันแปะเองใช้ค่า default ทั้งชุด (วงหมุนล็อกกลาง pitch 250 view 6 ใบ)
+            // ซึ่งไม่ใช่แบบนี้เลย — อาการที่เห็นคือการ์ดซ้ำ ล้นทับแถบแท็บ และไล่ขนาดเล็กลง
+            //
+            // วางบน CardList ไม่ใช่บน Cards เพราะ event ลาก/ลูกกลิ้งของ uGUI
+            // วิ่งขึ้นจาก object ที่เมาส์ชี้โดน — การ์ดอยู่ใน Cards จึงผ่าน CardList เสมอ
+            var list = panel.gameObject.AddComponent<CharacterCarousel>();
+            list.axis        = CarouselAxis.Vertical;
+            list.align       = CarouselAlign.Start;     // ชิดบน ไล่ลงล่าง ตามแบบ
+            list.pitch       = CardH + CardGap;
+            list.viewCount   = 8;
+            list.centerScale = list.edgeScale = 1f;     // แบบนี้ทุกใบขนาดเดียวกัน เน้นด้วยสีพื้น
+            list.fadeByDistance     = false;
+            list.unmaskSelectedCard = false;
+            list.clipToPanel        = true;
+
+            // การ์ดใบล่างสุดต้องถูกตัดตรงขอบแผง ไม่ใช่ไหลลงไปทับปุ่มข้างล่าง
+            panel.gameObject.AddComponent<RectMask2D>();
 
             // ตัวอย่างในซีน — ตอนรัน CharacterSelectUI สร้างใหม่จากรายชื่อจริง
             (string name, string role, string state)[] sample =
@@ -152,33 +185,32 @@ namespace CloneSwarm.EditorTools
 
             for (int i = 0; i < sample.Length; i++)
             {
-                var card = Object.Instantiate(template, cards);
-                card.gameObject.SetActive(true);
-                card.name = $"Sample_{i}";
-                var rt = (RectTransform)card.transform;
-                rt.anchorMin = new Vector2(0f, 1f); rt.anchorMax = new Vector2(1f, 1f);
-                rt.pivot = new Vector2(0.5f, 1f);
-                rt.sizeDelta = new Vector2(0f, 108f);
-                rt.anchoredPosition = new Vector2(0f, -i * 118f);
+                int n = i;
+                var clone = SpawnSample(cardPrefab, cards, _ => { });
+                clone.name = $"Sample_{n}";
+                var card = (RectTransform)clone.transform;
 
-                SetChild(card, "Name",  sample[i].name, 14f);
-                SetChild(card, "Role",  sample[i].role, 22f);
-                SetChild(card, "State", sample[i].state, 22f);
+                card.anchorMin = new Vector2(0f, 1f); card.anchorMax = new Vector2(1f, 1f);
+                card.pivot = new Vector2(0.5f, 1f);
+                card.sizeDelta = new Vector2(0f, CardH);
+                card.anchoredPosition = new Vector2(0f, -n * (CardH + CardGap));
 
-                var st = card.transform.Find("State")?.GetComponent<TextMeshProUGUI>();
+                SetChild(card, "Name",  sample[n].name, 14f);
+                SetChild(card, "Role",  sample[n].role, 22f);
+                SetChild(card, "State", sample[n].state, 22f);
+
+                var st = card.Find("State")?.GetComponent<TextMeshProUGUI>();
                 if (st != null)
-                    st.color = sample[i].state == "OWNED" ? Teal
-                             : sample[i].state == "LOCKED" ? Amber
+                    st.color = sample[n].state == "OWNED" ? Teal
+                             : sample[n].state == "LOCKED" ? Amber
                              : new Color(1f, 1f, 1f, 0.3f);
 
-                var bg = card.transform.Find("Bg")?.GetComponent<Image>();
-                if (bg != null) bg.color = i == 2 ? Over(Primary, CardBg, 0.5f) : CardBg;
+                var bg = card.Find("Bg")?.GetComponent<Image>();
+                if (bg != null) bg.color = n == 2 ? Over(Primary, CardBg, 0.5f) : CardBg;
 
-                var accent = card.transform.Find("Accent")?.GetComponent<Image>();
-                if (accent != null) accent.color = i == 2 ? Primary : new Color(1f, 1f, 1f, 0.10f);
+                var acc = card.Find("Accent")?.GetComponent<Image>();
+                if (acc != null) acc.color = n == 2 ? Primary : AccentNormal;
             }
-
-            template.gameObject.SetActive(false);
         }
 
         private static void SetChild(RectTransform card, string child, string text, float tracking)
@@ -189,15 +221,47 @@ namespace CloneSwarm.EditorTools
             P3RText.SetTextAndTracking(t, text, tracking);
         }
 
-        private static RectTransform BuildCardTemplate(RectTransform parent)
+        /// <summary>
+        /// การ์ดเลือกตัวละครเป็น **prefab** — เหมือน LobbyPartyRow ไม่ใช่ของฝังในซีน
+        ///
+        /// การ์ดคือของที่ถูกปั๊มซ้ำหลายใบตอนรัน ซึ่งเป็นนิยามของ prefab ตรงๆ
+        /// ฝังไว้ในซีนต้นแบบแล้วได้ปัญหาสามอย่างที่ prefab ไม่มี —
+        ///
+        ///   แก้ด้วยตาไม่ได้     ต้องแก้โค้ดแล้วรีบิลด์ทั้งจอ เพื่อขยับตัวหนังสือ 4px
+        ///   ไม่รอดการย้ายจอ    P3RScreenMigrator ลบ panel เก่าทั้งก้อน แม่แบบหายไปด้วย
+        ///   ช่อง cardTemplate ชี้ของในซีน ซึ่งเปลี่ยน fileID ทุกครั้งที่ย้ายจอใหม่
+        ///
+        /// ชี้ไปที่ไฟล์ prefab แล้วทั้งสามข้อหายไปพร้อมกัน — สายไม่ขาดเพราะมันเป็น guid
+        /// ของไฟล์ ไม่ใช่ fileID ของ object ในซีน
+        /// </summary>
+        private static CharacterCardUI BuildCardPrefab()
         {
-            var rt = NewRect("CharacterCardTemplate", parent);
-            rt.sizeDelta = new Vector2(332f, 108f);
+            // parent = null → สร้างลอยไว้ก่อน แล้ว SavePrefab เขียนลงไฟล์และลบตัวชั่วคราวทิ้ง
+            var rt = NewRect("CharacterCard", null);
+            rt.sizeDelta = new Vector2(ListW - 28f, CardH);
 
             var bg = NewImage("Bg", rt, CardBg);
             Stretch(bg.rectTransform);
 
-            AccentBar(rt, new Color(1f, 1f, 1f, 0.10f));
+
+            // **พื้นหลังการ์ดต้องรับ raycast** — NewImage ปิดไว้ให้ทุกตัวเพื่อลดภาระ raycast
+            // ซึ่งถูกสำหรับของประดับ แต่การ์ดต้องกดได้ · ไม่มีตัวไหนในการ์ดรับ raycast เลย
+            // แปลว่า EventSystem ไม่รู้ว่าเมาส์ชี้โดนอะไร Button จึงไม่เคยได้รับคลิก
+            // และไม่มีอะไรฟ้อง — อาการคือ "กดเลือกตัวละครไม่ได้" ที่หาต้นเหตุยากมาก
+            bg.raycastTarget = true;
+
+            // ใส่ Button ให้แม่แบบเลย ไม่ปล่อยให้ CarouselBase แปะตอนรัน —
+            // ตัวที่แปะตอนรันไม่มี targetGraphic จึงไม่มีเอฟเฟกต์กดและขึ้นเตือนใน Inspector
+            var btn = rt.gameObject.AddComponent<Button>();
+            btn.targetGraphic = bg;
+            // **ห้ามใช้ Color Tint** — สีพื้นการ์ดมีเจ้าของแล้วคือ SetSelected()
+            // ปล่อยให้ Selectable เขียนด้วย จะได้สองคนเขียนสีเดียวกัน แล้วใบที่เลือกอยู่
+            // จะกะพริบกลับเป็นสีปกติทุกครั้งที่เมาส์ออกจากการ์ด
+            btn.transition = Selectable.Transition.None;
+            var btnNav = btn.navigation; btnNav.mode = Navigation.Mode.None;
+            btn.navigation = btnNav;
+
+            var accent = AccentBar(rt, AccentNormal);
 
             var icon = NewImage("Icon", rt, Lift(CardBg, 0.06f));
             TopLeft(icon.rectTransform, 20f, 20f, 68f, 68f);
@@ -222,14 +286,17 @@ namespace CloneSwarm.EditorTools
             Stretch(lockCost.rectTransform);
 
             var card = rt.gameObject.AddComponent<CharacterCardUI>();
-            card.bgImage      = bg;
+            card.bgImage        = bg;
+            card.accentImage    = accent;
+            card.accentSelected = Primary;
+            card.accentNormal   = AccentNormal;
             card.iconImage    = icon;
             card.nameText     = name;
             card.weaponText   = role;
             card.lockOverlay  = lockOverlay.gameObject;
             card.lockCostText = lockCost;
 
-            return rt;
+            return SavePrefab(rt.gameObject, CardPrefab).GetComponent<CharacterCardUI>();
         }
 
         // ═══════════════════════════════════════════════════════════════════

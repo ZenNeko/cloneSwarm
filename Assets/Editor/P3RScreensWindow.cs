@@ -132,6 +132,13 @@ namespace CloneSwarm.EditorTools
                     if (GUILayout.Button("ย้ายลงซีน", GUILayout.Width(76f)))
                         P3RScreenMigrator.Migrate(row.Label);
 
+                // สามขั้นนี้ต้องไปด้วยกันเสมอ — สร้างใหม่แล้วไม่ย้าย ซีนจริงยังเป็นของเก่า
+                // ย้ายแล้วไม่ต่อสาย panel ที่เพิ่งวางจะไม่มีใครถือ กดอะไรก็ไม่ไปไหน
+                // แยกปุ่มไว้ให้ทำทีละขั้นได้ แต่ทางปกติคือปุ่มนี้ปุ่มเดียว
+                using (new EditorGUI.DisabledScope(row.Builder == null || row.Panel == null))
+                    if (GUILayout.Button("สร้าง+ย้าย+ต่อสาย", GUILayout.Width(128f)))
+                        Rebuild(row);
+
                 using (new EditorGUI.DisabledScope(!migrated))
                     if (GUILayout.Button("Solo", GUILayout.Width(52f)))
                         Solo(row);
@@ -251,6 +258,24 @@ namespace CloneSwarm.EditorTools
 
             if (build == null) { Debug.LogError($"[P3R] ไม่พบ {typeName}.Build()"); return; }
             build.Invoke(null, null);
+        }
+
+        /// <summary>
+        /// สร้างต้นแบบใหม่ → ย้ายลงซีนจริง → ต่อสาย · สามขั้นที่ต้องไปด้วยกันเสมอ
+        ///
+        /// ต่อสายทั้งซีน ไม่ใช่เฉพาะ panel นี้ — <see cref="P3RScreenWirer"/> ไม่มี API
+        /// รายจอ และการต่อสายซ้ำเป็น idempotent อยู่แล้ว (มันข้ามช่องที่ต่อถูกอยู่แล้ว)
+        /// </summary>
+        private static void Rebuild(Row row)
+        {
+            InvokeBuilder(row.Builder);
+            P3RScreenMigrator.Migrate(row.Label);
+
+            if (row.Target == MenuScene)        P3RScreenWirer.WireMenuScene();
+            else if (row.Target == SampleScene) P3RScreenWirer.WireSampleScene();
+
+            Cache.Remove(row.Target);   // สถานะในแถวอ่านจากไฟล์ซีน ต้องอ่านใหม่หลังเขียน
+            Debug.Log($"[P3R] {row.Label}: สร้าง + ย้าย + ต่อสาย เสร็จแล้ว");
         }
 
         private static void OpenSceneAsking(string path)

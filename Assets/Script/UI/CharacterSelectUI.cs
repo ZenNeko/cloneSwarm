@@ -449,7 +449,7 @@ public class CharacterSelectUI : MonoBehaviour
         // Portrait row
         // ภาพ portrait ต้องมีเจ้าของเดียว — carousel วาดตัวเด่นจาก portrait ตัวเดียวกัน
         // ถ้าปล่อยให้ทั้งคู่วาด ภาพตัวละครจะโผล่สองที่พร้อมกันบนจอ
-        bool heroOwnsPortrait = carousel != null && carousel.heroImage != null;
+        bool heroOwnsPortrait = carousel != null && carousel.featuredImage != null;
         if (!heroOwnsPortrait)
         {
             // ตกกลับไปใช้ icon เมื่อยังไม่มี portrait — ตอนนี้มีแค่ Riven ที่มี
@@ -461,7 +461,7 @@ public class CharacterSelectUI : MonoBehaviour
                 Debug.LogWarning($"[CharSelect] '{selected.characterName}' ไม่มี portrait — " +
                                  "ใช้ icon แทนไปก่อน ภาพจะถูกยืดเต็มกรอบใหญ่ · เติม CharacterData.portrait");
         }
-        else if (detailPortrait != null && detailPortrait != carousel.heroImage)
+        else if (detailPortrait != null && detailPortrait != carousel.featuredImage)
         {
             detailPortrait.enabled = false;   // เจ้าของคือ hero — ปิดใบซ้ำทิ้ง
         }

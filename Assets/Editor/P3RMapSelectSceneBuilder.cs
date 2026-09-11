@@ -24,7 +24,8 @@ namespace CloneSwarm.EditorTools
     /// </summary>
     public static class P3RMapSelectSceneBuilder
     {
-        private const string ScenePath = "Assets/GameScenes/Proto_MapSelect.unity";
+        private const string ScenePath  = "Assets/GameScenes/Proto_MapSelect.unity";
+        private const string CardPrefab = PrefabDir + "/MapCard.prefab";
 
         private const float TopBarH  = 84f;
         private const float TabBarH  = 62f;
@@ -32,6 +33,11 @@ namespace CloneSwarm.EditorTools
         private const float BottomH  = 96f;
         private const float PadX     = 64f;
         private const float PreviewH = 452f;
+
+        // ขนาดการ์ดกับช่องไฟ — CarouselBase.pitch ต้องเท่าผลรวมสองค่านี้เป๊ะ
+        private const float CardW    = 300f;
+        private const float CardH    = 148f;
+        private const float CardGap  = 16f;
 
         private static readonly Color TopBar  = new Color32(0x08, 0x0B, 0x18, 0xFF);
         private static readonly Color PanelBg = new Color32(0x0D, 0x12, 0x26, 0xFF);
@@ -247,40 +253,63 @@ namespace CloneSwarm.EditorTools
             float y = RefH - BottomH - 176f;
 
             var rowRoot = NewRect("CardsRow", root);
-            TopLeft(rowRoot, PadX, y, RefW - PadX * 2f, 148f);
+            TopLeft(rowRoot, PadX, y, RefW - PadX * 2f, CardH);
 
             var cards = NewRect("Cards", rowRoot);
             Stretch(cards);
             ui.cardsContainer = cards;
 
-            // ── แม่แบบการ์ด ─────────────────────────────────────────────────
-            var template = BuildCardTemplate(cards);
-            ui.cardTemplate = template.gameObject;
+            // ── ตัวจัดแถบ ───────────────────────────────────────────────────
+            // **ต้องสร้างที่นี่** ไม่ใช่ปล่อยให้ MapSelectUI.BuildCarousel แปะเองตอนรัน
+            // ตัวที่มันแปะเองใช้ค่า default = วงหมุน **แนวตั้ง** ล็อกกลาง ทั้งที่แบบวางขวาง
+            // อาการที่เห็นคือ ARENA 01 สี่ใบเรียงลงมากลางจอทับภาพพรีวิว
+            var strip = rowRoot.gameObject.AddComponent<MapCarousel>();
+            strip.axis        = CarouselAxis.Horizontal;
+            strip.align       = CarouselAlign.Start;    // ชิดซ้ายที่ PadX ไล่ไปขวา ตามแบบ
+            strip.pitch       = CardW + CardGap;
+            strip.viewCount   = 8;
+            strip.centerScale = strip.edgeScale = 1f;
+            strip.fadeByDistance     = false;
+            strip.unmaskSelectedCard = false;
+            strip.clipToPanel        = true;
+
+            // ภาพพรีวิวใหญ่มีเจ้าของอยู่แล้ว (MapSelectUI.detailPreview) — ถ้าตั้ง featuredImage
+            // ที่นี่ด้วยจะมีสองคนเขียนภาพเดียวกัน และ RefreshDetail จะปิดแผงรายละเอียดทิ้ง
+
+            // การ์ดใบขวาสุดต้องถูกตัดตรงขอบแถว ไม่ใช่ไหลออกนอกจอ
+            rowRoot.gameObject.AddComponent<RectMask2D>();
+
+            // ── แม่แบบการ์ด — เป็น prefab ไม่ใช่ของฝังในซีน ─────────────────
+            var cardPrefab = BuildCardPrefab();
+            ui.cardTemplate = cardPrefab.gameObject;
+
+            // เหตุผลเดียวกับจอ CHARACTER — ค่า default ของสคริปต์เป็นฟ้าสดนอกจานสี
+            ui.normalColor   = CardBg;
+            ui.selectedColor = Over(Primary, CardBg, 0.55f);
 
             // การ์ดตัวอย่าง — โรสเตอร์จริงมีแมพเดียว ตอนรัน MapCarousel สร้างใหม่เอง
             string[] sample = { "ARENA 01", "FOUNDRY", "CRYO VAULT", "THE SPRAWL" };
             for (int i = 0; i < sample.Length; i++)
             {
-                var card = Object.Instantiate(template, cards);
-                card.gameObject.SetActive(true);
-                card.name = $"Sample_{i}";
-                var rt = (RectTransform)card.transform;
-                rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
-                rt.pivot     = new Vector2(0f, 0.5f);
-                rt.sizeDelta = new Vector2(300f, 148f);
-                rt.anchoredPosition = new Vector2(i * 316f, 0f);
+                int n = i;
+                var clone = SpawnSample(cardPrefab, cards, _ => { });
+                clone.name = $"Sample_{n}";
+                var card = (RectTransform)clone.transform;
 
-                var label = card.transform.Find("Name")?.GetComponent<TextMeshProUGUI>();
-                if (label != null) P3RText.SetTextAndTracking(label, sample[i], 14f);
+                card.anchorMin = card.anchorMax = new Vector2(0f, 0.5f);
+                card.pivot     = new Vector2(0f, 0.5f);
+                card.sizeDelta = new Vector2(CardW, CardH);
+                card.anchoredPosition = new Vector2(n * (CardW + CardGap), 0f);
 
-                var bg = card.transform.Find("Bg")?.GetComponent<Image>();
-                if (bg != null) bg.color = i == 0 ? Over(Primary, CardBg, 0.55f) : CardBg;
+                var label = card.Find("Name")?.GetComponent<TextMeshProUGUI>();
+                if (label != null) P3RText.SetTextAndTracking(label, sample[n], 14f);
 
-                var sel = card.transform.Find("SelectedBorder");
-                if (sel != null) sel.gameObject.SetActive(i == 0);
+                var bg = card.Find("Bg")?.GetComponent<Image>();
+                if (bg != null) bg.color = n == 0 ? Over(Primary, CardBg, 0.55f) : CardBg;
+
+                var sel = card.Find("SelectedBorder");
+                if (sel != null) sel.gameObject.SetActive(n == 0);
             }
-
-            template.gameObject.SetActive(false);
 
             // ── ป้ายแมพที่ล็อก — ปิดไว้เพราะยังไม่มีระบบปลดล็อก ─────────────
             var locked = NewMono("LockedCount", root, "LOCKED", 16f, 0.24f,
@@ -290,13 +319,32 @@ namespace CloneSwarm.EditorTools
             locked.gameObject.SetActive(false);
         }
 
-        private static RectTransform BuildCardTemplate(RectTransform parent)
+        /// <summary>การ์ดแมพเป็น prefab ด้วยเหตุผลเดียวกับการ์ดตัวละคร — ดู P3RCharacterSceneBuilder</summary>
+        private static MapCardUI BuildCardPrefab()
         {
-            var rt = NewRect("MapCardTemplate", parent);
-            rt.sizeDelta = new Vector2(300f, 148f);
+            var rt = NewRect("MapCard", null);
+            rt.sizeDelta = new Vector2(CardW, CardH);
 
             var bg = NewImage("Bg", rt, CardBg);
             Stretch(bg.rectTransform);
+
+
+            // **พื้นหลังการ์ดต้องรับ raycast** — NewImage ปิดไว้ให้ทุกตัวเพื่อลดภาระ raycast
+            // ซึ่งถูกสำหรับของประดับ แต่การ์ดต้องกดได้ · ไม่มีตัวไหนในการ์ดรับ raycast เลย
+            // แปลว่า EventSystem ไม่รู้ว่าเมาส์ชี้โดนอะไร Button จึงไม่เคยได้รับคลิก
+            // และไม่มีอะไรฟ้อง — อาการคือ "กดเลือกตัวละครไม่ได้" ที่หาต้นเหตุยากมาก
+            bg.raycastTarget = true;
+
+            // ใส่ Button ให้แม่แบบเลย ไม่ปล่อยให้ CarouselBase แปะตอนรัน —
+            // ตัวที่แปะตอนรันไม่มี targetGraphic จึงไม่มีเอฟเฟกต์กดและขึ้นเตือนใน Inspector
+            var btn = rt.gameObject.AddComponent<Button>();
+            btn.targetGraphic = bg;
+            // **ห้ามใช้ Color Tint** — สีพื้นการ์ดมีเจ้าของแล้วคือ SetSelected()
+            // ปล่อยให้ Selectable เขียนด้วย จะได้สองคนเขียนสีเดียวกัน แล้วใบที่เลือกอยู่
+            // จะกะพริบกลับเป็นสีปกติทุกครั้งที่เมาส์ออกจากการ์ด
+            btn.transition = Selectable.Transition.None;
+            var btnNav = btn.navigation; btnNav.mode = Navigation.Mode.None;
+            btn.navigation = btnNav;
 
             var preview = NewImage("Preview", rt, Lift(CardBg, 0.05f));
             var prt = preview.rectTransform;
@@ -317,9 +365,10 @@ namespace CloneSwarm.EditorTools
             var card = rt.gameObject.AddComponent<MapCardUI>();
             card.bgImage      = bg;
             card.previewImage = preview;
-            card.nameText     = name;
+            card.nameText       = name;
+            card.selectedMarker = selected.gameObject;
 
-            return rt;
+            return SavePrefab(rt.gameObject, CardPrefab).GetComponent<MapCardUI>();
         }
 
         private static P3RSegmentButton SegmentTemplate(RectTransform parent, float w)

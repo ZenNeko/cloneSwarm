@@ -7,6 +7,7 @@ using CloneSwarm.UI.P3R;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CloneSwarm.EditorTools
@@ -143,23 +144,24 @@ namespace CloneSwarm.EditorTools
                     case 5: Verify(); CheckShop(); JumpTab("lobby", "P3R_Lobby"); break;
                     case 6: Verify(); JumpTab("character", "P3R_Character"); break;
                     case 7: Verify(); CheckCharacter(); break;
-                    case 8: ShowMain(); break;
+                    case 8: CheckCharacterClick(); break;
+                    case 9: ShowMain(); break;
 
                     // 'play' เรียก StartHost เข้า NGO จริง — เส้นทางหลักของเกม
-                    case 9:  Press("play", "P3R_Hub", "P3R_Lobby"); break;
-                    case 10: Verify(); CheckHostStarted(); break;
+                    case 10:  Press("play", "P3R_Hub", "P3R_Lobby"); break;
+                    case 11: Verify(); CheckHostStarted(); break;
 
                     // แท็บ MAP ต้องเช็ค **หลัง** host ขึ้น — LobbyUI.Refresh ซ่อนแท็บนี้
                     // ตอนไม่ใช่ host (SetTabVisible("map", lobbyMode && isHost))
                     // เพราะ client เปลี่ยนแมพไม่ได้อยู่แล้ว · ไม่ใช่บั๊ก
-                    case 11: JumpTab("map", "P3R_MapSelect"); break;
-                    case 12: Verify(); CheckMapSelect(); break;
+                    case 12: JumpTab("map", "P3R_MapSelect"); break;
+                    case 13: Verify(); CheckMapSelect(); break;
 
                     // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
-                    case 13: GoToGameScene(); break;
-                    case 14: CheckInGameScreens(); break;
+                    case 14: GoToGameScene(); break;
+                    case 15: CheckInGameScreens(); break;
 
-                    case 15: Report(); break;
+                    case 16: Report(); break;
                 }
             }
 
@@ -259,7 +261,137 @@ namespace CloneSwarm.EditorTools
                 Require(kids.All(t => !t.name.StartsWith("Sample_")), "ไม่มีการ์ดตัวอย่างค้างอยู่");
                 Require(kids.Any(t => t.GetComponent<CharacterCardUI>() != null),
                         "การ์ดมี CharacterCardUI (กดเลือกได้)");
+
+                CheckCardLayout("ลิสต์ตัวละคร", sel.cardsContainer, sel.characters.Count, vertical: true);
             }
+
+            /// <summary>
+            /// **กดการ์ดจริงด้วย raycast** แล้วดูว่าตัวที่เลือกเปลี่ยนไหม
+            ///
+            /// ตัวตรวจก่อนหน้ายืนยันได้แค่ว่า "การ์ดมี CharacterCardUI" ซึ่งผ่านได้
+            /// ทั้งที่กดไม่ติด · อาการ "เลือกตัวละครไม่ได้" เกิดมาสองรอบแล้วโดยผ่านทุกเทสต์
+            ///
+            /// ยิง raycast ที่พิกัดกลางการ์ดจริงๆ ไม่ใช่เรียก onClick.Invoke() ตรงๆ —
+            /// การเรียกตรงข้ามขั้นตอนที่เมาส์จริงต้องผ่าน (มีอะไรบังอยู่ไหม · Graphic
+            /// ตัวไหนรับ raycast · event วิ่งขึ้นไปเจอ handler ไหม) ซึ่งเป็นจุดที่พังจริง
+            /// </summary>
+            private void CheckCharacterClick()
+            {
+                var panel = Find("P3R_Character");
+                var sel   = panel == null ? null : panel.GetComponentInChildren<CharacterSelectUI>(true);
+                if (sel?.cardsContainer == null) { Require(false, "กดการ์ด: หา container ไม่เจอ"); return; }
+
+                var cards = sel.cardsContainer.Cast<Transform>()
+                               .Where(t => t.gameObject.activeInHierarchy)
+                               .OfType<RectTransform>().ToList();
+                if (cards.Count < 2) { Require(false, $"กดการ์ด: มีการ์ด {cards.Count} ใบ ทดสอบไม่ได้"); return; }
+
+                var es = EventSystem.current;
+                Require(es != null, "กดการ์ด: มี EventSystem ในซีน");
+                if (es == null) return;
+
+                var canvas = panel.GetComponentInParent<Canvas>();
+                var cam    = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                             ? canvas.worldCamera : null;
+
+                // เลือกใบที่ **ไม่ใช่** ตัวที่เลือกอยู่ ไม่งั้นกดแล้วค่าไม่เปลี่ยนก็แยกไม่ออก
+                var before = CharacterSelectUI.SelectedCharacter;
+                var target = cards.FirstOrDefault(c =>
+                {
+                    var name = c.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+                    return before == null || name == null || name.text != before.DisplayName;
+                }) ?? cards[1];
+
+                var ped = new PointerEventData(es)
+                {
+                    position = RectTransformUtility.WorldToScreenPoint(cam, target.position),
+                    button   = PointerEventData.InputButton.Left,
+                };
+
+                var hits = new List<RaycastResult>();
+                es.RaycastAll(ped, hits);
+
+                Require(hits.Count > 0, "กดการ์ด: raycast โดนอะไรสักอย่างตรงกลางการ์ด");
+                if (hits.Count == 0) return;
+
+                var top = hits[0].gameObject;
+                bool ours = top.transform == target || top.transform.IsChildOf(target);
+                Require(ours, ours
+                    ? "กดการ์ด: ตัวบนสุดที่ raycast โดนอยู่ในการ์ดใบนั้น"
+                    : $"กดการ์ด: มี '{HierarchyPath(top.transform)}' บังการ์ดอยู่ — คลิกไปไม่ถึง");
+
+                // handler วิ่งขึ้นจากตัวที่โดน เหมือน EventSystem ทำจริง
+                var handled = ExecuteEvents.ExecuteHierarchy(top, ped, ExecuteEvents.pointerClickHandler);
+                Require(handled != null,
+                        handled != null
+                            ? $"กดการ์ด: '{handled.name}' รับคลิกไว้"
+                            : "กดการ์ด: ไม่มีใครรับคลิกเลย (Button หายหรือ interactable ปิดอยู่)");
+
+                var after = CharacterSelectUI.SelectedCharacter;
+                Require(after != before,
+                        after != before
+                            ? $"กดการ์ด: ตัวที่เลือกเปลี่ยนเป็น '{after?.characterName}'"
+                            : $"กดการ์ด: ตัวที่เลือกยังเป็น '{before?.characterName}' เหมือนเดิม — " +
+                              "กดติดแต่ไม่คอมมิต (มักเพราะตัวนั้นยังล็อกอยู่)");
+            }
+
+            private static string HierarchyPath(Transform t)
+            {
+                var parts = new List<string>();
+                for (var c = t; c != null; c = c.parent) parts.Add(c.name);
+                parts.Reverse();
+                return string.Join("/", parts);
+            }
+
+            /// <summary>
+            /// ตรวจ **เลย์เอาต์** ไม่ใช่โครงสร้าง — สามข้อนี้คือสิ่งที่ตัวตรวจเดิมมองไม่เห็น
+            /// จนจอเลือกตัวละครกับจอเลือกแมพวางผิดแบบอยู่หลายรอบโดยผ่านทุกเทสต์
+            ///
+            ///   จำนวนการ์ดเกินจำนวนข้อมูล = การ์ดซ้ำ (ของ 1 ชิ้นเคยได้การ์ด 4 ใบ)
+            ///   การ์ดอยู่นอกกรอบ mask     = ไปทับจออื่น (เคยทับแถบแท็บ)
+            ///   ลำดับไม่เรียงตามแกน       = วางผิดแกน (แถบแมพที่ควรนอนเคยวางตั้ง)
+            /// </summary>
+            private void CheckCardLayout(string label, Transform container, int expected, bool vertical)
+            {
+                var cards = container.Cast<Transform>()
+                                     .Where(t => t.gameObject.activeSelf)
+                                     .OfType<RectTransform>().ToList();
+
+                Require(cards.Count == expected,
+                        $"{label}: การ์ด {cards.Count} ใบ ตรงกับข้อมูล {expected} ชิ้น" +
+                        (cards.Count > expected ? " — เกินแปลว่ามีใบซ้ำ" : ""));
+
+                var mask = container.GetComponentInParent<RectMask2D>();
+                Require(mask != null, $"{label}: มี RectMask2D ครอบอยู่ (ไม่งั้นการ์ดล้นไปทับจออื่น)");
+                if (mask != null)
+                {
+                    var clip = WorldRect(mask.rectTransform);
+                    int outside = cards.Count(c => !ContainsWithin(clip, WorldRect(c)));
+                    Require(outside == 0, $"{label}: การ์ดทุกใบอยู่ในกรอบแผง (ล้นออกไป {outside} ใบ)");
+                }
+
+                if (cards.Count >= 2)
+                {
+                    bool ordered = true;
+                    for (int i = 1; i < cards.Count && ordered; i++)
+                        ordered = vertical ? cards[i].position.y < cards[i - 1].position.y
+                                           : cards[i].position.x > cards[i - 1].position.x;
+                    Require(ordered, $"{label}: เรียงไปทาง{(vertical ? "ล่าง" : "ขวา")}ทีละใบ ไม่กองทับกัน");
+                }
+            }
+
+            private static Rect WorldRect(RectTransform rt)
+            {
+                var c = new Vector3[4];
+                rt.GetWorldCorners(c);
+                return Rect.MinMaxRect(Mathf.Min(c[0].x, c[2].x), Mathf.Min(c[0].y, c[2].y),
+                                       Mathf.Max(c[0].x, c[2].x), Mathf.Max(c[0].y, c[2].y));
+            }
+
+            /// <summary>inner อยู่ใน outer ไหม — เผื่อ 1px กันค่าปัดเศษของการจัดหน้า</summary>
+            private static bool ContainsWithin(Rect outer, Rect inner, float slack = 1f)
+                => inner.xMin >= outer.xMin - slack && inner.xMax <= outer.xMax + slack
+                && inner.yMin >= outer.yMin - slack && inner.yMax <= outer.yMax + slack;
 
             /// <summary>จอเลือกแมพ — รายการแมพต้องถูกยกมาจากตัวคุมเดิมเหมือนจอตัวละคร</summary>
             private void CheckMapSelect()
@@ -280,6 +412,10 @@ namespace CloneSwarm.EditorTools
                 var kids = ui.cardsContainer.Cast<Transform>()
                              .Where(t => t.gameObject.activeSelf).ToList();
                 Require(kids.All(t => !t.name.StartsWith("Sample_")), "ไม่มีการ์ดแมพตัวอย่างค้างอยู่");
+
+                // แถบแมพวาง **นอน** ต่างจากลิสต์ตัวละคร — ตั้งผิดแกนคือบั๊กที่เคยเกิดจริง
+                if (lobby != null)
+                    CheckCardLayout("แถบแมพ", ui.cardsContainer, lobby.maps.Count, vertical: false);
             }
 
             /// <summary>'play' ต้องสั่ง NGO ขึ้นจริง ไม่ใช่แค่สลับหน้า</summary>

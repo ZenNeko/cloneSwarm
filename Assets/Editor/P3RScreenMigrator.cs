@@ -195,8 +195,12 @@ namespace CloneSwarm.EditorTools
                 return;
             }
 
-            // ── ของเดิมชื่อเดียวกัน: จำตำแหน่งไว้แล้วลบ ────────────────────────
+            // ── ของเดิมชื่อเดียวกัน: จำ **พ่อกับลำดับ** ไว้แล้วลบ ──────────────
+            // ต้องจำพ่อด้วย ไม่ใช่แค่ลำดับ — สี่จอแท็บถูกย้ายไปอยู่ใต้ P3R_Hub แล้ว
+            // วางใบใหม่กลับที่ Canvas จะได้ panel ซ้อนสองใบที่ไม่มีใครสังเกต
             int siblingIndex = -1;
+            Transform parentSlot = targetCanvas.transform;
+            Dictionary<string, List<Object>> carried = null;
             var existing = FindChildByName(targetCanvas.transform, s.PanelName);
             if (existing != null)
             {
@@ -210,17 +214,20 @@ namespace CloneSwarm.EditorTools
                     return;
                 }
                 siblingIndex = existing.GetSiblingIndex();
+                parentSlot   = existing.parent != null ? existing.parent : targetCanvas.transform;
+                carried      = SnapshotAssetData(existing.gameObject);
                 Object.DestroyImmediate(existing.gameObject);
             }
 
             // ── ก๊อปทั้งก้อน Canvas เข้าไปเป็นลูกของ Canvas จริง ──────────────
             // Instantiate พร้อม parent = ของที่ได้ไปอยู่ในซีนของ parent เลย
             // และสายภายในก้อน (เช่น cardTemplate ที่ชี้ไปลูกตัวเอง) ถูกรีแมปให้อัตโนมัติ
-            var panel = Object.Instantiate(protoCanvas.gameObject, targetCanvas.transform);
+            var panel = Object.Instantiate(protoCanvas.gameObject, parentSlot);
             panel.name = s.PanelName;
 
             StripCanvasComponents(panel);
             StretchToParent(panel);
+            RestoreAssetData(panel, carried);
 
             if (siblingIndex >= 0) panel.transform.SetSiblingIndex(siblingIndex);
 
@@ -286,10 +293,135 @@ namespace CloneSwarm.EditorTools
             return best;
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // ยกข้อมูล asset ข้ามการสร้างทับ
+        // ═══════════════════════════════════════════════════════════════════
+        /// <summary>
+        /// เก็บ **เฉพาะช่องที่ชี้ asset ในโปรเจกต์** ของทุกสคริปต์บน panel ที่กำลังจะถูกลบ
+        ///
+        /// ช่องพวกนี้คือของที่ **ไม่มีแหล่งอื่นให้ดึงกลับ** — `CharacterSelectUI.characters`
+        /// กับ `LobbyUI.maps` ถูกลากใส่ใน Inspector ไม่ได้อยู่ในโค้ดหรือใน builder
+        /// ลบ panel ทิ้งแล้วสร้างใหม่ = จอเลือกตัวละครว่างเปล่า กดอะไรก็ไม่มีอะไรเกิดขึ้น
+        /// ซึ่งเป็นอาการที่ดูไม่ออกว่ามาจากการย้ายจอ
+        ///
+        /// ช่องที่ชี้ของ **ในซีน** ไม่ยกมา — ของที่มันชี้อยู่กำลังจะถูกลบไปพร้อมกัน
+        /// สายพวกนั้นเป็นหน้าที่ของ <c>P3RScreenWirer</c> ซึ่งรู้จักโครงของซีนจริง
+        /// </summary>
+        private static Dictionary<string, List<Object>> SnapshotAssetData(GameObject panel)
+        {
+            var snap = new Dictionary<string, List<Object>>();
+
+            foreach (var mb in panel.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (mb == null || !IsProjectType(mb.GetType())) continue;
+
+                var it = new SerializedObject(mb).GetIterator();
+                bool enter = true;
+                while (it.NextVisible(enter))
+                {
+                    enter = false;
+                    if (it.name == "m_Script") continue;
+
+                    string key = $"{mb.GetType().Name}.{it.propertyPath}";
+                    if (snap.ContainsKey(key)) continue;   // ตัวแรกที่เจอชนะ
+
+                    if (it.propertyType == SerializedPropertyType.ObjectReference)
+                    {
+                        var v = it.objectReferenceValue;
+                        if (v != null && EditorUtility.IsPersistent(v))
+                            snap[key] = new List<Object> { v };
+                    }
+                    else if (it.isArray && it.propertyType == SerializedPropertyType.Generic
+                             && it.arraySize > 0)
+                    {
+                        var list = new List<Object>(it.arraySize);
+                        bool ok = true;
+                        for (int i = 0; i < it.arraySize && ok; i++)
+                        {
+                            var e = it.GetArrayElementAtIndex(i);
+                            if (e.propertyType != SerializedPropertyType.ObjectReference) { ok = false; break; }
+                            var v = e.objectReferenceValue;
+                            if (v != null && !EditorUtility.IsPersistent(v)) { ok = false; break; }
+                            list.Add(v);
+                        }
+                        // ลิสต์ที่มีแต่ null ไม่ต้องยก — ยกไปก็ได้ความว่างเท่าเดิม
+                        if (ok && list.Exists(v => v != null)) snap[key] = list;
+                    }
+                }
+            }
+            return snap;
+        }
+
+        /// <summary>
+        /// ใส่ค่าที่เก็บไว้กลับลง panel ใหม่ — **เฉพาะช่องที่ยังว่าง** เท่านั้น
+        /// ค่าที่ builder ตั้งมาถือว่าตั้งใจเสมอ ของเก่าห้ามทับ
+        /// </summary>
+        private static void RestoreAssetData(GameObject panel, Dictionary<string, List<Object>> snap)
+        {
+            if (snap == null || snap.Count == 0) return;
+
+            int restored = 0;
+            foreach (var mb in panel.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (mb == null || !IsProjectType(mb.GetType())) continue;
+
+                var so = new SerializedObject(mb);
+                bool changed = false;
+
+                var it = so.GetIterator();
+                bool enter = true;
+                while (it.NextVisible(enter))
+                {
+                    enter = false;
+                    if (it.name == "m_Script") continue;
+                    if (!snap.TryGetValue($"{mb.GetType().Name}.{it.propertyPath}", out var saved)) continue;
+
+                    if (it.propertyType == SerializedPropertyType.ObjectReference)
+                    {
+                        if (it.objectReferenceValue != null) continue;
+                        it.objectReferenceValue = saved[0];
+                    }
+                    else if (it.isArray && it.propertyType == SerializedPropertyType.Generic)
+                    {
+                        if (it.arraySize > 0) continue;
+                        it.arraySize = saved.Count;
+                        for (int i = 0; i < saved.Count; i++)
+                            it.GetArrayElementAtIndex(i).objectReferenceValue = saved[i];
+                    }
+                    else continue;
+
+                    changed = true;
+                    restored++;
+                }
+
+                if (changed) so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            if (restored > 0)
+                Debug.Log($"[Migrate] ยกข้อมูล asset จาก panel เดิมมาใส่ตัวใหม่ {restored} ช่อง " +
+                          "(ลิสต์ตัวละคร/แมพ และของที่ลากใส่ Inspector ไว้)");
+        }
+
+        /// <summary>
+        /// หา panel ชื่อนี้ **ทั้งใต้ Canvas** ไม่ใช่แค่ลูกชั้นแรก
+        ///
+        /// เคยหาแค่ลูกชั้นแรกแล้วพังเงียบ — `P3RScreenWirer.EnsureHub` ย้ายสี่จอแท็บ
+        /// ไปไว้ใต้ `P3R_Hub` หลังการย้ายรอบแรก · พอย้ายซ้ำ ตัวหาไม่เจอของเดิมที่ลึกลงไป
+        /// เลยสร้างใบใหม่ไว้ที่ Canvas แทนที่จะทับใบเก่า ได้ panel ชื่อซ้ำสองใบ
+        /// ใบเก่าถือข้อมูลจริง (characters 3 ตัว) ใบใหม่ถือหน้าตาใหม่แต่ข้อมูลว่าง
+        /// และตัวคุมจอที่เกมใช้คือใบเก่า — แก้ builder แล้วไม่เห็นผลเลยสักอย่าง
+        ///
+        /// คืน Transform ของใบเดิมเพื่อให้ผู้เรียกวางใบใหม่ไว้ **ที่เดิมทั้งพ่อและลำดับ**
+        /// การย้ายซ้ำจึงได้ผลเหมือนเดิมทุกครั้ง ไม่ว่าจะย้ายไปแล้วกี่รอบ
+        /// </summary>
         private static Transform FindChildByName(Transform parent, string name)
         {
             foreach (Transform child in parent)
+            {
                 if (child.name == name) return child;
+                var deeper = FindChildByName(child, name);
+                if (deeper != null) return deeper;
+            }
             return null;
         }
 

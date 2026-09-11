@@ -199,7 +199,7 @@ public class MapSelectUI : MonoBehaviour
         if (selected == null) return;
 
         // ภาพพรีวิวต้องมีเจ้าของเดียว — ถ้า carousel ถือภาพใหญ่อยู่ ปล่อยให้มันวาด
-        bool previewOwnedByCarousel = carousel != null && carousel.previewImage != null;
+        bool previewOwnedByCarousel = carousel != null && carousel.featuredImage != null;
         if (!previewOwnedByCarousel)
         {
             if (detailPreview != null)
@@ -208,7 +208,7 @@ public class MapSelectUI : MonoBehaviour
                 detailPreview.enabled = selected.previewImage != null;
             }
         }
-        else if (detailPreview != null && detailPreview != carousel.previewImage)
+        else if (detailPreview != null && detailPreview != carousel.featuredImage)
         {
             detailPreview.enabled = false;
         }

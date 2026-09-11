@@ -162,6 +162,17 @@ namespace CloneSwarm.EditorTools
             return (RectTransform)go.transform;
         }
 
+        /// <summary>
+        /// Image สำหรับงานประดับ — **`raycastTarget` ปิดไว้**
+        ///
+        /// จอ P3R หนึ่งจอมี Image หลายสิบตัวที่เป็นพื้นหลัง/เส้นคั่น/แถบสี ล้วนไม่ต้องรับคลิก
+        /// ปล่อยให้รับทั้งหมดคือให้ EventSystem ไล่ raycast ของที่ไม่มีใครกดทุกเฟรม
+        ///
+        /// **อะไรที่ต้องกดได้ ต้องเปิดกลับเอง** — `bg.raycastTarget = true;`
+        /// ลืมเปิดแล้วจะได้ของที่ดูครบทุกอย่าง (มี Button · interactable ติ๊ก · listener ต่อแล้ว)
+        /// แต่กดไม่ติด และ **ไม่มีอะไรฟ้องเลย** เพราะ EventSystem ไม่รู้ด้วยซ้ำว่าเมาส์ชี้โดนมัน
+        /// เคยกินเวลาหาสองรอบกับการ์ดเลือกตัวละคร · ดู EnsureClickable ใน CarouselBase
+        /// </summary>
         public static Image NewImage(string name, Transform parent, Color color)
         {
             var img = NewRect(name, parent).gameObject.AddComponent<Image>();

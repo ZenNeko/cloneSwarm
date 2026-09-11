@@ -20,6 +20,12 @@ public class CharacterCardUI : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI weaponText;
 
+    [Tooltip("แถบสีบางที่ขอบซ้ายการ์ด — ลูกชื่อ Accent · เปลี่ยนสีตอนถูกเลือก · " +
+             "เป็นตัวที่บอกว่าใบไหนถูกเลือกได้ชัดกว่าสีพื้น ซึ่งต่างกันน้อยมากบนพื้นมืด")]
+    public Image           accentImage;
+    public Color           accentSelected = new Color32(0x2C, 0x3C, 0xFF, 0xFF);
+    public Color           accentNormal   = new Color(1f, 1f, 1f, 0.10f);
+
     [Header("Lock Overlay (auto-find: child ชื่อ LockOverlay / LockCostText)")]
     [Tooltip("แผ่นทึบ + ไอคอนกุญแจ ที่คลุมการ์ดตอนยังไม่ปลดล็อก")]
     public GameObject      lockOverlay;
@@ -40,6 +46,7 @@ public class CharacterCardUI : MonoBehaviour
         if (iconImage == null) iconImage = transform.Find("Icon")?.GetComponent<Image>();
         if (nameText  == null) nameText  = transform.Find("NameText")?.GetComponent<TextMeshProUGUI>();
         if (weaponText == null) weaponText = transform.Find("WeaponText")?.GetComponent<TextMeshProUGUI>();
+        if (accentImage == null) accentImage = transform.Find("Accent")?.GetComponent<Image>();
         if (lockOverlay == null) lockOverlay = transform.Find("LockOverlay")?.gameObject;
         if (lockCostText == null)
             lockCostText = transform.Find("LockCostText")?.GetComponent<TextMeshProUGUI>()
@@ -77,6 +84,8 @@ public class CharacterCardUI : MonoBehaviour
     {
         if (bgImage != null)
             bgImage.color = on ? selectedColor : normalColor;
+        if (accentImage != null)
+            accentImage.color = on ? accentSelected : accentNormal;
     }
 
     /// <summary>แสดง/ซ่อน overlay ล็อก + ราคา</summary>

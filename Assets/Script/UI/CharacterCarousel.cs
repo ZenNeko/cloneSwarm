@@ -1,148 +1,28 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
-/// วงหมุนเลือกตัวละครฝั่งซ้าย — ตัวที่เลือกอยู่กลางแผงเสมอ เลื่อนแล้ววนไม่รู้จบ
+/// ลิสต์เลือกตัวละครฝั่งซ้าย — กลไกทั้งหมดอยู่ใน <see cref="CarouselBase{TData,TCard}"/>
+/// ตัวนี้มีอยู่เพราะ Unity แปะ component ที่เป็น generic แบบเปิดลง GameObject ไม่ได้
+/// ต้องมีคลาสที่ปิดชนิดแล้ว · เหลือไว้แค่การผูกข้อมูลกับชื่อที่อ่านออกจากฝั่งผู้เรียก
 ///
-/// กลไกการวาง/ลาก/ไถลเข้าช่องอยู่ใน CarouselBase ทั้งหมด ตัวนี้บอกแค่
-/// "มีตัวละครกี่ตัว" กับ "ผูกข้อมูลลงการ์ดยังไง" บวกชั้นตัวเด่นที่เป็นของเฉพาะหน้าเลือกตัวละคร
-///
-/// ต้องวางบน LeftPanel ไม่ใช่บน Canvas ที่ CharacterSelectUI อยู่ — ดูเหตุผลใน CarouselBase
+/// ต้องวางบนแผงที่จะลาก (P3R_Character/CardList) ไม่ใช่บน Canvas — ดูเหตุผลใน CarouselBase
 /// </summary>
-public class CharacterCarousel : CarouselBase
+public class CharacterCarousel : CarouselBase<CharacterData, CharacterCardUI>
 {
-    // ── Hero layer ────────────────────────────────────────────────────────
-    [Header("Hero Layer (นอก mask — ล้นออกนอกแถบได้)")]
-    [Tooltip("CanvasGroup ของ object ตัวเด่น ที่วางใต้ Panel_Character ต่อจาก LeftPanel - ปล่อยว่างได้")]
-    public CanvasGroup heroGroup;
-    [Tooltip("Image ที่จะใส่ portrait ของตัวที่อยู่กลาง")]
-    public Image heroImage;
-    [Tooltip("ความเร็วจาง/โผล่ของตัวเด่น (หน่วยอัลฟาต่อวินาที)")]
-    public float heroFadeSpeed = 6f;
+    protected override void Bind(CharacterCardUI card, CharacterData data, Color sel, Color norm)
+        => card.SetData(data, sel, norm);
 
-    [Range(0f, 1f)]
-    [Tooltip("ความทึบของตัวเด่นตอนเข้าช่องนิ่งแล้ว")]
-    public float heroIdleAlpha = 1f;
+    protected override void SetCardSelected(CharacterCardUI card, bool selected)
+        => card.SetSelected(selected);
 
-    [Range(0f, 1f)]
-    [Tooltip("ความทึบระหว่างที่ยังลาก/ไถลอยู่ - ตั้ง 1 เท่ากับ heroIdleAlpha = ไม่จางเลย")]
-    public float heroMovingAlpha = 0f;
+    /// <summary>ภาพใหญ่ของตัวละครคือ portrait — icon เป็นของการ์ดใบเล็ก</summary>
+    protected override Sprite FeaturedSpriteOf(CharacterData data)
+        => data != null ? data.portrait : null;
 
-    // ── Data ──────────────────────────────────────────────────────────────
-    private readonly List<CharacterData>   roster = new();
-    private readonly List<CharacterCardUI> cards  = new();
+    // ── ชื่อที่อ่านออกจากฝั่ง CharacterSelectUI ───────────────────────────
+    /// <summary>อ่านตัวละครตาม index แบบ bounds-safe</summary>
+    public CharacterData GetCharacter(int index) => GetItem(index);
 
-    private Color selectedColor, normalColor;
-
-    public int Count => roster.Count;
-
-    protected override int ItemCount => roster.Count;
-
-    // ══════════════════════════════════════════════════════════════════════
-    // Setup
-    // ══════════════════════════════════════════════════════════════════════
-    /// <summary>เรียกจาก CharacterSelectUI ครั้งเดียวตอน Start</summary>
-    public void Setup(List<CharacterData> characters, GameObject cardTemplate,
-                      RectTransform container, Color selColor, Color normColor)
-    {
-        roster.Clear();
-        cards.Clear();
-        if (characters != null)
-            foreach (var cd in characters)
-                if (cd != null) roster.Add(cd);
-
-        selectedColor = selColor;
-        normalColor   = normColor;
-
-        // ตรวจก่อนว่าไม่ได้ชี้มาที่ container ของการ์ดเอง — ดู ValidateOverlayGroup
-        heroGroup = ValidateOverlayGroup(heroGroup, container, "heroGroup");
-        heroImage = ValidateOverlayImage(heroImage, "heroImage");
-
-        // ตัวเด่นวางทับช่องกลางและใหญ่กว่าการ์ด ถ้ามันรับ raycast จะดูดคลิกกับการลากไปหมด
-        // การ์ดใต้มันจะกดไม่ได้เลย — มันเป็นของประดับล้วน จึงปิดการรับ input ทิ้งตั้งแต่ต้น
-        if (heroGroup != null)
-        {
-            heroGroup.blocksRaycasts = false;
-            heroGroup.interactable   = false;
-        }
-        if (heroImage != null) heroImage.raycastTarget = false;
-
-        SetupViews(cardTemplate, container);
-    }
-
-    // ── Hooks จาก CarouselBase ────────────────────────────────────────────
-    protected override void OnViewBuilt(int slotIndex, GameObject go)
-    {
-        var card = go.GetComponent<CharacterCardUI>();
-        if (card == null) card = go.AddComponent<CharacterCardUI>();
-        cards.Add(card);
-    }
-
-    protected override void BindView(int slotIndex, int itemIndex)
-    {
-        if (slotIndex >= cards.Count) return;
-        cards[slotIndex].SetData(roster[itemIndex], selectedColor, normalColor);
-    }
-
-    protected override void SetViewSelected(int slotIndex, bool selected)
-    {
-        if (slotIndex >= cards.Count) return;
-        cards[slotIndex].SetSelected(selected);
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // Public API (CharacterSelectUI เรียก)
-    // ══════════════════════════════════════════════════════════════════════
     /// <summary>อัปเดตหน้าตาทุก view รวมถึง overlay ล็อก — เรียกหลังปลดล็อกสำเร็จ</summary>
     public void RefreshLocks() => RefreshAll();
-
-    /// <summary>
-    /// index ใน roster ของ carousel — ไม่ใช่ index ใน list ที่ส่งเข้ามา
-    /// เพราะ Setup ข้าม entry ที่เป็น null ทิ้ง ช่องว่างช่องเดียวก็ทำให้เลขเคลื่อนแล้ว
-    /// </summary>
-    public int IndexOf(CharacterData cd)
-    {
-        if (cd == null) return -1;
-        for (int i = 0; i < roster.Count; i++)
-            if (roster[i] == cd) return i;
-        return -1;
-    }
-
-    /// <summary>อ่านตัวละครตาม index แบบ bounds-safe</summary>
-    public CharacterData GetCharacter(int index)
-    {
-        if (roster.Count == 0) return null;
-        return roster[Wrap(index)];
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // Hero layer
-    // ══════════════════════════════════════════════════════════════════════
-    /// <summary>
-    /// ตัวเด่นจางหายระหว่างที่ยังไม่นิ่ง แล้วโผล่กลับพร้อม portrait ของตัวใหม่ตอนเข้าช่องแล้ว
-    /// ตั้งใจไม่ให้มันวิ่งตามการ์ด เพราะมันอยู่นอก mask การวิ่งจะเห็นภาพใหญ่กวาดข้ามจอ
-    /// </summary>
-    protected override void OnCenterSettledVisual(bool instant)
-    {
-        if (heroGroup == null) return;
-
-        bool  show = IsIdle;
-        float goal = show ? heroIdleAlpha : heroMovingAlpha;
-
-        if (instant) heroGroup.alpha = goal;
-        else heroGroup.alpha = Mathf.MoveTowards(heroGroup.alpha, goal,
-                                                 heroFadeSpeed * Time.unscaledDeltaTime);
-
-        if (show && heroImage != null && roster.Count > 0)
-        {
-            var cd  = roster[CenterIndex];
-            var spr = cd != null ? cd.portrait : null;
-            if (heroImage.sprite != spr)
-            {
-                heroImage.sprite  = spr;
-                heroImage.enabled = spr != null;
-            }
-        }
-    }
 }
