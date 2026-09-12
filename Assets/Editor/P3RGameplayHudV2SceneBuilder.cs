@@ -45,6 +45,21 @@ namespace CloneSwarm.EditorTools
 
         private const float Pad = 40f;
 
+        /// <summary>
+        /// sprite ของแถบ — **จำเป็น ไม่ใช่ของตกแต่ง**
+        ///
+        /// `Image` ที่ไม่มี sprite จะตกไปใช้ `Graphic.OnPopulateMesh` ซึ่งวาดสี่เหลี่ยม
+        /// เต็มกรอบและ **ข้าม `type` กับ `fillAmount` ทั้งหมด** · แถบที่ไม่มี sprite จึง
+        /// ค้างเต็มตลอดเกมโดยไม่มี error สักบรรทัด — `GameHUD` สั่ง `fillAmount` ไปก็เงียบ
+        ///
+        /// ใช้ตัวเดียวกับที่แถบ HUD เดิมใช้อยู่แล้ว (ยืนยันจาก `HP_Fill`/`EXP_Fill`/
+        /// `Charge_Fill` ในซีน) เพื่อไม่ให้หน้าตาเปลี่ยนและไม่ต้องเพิ่ม asset ใหม่เข้าโปรเจกต์
+        /// </summary>
+        private const string BarSprite =
+            "Assets/_Heathen Engineering/Assets/UX/Icons/Flat Icons [Free]/Free Flat Solid Brush Icon.png";
+
+        private static Sprite barSprite;
+
         private static readonly Color Slab    = new Color32(0x18, 0x24, 0xD8, 0xFF);
         private static readonly Color Chip    = new Color32(0x11, 0x18, 0x38, 0xFF);
         private static readonly Color BarBack = new Color32(0x1A, 0x1F, 0x33, 0xFF);
@@ -55,6 +70,16 @@ namespace CloneSwarm.EditorTools
         public static void Build()
         {
             if (!BeginScene(ScenePath, "GAMEPLAY HUD v2", out var scene)) return;
+
+            // โหลด **หลัง** BeginScene เสมอ — โหลดก่อน NewScene แล้ว batchmode จะปลด asset
+            // ทิ้งจนกลายเป็น fake-null ซีนสร้างจนจบ exit 0 แต่ไม่มีอะไรอยู่ในนั้น
+            barSprite = AssetDatabase.LoadAssetAtPath<Sprite>(BarSprite);
+            if (barSprite == null)
+            {
+                Debug.LogError($"[P3R] หา sprite ของแถบไม่เจอที่ {BarSprite} — ยกเลิกทั้งรอบ\n" +
+                               "ปล่อยผ่านจะได้แถบที่ขยับไม่ได้ทั้งจอโดยไม่มี error ตอนรัน");
+                return;
+            }
 
             BuildCamera(new Color32(0x14, 0x16, 0x1C, 0xFF));
             BuildEventSystem();
@@ -71,15 +96,20 @@ namespace CloneSwarm.EditorTools
             var panel = NewRect(PanelName, canvas.transform);
             Stretch(panel);
 
-            var hud = panel.gameObject.AddComponent<GameHUD>();
+            // ตัวคุมบน panel เป็น **ตัวขน** ไม่ใช่ตัวที่จะทำงานจริง — ในซีนเกม ตัวคุมทุกตัว
+            // อยู่บน `HUDCanvas` มาตลอด · ตัวย้ายจะคัดค่าจากตรงนี้ไปใส่ตัวจริงแล้วลบพวกนี้ทิ้ง
+            // วิธีนี้ทำให้ "สายที่ควรเป็น" อยู่ในไฟล์ซีนจริงๆ ตรวจได้ ไม่ใช่ตารางในหัวใคร
+            var hud       = panel.gameObject.AddComponent<GameHUD>();
+            var weapons   = panel.gameObject.AddComponent<WeaponStatHUD>();
+            var boss      = panel.gameObject.AddComponent<BossHUDUI>();
+            var objective = panel.gameObject.AddComponent<ObjectiveTrackerHUD>();
 
             BuildTopLeft(panel, hud);
-            BuildTopCenter(panel);
-            BuildTopRight(panel);
+            BuildTopCenter(panel, boss);
+            BuildTopRight(panel, objective);
             BuildAnnouncement(panel, hud);
-            BuildParty(panel);
             BuildBottomLeft(panel, hud);
-            BuildBottomCenter(panel);
+            BuildBottomCenter(panel, weapons);
             BuildBottomRight(panel, hud);
             BuildRespawnOverlay(panel, hud);
 
@@ -112,22 +142,49 @@ namespace CloneSwarm.EditorTools
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // บนกลาง — ที่ว่างของ BossHUDUI (มันสร้างแถบเองตอนรัน)
+        // บนกลาง — แถบบอส + แถบร่าย
+        //
+        // `BossHUDUI` สร้างแถบบอสเองจาก `miniBossBarPrefab` ตอนรัน ที่นี่จึงเตรียม
+        // แค่ root กับ container · ส่วนแถบร่ายเป็นของนิ่งที่มันขับตรงๆ ต้องสร้างครบ
         // ═══════════════════════════════════════════════════════════════════
-        private static void BuildTopCenter(RectTransform root)
+        private static void BuildTopCenter(RectTransform root, BossHUDUI boss)
         {
-            var boss = NewRect("BossArea", root);
-            CenterTop(boss, Pad, 760f, 96f);
+            var panel = NewRect("BossPanel", root);
+            CenterTop(panel, Pad, 760f, 96f);
 
-            var hint = NewMono("PlaceholderHint", boss, "BOSS AREA", 14f, 0.28f,
-                               TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.18f));
-            Stretch(hint.rectTransform);
+            var list = NewRect("BossContainer", panel);
+            Stretch(list);
+            var vlg = list.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing              = 6f;
+            vlg.childControlWidth    = true;
+            vlg.childControlHeight   = false;
+            vlg.childForceExpandWidth  = true;
+            vlg.childForceExpandHeight = false;
+            vlg.childAlignment       = TextAnchor.UpperCenter;
+
+            boss.miniBossPanel     = panel.gameObject;
+            boss.miniBossContainer = list;
+
+            // แถบร่าย — อยู่ใต้แถบบอส · สี่เหลี่ยมตรง ไม่เฉือน (ความยาว = เวลาที่เหลือ)
+            var cast = NewRect("CastBar", root);
+            CenterTop(cast, Pad + 104f, 560f, 34f);
+
+            var castName = NewMono("CastName", cast, "CASTING", 16f, 0.18f,
+                                   TextAlignmentOptions.MidlineLeft);
+            TopLeft(castName.rectTransform, 0f, 0f, 380f, 22f);
+            Guard(castName);
+
+            boss.castFill     = FilledBar(cast, "Cast", 0f, 0f, 560f, 10f,
+                                          new Color32(0xF0, 0x86, 0x54, 0xFF));
+            boss.castFill.fillAmount = 0f;      // เริ่มที่ว่าง ไม่ใช่เต็ม
+            boss.castNameText = castName;
+            boss.castBarRoot  = cast.gameObject;
         }
 
         // ═══════════════════════════════════════════════════════════════════
         // บนขวา — ที่ว่างของ ObjectiveTrackerHUD
         // ═══════════════════════════════════════════════════════════════════
-        private static void BuildTopRight(RectTransform root)
+        private static void BuildTopRight(RectTransform root, ObjectiveTrackerHUD objective)
         {
             var panel = NewRect("ObjectivePanel", root);
             TopRight(panel, Pad, Pad, 420f, 220f);
@@ -147,6 +204,9 @@ namespace CloneSwarm.EditorTools
             vlg.childForceExpandWidth  = true;
             vlg.childForceExpandHeight = false;
             vlg.childAlignment       = TextAnchor.UpperRight;
+
+            objective.panelRoot      = panel.gameObject;
+            objective.entryContainer = list;
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -163,38 +223,16 @@ namespace CloneSwarm.EditorTools
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // กลางซ้าย — ที่ว่างของ TempPartyHUD
-        // ═══════════════════════════════════════════════════════════════════
-        private static void BuildParty(RectTransform root)
-        {
-            var list = NewRect("PartyContainer", root);
-            list.anchorMin = list.anchorMax = new Vector2(0f, 0.5f);
-            list.pivot     = new Vector2(0f, 0.5f);
-            list.sizeDelta = new Vector2(380f, 120f);
-            list.anchoredPosition = new Vector2(Pad, 20f);
-
-            var vlg = list.gameObject.AddComponent<VerticalLayoutGroup>();
-            vlg.spacing              = 8f;
-            vlg.childControlWidth    = true;
-            vlg.childControlHeight   = false;
-            vlg.childForceExpandWidth  = true;
-            vlg.childForceExpandHeight = false;
-            vlg.childAlignment       = TextAnchor.UpperLeft;
-        }
-
-        // ═══════════════════════════════════════════════════════════════════
         // ล่างซ้าย — บัฟ · เลเวล · HP · โล่ · EXP
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildBottomLeft(RectTransform root, GameHUD hud)
         {
-            var buffs = NewRect("BuffContainer", root);
-            BottomLeft(buffs, Pad, 176f, 420f, 30f);
-            var hlg = buffs.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing              = 8f;
-            hlg.childControlWidth    = false;
-            hlg.childControlHeight   = false;
-            hlg.childForceExpandWidth  = false;
-            hlg.childForceExpandHeight = false;
+            // **ไม่มีแถวบัฟกับแถวปาร์ตี้ตามแบบ** — แบบวาดชิป [HST][BRN 3][SHD] กับแถว
+            // PLAYER 1/2 ไว้ แต่ในเกมไม่มีระบบไหนป้อนได้เลย:
+            //   `FloatingBuffUI` เป็น world-space ลอยเหนือหัวผู้เล่น ไม่ใช่ชิปมุมจอ
+            //   `TempPartyHUD` bootstrap ตัวเองตอนรันด้วย DontDestroyOnLoad ไม่อยู่ในซีน
+            //     และไฟล์มันเขียนไว้เองว่าเป็นของชั่วคราวที่ตั้งใจให้รื้อทิ้ง
+            // วางกล่องเปล่าไว้รอคือบอกคนอ่านโค้ดว่ามีระบบที่ยังไม่มีอยู่จริง
 
             var lv = NewImage("LevelSlab", root, Slab);
             BottomLeft(lv.rectTransform, Pad, 96f, 108f, 52f);
@@ -227,35 +265,72 @@ namespace CloneSwarm.EditorTools
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // ล่างกลาง — ที่ว่างของ WeaponStatHUD (มันสร้างช่องเองจาก template)
+        // ล่างกลาง — ช่องอาวุธ 6 + ช่องสเตตัส 6
+        //
+        // `WeaponStatHUD` ใช้ **อาเรย์ขนาดตายตัว** ที่ชี้ `bg`/`icon`/`nameTxt`/`levelTxt`
+        // ทีละช่อง ไม่ใช่ container ที่มันสร้างของเอง · ช่องทั้งหมดจึงต้องมีอยู่จริงในซีน
+        // ตั้งแต่แรก และต้องต่อเข้าอาเรย์ให้ครบ ไม่งั้นช่องที่ขาดจะเงียบไปเฉยๆ
         // ═══════════════════════════════════════════════════════════════════
-        private static void BuildBottomCenter(RectTransform root)
+        private static void BuildBottomCenter(RectTransform root, WeaponStatHUD weapons)
         {
-            SlotStrip(root, "WeaponRow", "WEAPONS", 118f);
-            SlotStrip(root, "StatRow",   "PASSIVES", 62f);
+            // ระยะสองแถวต้องเผื่อป้ายกำกับที่ลอยอยู่เหนือแต่ละแถว — ชิดกว่านี้ป้ายของแถวล่าง
+            // จะไปทับช่องของแถวบน (เห็นชัดตอนช่องถูกเฉือน มุมมันยื่นออกมา)
+            weapons.weaponSlots = SlotStrip(root, "WeaponRow", "WEAPONS", 132f,
+                                            PlayerWeaponManager.MaxWeaponSlots);
+            weapons.statSlots   = SlotStrip(root, "StatRow",   "PASSIVES", 56f,
+                                            PlayerStatManager.MaxStatSlots);
         }
 
-        private static void SlotStrip(RectTransform root, string name, string label, float y)
+        private static WeaponStatHUD.SlotUI[] SlotStrip(RectTransform root, string name,
+                                                        string label, float y, int count)
         {
+            const float SlotW = 62f, SlotH = 48f, Gap = 10f;
+            float width = count * SlotW + (count - 1) * Gap;
+
             var strip = NewRect(name, root);
             strip.anchorMin = strip.anchorMax = new Vector2(0.5f, 0f);
             strip.pivot     = new Vector2(0.5f, 0f);
-            strip.sizeDelta = new Vector2(520f, 52f);
+            strip.sizeDelta = new Vector2(width, SlotH);
             strip.anchoredPosition = new Vector2(0f, y);
 
-            var cap = NewMono("Label", strip, label, 13f, 0.24f,
+            var cap = NewMono("Label", strip, label, 12f, 0.24f,
                               TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.35f));
-            TopLeft(cap.rectTransform, 0f, -18f, 520f, 18f);
+            TopLeft(cap.rectTransform, 0f, -16f, width, 16f);
 
-            var row = NewRect($"{name}Con", strip);
-            Stretch(row);
-            var hlg = row.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing              = 12f;
-            hlg.childControlWidth    = false;
-            hlg.childControlHeight   = false;
-            hlg.childForceExpandWidth  = false;
-            hlg.childForceExpandHeight = false;
-            hlg.childAlignment       = TextAnchor.MiddleCenter;
+            var slots = new WeaponStatHUD.SlotUI[count];
+            for (int i = 0; i < count; i++)
+            {
+                var slot = NewRect($"Slot_{i}", strip);
+                slot.anchorMin = slot.anchorMax = new Vector2(0f, 0.5f);
+                slot.pivot     = new Vector2(0f, 0.5f);
+                slot.sizeDelta = new Vector2(SlotW, SlotH);
+                slot.anchoredPosition = new Vector2(i * (SlotW + Gap), 0f);
+
+                var bg = NewImage("Bg", slot, Chip);
+                Stretch(bg.rectTransform);
+                Shear(bg);
+
+                // ไอคอน — ปิดไว้จนกว่าจะมีของจริง · WeaponStatHUD ตั้ง sprite กับ color เอง
+                var icon = NewImage("Icon", slot, Color.white);
+                Inset(icon.rectTransform, 10f, 8f, 10f, 16f);
+                icon.enabled = false;
+
+                var nameTxt = NewMono("Abbrev", slot, "", 12f, 0.1f,
+                                      TextAlignmentOptions.Center);
+                BottomLeft(nameTxt.rectTransform, 0f, 2f, SlotW, 16f);
+                Guard(nameTxt);
+
+                var lvTxt = NewMono("Level", slot, "", 11f, 0.06f,
+                                    TextAlignmentOptions.TopRight, new Color(1f, 1f, 1f, 0.7f));
+                TopRight(lvTxt.rectTransform, 4f, 3f, 34f, 14f);
+                Guard(lvTxt);
+
+                slots[i] = new WeaponStatHUD.SlotUI
+                {
+                    bg = bg, icon = icon, nameTxt = nameTxt, levelTxt = lvTxt,
+                };
+            }
+            return slots;
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -322,6 +397,7 @@ namespace CloneSwarm.EditorTools
             // แผ่นคูลดาวน์ — Filled แนวตั้งให้ไหลลงเหมือนเกมแนวนี้ทั่วไป
             var cd = NewImage("CooldownFill", slot, new Color(6 / 255f, 8 / 255f, 18 / 255f, 0.72f));
             Stretch(cd.rectTransform);
+            cd.sprite      = barSprite;       // เหตุผลเดียวกับแถบ — ไม่มี sprite = fill ไม่ขยับ
             cd.type        = Image.Type.Filled;
             cd.fillMethod  = Image.FillMethod.Vertical;
             cd.fillOrigin  = (int)Image.OriginVertical.Top;
@@ -392,8 +468,11 @@ namespace CloneSwarm.EditorTools
             var track = NewImage($"{name}Track", parent, BarBack);
             BottomLeft(track.rectTransform, x, y, w, h);
 
+            track.sprite = barSprite;
+
             var fill = NewImage("Fill", track.rectTransform, color);
             Stretch(fill.rectTransform);
+            fill.sprite     = barSprite;      // ไม่มี sprite = fillAmount ไม่มีผล (ดู BarSprite)
             fill.type       = Image.Type.Filled;
             fill.fillMethod = Image.FillMethod.Horizontal;
             fill.fillOrigin = (int)Image.OriginHorizontal.Left;
