@@ -783,7 +783,44 @@ namespace CloneSwarm.EditorTools
                 Require(broken == 0, $"ไม่มี component ที่สคริปต์หายในซีนเกม (เจอ {broken})");
 
                 CheckLevelUpCards();
+                CheckBuildStripSlots();
                 CheckMissingGlyphs();
+            }
+
+            /// <summary>
+            /// แถบ build ต้องมีช่องชุดเดียว ไม่ใช่สองชุดซ้อน
+            ///
+            /// builder เรียก `SetEntries` ด้วยข้อมูลจำลองตอนสร้างซีน เพื่อให้ภาพต้นแบบ
+            /// ดูมีของ — ซึ่งทำให้ `EnsureSlots` สร้าง object ช่องจริงลงซีนแล้วถูกเซฟติดไป
+            /// พอเกมรัน `built` เป็น false อีกครั้ง มันสร้างชุดที่สองทับ ชุดเก่ายังอยู่ข้างใต้
+            /// ผู้เล่นจึงเห็นอาวุธ/พาสซีฟที่ตัวเองไม่มี (ARC Lv2 · ORB Lv1 · ATK Lv2 · HST Lv1)
+            ///
+            /// เรียก `SetEntries` ด้วยลิสต์ว่างเพื่อบังคับให้ EnsureSlots ทำงานจริง
+            /// แล้วนับช่อง — เกินจำนวนที่ตั้งไว้เมื่อไร แปลว่าชุดเก่ายังไม่ถูกล้าง
+            /// </summary>
+            private void CheckBuildStripSlots()
+            {
+                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
+                if (strip == null || strip.weaponSlotArea == null) return;
+
+                strip.SetEntries(new List<BuildStripUI.Entry>(), new List<BuildStripUI.Entry>());
+
+                int w = CountSlots(strip.weaponSlotArea, strip);
+                int p = CountSlots(strip.passiveSlotArea, strip);
+
+                Require(w == strip.weaponSlotCount,
+                        $"แถบ build: ช่องอาวุธมีชุดเดียว ({w} ช่อง · ตั้งไว้ {strip.weaponSlotCount})");
+                Require(strip.passiveSlotArea == null || p == strip.passiveSlotCount,
+                        $"แถบ build: ช่องพาสซีฟมีชุดเดียว ({p} ช่อง · ตั้งไว้ {strip.passiveSlotCount})");
+            }
+
+            private static int CountSlots(RectTransform area, BuildStripUI strip)
+            {
+                if (area == null) return 0;
+                // นับเฉพาะช่องที่ **เปิดอยู่** — ของที่ถูกสั่งทำลายใน play mode ยังอยู่ในลำดับชั้น
+                // จนจบเฟรม แต่ถูกปิดไปแล้วจึงไม่มีผลกับสิ่งที่ผู้เล่นเห็น
+                return area.GetComponentsInChildren<BuildStripSlot>(true)
+                           .Count(s => s != strip.slotTemplate && s.gameObject.activeSelf);
             }
 
             /// <summary>
@@ -914,16 +951,25 @@ namespace CloneSwarm.EditorTools
             private void CheckRecommendedLift(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
             {
                 int rec = cards.FindIndex(c => c.isRecommended);
-                if (rec < 0) return;
+                if (rec < 0 || slots.Count == 0) return;
 
+                // เช็คตาม **ค่าที่ตั้งไว้จริง** ไม่ใช่สมมติว่าต้องยกเสมอ
+                // เจ้าของเลือกให้การ์ดเรียบเสมอกัน (recommendedLift = 0) · ป้ายแนะนำทำหน้าที่แทน
+                // เขียนแบบนี้ทำให้เทสต์ยังมีความหมายไม่ว่าจะตั้งค่าไหน
+                float lift = slots[rec].recommendedLift;
                 float recY = ((RectTransform)slots[rec].transform).anchoredPosition.y;
+
                 for (int i = 0; i < slots.Count; i++)
                 {
                     if (i == rec) continue;
                     float y = ((RectTransform)slots[i].transform).anchoredPosition.y;
-                    Require(recY > y + 1f,
-                            $"ใบที่แนะนำ (ใบ {rec + 1}) ถูกยกสูงกว่าใบ {i + 1} " +
-                            $"({recY:0} vs {y:0})");
+
+                    if (lift > 0f)
+                        Require(recY > y + 1f,
+                                $"ใบที่แนะนำ (ใบ {rec + 1}) ถูกยกสูงกว่าใบ {i + 1} ({recY:0} vs {y:0})");
+                    else
+                        Require(Mathf.Abs(recY - y) < 0.5f,
+                                $"การ์ดใบ {i + 1} อยู่ระดับ Y เดียวกับใบอื่น ({y:0} vs {recY:0})");
                 }
             }
 

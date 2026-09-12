@@ -363,9 +363,7 @@ namespace CloneSwarm.EditorTools
                 SpawnStatRow((RectTransform)c.statRowsContainer, c.statRowPrefab, "COOLDOWN", "1.4s", "1.1s");
             }
 
-            var rt2 = (RectTransform)c.transform;
-            if (data.recommended)
-                rt2.anchoredPosition = new Vector2(rt2.anchoredPosition.x, 22f);
+            // ตัวอย่างในซีนต้นแบบก็อยู่ระดับเดียวกันหมด ให้ตรงกับตอนรันจริง
         }
 
         /// <summary>
@@ -444,6 +442,11 @@ namespace CloneSwarm.EditorTools
             rt.anchoredPosition = Vector2.zero;
 
             var card = rt.gameObject.AddComponent<UpgradeCardUI>();
+
+            // **การ์ดทุกใบอยู่ระดับ Y เท่ากัน** — แบบเดิมยกใบแนะนำขึ้น 22px เป็นสัญญาณ
+            // ลำดับชั้น แต่เจ้าของเลือกให้เรียบเสมอกัน · ป้าย "แนะนำ" ยังบอกใบที่แนะนำอยู่
+            // ตั้งเป็น 0 ไม่ใช่ลบโค้ดทิ้ง — อยากได้กลับเมื่อไรติ๊กที่ Inspector ได้เลย
+            card.recommendedLift = 0f;
 
             // ① พื้นการ์ด — ตัวรับเมาส์ของทั้งใบ
             var body = NewImage("Body", rt, CardBg);

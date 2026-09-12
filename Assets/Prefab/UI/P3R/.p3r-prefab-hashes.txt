@@ -1,7 +1,7 @@
 # แฮชของ prefab ที่ P3R builder เขียนไว้ล่าสุด — ห้ามแก้ด้วยมือ
 # ไฟล์ไหนแฮชไม่ตรง แปลว่ามีคนแก้หลัง builder เขียน SavePrefab จะไม่ทับให้
 Assets/Prefab/UI/P3R/CharacterCard.prefab|tbTsWsXKEQXVF6UqAh1G9A==
-Assets/Prefab/UI/P3R/LevelUpCard.prefab|MhCQdJrKeaUpgWQWC2oa7Q==
+Assets/Prefab/UI/P3R/LevelUpCard.prefab|MHU7WxBA4jmvRaHIch80AA==
 Assets/Prefab/UI/P3R/LevelUpStatRow.prefab|1TmzR9EHDPgq5q4/HbkdDg==
 Assets/Prefab/UI/P3R/LobbyAbilityChip.prefab|C+L3m8ueA+nZNnFt5un7PQ==
 Assets/Prefab/UI/P3R/LobbyPartyRow.prefab|rV7gvQWdU1u/5gTkenS64w==

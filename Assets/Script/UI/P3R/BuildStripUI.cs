@@ -167,6 +167,28 @@ namespace CloneSwarm.UI.P3R
         private void SpawnRow(RectTransform area, int count, List<BuildStripSlot> into, string tag)
         {
             if (area == null) return;
+
+            // ── ล้างช่องที่ค้างมาจากตอนสร้างซีนก่อน ────────────────────────────
+            //
+            // builder เรียก SetEntries ด้วยข้อมูลจำลองตอน build เพื่อให้ภาพต้นแบบดูมีของ
+            // ซึ่งทำให้ EnsureSlots สร้าง object ช่องจริงลงซีนแล้วถูกเซฟติดไปด้วย
+            // พอเกมรัน `built` เป็น false อีกครั้ง มันจึงสร้าง **ชุดที่สองซ้อนทับ**
+            // ชุดเก่ายังอยู่ข้างใต้ ค่าจำลอง (ARC Lv2 · ORB Lv1 · ATK Lv2 · HST Lv1)
+            // จึงโผล่ออกมาตามช่องที่ชุดใหม่เป็นช่องว่าง — ผู้เล่นเห็นของที่ตัวเองไม่มี
+            //
+            // ล้างที่นี่แทนการไปห้าม builder ใส่ตัวอย่าง เพราะกันได้ทุกที่มา
+            // ไม่ใช่แค่กรณีที่นึกออกตอนนี้
+            foreach (var stale in area.GetComponentsInChildren<BuildStripSlot>(true))
+            {
+                if (stale == slotTemplate) continue;
+
+                // **ปิดก่อนแล้วค่อยสั่งทำลาย** — `Destroy` ใน play mode เลื่อนไปปลายเฟรม
+                // ของเก่าจึงยังวาดอยู่และยังถูกนับเจอตลอดเฟรมนั้น · การปิดมีผลทันที
+                stale.gameObject.SetActive(false);
+                if (Application.isPlaying) Destroy(stale.gameObject);
+                else                       DestroyImmediate(stale.gameObject);
+            }
+
             for (int i = 0; i < count; i++)
             {
                 var slot = Instantiate(slotTemplate, area);
