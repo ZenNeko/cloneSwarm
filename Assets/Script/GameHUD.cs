@@ -76,6 +76,9 @@ public class GameHUD : MonoBehaviour
 
         /// <summary>warning เรื่อง slotBg ว่าง ต้องดังครั้งเดียว ไม่ใช่ทุกเฟรม</summary>
         [System.NonSerialized] public bool warnedNoBg;
+
+        /// <summary>ข้อความคูลดาวน์ที่เขียนไปล่าสุด — กัน rebuild mesh ซ้ำค่าเดิมทุกเฟรม</summary>
+        [System.NonSerialized] public string lastCooldownText;
     }
 
     // ── Internal ──────────────────────────────────────────────────────────
@@ -83,6 +86,11 @@ public class GameHUD : MonoBehaviour
 
     private playermove   localPlayer;
     private float        localElapsed;
+
+    // ── กันการเขียน .text ซ้ำค่าเดิมทุกเฟรม (ดู SetTextCached) ──────────
+    private int    lastTimerSecond = -1;
+    private string lastTimerText;
+    private string lastChargeText;
 
     // Interface references — ค้นหาจาก player components
     private IHUDAbility    qAbility;
@@ -95,11 +103,37 @@ public class GameHUD : MonoBehaviour
         Instance = this;
     }
 
+    /// <summary>
+    /// ล้าง <see cref="Instance"/> ตอนถูกทำลาย — **จำเป็น ไม่ใช่ความสะอาด**
+    ///
+    /// คนเรียกทั้งสิบจุด (BossController · BossTether · LimitCutAction · TelegraphZone ·
+    /// FloorHazard) เขียน `GameHUD.Instance?.ShowAnnouncement(...)` ซึ่ง **กันไม่ได้** —
+    /// `?.` เทียบ reference ตรงๆ ไม่ผ่าน `==` ที่ Unity override ไว้ object ที่ Destroy แล้ว
+    /// จึงลอดผ่านไปเรียกเมธอด แล้วไปพังข้างในตอนแตะ announcementLabel
+    ///
+    /// ช่วงที่โดนคือระหว่าง HUD เก่าถูกทำลายกับ HUD ใหม่ Awake ซึ่ง Play Again
+    /// วิ่งผ่านทุกครั้ง · ล้างที่นี่แล้ว `?.` ถึงจะกันได้จริงอย่างที่คนเขียนตั้งใจ
+    /// (กติกาเดียวกับ `LobbyState.OnNetworkDespawn`)
+    /// </summary>
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
     void Start()
     {
         if (announcementLabel) announcementLabel.gameObject.SetActive(false);
 
         if (shieldBarRoot) shieldBarRoot.SetActive(false);
+
+        // ซ่อนของที่ยังไม่รู้ว่าจะมีไหม จนกว่าจะหาเจอจริง
+        //
+        // `WaitAndFindAbilities` รอ 0.5 วิแล้วสแกนได้ถึง 12 รอบ = แย่สุด 6.5 วิแรกของทุกรัน
+        // ก่อนหน้านี้ช่วงนั้นโชว์ค่าที่ค้างมาจาก prefab — แถบ CHARGE ขึ้น "0" และช่อง Q/E
+        // ขึ้นไอคอนของตัวละครอื่น ซึ่ง **ดูเหมือนใช้งานได้** ผู้เล่นจึงอ่านผิดโดยไม่รู้ตัว
+        SetPassiveBarVisible(false);
+        SetAbilitySlotVisible(qSlot, false);
+        SetAbilitySlotVisible(eSlot, false);
 
         StartCoroutine(WaitAndSubscribeTimeline());
         StartCoroutine(WaitAndFindLocalPlayer());
@@ -238,7 +272,11 @@ public class GameHUD : MonoBehaviour
     /// ต่างจาก UpdateAbilitySlot ที่ poll ทุกเฟรมเพื่อ cooldown / สี / glow</summary>
     void ApplyAbilitySlots()
     {
-        // slot และ passive bar แสดงตลอด — ตัวละครทุกตัวมีครบ
+        // โชว์เฉพาะช่องที่หา ability เจอจริง — ตัวละครไม่ได้มีครบทุกช่องเสมอไป
+        // และก่อนหาเจอก็ไม่ควรโชว์ของค้างจาก prefab
+        SetAbilitySlotVisible(qSlot, qAbility != null);
+        SetAbilitySlotVisible(eSlot, eAbility != null);
+
         ApplySlotIdentity(qSlot, qAbility);
         ApplySlotIdentity(eSlot, eAbility);
     }
@@ -307,9 +345,8 @@ public class GameHUD : MonoBehaviour
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
             ApplySlotColor(slot, abilityActiveColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(true);
-            if (slot.cooldownText  != null)
-                slot.cooldownText.text = ab.ActiveRemaining > 0.5f
-                    ? $"{ab.ActiveRemaining:F1}" : "";
+            SetTextCached(slot.cooldownText, ref slot.lastCooldownText,
+                          ab.ActiveRemaining > 0.5f ? $"{ab.ActiveRemaining:F1}" : "");
         }
         else if (ab.IsOnCooldown && ab.CooldownMax > 0f)
         {
@@ -318,9 +355,10 @@ public class GameHUD : MonoBehaviour
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
             ApplySlotColor(slot, abilityCooldownColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
-            if (slot.cooldownText  != null)
-                slot.cooldownText.text = ab.CooldownRemaining > 1f
-                    ? $"{Mathf.CeilToInt(ab.CooldownRemaining)}" : $"{ab.CooldownRemaining:F1}";
+            SetTextCached(slot.cooldownText, ref slot.lastCooldownText,
+                          ab.CooldownRemaining > 1f
+                              ? $"{Mathf.CeilToInt(ab.CooldownRemaining)}"
+                              : $"{ab.CooldownRemaining:F1}");
         }
         else
         {
@@ -328,14 +366,17 @@ public class GameHUD : MonoBehaviour
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = 0f;
             ApplySlotColor(slot, abilityReadyColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
-            if (slot.cooldownText  != null) slot.cooldownText.text = "";
+            SetTextCached(slot.cooldownText, ref slot.lastCooldownText, "");
         }
     }
 
     // ── Passive Bar Update (Polling) ──────────────────────────────────────
     void UpdatePassiveBar()
     {
-        if (passiveBar == null) return;
+        // ไม่มี passive bar = ไม่มีอะไรให้โชว์ · ของเดิม return เฉยๆ แล้วปล่อยให้แถบ
+        // ค้างค่าจาก prefab อยู่บนจอตลอดไปถ้าหาไม่เจอ
+        if (passiveBar == null) { SetPassiveBarVisible(false); return; }
+        SetPassiveBarVisible(true);
 
         float norm = passiveBar.NormalizedValue;
         if (chargeBarFill != null)
@@ -344,15 +385,40 @@ public class GameHUD : MonoBehaviour
             chargeBarFill.color      = passiveBar.IsTriggered
                 ? passiveBar.TriggeredColor : passiveBar.BarColor;
         }
-        if (chargeBarText != null)
-            chargeBarText.text = passiveBar.BarText;
+        SetTextCached(chargeBarText, ref lastChargeText, passiveBar.BarText);
+    }
+
+    /// <summary>
+    /// ซ่อน/โชว์แถบ passive ทั้งอัน
+    ///
+    /// `chargeBarRoot` เคยเป็นฟิลด์ที่ **ไม่มีใครอ้างถึงเลยนอกจากบรรทัดประกาศ** และในซีน
+    /// ก็ปล่อยว่างไว้ · ถ้ายังว่างอยู่ให้ถอยไปซ่อนชิ้นส่วนที่ต่อสายไว้แทน จะได้ไม่ต้องรอ
+    /// ให้มีคนไปลากใส่ Inspector ก่อนถึงจะทำงานถูก (กติกาเดียวกับ fallback ของ slotBg)
+    /// </summary>
+    void SetPassiveBarVisible(bool v)
+    {
+        if (chargeBarRoot != null)
+        {
+            if (chargeBarRoot.activeSelf != v) chargeBarRoot.SetActive(v);
+            return;
+        }
+
+        if (chargeBarFill != null && chargeBarFill.enabled != v) chargeBarFill.enabled = v;
+        if (chargeBarText != null && chargeBarText.enabled != v) chargeBarText.enabled = v;
     }
 
     // ── HP ────────────────────────────────────────────────────────────────
     void OnPlayerSpawned(Transform t)
     {
-        localPlayer = t.GetComponent<playermove>();
-        if (localPlayer == null) return;
+        var pm = t.GetComponent<playermove>();
+        if (pm == null) return;
+
+        // มาถึงได้สองทาง — event `playermove.OnLocalPlayerSpawned` กับลูป poll ทุก 0.4 วิ
+        // ใน WaitAndFindLocalPlayer · ถ้า foreach ของ coroutine วิ่งก่อน OnNetworkSpawn
+        // ในเฟรมเดียวกันจะได้ subscribe ซ้ำ แล้ว OnDisable ถอดแค่ครั้งเดียว
+        if (localPlayer == pm) return;
+
+        localPlayer = pm;
         localPlayer.netHealth.OnValueChanged        += OnHealthChanged;
         localPlayer.netMaxHealth.OnValueChanged     += OnHealthChanged;
         localPlayer.isDead.OnValueChanged           += OnDeadChanged;
@@ -407,13 +473,22 @@ public class GameHUD : MonoBehaviour
     void UpdateTimerLabel(float elapsed)
     {
         if (timerLabel == null) return;
-        int m = Mathf.FloorToInt(elapsed / 60f);
-        int s = Mathf.FloorToInt(elapsed % 60f);
-        timerLabel.text = $"{m:00}:{s:00}";
+
+        // นาฬิกาเดินทุกเฟรมแต่ตัวเลขเปลี่ยนวินาทีละครั้ง — เทียบวินาทีก่อน
+        // ไม่งั้นได้สตริงใหม่ + rebuild mesh ฟรีๆ 60 ครั้งต่อวินาที
+        int total = Mathf.FloorToInt(elapsed);
+        if (total == lastTimerSecond) return;
+        lastTimerSecond = total;
+
+        SetTextCached(timerLabel, ref lastTimerText, $"{total / 60:00}:{total % 60:00}");
     }
 
     // ── Announcement ──────────────────────────────────────────────────────
-    void OnMainBossPhase() => ShowAnnouncement("MAIN BOSS!", Color.red);
+    [Tooltip("สีแบนเนอร์ตอนบอสใหญ่มา — เดิมเป็น Color.red (#FF0000) ซึ่งอยู่นอกชุดสี\n" +
+             "ชุด P3R ใช้ #D82020 · แดงสดกินตาเกินไปบนจอที่มีศัตรูเต็มอยู่แล้ว")]
+    public Color mainBossAnnouncementColor = new Color32(0xD8, 0x20, 0x20, 0xFF);
+
+    void OnMainBossPhase() => ShowAnnouncement("MAIN BOSS!", mainBossAnnouncementColor);
 
     public void ShowAnnouncement(string text, Color color)
     {
@@ -442,5 +517,23 @@ public class GameHUD : MonoBehaviour
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
-    void SetAbilitySlotVisible(AbilitySlotUI slot, bool v) { if (slot?.root) slot.root.SetActive(v); }
+    void SetAbilitySlotVisible(AbilitySlotUI slot, bool v)
+    {
+        if (slot?.root == null) return;
+        if (slot.root.activeSelf != v) slot.root.SetActive(v);
+    }
+
+    /// <summary>
+    /// เขียน `.text` เฉพาะตอนค่าต่างจริง
+    ///
+    /// การเขียน `TMP_Text.text` บังคับสร้าง mesh ใหม่ทุกครั้ง **แม้ค่าจะเท่าเดิม** ·
+    /// จอนี้เขียนนาฬิกากับตัวเลขคูลดาวน์ทุกเฟรมทั้งที่เปลี่ยนวินาทีละครั้ง
+    /// = สร้างสตริงใหม่กับ rebuild mesh ~60 ครั้ง/วินาทีเปล่าๆ บนจอที่ต้องลื่นที่สุด
+    /// </summary>
+    static void SetTextCached(TextMeshProUGUI label, ref string cache, string value)
+    {
+        if (label == null || cache == value) return;
+        cache      = value;
+        label.text = value;
+    }
 }

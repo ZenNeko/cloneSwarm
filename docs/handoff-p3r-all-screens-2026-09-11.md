@@ -340,8 +340,25 @@ dead field ที่ ADR-001 สั่งลบ **ลบไปแล้ว**
 | แถวปาร์ตี้ | `TempPartyHUD` |
 | บัฟลอย | `FloatingBuffUI` |
 | เลเวล/EXP/HP | `StatusHUDUI` + `SharedExperienceManager` |
-| ช่องอาวุธ/augment | `AbilityHUDUI` · `AugmentHUDUI` · `WeaponStatHUD` |
-| แถบ CHARGE | `ChargeBarUI` (Riven) |
+| ช่องอาวุธ/augment | `GameHUD.qSlot`/`eSlot` · `AugmentHUDUI` · `WeaponStatHUD` |
+| แถบ CHARGE | `GameHUD.chargeBar*` อ่านจาก `IHUDPassiveBar` |
+
+### ลงจริงแล้ว · 2026-09-12
+
+`P3RGameplayHudRestyler` (`Tools > Clone Swarm > Restyle Gameplay HUD (P3R)`) ทาสีกับฟอนต์
+ของ HUD ประจำจอใน `SampleScene` — **46 ช่อง** · รันซ้ำได้ผลเหมือนเดิม (รอบสองเปลี่ยน 0)
+
+เป็นตัวรีสกิล **ไม่ใช่ builder** เพราะ `GameHUD` · `WeaponStatHUD` · `StatusHUDUI`
+ต่อสายกับ object พวกนี้เป็นสิบช่องและผูกกับ NetworkManager — สร้างใหม่คือทำสายขาดหมด
+
+สามจุดที่จงใจไม่แตะเพราะ **โค้ดเขียนทับตอนรัน** (ทาไปก็ถูกลบในเฟรมแรกโดยไม่มีอะไรฟ้อง)
+- `Q_BG` / `E_BG` → `GameHUD.ApplySlotColor()` · แก้ที่ `abilityReady/Cooldown/ActiveColor`
+- `Charge_Fill` → `IHUDPassiveBar.BarColor` · **ยังค้าง** ต้องไปแก้ที่ `ChargeManager` ·
+  `GunnerPassiveWeapon` · `HunterPassiveWeapon`
+- ไอคอนทุกตัว → สีคูณเข้าพิกเซลของ sprite ต้องเป็น `Color.white` เสมอ
+
+**`AbilityHUDUI.cs` กับ `ChargeBarUI.cs` เป็นไฟล์หลุมศพเหลือบรรทัดเดียว** ตั้งแต่ 5 ก.ค.
+งานย้ายไป `GameHUD` หมดแล้ว · คอมเมนต์ในไฟล์เขียนว่า Unity จะลบให้เอง ซึ่งไม่จริง — ลบแล้ว
 
 ### ที่ต้องระวัง — สำคัญกว่าจออื่นทั้งหมด
 **นี่คือโซน C** ตามที่ตกลงกันไว้ตั้งแต่รอบแรก — เอาได้แค่ **สี · ฟอนต์ · มุมบากเฉียง**
