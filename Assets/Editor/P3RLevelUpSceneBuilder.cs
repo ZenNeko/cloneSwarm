@@ -24,6 +24,10 @@ namespace CloneSwarm.EditorTools
     public static class P3RLevelUpSceneBuilder
     {
         private const string ScenePath = "Assets/GameScenes/Proto_LevelUp.unity";
+        /// <summary>แม่แบบการ์ด — **ไฟล์ใหม่ ไม่ทับ LevelUpcard(Button).prefab ของจอเดิม**</summary>
+        private const string CardPrefabPath = "Assets/Prefab/UI/P3R/LevelUpCard.prefab";
+        /// <summary>แถวเทียบสเตตัส — ไฟล์ใหม่ ไม่ทับ Assets/Prefab/UpgradeStatRowUI.prefab ของเดิม</summary>
+        private const string StatRowPrefabPath = "Assets/Prefab/UI/P3R/LevelUpStatRow.prefab";
         private const string ThemePath = "Assets/ScriptableObjects/UI/P3RTheme.asset";
         private const string UiAssetDir = "Assets/ScriptableObjects/UI";
         private const string RadialPath = UiAssetDir + "/LevelUpWash_Radial.png";
@@ -292,13 +296,76 @@ namespace CloneSwarm.EditorTools
             container.anchoredPosition = new Vector2(0f, -300f);
             ui.cardsContainer = container.gameObject;
 
+            ui.cardGap = gap;
+
+            // ── การ์ดเป็น **prefab** ไม่ใช่ลูกที่ฝังไว้ในซีน ────────────────────
+            //
+            // กติกาของโปรเจกต์ (game-ui/SKILL.md): ของที่ instantiate หลายใบตอนรัน
+            // ต้องเป็น prefab · จอเดิมก่อน P3R ก็ทำแบบนั้น (LevelUpcard(Button).prefab
+            // ห้าใบ) แต่ builder ของ P3R กลับสร้างสามใบตายตัวด้วยมือ เพราะเขียนตาม
+            // **ภาพ mockup** ไม่ใช่ตามพฤติกรรมตอนรัน
+            //
+            // ชี้ไฟล์ prefab ไม่ใช่ของในซีน — ของในซีนเป็น fileID ที่เปลี่ยนทุกครั้งที่ย้ายจอ
+            var template = BuildCardPrefab(statRowTemplate, cardW, cardH);
+            ui.cardTemplate = template;
+
             if (ui.cardSlots == null) ui.cardSlots = new System.Collections.Generic.List<UpgradeCardUI>();
             ui.cardSlots.Clear();
+
+            // ตัวอย่างในซีนต้นแบบ — มีไว้ให้ภาพเรนเดอร์เห็นจอที่มีของ
+            // ตอนรันจริง LevelUpUI ปิดตัวอย่างทิ้งแล้วสร้างจากแม่แบบเอง
+            // และ P3RScreenWirer ลบทุกตัวที่ชื่อขึ้นต้น Sample_ ตอนจอลงซีนจริง
             for (int i = 0; i < Cards.Length; i++)
             {
-                var card = BuildCard(container, i, cardW, cardH, gap, statRowTemplate);
-                ui.cardSlots.Add(card);
+                int index = i;
+                var sample = P3RBuilderKit.SpawnSample(template, container, c =>
+                {
+                    c.name = $"Sample_Card_{Cards[index].type}";
+                    var rt = (RectTransform)c.transform;
+                    rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+                    rt.pivot     = new Vector2(0f, 1f);
+                    rt.sizeDelta = new Vector2(cardW, cardH);
+                    rt.anchoredPosition = new Vector2(index * (cardW + gap), 0f);
+                    BindSample(c, Cards[index]);
+                });
+                ui.cardSlots.Add(sample);
             }
+        }
+
+        /// <summary>
+        /// เติมค่าตัวอย่างลงการ์ดในซีนต้นแบบ — **ไม่มีผลตอนรัน**
+        /// `UpgradeCardUI.Populate` เขียนทับทุกช่องที่นี่ตั้งอยู่แล้ว
+        /// </summary>
+        private static void BindSample(UpgradeCardUI c,
+            (string type, Color accent, Color onAccent, string status,
+             string name, bool recommended, bool useStatRows) data)
+        {
+            if (c.nameText)  c.nameText.text  = data.name;
+            if (c.levelText) c.levelText.text = data.status;
+
+            if (c.cardBackground) c.cardBackground.color = data.accent;
+            foreach (var t in c.accentTargets)
+                if (t?.graphic != null)
+                    t.graphic.color = new Color(data.accent.r, data.accent.g, data.accent.b, t.alpha);
+
+            var typeLabel = c.transform.Find("Header/TypeLabel")?.GetComponent<TextMeshProUGUI>();
+            if (typeLabel) { typeLabel.text = data.type; typeLabel.color = data.onAccent; }
+            if (c.levelText) c.levelText.color = data.onAccent;
+
+            if (c.recommendedRibbon) c.recommendedRibbon.SetActive(data.recommended);
+            if (c.statRowsContainer) c.statRowsContainer.gameObject.SetActive(data.useStatRows);
+            if (c.descriptionText)   c.descriptionText.gameObject.SetActive(!data.useStatRows);
+
+            if (data.useStatRows && c.statRowPrefab != null && c.statRowsContainer != null)
+            {
+                SpawnStatRow((RectTransform)c.statRowsContainer, c.statRowPrefab, "DAMAGE",   "42",   "58");
+                SpawnStatRow((RectTransform)c.statRowsContainer, c.statRowPrefab, "AREA",     "3.0",  "3.6");
+                SpawnStatRow((RectTransform)c.statRowsContainer, c.statRowPrefab, "COOLDOWN", "1.4s", "1.1s");
+            }
+
+            var rt2 = (RectTransform)c.transform;
+            if (data.recommended)
+                rt2.anchoredPosition = new Vector2(rt2.anchoredPosition.x, 22f);
         }
 
         /// <summary>
@@ -352,20 +419,29 @@ namespace CloneSwarm.EditorTools
             ui.levelValueLabel = lv;
         }
 
-        private static UpgradeCardUI BuildCard(RectTransform container, int i,
-                                               float w, float h, float gap,
-                                               UpgradeStatRowUI statRowTemplate)
+        /// <summary>
+        /// แม่แบบการ์ดหนึ่งใบ — **เป็นกลาง ไม่มีสีหรือข้อความประจำชนิด**
+        ///
+        /// ทุกอย่างที่ต่างกันตามชนิดการ์ด (สีเน้น · ชื่อ · ป้ายเลเวล · การยกใบแนะนำ)
+        /// เป็นหน้าที่ของ `UpgradeCardUI.Populate` ตอนรัน · ค่าที่ใส่ตรงนี้เป็นแค่
+        /// ค่าตั้งต้นให้เปิด prefab ดูแล้วเห็นโครง
+        ///
+        /// `parent = null` = สร้างลอยไว้ก่อน แล้ว SavePrefab เขียนลงไฟล์และลบตัวชั่วคราวทิ้ง
+        /// (กติกาเดียวกับการ์ดตัวละคร/แผนที่)
+        /// </summary>
+        private static UpgradeCardUI BuildCardPrefab(UpgradeStatRowUI statRowTemplate,
+                                                     float w, float h)
         {
-            var (type, accent, onAccent, status, name, recommended, useStatRows) = Cards[i];
+            const string type = "", status = "", name = "";
+            var accent = BlueSlot;              // ค่าตั้งต้นเฉยๆ · Populate ย้อมใหม่ทุกครั้ง
+            var onAccent = Color.white;
+            const bool recommended = false, useStatRows = true;
 
-            var rt = NewRect($"Card_{type}", container);
+            var rt = NewRect("LevelUpCard", null);
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot     = new Vector2(0f, 1f);
             rt.sizeDelta = new Vector2(w, h);
-            // **ไม่อบการยกไว้ที่ช่อง** — ของเดิมยกช่องกลางตายตัวตามข้อมูลตัวอย่าง
-            // ส่วนป้ายแนะนำวิ่งตาม isRecommended จริง สองอย่างจึงหลุดจากกันได้
-            // ตอนนี้ UpgradeCardUI.ApplyRecommendedLift ยกเองตอน Populate
-            rt.anchoredPosition = new Vector2(i * (w + gap), 0f);
+            rt.anchoredPosition = Vector2.zero;
 
             var card = rt.gameObject.AddComponent<UpgradeCardUI>();
 
@@ -495,12 +571,6 @@ namespace CloneSwarm.EditorTools
             // แถวสเตตตัวอย่าง — UpgradeCardUI.Populate() ล้าง container แล้วสร้างใหม่จาก
             // GetStatChanges() ของการ์ดจริงตอนรัน ตัวอย่างจึงหายไปเองไม่ต้องตามลบ
             // แบบระบุว่าโชว์เฉพาะสเตตที่เปลี่ยน ไม่ใช่ยกตารางทั้งชุดมา — ตัวอย่างจึงมีแค่ 2–3 แถว
-            if (useStatRows)
-            {
-                SpawnStatRow(rows, statRowTemplate, "DAMAGE",   "42",   "58");
-                SpawnStatRow(rows, statRowTemplate, "AREA",     "3.0",  "3.6");
-                SpawnStatRow(rows, statRowTemplate, "COOLDOWN", "1.4s", "1.1s");
-            }
 
             // แถว SYNERGY — ป้าย mono 15 + ช่อง 36×36 สองช่อง
             var synergy = NewRect("SynergyRow", bottom);
@@ -557,16 +627,24 @@ namespace CloneSwarm.EditorTools
             btn.transition    = Selectable.Transition.None;   // hover ใช้วงเรืองแสงแทน ไม่ใช้ tint
             card.selectButton = btn;
 
-            return card;
+            return P3RBuilderKit.SavePrefab(rt.gameObject, CardPrefabPath).GetComponent<UpgradeCardUI>();
         }
 
         /// <summary>
         /// แถวสเตต ก่อน → หลัง หนึ่งแถว · เก็บไว้ในซีนแบบปิดไว้แล้วให้การ์ดใช้เป็นต้นแบบ
         /// (Instantiate ใช้ instance ในซีนเป็นต้นแบบได้ ไม่จำเป็นต้องเป็น prefab asset)
         /// </summary>
+        /// <summary>
+        /// แม่แบบแถวเทียบสเตตัส — **ต้องเป็น prefab ไม่ใช่ของในซีน**
+        ///
+        /// การ์ดถือ reference ตัวนี้ไว้ที่ `UpgradeCardUI.statRowPrefab` · ถ้าแม่แบบเป็น
+        /// object ในซีน พอการ์ดถูกเซฟเป็น prefab asset reference นั้นจะกลายเป็น **null
+        /// ทันทีและเงียบสนิท** — แถวเทียบสเตตัสจะไม่ขึ้นเลยตอนเล่น ทั้งที่ตอนเปิดซีน
+        /// ต้นแบบดูยังมีอยู่ (เจอมาแล้วรอบนี้ จับได้จากภาพเรนเดอร์ ไม่ใช่จากคอมไพเลอร์)
+        /// </summary>
         private static UpgradeStatRowUI BuildStatRowTemplate(RectTransform panel)
         {
-            var rt = NewRect("StatRow_Template", panel);
+            var rt = NewRect("StatRow_Template", null);
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot     = new Vector2(0f, 1f);
             rt.sizeDelta = new Vector2(300f, 26f);
@@ -602,8 +680,8 @@ namespace CloneSwarm.EditorTools
             Place(after.rectTransform, 224f, 76f);
             row.afterText = after;
 
-            rt.gameObject.SetActive(false);
-            return row;
+            return P3RBuilderKit.SavePrefab(rt.gameObject, StatRowPrefabPath)
+                                .GetComponent<UpgradeStatRowUI>();
 
             // วางกล่องลูกแบบชิดซ้ายด้วย x/ความกว้าง — อ่านง่ายกว่าคำนวณ offsetMin/Max ทีละตัว
             static void Place(RectTransform r, float x, float w)

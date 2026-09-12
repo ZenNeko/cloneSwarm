@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CloneSwarm.UI.P3R;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,8 +29,17 @@ public class LevelUpUI : MonoBehaviour
     [Tooltip("Parent ของ card ทั้งหมด (Panel) — ถ้าไม่ assign จะหาจาก cardsSection อัตโนมัติ")]
     public GameObject cardsContainer;
     public TextMeshProUGUI levelLabel;      // "LEVEL UP!  →  Level 5"
-    [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่")]
+    [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่ — ใช้เฉพาะตอนไม่มี cardTemplate")]
     public List<UpgradeCardUI> cardSlots = new();
+
+    [Tooltip("**prefab** ของการ์ด — ต่อช่องนี้แล้วจอจะสร้างการ์ดตามจำนวนที่ได้รับจริง\n\n" +
+             "ต้องชี้ไฟล์ prefab ไม่ใช่ของในซีน · ของในซีนเป็น fileID ที่เปลี่ยนทุกครั้ง\n" +
+             "ที่ย้ายจอ แล้วแม่แบบจะหายไปพร้อม panel เก่า\n\n" +
+             "ปล่อยว่าง = พฤติกรรมเดิม (ใช้การ์ดที่มีอยู่แล้วใต้ cardsContainer)")]
+    public UpgradeCardUI cardTemplate;
+
+    [Tooltip("ระยะห่างระหว่างการ์ด (px) — ใช้ตอนสร้างจาก cardTemplate")]
+    public float cardGap = 30f;
 
     [Tooltip("รูปแบบหัวเรื่องเมื่อรู้เลเวลใหม่ · {0} = เลเวล · ใส่ \\n ขึ้นบรรทัดได้\n" +
              "ซีน P3R ตั้งเป็น 'LEVEL\\nUP!' สองบรรทัดตามแบบ (เลเวลไม่อยู่ในหัวเรื่องแล้ว)")]
@@ -149,10 +159,8 @@ public class LevelUpUI : MonoBehaviour
             if (hasLevel) levelValueLabel.text = string.Format(levelValueFormat, level);
         }
 
-        // 3. หา card slots จาก cardsContainer โดยตรง
-        UpgradeCardUI[] slots = cardsContainer
-            ? cardsContainer.GetComponentsInChildren<UpgradeCardUI>(true)
-            : cardSlots.ToArray();
+        // 3. เตรียมช่องการ์ดให้พอดีกับจำนวนที่ได้รับ
+        UpgradeCardUI[] slots = EnsureCardSlots(cards.Count);
 
         visibleSlots.Clear();
         for (int i = 0; i < slots.Length; i++)
@@ -189,6 +197,69 @@ public class LevelUpUI : MonoBehaviour
         //    ล้มเหลวเงียบๆ ได้ ถ้ายังไม่มี player ในซีน แถบจะคงค่าเดิมไว้
         if (buildStrip) buildStrip.RefreshFromLocalPlayer();
     }
+
+    /// <summary>
+    /// คืนช่องการ์ดให้พอดีกับจำนวนที่ได้รับ
+    ///
+    /// ═══ ทำไมต้องสร้างจาก prefab ไม่ใช่ใช้ลูกที่มีอยู่ ═══
+    ///
+    /// ของเดิมวนตามลูกที่ builder สร้างไว้ **สามใบตายตัว** · `UpgradeManager.cardsPerLevel`
+    /// เป็น 3 พอดีเลยไม่มีใครเห็นปัญหา แต่วันที่ใครตั้งเป็น 4–5 การ์ดส่วนเกินจะถูกทิ้ง
+    /// เงียบๆ โดยไม่มี error — จอเดิมก่อน P3R มีห้าช่องและสร้างจาก prefab จริง
+    ///
+    /// ใช้ซ้ำของเดิมแทนการสร้างใหม่ทุกรอบ — การ์ดจำ y ตั้งต้นไว้สำหรับการยกใบแนะนำ
+    /// และการทิ้ง/สร้างใหม่ทุกเลเวลคือขยะที่เก็บฟรีๆ กลางเกม
+    ///
+    /// `cardTemplate` ว่าง = ถอยไปใช้พฤติกรรมเดิม ซีนที่ยังไม่ได้ต่อจึงไม่พังทันที
+    /// </summary>
+    private UpgradeCardUI[] EnsureCardSlots(int count)
+    {
+        if (cardTemplate == null || cardsContainer == null)
+            return cardsContainer
+                ? cardsContainer.GetComponentsInChildren<UpgradeCardUI>(true)
+                : cardSlots.ToArray();
+
+        var parent = (RectTransform)cardsContainer.transform;
+
+        // ปิดการ์ดที่ไม่ได้เกิดจากแม่แบบ (ตัวอย่างที่ builder วางไว้ให้ดูภาพต้นแบบ)
+        // ปล่อยไว้จะได้การ์ดสองชุดซ้อนกัน ซึ่งเป็นอาการที่ไล่ต้นเหตุยาก
+        if (!samplesCleared)
+        {
+            samplesCleared = true;
+            foreach (var stray in parent.GetComponentsInChildren<UpgradeCardUI>(true))
+                if (!spawned.Contains(stray)) stray.gameObject.SetActive(false);
+        }
+
+        var tmpl = (RectTransform)cardTemplate.transform;
+        float w = tmpl.sizeDelta.x, h = tmpl.sizeDelta.y;
+
+        while (spawned.Count < count)
+        {
+            var c = Instantiate(cardTemplate, parent);
+            c.name = $"Card_{spawned.Count}";
+            spawned.Add(c);
+        }
+
+        parent.sizeDelta = new Vector2(count * w + Mathf.Max(0, count - 1) * cardGap, h);
+
+        for (int i = 0; i < spawned.Count; i++)
+        {
+            bool used = i < count;
+            spawned[i].gameObject.SetActive(used);
+            if (!used) continue;
+
+            var rt = (RectTransform)spawned[i].transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot     = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(w, h);
+            rt.anchoredPosition = new Vector2(i * (w + cardGap), 0f);
+        }
+
+        return spawned.Take(count).ToArray();
+    }
+
+    private readonly List<UpgradeCardUI> spawned = new();
+    private bool samplesCleared;
 
     /// <summary>
     /// เรียกหลัง player เลือก card แล้ว —

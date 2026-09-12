@@ -832,6 +832,13 @@ namespace CloneSwarm.EditorTools
                 var cards = BuildProbeCards();
                 if (cards == null) { Require(false, "ประกอบการ์ดทดสอบได้ (ต้องมี StatData ในโปรเจกต์)"); return; }
 
+                // แม่แบบต้องเป็น **ไฟล์ prefab** ไม่ใช่ของในซีน — ของในซีนเป็น fileID
+                // ที่เปลี่ยนทุกครั้งที่ย้ายจอ แล้วแม่แบบจะหายไปพร้อม panel เก่า
+                Require(ui.cardTemplate != null, "LevelUpUI.cardTemplate ต่อไว้ (แม่แบบการ์ด)");
+                Require(ui.cardTemplate == null ||
+                        PrefabUtility.GetPrefabAssetType(ui.cardTemplate) != PrefabAssetType.NotAPrefab,
+                        "cardTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
+
                 int picked = 0;
                 UpgradeCardInfo pickedCard = null;
                 ui.Show(cards, c => { picked++; pickedCard = c; }, level: 7);
@@ -923,21 +930,28 @@ namespace CloneSwarm.EditorTools
             // ── helpers ของเทสต์การ์ด ──────────────────────────────────────
             private static List<UpgradeCardInfo> BuildProbeCards()
             {
+                // **ขอ 5 ใบโดยตั้งใจ** — จอ P3R เคยมีช่องตายตัวสามช่อง การ์ดเกินจากนั้น
+                // ถูกทิ้งเงียบๆ · จอเดิมก่อน P3R มีห้าช่องและสร้างจาก prefab
+                // ขอเกินสามจึงเป็นวิธีเดียวที่พิสูจน์ว่าข้อจำกัดหายจริง
+                const int Want = 5;
                 var stats = AssetDatabase.FindAssets("t:StatData")
                                          .Select(AssetDatabase.GUIDToAssetPath)
                                          .Select(AssetDatabase.LoadAssetAtPath<StatData>)
-                                         .Where(s => s != null).Take(3).ToList();
-                if (stats.Count < 3) return null;
+                                         .Where(s => s != null).Take(Want).ToList();
+                if (stats.Count < Want) return null;
 
-                // ใบกลางเป็นใบแนะนำโดยตั้งใจ — ถ้าเทสต์ผ่านเพราะบังเอิญตรงกับที่ builder
-                // อบไว้ ก็จะจับบั๊กไม่ได้ · ใบแรกจึงถูกตั้งเป็นแนะนำแทน
-                return new List<UpgradeCardInfo>
-                {
-                    new() { type = UpgradeCardType.Stat, stat = stats[0], currentStatLevel = 0,
-                            isRecommended = true },
-                    new() { type = UpgradeCardType.Stat, stat = stats[1], currentStatLevel = 2 },
-                    new() { type = UpgradeCardType.Stat, stat = stats[2], currentStatLevel = 1 },
-                };
+                // ใบแรกเป็นใบแนะนำโดยตั้งใจ — ของเดิมอบการยกไว้ที่ใบกลาง ถ้าเลือกใบกลาง
+                // เทสต์จะผ่านเพราะบังเอิญตรง ไม่ใช่เพราะโค้ดถูก
+                var list = new List<UpgradeCardInfo>();
+                for (int i = 0; i < Want; i++)
+                    list.Add(new UpgradeCardInfo
+                    {
+                        type             = UpgradeCardType.Stat,
+                        stat             = stats[i],
+                        currentStatLevel = i % 3,
+                        isRecommended    = i == 0,
+                    });
+                return list;
             }
 
             private static List<UpgradeCardUI> VisibleCards(LevelUpUI ui)
