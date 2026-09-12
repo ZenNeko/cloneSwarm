@@ -293,6 +293,10 @@ public class GameHUD : MonoBehaviour
             // (ของเดิมโค้ดย้อม icon ทุกเฟรม ค่าที่ค้างใน scene จึงเชื่อถือไม่ได้)
             if (slot.slotBg != null) slot.iconImage.color = Color.white;
 
+            // ไม่มี sprite = ปิดไปเลย · Image ที่ไม่มี sprite วาดเป็นสี่เหลี่ยมทึบเต็มช่อง
+            // ซึ่งดูเหมือนไอคอนขาวๆ ที่โหลดไม่ขึ้น มากกว่าดูเหมือน "ยังไม่มีสกิล"
+            slot.iconImage.enabled = ab.HUDIcon != null;
+
             if (ab.HUDIcon != null)
             {
                 slot.iconImage.sprite = ab.HUDIcon;
