@@ -68,16 +68,43 @@ namespace CloneSwarm.EditorTools
             SessionState.SetString(StateKey, "");
             Debug.Log(report);
 
-            if (Application.isBatchMode)
+            if (!Application.isBatchMode) { EditorApplication.isPlaying = false; return; }
+
+            // ═══ ต้องรอให้ออกจาก play mode **จริง** ก่อนค่อยปิด Unity ═══
+            //
+            // ของเดิมสั่ง isPlaying = false แล้วต่อ delayCall → Exit ทันที · delayCall
+            // ยิงได้ตั้งแต่ยังสลับโหมดไม่เสร็จ Unity จึงปิดตัวคาอยู่กลางทางแล้ว **เขียน
+            // สถานะตอน play mode ลงไฟล์ซีน**
+            //
+            // ผลคือจอที่ซ่อนตัวเองใน Awake (P3R_HUD · P3R_Pause · P3R_WinLose) ถูก
+            // บันทึกเป็น "ปิด" → รอบถัดไป Awake ไม่วิ่ง singleton ตายทั้งสามตัว
+            // = **เทสต์ทำลายซีนที่มันเพิ่งตรวจผ่าน ทุกรอบ** และอาการไปโผล่รอบหน้า
+            // ซึ่งทำให้ดูเหมือนเป็นความผิดของสิ่งที่รันคั่นกลาง (เคยโทษตัวรีสกิลไปแล้วครั้งหนึ่ง)
+            //
+            // เทสต์นี้ **ไม่มีสิทธิ์แก้ซีน** — ล้างธง dirty ทิ้งก่อนออกเสมอ
+            void OnPlayModeChanged(PlayModeStateChange state)
             {
-                // ออกจาก play mode ก่อน ไม่งั้น Unity บ่นตอนปิด
-                EditorApplication.isPlaying = false;
+                if (state != PlayModeStateChange.EnteredEditMode) return;
+                EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+                DiscardSceneEdits();
                 EditorApplication.delayCall += () => EditorApplication.Exit(ok ? 0 : 1);
             }
-            else
-            {
-                EditorApplication.isPlaying = false;
-            }
+
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            EditorApplication.isPlaying = false;
+        }
+
+        /// <summary>
+        /// ทิ้งความเปลี่ยนแปลงทุกอย่างที่เกิดกับซีนระหว่างเทสต์
+        /// เทสต์มีหน้าที่ **อ่าน** ไม่ใช่เขียน · ซีนที่ถูกแก้โดยไม่มีใครสั่งคือซีนที่ไล่เหตุไม่ได้
+        /// </summary>
+        private static void DiscardSceneEdits()
+        {
+            // เปิดซีนใหม่จากดิสก์ = ทิ้งของในหน่วยความจำทั้งหมด (batchmode ไม่ถามก่อน)
+            // เทสต์จบที่ SampleScene แต่เริ่มที่ MenuScene — เปิดตัวเริ่มกลับมาจึงได้ทั้ง
+            // ทิ้งความเปลี่ยนแปลงและคืน Editor สู่สถานะที่รู้ว่าคืออะไร
+            try { EditorSceneManager.OpenScene(MenuScene, OpenSceneMode.Single); }
+            catch (System.Exception e) { Debug.LogWarning($"[Smoke] คืนซีนไม่สำเร็จ: {e.Message}"); }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -99,11 +126,32 @@ namespace CloneSwarm.EditorTools
 
             private void OnDestroy() => Application.logMessageReceived -= OnLog;
 
+            /// <summary>
+            /// แหล่ง exception ที่ **ไม่ใช่โค้ดของโปรเจกต์** — นับเป็นเสียงรบกวน ไม่ใช่ผลเทสต์ตก
+            ///
+            /// `Unity.Services.Analytics` โยน NullReference ตอน batchmode สั่ง pause และ
+            /// หน้าต่างของ Synty โยนตอนถูกปิดตาม Editor · ทั้งคู่เกิดทุกรอบไม่ว่าโค้ดเราจะเป็นยังไง
+            /// ปล่อยให้มันทำให้เทสต์ตกคือสอนให้คนเลิกอ่านผล ซึ่งอันตรายกว่าไม่มีเทสต์
+            ///
+            /// **ยังพิมพ์ให้เห็นในรายงานอยู่** แค่ไม่นับเป็นข้อตก — ของที่ซ่อนคือของที่ลืม
+            /// </summary>
+            private static readonly string[] ForeignSources =
+            {
+                "Library/PackageCache",
+                "Assets/Synty",
+                "Assets\\Synty",
+            };
+
             private void OnLog(string msg, string stack, LogType type)
             {
-                if (type is LogType.Error or LogType.Exception or LogType.Assert)
-                    errors.Add($"      [{type}] {msg.Split('\n')[0]}");
+                if (type is not (LogType.Error or LogType.Exception or LogType.Assert)) return;
+
+                bool foreign = stack != null && ForeignSources.Any(stack.Contains);
+                if (foreign) foreignErrors.Add($"      [นอกโปรเจกต์ · {type}] {msg.Split('\n')[0]}");
+                else         errors.Add($"      [{type}] {msg.Split('\n')[0]}");
             }
+
+            private readonly List<string> foreignErrors = new();
 
             private void Update()
             {
@@ -733,7 +781,185 @@ namespace CloneSwarm.EditorTools
                         if (c == null) broken++;
                 }
                 Require(broken == 0, $"ไม่มี component ที่สคริปต์หายในซีนเกม (เจอ {broken})");
+
+                CheckLevelUpCards();
+                CheckMissingGlyphs();
             }
+
+            /// <summary>
+            /// ไม่มีข้อความไหนในซีนใช้อักขระที่ฟอนต์ในโปรเจกต์ไม่มี
+            ///
+            /// Sarabun ไม่มี `★ ⚠ ⚡ ✓` และ emoji — TMP วาดเป็นกล่องสี่เหลี่ยม ซึ่ง
+            /// **ดูเหมือนฟอนต์เสีย** มากกว่าดูเหมือนสัญลักษณ์ · จอ Level Up เคยขึ้น
+            /// `□ Lv 4 / 5` บนการ์ด SUPER อยู่พักใหญ่โดยไม่มีใครสังเกต
+            ///
+            /// เช็คทั้งซีนเพราะปัญหานี้ไม่ได้อยู่ที่จอใดจอหนึ่ง — ใครเขียนข้อความใหม่
+            /// ที่ไหนก็เจอได้ · วันที่เพิ่ม Noto Sans Symbols 2 เป็น fallback ค่อยลบเช็คนี้
+            /// </summary>
+            private void CheckMissingGlyphs()
+            {
+                const string missing = "★☆⚠⚡✓✅💥";
+                var hits = new List<string>();
+
+                foreach (var t in Resources.FindObjectsOfTypeAll<TMPro.TMP_Text>())
+                {
+                    if (!t.gameObject.scene.IsValid()) continue;
+                    string txt = t.text;
+                    if (string.IsNullOrEmpty(txt)) continue;
+                    foreach (char c in missing)
+                        if (txt.IndexOf(c) >= 0) { hits.Add($"{t.name} = '{(txt.Length > 28 ? txt.Substring(0, 28) + "…" : txt)}'"); break; }
+                }
+
+                Require(hits.Count == 0,
+                        $"ไม่มีข้อความที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                foreach (var h in hits.Take(5)) lines.Add($"        └ {h}");
+            }
+
+            /// <summary>
+            /// ระบบการ์ดเลเวลอัป — **ไม่เคยมีเทสต์ครอบเลยสักข้อ** ก่อนหน้านี้ครอบแค่
+            /// `LevelUpUI.Instance != null` ซึ่งบอกได้แค่ว่า singleton ยังอยู่
+            ///
+            /// เรียก `Show()` ด้วยการ์ดที่ประกอบเอง แทนการรอให้เลเวลอัปจริง เพราะ
+            /// เส้นทางจริงต้องมีผู้เล่น spawn + EXP ครบ ซึ่งจัดฉากในเทสต์นี้ไม่ไหว
+            /// สิ่งที่ต้องพิสูจน์คือ **สัญญาระหว่าง UpgradeManager กับ LevelUpUI**
+            /// ซึ่ง `Show(cards, onPicked, level)` คือหน้าตาของมันทั้งหมด
+            /// </summary>
+            private void CheckLevelUpCards()
+            {
+                var ui = LevelUpUI.Instance;
+                if (ui == null) return;      // ข้อบนรายงานไปแล้ว ไม่ต้องซ้ำ
+
+                var cards = BuildProbeCards();
+                if (cards == null) { Require(false, "ประกอบการ์ดทดสอบได้ (ต้องมี StatData ในโปรเจกต์)"); return; }
+
+                int picked = 0;
+                UpgradeCardInfo pickedCard = null;
+                ui.Show(cards, c => { picked++; pickedCard = c; }, level: 7);
+
+                // เลขเลเวลที่เพิ่งคืนกลับมา — ของเดิมมี จอ P3R เคยตัดทิ้ง
+                Require(ui.levelValueLabel != null && ui.levelValueLabel.gameObject.activeSelf,
+                        "ป้ายเลเวลโผล่ตอน Show ที่มีเลเวล");
+                Require(ui.levelValueLabel != null && ui.levelValueLabel.text == "Lv 7",
+                        $"ป้ายเลเวลเป็น 'Lv 7' · ได้ '{ui.levelValueLabel?.text}'");
+
+                var slots = VisibleCards(ui);
+                Require(slots.Count == cards.Count,
+                        $"โชว์การ์ดครบตามที่ส่งไป ({slots.Count} / {cards.Count} ใบ)");
+                if (slots.Count != cards.Count) { ui.Hide(); return; }
+
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    var want = cards[i];
+                    Require(slots[i].nameText != null && slots[i].nameText.text == want.DisplayName,
+                            $"การ์ดใบ {i + 1} ชื่อตรงข้อมูล ('{slots[i].nameText?.text}')");
+                    Require(slots[i].levelText != null && slots[i].levelText.text == want.DisplayLevelText,
+                            $"การ์ดใบ {i + 1} ป้ายเลเวลตรงข้อมูล ('{slots[i].levelText?.text}')");
+                }
+
+                CheckCardAccentFollowsType(slots, cards);
+                CheckRecommendedLift(slots, cards);
+
+                // กดจริงผ่านปุ่มของการ์ด — ต้องยิง callback ใบนั้นครั้งเดียว
+                int target = cards.FindIndex(c => c.isRecommended);
+                if (target < 0) target = 0;
+                slots[target].selectButton?.onClick.Invoke();
+                Require(picked == 1, $"กดการ์ดแล้ว callback ยิงครั้งเดียว (ยิงไป {picked} ครั้ง)");
+                Require(ReferenceEquals(pickedCard, cards[target]),
+                        "callback ได้การ์ดใบที่กดจริง ไม่ใช่ใบอื่น");
+
+                ui.Hide();
+            }
+
+            /// <summary>
+            /// สีเน้นของการ์ดต้องมาจาก **ชนิดของการ์ด** ไม่ใช่จากช่องที่มันไปลง
+            ///
+            /// builder ของจอ P3R อบสีไว้กับ object ตอนสร้าง (ช่อง 1 น้ำเงิน · 2 อำพัน ·
+            /// 3 เขียว) ส่วน `UpgradeCardUI.Populate` ย้อมแค่ Header — กรอบกับพื้นไอคอน
+            /// จึงค้างสีเดิม · การ์ด STAT ตกช่องแรก = หัวเขียวแต่กรอบน้ำเงิน
+            /// </summary>
+            private void CheckCardAccentFollowsType(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    var head = slots[i].cardBackground;
+                    if (head == null) { Require(false, $"การ์ดใบ {i + 1} ต่อ cardBackground ไว้"); continue; }
+
+                    // `AddBorder` สร้างลูกชื่อ Border ที่ **ไม่มี Image** — Image อยู่ที่ขอบ
+                    // สี่ด้านข้างใน (Top/Bottom/Left/Right) · หาผิดชั้นแล้วเช็คจะข้ามไปเงียบๆ
+                    var border = slots[i].transform.Find("Border/Top")?.GetComponent<Image>();
+                    if (border == null)
+                    {
+                        Require(false, $"การ์ดใบ {i + 1} หากรอบ (Border/Top) เจอ");
+                        continue;
+                    }
+
+                    Require(Close(border.color, head.color),
+                            $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
+                            $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
+                }
+            }
+
+            /// <summary>
+            /// ใบที่ถูกยกขึ้นต้องเป็นใบเดียวกับใบที่ติดป้ายแนะนำ
+            /// builder อบการยก 22px ไว้ที่ช่องกลางตายตัว ส่วนป้ายวิ่งตาม isRecommended จริง
+            /// สองอย่างนี้จึงหลุดจากกันได้ และผู้เล่นจะเห็นใบหนึ่งเด่นแต่อีกใบติดป้าย
+            /// </summary>
+            private void CheckRecommendedLift(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                int rec = cards.FindIndex(c => c.isRecommended);
+                if (rec < 0) return;
+
+                float recY = ((RectTransform)slots[rec].transform).anchoredPosition.y;
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    if (i == rec) continue;
+                    float y = ((RectTransform)slots[i].transform).anchoredPosition.y;
+                    Require(recY > y + 1f,
+                            $"ใบที่แนะนำ (ใบ {rec + 1}) ถูกยกสูงกว่าใบ {i + 1} " +
+                            $"({recY:0} vs {y:0})");
+                }
+            }
+
+            // ── helpers ของเทสต์การ์ด ──────────────────────────────────────
+            private static List<UpgradeCardInfo> BuildProbeCards()
+            {
+                var stats = AssetDatabase.FindAssets("t:StatData")
+                                         .Select(AssetDatabase.GUIDToAssetPath)
+                                         .Select(AssetDatabase.LoadAssetAtPath<StatData>)
+                                         .Where(s => s != null).Take(3).ToList();
+                if (stats.Count < 3) return null;
+
+                // ใบกลางเป็นใบแนะนำโดยตั้งใจ — ถ้าเทสต์ผ่านเพราะบังเอิญตรงกับที่ builder
+                // อบไว้ ก็จะจับบั๊กไม่ได้ · ใบแรกจึงถูกตั้งเป็นแนะนำแทน
+                return new List<UpgradeCardInfo>
+                {
+                    new() { type = UpgradeCardType.Stat, stat = stats[0], currentStatLevel = 0,
+                            isRecommended = true },
+                    new() { type = UpgradeCardType.Stat, stat = stats[1], currentStatLevel = 2 },
+                    new() { type = UpgradeCardType.Stat, stat = stats[2], currentStatLevel = 1 },
+                };
+            }
+
+            private static List<UpgradeCardUI> VisibleCards(LevelUpUI ui)
+            {
+                var root = ui.cardsContainer != null ? ui.cardsContainer.transform : ui.transform;
+                return root.GetComponentsInChildren<UpgradeCardUI>(true)
+                           .Where(c => c.gameObject.activeSelf)
+                           .ToList();
+            }
+
+            private static Image FindChildImage(Transform root, string name)
+                => root.GetComponentsInChildren<Transform>(true)
+                       .Where(t => t.name == name)
+                       .Select(t => t.GetComponent<Image>())
+                       .FirstOrDefault(img => img != null);
+
+            private static bool Close(Color a, Color b)
+                => Mathf.Abs(a.r - b.r) < 0.02f && Mathf.Abs(a.g - b.g) < 0.02f
+                && Mathf.Abs(a.b - b.b) < 0.02f;
+
+            private static string Hex(Color c)
+                => $"#{Mathf.RoundToInt(c.r * 255):X2}{Mathf.RoundToInt(c.g * 255):X2}{Mathf.RoundToInt(c.b * 255):X2}";
 
             private void ShowMain()
             {
@@ -815,6 +1041,14 @@ namespace CloneSwarm.EditorTools
                     failed = true;
                 }
                 else sb.AppendLine(NL + "   ไม่มี error ระหว่างรัน");
+
+                if (foreignErrors.Count > 0)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine($"   error จากแพ็กเกจ/asset ภายนอก {foreignErrors.Count} รายการ " +
+                                  "— ไม่นับเป็นข้อตก แต่ไม่ซ่อน:");
+                    foreach (var e in foreignErrors.Distinct().Take(5)) sb.AppendLine(e);
+                }
 
                 sb.AppendLine();
                 sb.AppendLine(failed ? "   ผล: ไม่ผ่าน" : "   ผล: ผ่าน");

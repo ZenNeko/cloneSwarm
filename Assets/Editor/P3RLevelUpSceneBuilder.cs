@@ -57,7 +57,7 @@ namespace CloneSwarm.EditorTools
                                  string name, bool recommended, bool useStatRows)[] Cards =
         {
             ("WEAPON", BlueSlot, Color.white, "Lv 3 / 5", "Arc Blade",     false, true),
-            ("SUPER",  Amber,    InkOnAmber,  "★ Lv 4 / 5", "Orbital Storm", true,  true),
+            ("SUPER",  Amber,    InkOnAmber,  "Lv 4 / 5",  "Orbital Storm", true,  true),
             ("STAT",   Green,    InkOnGreen,  "NEW",       "Crit Chance",   false, false),
         };
 
@@ -362,8 +362,10 @@ namespace CloneSwarm.EditorTools
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot     = new Vector2(0f, 1f);
             rt.sizeDelta = new Vector2(w, h);
-            // ใบที่แนะนำถูกยกขึ้น 22px ตามแบบ — เป็นสัญญาณลำดับชั้นที่อ่านได้เร็วกว่าป้ายอย่างเดียว
-            rt.anchoredPosition = new Vector2(i * (w + gap), recommended ? 22f : 0f);
+            // **ไม่อบการยกไว้ที่ช่อง** — ของเดิมยกช่องกลางตายตัวตามข้อมูลตัวอย่าง
+            // ส่วนป้ายแนะนำวิ่งตาม isRecommended จริง สองอย่างจึงหลุดจากกันได้
+            // ตอนนี้ UpgradeCardUI.ApplyRecommendedLift ยกเองตอน Populate
+            rt.anchoredPosition = new Vector2(i * (w + gap), 0f);
 
             var card = rt.gameObject.AddComponent<UpgradeCardUI>();
 
@@ -372,8 +374,11 @@ namespace CloneSwarm.EditorTools
             Stretch(body.rectTransform);
             body.raycastTarget = true;
 
-            // ② กรอบ 2px สีตามประเภท
+            // ② กรอบ 2px — สีที่ใส่ตรงนี้เป็นแค่ค่าตั้งต้นให้ดูภาพต้นแบบออก
+            //    ตอนรัน UpgradeCardUI ย้อมใหม่ตามชนิดการ์ดผ่าน accentTargets
             AddBorder(rt, "Border", 2f, accent);
+            foreach (var edge in rt.Find("Border").GetComponentsInChildren<Image>(true))
+                card.accentTargets.Add(new UpgradeCardUI.AccentTarget { graphic = edge, alpha = 1f });
 
             // ③ วงเรืองแสง 6px — ปิดไว้ เปิดเฉพาะตอนชี้ (LevelUpUI.glowOnlyOnHover)
             var glow = NewRect("Glow", rt);
@@ -383,6 +388,8 @@ namespace CloneSwarm.EditorTools
             AddBorder(glow, "GlowEdge", 6f, new Color(accent.r, accent.g, accent.b, 0.18f));
             glow.gameObject.SetActive(false);
             card.recommendedGlowOutline = glow.gameObject;
+            foreach (var edge in glow.Find("GlowEdge").GetComponentsInChildren<Image>(true))
+                card.accentTargets.Add(new UpgradeCardUI.AccentTarget { graphic = edge, alpha = 0.18f });
 
             // ④ หัวการ์ด สูง 52 — UpgradeCardUI จะย้อมสีตัวนี้ตามประเภทตอน Populate
             var header = NewImage("Header", rt, accent);
@@ -407,6 +414,7 @@ namespace CloneSwarm.EditorTools
 
             // ⑤ ช่องไอคอน สูง 150 · พื้นสีประเภทจาง + เส้นล่าง 1px
             var iconArea = NewImage("IconArea", rt, new Color(accent.r, accent.g, accent.b, 0.13f));
+            card.accentTargets.Add(new UpgradeCardUI.AccentTarget { graphic = iconArea, alpha = 0.13f });
             var irt = iconArea.rectTransform;
             irt.anchorMin = new Vector2(0f, 1f);
             irt.anchorMax = new Vector2(1f, 1f);

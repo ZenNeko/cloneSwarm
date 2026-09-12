@@ -84,8 +84,11 @@ public class UpgradeCardInfo
     {
         UpgradeCardType.WeaponNew     => "NEW",
         UpgradeCardType.WeaponLevelUp => $"Lv {targetLevel} / {weapon?.MaxLevel}",
-        UpgradeCardType.WeaponSuper   => "SUPER ★",
-        UpgradeCardType.WeaponFusion  => "FUSION ★★",
+        // **ห้ามใส่ ★** — ไม่มีฟอนต์ไหนในโปรเจกต์มีกลิฟนี้ TMP วาดเป็นกล่องสี่เหลี่ยม
+        // คำว่า SUPER / FUSION กับสีของการ์ดบอกระดับอยู่แล้ว ดาวเป็นของประดับล้วน
+        // ถ้าวันหนึ่งเพิ่ม Noto Sans Symbols 2 เป็น fallback ค่อยเอากลับมาได้
+        UpgradeCardType.WeaponSuper   => "SUPER",
+        UpgradeCardType.WeaponFusion  => "FUSION",
         UpgradeCardType.Stat          => currentStatLevel == 0 ? "NEW" : $"Lv {currentStatLevel + 1} / {stat?.MaxLevel}",
         UpgradeCardType.Augment       => augment?.RarityLabel ?? "AUGMENT",
         _                             => ""

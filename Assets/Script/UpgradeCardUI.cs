@@ -33,6 +33,32 @@ public class UpgradeCardUI : MonoBehaviour
 
     [Header("Visual — Weapon vs Stat")]
     public Image    cardBackground;
+
+    /// <summary>
+    /// ชิ้นส่วนอื่นที่ต้องเปลี่ยนสีตามชนิดการ์ดด้วย — กรอบ · พื้นไอคอน · วงเรืองแสง
+    ///
+    /// **ทำไมต้องมี** — ของเดิมย้อมแค่ <see cref="cardBackground"/> (หัวการ์ด) ส่วนกรอบกับ
+    /// พื้นไอคอนถูกอบสีไว้ตอนสร้างซีนตามช่องที่มันอยู่ · การ์ด Stat ตกช่องแรกจึงได้
+    /// หัวเขียวแต่กรอบน้ำเงิน · สีเน้นต้องมาจาก **ชนิดของการ์ด** ไม่ใช่จากช่องที่มันไปลง
+    ///
+    /// <c>alpha</c> แยกต่อชิ้นเพราะพื้นไอคอนใช้สีเดียวกันแต่จางกว่า (0.13) และวงเรืองแสง
+    /// จางกว่าอีก (0.18) — เก็บไว้ที่นี่ทำให้ builder ไม่ต้องรู้เรื่องสีเลย
+    /// </summary>
+    [System.Serializable]
+    public class AccentTarget
+    {
+        public Graphic graphic;
+        [Range(0f, 1f)] public float alpha = 1f;
+    }
+
+    [Tooltip("ชิ้นที่ต้องย้อมตามชนิดการ์ด นอกเหนือจาก cardBackground")]
+    public System.Collections.Generic.List<AccentTarget> accentTargets = new();
+
+    [Header("Recommended")]
+    [Tooltip("ยกการ์ดใบที่แนะนำขึ้นกี่ px — 0 = ไม่ยก\n\n" +
+             "ของเดิมอบการยกไว้กับช่องกลางตายตัว ส่วนป้ายแนะนำวิ่งตาม isRecommended จริง\n" +
+             "สองอย่างจึงหลุดจากกันได้ ผู้เล่นเห็นใบหนึ่งเด่นแต่อีกใบติดป้าย")]
+    public float recommendedLift = 22f;
     public Color    weaponColor  = new Color(0.25f, 0.45f, 0.85f);   // น้ำเงิน
     public Color    statColor    = new Color(0.30f, 0.65f, 0.35f);   // เขียว
     public Color    superColor   = new Color(0.85f, 0.60f, 0.10f);   // ทอง
@@ -96,17 +122,17 @@ public class UpgradeCardUI : MonoBehaviour
         }
 
         // Card color — Augment ใช้สีตาม rarity ของตัวเอง
-        if (cardBackground)
+        Color accent = AccentFor(card);
+        if (cardBackground) cardBackground.color = accent;
+
+        // กรอบ · พื้นไอคอน · วงเรืองแสง ต้องตามชนิดการ์ดด้วย ไม่ใช่ตามช่องที่มันไปลง
+        foreach (var t in accentTargets)
         {
-            cardBackground.color = card.type switch
-            {
-                UpgradeCardType.Augment       => card.augment != null ? card.augment.RarityColor : weaponColor,
-                UpgradeCardType.WeaponSuper   => superColor,
-                UpgradeCardType.WeaponFusion  => fusionColor,
-                UpgradeCardType.Stat          => statColor,
-                _                             => weaponColor
-            };
+            if (t?.graphic == null) continue;
+            t.graphic.color = new Color(accent.r, accent.g, accent.b, t.alpha);
         }
+
+        ApplyRecommendedLift(card.isRecommended);
 
         // --- Evolution Synergy Panel ---
         if (evolutionBadge)
@@ -314,6 +340,36 @@ public class UpgradeCardUI : MonoBehaviour
             _                        => $"{val:F1}"
         };
     }
+
+    // ── Accent / Lift ─────────────────────────────────────────────────────
+    /// <summary>สีเน้นของการ์ด — แหล่งความจริงเดียวของทั้งหัวการ์ด กรอบ และพื้นไอคอน</summary>
+    Color AccentFor(UpgradeCardInfo card) => card.type switch
+    {
+        UpgradeCardType.Augment      => card.augment != null ? card.augment.RarityColor : weaponColor,
+        UpgradeCardType.WeaponSuper  => superColor,
+        UpgradeCardType.WeaponFusion => fusionColor,
+        UpgradeCardType.Stat         => statColor,
+        _                            => weaponColor
+    };
+
+    /// <summary>
+    /// ยกใบที่แนะนำขึ้นตาม <see cref="recommendedLift"/>
+    ///
+    /// จำ y ตั้งต้นไว้ครั้งแรกครั้งเดียว — ถ้าอ่านค่าปัจจุบันทุกครั้งแล้วบวกเพิ่ม
+    /// การ์ดจะไต่ขึ้นเรื่อยๆ ทุกรอบที่ถูก Populate ซ้ำ
+    /// </summary>
+    void ApplyRecommendedLift(bool recommended)
+    {
+        if (Mathf.Approximately(recommendedLift, 0f)) return;
+        if (transform is not RectTransform rt) return;
+
+        if (!baseYCaptured) { baseY = rt.anchoredPosition.y; baseYCaptured = true; }
+        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x,
+                                          baseY + (recommended ? recommendedLift : 0f));
+    }
+
+    private float baseY;
+    private bool  baseYCaptured;
 
     // ── Click ─────────────────────────────────────────────────────────────
     void OnSelect() => onPicked?.Invoke(currentCard);
