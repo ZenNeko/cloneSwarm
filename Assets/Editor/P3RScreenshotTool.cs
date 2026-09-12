@@ -77,9 +77,49 @@ namespace CloneSwarm.EditorTools
             Debug.Log($"[Shot] เสร็จ · ไฟล์อยู่ที่ {outDir}");
         }
 
-        private static void Capture(string scenePath, string pngPath)
+        /// <summary>
+        /// แคป HUD ในซีนเกมจริง — ตัวเดียวที่ไม่ใช่ซีน `Proto_*`
+        ///
+        /// **ครอบแค่สีกับฟอนต์** ซึ่งพอดีกับสิ่งที่ `P3RGameplayHudRestyler` แก้
+        /// ค่าที่เห็นบนแถบ/ตัวเลขเป็นค่าที่ค้างอยู่ในซีน ไม่ใช่ค่าจริงตอนเล่น เพราะ
+        /// เปิดแบบ edit mode — HP จริง · คูลดาวน์ · ไอคอนสกิล ต้องมีผู้เล่น spawn ก่อน
+        /// จอนี้จึงยืนยัน "สีกับฟอนต์ลงถูกไหม" ได้ แต่ยืนยัน **5-second test ไม่ได้**
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD (SampleScene)")]
+        public static void CaptureGameplayHud()
+        {
+            const string scenePath = "Assets/GameScenes/SampleScene.unity";
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+            string png = Path.Combine(outDir, "SampleScene_HUD.png");
+
+            try
+            {
+                // จอที่ถือ singleton **ต้องเปิดค้างไว้ในซีน** ไม่งั้น Awake ไม่วิ่งแล้ว
+                // Instance เป็น null · ตอนเล่นจริงมันซ่อนตัวเองใน Awake/Start แต่ edit mode
+                // ไม่มี Awake ทั้งสามจอจึงซ้อนทับ HUD จนมองไม่เห็นอะไรเลย
+                // ปิดให้เฉพาะตอนแคป — Capture ไม่เซฟซีนอยู่แล้ว สถานะในไฟล์จึงไม่ถูกแตะ
+                Capture(scenePath, png,
+                        hideObjects: new[] { "P3R_LevelUp", "P3R_Pause", "P3R_WinLose" });
+                Debug.Log($"[Shot] {png}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Shot] {scenePath} ล้มเหลว: {e}");
+            }
+        }
+
+        private static void Capture(string scenePath, string pngPath, string[] hideObjects = null)
         {
             var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+
+            if (hideObjects != null)
+            {
+                foreach (var root in scene.GetRootGameObjects())
+                    foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                        if (System.Array.IndexOf(hideObjects, t.name) >= 0)
+                            t.gameObject.SetActive(false);
+            }
 
             // ── เก็บ Canvas ทุกตัวในซีน (รวมที่ปิดอยู่ เผื่อ panel ถูกปิดไว้) ──
             var canvases = new List<Canvas>();
