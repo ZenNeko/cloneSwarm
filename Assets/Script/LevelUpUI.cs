@@ -37,6 +37,14 @@ public class LevelUpUI : MonoBehaviour
     [Tooltip("รูปแบบหัวเรื่องเมื่อไม่รู้เลเวล (Orb phase)")]
     public string titleFormatNoLevel = "LEVEL UP!";
 
+    [Tooltip("ป้ายเลเวลใหม่แยกจากหัวเรื่อง — ปล่อยว่างได้\n\n" +
+             "หัวเรื่องของแบบ P3R เป็นสองบรรทัดมีเส้นขอบ ยัดเลขเข้าไปในข้อความเดียวกัน\n" +
+             "แล้วทรงพัง จอ P3R จึงตัดเลขทิ้งไปเลย — ซึ่งทำให้ข้อมูลที่จอเดิมเคยบอก\n" +
+             "('ขึ้นเลเวลอะไร') หายไปด้วย · ช่องนี้เอามันกลับมาโดยไม่แตะหัวเรื่อง")]
+    public TextMeshProUGUI levelValueLabel;
+    [Tooltip("รูปแบบของป้ายเลเวลแยก · {0} = เลเวลใหม่")]
+    public string levelValueFormat = "Lv {0}";
+
     [Header("Timer")]
     [Tooltip("แสดง countdown  เช่น '28'  — ซ่อนได้ถ้าไม่ต้องการ")]
     public TextMeshProUGUI timerLabel;
@@ -131,6 +139,15 @@ public class LevelUpUI : MonoBehaviour
             levelLabel.text = level > 0
                 ? string.Format(titleFormat, level)
                 : titleFormatNoLevel;
+
+        // เลเวลใหม่แยกป้าย — ซ่อนตอน Orb phase ที่ไม่มีเลเวลให้บอก
+        // (ดีกว่าโชว์ "Lv 0" ซึ่งอ่านแล้วเข้าใจผิดว่าเลเวลตก)
+        if (levelValueLabel)
+        {
+            bool hasLevel = level > 0;
+            levelValueLabel.gameObject.SetActive(hasLevel);
+            if (hasLevel) levelValueLabel.text = string.Format(levelValueFormat, level);
+        }
 
         // 3. หา card slots จาก cardsContainer โดยตรง
         UpgradeCardUI[] slots = cardsContainer

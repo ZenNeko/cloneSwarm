@@ -334,6 +334,22 @@ namespace CloneSwarm.EditorTools
             // หัวเรื่องเป็นสองบรรทัดตามแบบ — เลเวลใหม่ไปอยู่ในข้อความเดียวกันไม่ได้
             ui.titleFormat        = "LEVEL\nUP!";
             ui.titleFormatNoLevel = "LEVEL\nUP!";
+
+            // เลเวลใหม่เป็น **ป้ายแยกใต้หัวเรื่อง**
+            //
+            // จอเดิมโชว์ "LEVEL UP!   Level 5" บรรทัดเดียว · พอมาเป็นแบบ P3R ที่หัวเรื่อง
+            // เป็นสองบรรทัดตัวใหญ่มีเส้นขอบ เลขเลยถูกตัดทิ้งไปทั้งที่มันเป็นข้อมูลที่ผู้เล่น
+            // เคยได้ — แยกป้ายจึงได้ทั้งทรงของแบบและข้อมูลที่หายไป
+            // LevelUpUI ซ่อนป้ายนี้เองตอน Orb phase ที่ไม่มีเลเวลจะบอก
+            var lv = NewMono("LevelValue", section, "Lv 1", 34f, 0.16f);
+            lv.alignment = TextAlignmentOptions.MidlineLeft;
+            lv.color     = Gold;
+            var lrt = lv.rectTransform;
+            lrt.anchorMin = lrt.anchorMax = new Vector2(0f, 1f);
+            lrt.pivot     = new Vector2(0f, 1f);
+            lrt.sizeDelta = new Vector2(420f, 46f);
+            lrt.anchoredPosition = new Vector2(96f, -478f);
+            ui.levelValueLabel = lv;
         }
 
         private static UpgradeCardUI BuildCard(RectTransform container, int i,
