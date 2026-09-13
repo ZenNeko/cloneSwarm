@@ -81,6 +81,12 @@ namespace CloneSwarm.UI.P3R
         [Tooltip("เลข Lv ของช่องเด่น (Super/Fusion) — Amber ตาม design token")]
         public Color levelHighlight = new Color32(0xD9, 0x9A, 0x1A, 0xFF);
 
+        [Header("── Auto refresh ───────────────────────")]
+        [Tooltip("วินาทีต่อการดึงของจากผู้เล่นเอง · 0 = ไม่ดึงเอง\n" +
+                 "จอ Level Up ใช้ 0 เพราะ LevelUpUI.Show() สั่ง refresh ให้ตอนเปิด\n" +
+                 "HUD ตอนเล่นต้องมากกว่า 0 เพราะไม่มีใครสั่ง และของเปลี่ยนระหว่างเล่น")]
+        public float autoRefreshInterval = 0f;
+
         // ── runtime ────────────────────────────────────────────────────────
         private readonly List<BuildStripSlot> weaponSlots  = new();
         private readonly List<BuildStripSlot> passiveSlots = new();
@@ -91,6 +97,26 @@ namespace CloneSwarm.UI.P3R
             if (slotTemplate != null) slotTemplate.gameObject.SetActive(false);
             EnsureSlots();
         }
+
+        /// <summary>
+        /// ดึงเองเป็นจังหวะเมื่อ <see cref="autoRefreshInterval"/> มากกว่า 0
+        ///
+        /// เดินจังหวะแทนการ subscribe event เพราะ `PlayerWeaponManager` กับ
+        /// `PlayerStatManager` ไม่มี event แจ้ง "ของเปลี่ยน" — ตัวที่มีคือ HUD เดิม
+        /// (`WeaponStatHUD`) ซึ่งก็เดินจังหวะ 0.4s เหมือนกัน ไม่ใช่ท่าใหม่
+        ///
+        /// `RefreshFromLocalPlayer` คืน false ตอนยังไม่มีผู้เล่นในซีน (ต้นเกม / กำลังโหลด)
+        /// รอบถัดไปจะเจอเอง จึงไม่ต้องมีสถานะ "รอผู้เล่น" แยกต่างหาก
+        /// </summary>
+        private void OnEnable()
+        {
+            if (autoRefreshInterval <= 0f) return;
+            InvokeRepeating(nameof(RefreshTick), 0f, autoRefreshInterval);
+        }
+
+        private void OnDisable() => CancelInvoke(nameof(RefreshTick));
+
+        private void RefreshTick() => RefreshFromLocalPlayer();
 
         // ═══════════════════════════════════════════════════════════════════
         // PUBLIC API

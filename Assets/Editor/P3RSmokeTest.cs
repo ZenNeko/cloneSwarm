@@ -792,10 +792,16 @@ namespace CloneSwarm.EditorTools
                         "หา PauseMenuUI เจอ");
 
                 // แถบ build — ช่องเคยกลายเป็น script หายทั้งแถบ
-                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
-                Require(strip != null, "หา BuildStripUI เจอ");
-                Require(strip != null && strip.slotTemplate != null,
-                        "BuildStripUI.slotTemplate ไม่หลุด (คลาสรองข้ามซีนแล้วเคยกลายเป็น null)");
+                // ซีนเกมมีแถบ build **สองอัน** — จอ Level Up กับ HUD ตอนเล่น
+                // ทั้งคู่สร้างจาก P3RBuildStripBuilder ตัวเดียวกัน ต้องตรวจทั้งคู่
+                // ไม่ใช่ตัวไหนก็ได้ที่ FindAnyObjectByType หยิบมา
+                var strips = AllStrips();
+                Require(strips.Count >= 2,
+                        $"หาแถบ build เจอทั้งสองจอ (เจอ {strips.Count})");
+                foreach (var s in strips)
+                    Require(s.slotTemplate != null,
+                            $"'{Path(s.transform)}' slotTemplate ไม่หลุด " +
+                            "(คลาสรองข้ามซีนแล้วเคยกลายเป็น null)");
 
                 // component ที่สคริปต์หายจะโผล่เป็น null ใน GetComponents
                 int broken = 0;
@@ -809,6 +815,7 @@ namespace CloneSwarm.EditorTools
 
                 CheckLevelUpCards();
                 CheckBuildStripSlots();
+                CheckStripAutoRefresh();
                 CheckWeaponSlotCap();
                 CheckStatIcons();
                 CheckMissingGlyphs();
@@ -827,18 +834,70 @@ namespace CloneSwarm.EditorTools
             /// </summary>
             private void CheckBuildStripSlots()
             {
-                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
-                if (strip == null || strip.weaponSlotArea == null) return;
+                foreach (var strip in AllStrips())
+                {
+                    if (strip.weaponSlotArea == null) continue;
+                    string where = Path(strip.transform);
 
-                strip.SetEntries(new List<BuildStripUI.Entry>(), new List<BuildStripUI.Entry>());
+                    strip.SetEntries(new List<BuildStripUI.Entry>(), new List<BuildStripUI.Entry>());
 
-                int w = CountSlots(strip.weaponSlotArea, strip);
-                int p = CountSlots(strip.passiveSlotArea, strip);
+                    int w = CountSlots(strip.weaponSlotArea, strip);
+                    int p = CountSlots(strip.passiveSlotArea, strip);
 
-                Require(w == strip.weaponSlotCount,
-                        $"แถบ build: ช่องอาวุธมีชุดเดียว ({w} ช่อง · ตั้งไว้ {strip.weaponSlotCount})");
-                Require(strip.passiveSlotArea == null || p == strip.passiveSlotCount,
-                        $"แถบ build: ช่องพาสซีฟมีชุดเดียว ({p} ช่อง · ตั้งไว้ {strip.passiveSlotCount})");
+                    Require(w == strip.weaponSlotCount,
+                            $"'{where}' ช่องอาวุธมีชุดเดียว " +
+                            $"({w} ช่อง · ตั้งไว้ {strip.weaponSlotCount})");
+                    Require(strip.passiveSlotArea == null || p == strip.passiveSlotCount,
+                            $"'{where}' ช่องพาสซีฟมีชุดเดียว " +
+                            $"({p} ช่อง · ตั้งไว้ {strip.passiveSlotCount})");
+                }
+            }
+
+            /// <summary>
+            /// แถบของ HUD ต้องเดินจังหวะเอง แถบของจอ Level Up ต้องไม่เดิน
+            ///
+            /// จอ Level Up มี `LevelUpUI.Show()` สั่ง refresh ให้ตอนเปิด — ตั้งให้เดินเอง
+            /// ด้วยจะกลายเป็นดึงข้อมูลทุก 0.4 วินาทีตลอดเกมทั้งที่จอปิดอยู่
+            ///
+            /// ส่วน HUD ไม่มีใครสั่งเลย · ตั้งเป็น 0 = แถบขึ้นมาว่างแล้วว่างตลอดเกม
+            /// ซึ่งดูเหมือน "ยังไม่ได้ของ" ไม่ได้ดูเหมือนบั๊ก จึงไม่มีใครรายงาน
+            /// </summary>
+            private void CheckStripAutoRefresh()
+            {
+                foreach (var strip in AllStrips())
+                {
+                    // ดูจาก panel ที่มันอยู่ **เท่านั้น** — `GetComponentInParent<GameHUD>`
+                    // ใช้ไม่ได้ที่นี่เพราะ GameHUD อยู่บน `HUDCanvas` ซึ่งเป็นพ่อของทั้งสองจอ
+                    // แถบของจอ Level Up จึงถูกนับเป็น "อยู่บน HUD" ไปด้วย
+                    bool onHud = InsideNamed(strip.transform, "P3R_HUD");
+                    string where = Path(strip.transform);
+
+                    if (onHud)
+                        Require(strip.autoRefreshInterval > 0f,
+                                $"'{where}' แถบบน HUD เดินจังหวะเอง " +
+                                $"(ตั้งไว้ {strip.autoRefreshInterval}s)");
+                    else
+                        Require(Mathf.Approximately(strip.autoRefreshInterval, 0f),
+                                $"'{where}' แถบนอก HUD ไม่เดินจังหวะเอง " +
+                                $"(ตั้งไว้ {strip.autoRefreshInterval}s)");
+                }
+            }
+
+            private static bool InsideNamed(Transform t, string name)
+            {
+                for (var p = t; p != null; p = p.parent) if (p.name == name) return true;
+                return false;
+            }
+
+            private static List<BuildStripUI> AllStrips()
+                => FindObjectsByType<BuildStripUI>(FindObjectsInactive.Include,
+                                                   FindObjectsSortMode.None).ToList();
+
+            private static string Path(Transform t)
+            {
+                var sb = new StringBuilder(t.name);
+                for (var p = t.parent; p != null; p = p.parent) sb.Insert(0, p.name + "/");
+                return sb.ToString();
             }
 
             /// <summary>
