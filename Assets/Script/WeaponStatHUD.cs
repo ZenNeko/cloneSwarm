@@ -5,11 +5,12 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// HUD แสดง Weapon Slots (6) และ Stat Slots (6) ของ local player
+/// HUD แสดง Weapon Slots (PlayerWeaponManager.MaxWeaponSlots)
+/// และ Stat Slots (PlayerStatManager.MaxStatSlots) ของ local player
 ///
 /// ใช้ Inspector references ทั้งหมด — ไม่สร้าง UI ที่ runtime อีกต่อไป
 ///
-/// Slot Hierarchy แนะนำ (ทำซ้ำ × 6 สำหรับทั้ง Weapon และ Stat):
+/// Slot Hierarchy แนะนำ (ทำซ้ำต่อหนึ่งช่อง ทั้ง Weapon และ Stat):
 ///   SlotRoot (Image = bg)
 ///   ├── Icon      (Image)
 ///   ├── LevelText (TMP)   ← มุมบนซ้าย
@@ -28,10 +29,10 @@ public class WeaponStatHUD : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    [Header("── Weapon Slots (6) ──────────────────────")]
+    [Header("── Weapon Slots ────────────────────────")]
     public SlotUI[] weaponSlots = new SlotUI[PlayerWeaponManager.MaxWeaponSlots];
 
-    [Header("── Stat Slots (6) ────────────────────────")]
+    [Header("── Stat Slots ──────────────────────────")]
     public SlotUI[] statSlots = new SlotUI[PlayerStatManager.MaxStatSlots];
 
     // ═══════════════════════════════════════════════════════════════════════

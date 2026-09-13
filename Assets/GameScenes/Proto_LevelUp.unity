@@ -17562,7 +17562,7 @@ MonoBehaviour:
   slotTemplate: {fileID: 951511195}
   weaponSlotArea: {fileID: 1778742783}
   passiveSlotArea: {fileID: 911344521}
-  weaponSlotCount: 6
+  weaponSlotCount: 5
   passiveSlotCount: 6
   slotSize: 62
   slotGap: 8

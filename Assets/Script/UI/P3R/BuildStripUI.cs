@@ -58,9 +58,10 @@ namespace CloneSwarm.UI.P3R
 
         [Header("── Layout ─────────────────────────────")]
         [Tooltip("จำนวนช่องที่โชว์เสมอ — ช่องเกินของที่มีจะเป็นกรอบเส้นประ\n" +
-                 "6 = PlayerWeaponManager.MaxWeaponSlots")]
-        public int weaponSlotCount  = 6;
-        public int passiveSlotCount = 6;
+                 "ต้องเท่า MaxWeaponSlots / MaxStatSlots — สโมกเทสต์เช็คให้\n" +
+                 "ตั้งไม่ตรง = ช่องที่โชว์ไม่ตรงกับจำนวนที่ถือได้จริง")]
+        public int weaponSlotCount  = PlayerWeaponManager.MaxWeaponSlots;
+        public int passiveSlotCount = PlayerStatManager.MaxStatSlots;
 
         [Tooltip("ขนาดช่อง (px ที่กรอบ 1920) — design handoff ระบุ 62")]
         public float slotSize = 62f;

@@ -167,8 +167,11 @@ namespace CloneSwarm.EditorTools
 
                     void Finish(bool ok)
                     {
-                        onWaitDone?.Invoke(ok);
+                        // ล้าง **ก่อน** เรียก callback — callback มีสิทธิ์ตั้งรอบรอใหม่
+                        // (Press รอ intro จบ แล้วค่อย Expect ต่อ) ถ้าล้างทีหลังรอบใหม่โดนลบทิ้ง
+                        var done = onWaitDone;
                         waitCond = null; onWaitDone = null;
+                        done?.Invoke(ok);
                     }
                     return;
                 }
@@ -317,9 +320,30 @@ namespace CloneSwarm.EditorTools
 
                 if (item == null) { Require(false, $"หา รายการ '{id}' เจอ"); wait = 0.2f; return; }
 
-                list.ConfirmItem(item);
-                lines.Add($"── กด '{id}'");
-                Expect($"กด '{id}'", expectActive);
+                // ── รอให้ของบินเข้าจอเสร็จก่อนกด ────────────────────────────
+                // `P3RMenuList.ConfirmItem` ปฏิเสธอินพุตทุกทาง **เงียบๆ** ระหว่าง intro
+                // — ไม่มี log ไม่มีอะไร · กดตอนนั้นคือไม่เกิดอะไรขึ้นเลย
+                //
+                // `CheckTitleGate` ยิง onAdvanceEvent ซึ่งเปิด P3R_Main ขึ้นมา = intro
+                // เริ่มใหม่ตรงนั้น แล้วขั้นถัดไปรอแค่ 0.2s ซึ่งสั้นกว่า intro (~0.5s)
+                // ผลคือเทสต์ไปตกที่ "P3R_Config ไม่เปิด" ซึ่งอ่านเหมือนเมนูพัง
+                // ทั้งที่จอทำงานปกติ — เทสต์ต่างหากที่กดเร็วเกิน
+                //
+                // รอเงื่อนไขจริงแทนรอเวลาตายตัว ตามเหตุผลเดียวกับหัว Update()
+                WaitUntil(() => !list.IntroPlaying, ready =>
+                {
+                    if (!ready)
+                    {
+                        Require(false, $"กด '{id}' ได้ — อนิเมชันเข้าเมนูค้าง ไม่ยอมจบ");
+                        return;
+                    }
+
+                    Require(item.interactable, $"รายการ '{id}' กดได้ (ไม่ได้ถูกปิดไว้)");
+
+                    list.ConfirmItem(item);
+                    lines.Add($"── กด '{id}'");
+                    Expect($"กด '{id}'", expectActive);
+                });
             }
 
             /// <summary>กดแท็บผ่าน TabBar ตัวจริง เหมือนที่ P3RTabJump ทำ</summary>
@@ -784,6 +808,7 @@ namespace CloneSwarm.EditorTools
 
                 CheckLevelUpCards();
                 CheckBuildStripSlots();
+                CheckWeaponSlotCap();
                 CheckMissingGlyphs();
             }
 
@@ -812,6 +837,51 @@ namespace CloneSwarm.EditorTools
                         $"แถบ build: ช่องอาวุธมีชุดเดียว ({w} ช่อง · ตั้งไว้ {strip.weaponSlotCount})");
                 Require(strip.passiveSlotArea == null || p == strip.passiveSlotCount,
                         $"แถบ build: ช่องพาสซีฟมีชุดเดียว ({p} ช่อง · ตั้งไว้ {strip.passiveSlotCount})");
+            }
+
+            /// <summary>
+            /// จำนวนช่องที่จอโชว์ ต้องเท่ากับจำนวนที่ผู้เล่นถือได้จริง
+            ///
+            /// `PlayerWeaponManager.MaxWeaponSlots` เป็นแหล่งความจริงเดียว แต่ค่าใน
+            /// **ซีนถูก serialize ไว้แล้ว** — แก้ค่าคงที่ในโค้ดไม่ย้อนไปแตะซีน และ
+            /// `WeaponStatHUD.RefreshWeapons` วนด้วย `weaponSlots.Length` ไม่ใช่ค่าคงที่
+            /// ช่องที่เกินจึงค้างเป็นช่องว่างบนจอ โดยไม่มี error ให้เห็นสักบรรทัด
+            ///
+            /// เทสต์นี้จับกรณีนั้น และจับกรณีกลับกันด้วย — ถ้าวันหนึ่งเพิ่มเพดานเป็น 6
+            /// แล้วลืมเติมช่องบนจอ ช่องที่หกจะไม่มีที่แสดงและอาวุธจะหายเงียบๆ
+            /// </summary>
+            private void CheckWeaponSlotCap()
+            {
+                int maxW = PlayerWeaponManager.MaxWeaponSlots;
+                int maxS = PlayerStatManager.MaxStatSlots;
+
+                var hud = FindAnyObjectByType<WeaponStatHUD>(FindObjectsInactive.Include);
+                if (hud != null)
+                {
+                    int n = hud.weaponSlots != null ? hud.weaponSlots.Length : 0;
+                    Require(n == maxW,
+                            $"HUD: ช่องอาวุธเท่าเพดาน ({n} ช่อง · เพดาน {maxW})");
+
+                    int wired = hud.weaponSlots == null ? 0
+                              : hud.weaponSlots.Count(s => s != null && s.bg != null);
+                    Require(wired == n,
+                            $"HUD: ช่องอาวุธต่อสายครบทุกช่อง ({wired}/{n})");
+
+                    int sn = hud.statSlots != null ? hud.statSlots.Length : 0;
+                    Require(sn == maxS,
+                            $"HUD: ช่องพาสซีฟเท่าเพดาน ({sn} ช่อง · เพดาน {maxS})");
+                }
+
+                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
+                if (strip != null)
+                {
+                    Require(strip.weaponSlotCount == maxW,
+                            $"แถบ build: ตั้งช่องอาวุธเท่าเพดาน " +
+                            $"({strip.weaponSlotCount} · เพดาน {maxW})");
+                    Require(strip.passiveSlotCount == maxS,
+                            $"แถบ build: ตั้งช่องพาสซีฟเท่าเพดาน " +
+                            $"({strip.passiveSlotCount} · เพดาน {maxS})");
+                }
             }
 
             private static int CountSlots(RectTransform area, BuildStripUI strip)
