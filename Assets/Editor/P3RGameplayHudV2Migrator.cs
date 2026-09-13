@@ -166,6 +166,8 @@ namespace CloneSwarm.EditorTools
                 dst.chargeBarRoot        = src.chargeBarRoot;
                 dst.chargeBarFill        = src.chargeBarFill;
                 dst.chargeBarText        = src.chargeBarText;
+                dst.characterIcon        = src.characterIcon;
+                dst.useCharacterPortrait = src.useCharacterPortrait;
                 dst.qSlot                = src.qSlot;
                 dst.eSlot                = src.eSlot;
                 dst.abilityReadyColor    = src.abilityReadyColor;

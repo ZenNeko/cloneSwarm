@@ -20,6 +20,13 @@ using TMPro;
 /// </summary>
 public class GameHUD : MonoBehaviour
 {
+    [Header("── Character ──")]
+    [Tooltip("รูปตัวละครของผู้เล่นเครื่องนี้ — เติมตอนเจอ local player ไม่ได้ฝังไว้ในซีน\n" +
+             "ปล่อยว่างได้ ช่องจะถูกปิดไว้เฉยๆ")]
+    public Image characterIcon;
+    [Tooltip("ใช้ CharacterData.portrait แทน icon — portrait เป็นภาพเต็มตัว icon เป็นหัว")]
+    public bool  useCharacterPortrait;
+
     [Header("HP")]
     public Image           hpFill;
     public TextMeshProUGUI hpText;
@@ -428,7 +435,42 @@ public class GameHUD : MonoBehaviour
         localPlayer.isDead.OnValueChanged           += OnDeadChanged;
         localPlayer.respawnCountdown.OnValueChanged += OnCountdownChanged;
         RefreshHP();
+        ApplyCharacterIcon();
         if (respawnPanel) respawnPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// เติมรูปตัวละครลงช่องบน HUD
+    ///
+    /// **ที่มาของรูปมีจริง ไม่ได้แต่งขึ้น** — `PlayerWeaponManager.characterData` คือ
+    /// ตัวที่ `OnNetworkSpawn` ใช้ตั้งอาวุธ/สกิลเริ่มต้น · ถ้าช่องนั้นว่าง (ผู้เล่นเลือก
+    /// จากจอเลือกตัวละครแทนการตั้งใน Inspector) ก็ตกไปที่ `CharacterSelectUI.SelectedCharacter`
+    /// ซึ่งเป็นเส้นทางเดียวกับที่ `PlayerWeaponManager` ใช้เป๊ะ
+    ///
+    /// หารูปไม่เจอ = **ปิดช่องทิ้ง ไม่ใช่ปล่อยว่าง** — `Image` ที่ไม่มี sprite ไม่ได้วาดเปล่า
+    /// มันวาดสี่เหลี่ยมทึบเต็มกรอบ ซึ่งบนจอดูเหมือนกล่องขาวค้างมากกว่าดูเหมือนที่ว่าง
+    /// </summary>
+    void ApplyCharacterIcon()
+    {
+        if (characterIcon == null) return;
+
+        CharacterData cd = null;
+        if (localPlayer != null)
+        {
+            var pwm = localPlayer.GetComponent<PlayerWeaponManager>();
+            if (pwm != null) cd = pwm.characterData;
+        }
+        if (cd == null) cd = CharacterSelectUI.SelectedCharacter;
+
+        // portrait เป็นภาพเต็มตัว icon เป็นรูปหัว — ตัวที่ขอมาก่อน ไม่มีค่อยใช้อีกตัว
+        Sprite spr = cd == null ? null
+                   : useCharacterPortrait ? (cd.portrait != null ? cd.portrait : cd.icon)
+                                          : (cd.icon     != null ? cd.icon     : cd.portrait);
+
+        characterIcon.sprite  = spr;
+        characterIcon.enabled = spr != null;
+        // **สีขาวล้วนเสมอ** — สี Image คูณเข้ากับพิกเซล ย้อมแล้วงานศิลป์ไม่ตรงกับที่วาดมา
+        characterIcon.color   = Color.white;
     }
 
     void OnHealthChanged(float _, float __) => RefreshHP();

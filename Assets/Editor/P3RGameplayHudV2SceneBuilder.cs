@@ -262,6 +262,76 @@ namespace CloneSwarm.EditorTools
             var expLabel = NewMono("ExpLabel", root, "EXP", 14f, 0.2f,
                                    TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.5f));
             BottomLeft(expLabel.rectTransform, Pad + 556f, 40f, 180f, 22f);
+
+            BuildCharacterIcon(root, hud);
+            BuildChargeBar(root, hud);
+            BuildTabHint(root);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // ช่องรูปตัวละคร — เหนือสแลบเลเวล ชิดขอบซ้ายเดียวกัน
+        //
+        // ทำไมอยู่ตรงนี้: แถวสถานะของผู้เล่นอยู่มุมนี้ทั้งชุดแล้ว (เลเวล · เลือด · EXP)
+        // รูปตัวละครเป็นข้อมูลชุดเดียวกัน — "ฉันเป็นใคร สภาพยังไง" อ่านรวดเดียวจบ
+        //
+        // **ปิด `enabled` ไว้** — `GameHUD.ApplyCharacterIcon` เปิดให้เองตอนเจอ local player
+        // `Image` ที่ไม่มี sprite วาดสี่เหลี่ยมทึบ ไม่ได้วาดเปล่า ปล่อยเปิดไว้ = กล่องขาวค้างทั้งเกม
+        // ═══════════════════════════════════════════════════════════════════
+        private static void BuildCharacterIcon(RectTransform root, GameHUD hud)
+        {
+            const float Size = 108f;
+
+            var box = NewImage("CharacterIcon_Box", root, Chip);
+            BottomLeft(box.rectTransform, Pad, 160f, Size, Size);
+            AddBorder(box.rectTransform, "Border", 1f, new Color(1f, 1f, 1f, 0.18f));
+
+            // **สีขาวล้วนเสมอ ห้ามย้อม** — สี Image คูณเข้ากับพิกเซลของ sprite
+            var art = NewImage("CharacterIcon", box.rectTransform, Color.white);
+            Inset(art.rectTransform, 6f, 6f, 6f, 6f);
+            art.preserveAspect = true;
+            art.enabled = false;
+            hud.characterIcon = art;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // แถบ passive (CHARGE / KILLS / HITS) — ย้ายมาจากมุมล่างขวา
+        //
+        // มันเป็นทรัพยากรของ **ตัวผู้เล่น** เหมือนเลือดกับ EXP ไม่ใช่ของช่องสกิล
+        // อยู่คนละมุมกับพวกเดียวกันทำให้ต้องกวาดตาข้ามจอเพื่ออ่านสภาพตัวเองครบชุด
+        // ═══════════════════════════════════════════════════════════════════
+        private static void BuildChargeBar(RectTransform root, GameHUD hud)
+        {
+            var charge = NewRect("ChargeBar_Panel", root);
+            BottomLeft(charge, Pad + 126f, 160f, 340f, 30f);
+
+            var label = NewMono("ChargeLabel", charge, "CHARGE", 14f, 0.24f,
+                                TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.5f));
+            TopLeft(label.rectTransform, 0f, 4f, 110f, 22f);
+
+            hud.chargeBarFill = FilledBar(charge, "Charge_Bar", 116f, 11f, 160f, 10f,
+                                          new Color32(0xFF, 0xE6, 0x33, 0xFF));
+
+            var pct = NewMono("ChargeText", charge, "0", 15f, 0.06f,
+                              TextAlignmentOptions.MidlineRight);
+            TopRight(pct.rectTransform, 0f, 4f, 60f, 22f);
+            Guard(pct);
+            hud.chargeBarText = pct;
+
+            // **ช่องที่ซีนเก่าปล่อยว่างไว้** จน GameHUD ซ่อนแถบไม่ได้เลย — ต่อให้ตั้งแต่ต้น
+            hud.chargeBarRoot = charge.gameObject;
+        }
+
+        /// <summary>
+        /// ป้ายบอกปุ่ม — ใต้แถบ passive ชิดแนวเดียวกับแถบข้อมูล
+        ///
+        /// **ยังไม่มีจอ stats จริงอยู่หลังปุ่มนี้** · ป้ายบอกสิ่งที่ยังไม่มี แต่ของเดิม
+        /// ก็บอกอยู่แล้วและไม่ใช่เรื่องที่งานนี้แก้ — ย้ายที่อย่างเดียว ไม่เพิ่มคำโกหกใหม่
+        /// </summary>
+        private static void BuildTabHint(RectTransform root)
+        {
+            var tab = NewMono("TabHint", root, "TAB  STATS", 14f, 0.22f,
+                              TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.35f));
+            BottomLeft(tab.rectTransform, Pad + 126f, 196f, 240f, 22f);
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -334,35 +404,15 @@ namespace CloneSwarm.EditorTools
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // ล่างขวา — ช่องสกิล + แถบ passive
+        // ล่างขวา — ช่องสกิลอย่างเดียว
+        //
+        // แถบ passive กับป้าย TAB ย้ายไปอยู่กับ HP/EXP มุมล่างซ้ายแล้ว
+        // (ดู BuildChargeBar / BuildTabHint) — มุมนี้เหลือแต่ของที่ "กดได้"
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildBottomRight(RectTransform root, GameHUD hud)
         {
             hud.qSlot = AbilitySlot(root, "Q_Slot", Pad + 118f);
             hud.eSlot = AbilitySlot(root, "E_Slot", Pad);
-
-            var charge = NewRect("ChargeBar_Panel", root);
-            BottomRight(charge, Pad, 62f, 340f, 30f);
-
-            var label = NewMono("ChargeLabel", charge, "CHARGE", 14f, 0.24f,
-                                TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.5f));
-            TopLeft(label.rectTransform, 0f, 4f, 110f, 22f);
-
-            hud.chargeBarFill = FilledBar(charge, "Charge_Bar", 116f, 11f, 160f, 10f,
-                                          new Color32(0xFF, 0xE6, 0x33, 0xFF));
-
-            var pct = NewMono("ChargeText", charge, "0", 15f, 0.06f,
-                              TextAlignmentOptions.MidlineRight);
-            TopRight(pct.rectTransform, 0f, 4f, 60f, 22f);
-            Guard(pct);
-            hud.chargeBarText = pct;
-
-            // **ช่องที่ซีนเก่าปล่อยว่างไว้** จน GameHUD ซ่อนแถบไม่ได้เลย — ต่อให้ตั้งแต่ต้น
-            hud.chargeBarRoot = charge.gameObject;
-
-            var tab = NewMono("TabHint", root, "TAB  STATS", 14f, 0.22f,
-                              TextAlignmentOptions.MidlineRight, new Color(1f, 1f, 1f, 0.35f));
-            BottomRight(tab.rectTransform, Pad, 30f, 240f, 22f);
         }
 
         /// <summary>
