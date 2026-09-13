@@ -45,11 +45,6 @@ namespace CloneSwarm.EditorTools
 
         private const float Pad = 40f;
 
-        /// <summary>ฟอนต์ป้ายระบบของแถบ build — ชุดเดียวกับที่ builder จอ Level Up ใช้
-        /// โปรเจกต์ไม่มีฟอนต์ mono จริง จึงเลียนด้วย SemiBold + letterSpacing</summary>
-        private const string MonoFontPath =
-            "Assets/Prefab/Art Asset/Fnot/Sarabun/Sarabun-SemiBold SDF.asset";
-
         /// <summary>
         /// sprite ของแถบ — **จำเป็น ไม่ใช่ของตกแต่ง**
         ///
@@ -270,52 +265,29 @@ namespace CloneSwarm.EditorTools
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // ล่างกลาง — แถบ "ของที่ถืออยู่" แบบเดียวกับจอ Level Up
+        // ล่างกลาง — ช่องอาวุธ 6 + ช่องสเตตัส 6
         //
-        // ═══ ทำไมไม่ใช่ชิปของ WeaponStatHUD อีกแล้ว ═══
-        //
-        // แถบนี้กับแถบในจอ Level Up แสดง **ของชุดเดียวกัน** แต่เคยเป็นคนละหน้าตา
-        // สิ้นเชิง — ที่นี่เป็นชิปเฉือนมุมพร้อมชื่อเต็ม ที่โน่นเป็นแถวพื้นเข้มช่อง 62px
-        // ผู้เล่นต้องเรียนรู้สองภาษาสำหรับข้อมูลอันเดียว และเวลาปรับแบบก็ต้องแก้สองที่
-        //
-        // ตอนนี้ทั้งสองจอเรียก `P3RBuildStripBuilder` ตัวเดียวกัน
-        //
-        // ═══ ของเดิมยังอยู่ แต่ปิดไว้ ═══
-        //
-        // `WeaponStatHUD` กับอาเรย์ของมันยังถูกสร้างครบเหมือนเดิม เพียงแต่แถวถูกปิด
-        // และขึ้นต้นชื่อ `Legacy_` — migrator ยังคัดค่าไปให้ตัวจริงบน HUDCanvas ได้
-        // และถ้าจะกลับไปใช้แบบเดิมก็แค่ปิดแถบใหม่แล้วเปิดสองแถวนี้กลับ
+        // `WeaponStatHUD` ใช้ **อาเรย์ขนาดตายตัว** ที่ชี้ `bg`/`icon`/`nameTxt`/`levelTxt`
+        // ทีละช่อง ไม่ใช่ container ที่มันสร้างของเอง · ช่องทั้งหมดจึงต้องมีอยู่จริงในซีน
+        // ตั้งแต่แรก และต้องต่อเข้าอาเรย์ให้ครบ ไม่งั้นช่องที่ขาดจะเงียบไปเฉยๆ
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildBottomCenter(RectTransform root, WeaponStatHUD weapons)
         {
-            var mono = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(MonoFontPath);
-            var display = Theme != null && Theme.font != null ? Theme.font : mono;
-
-            var strip = P3RBuildStripBuilder.Build(root, mono, display);
-            P3RBuildStripBuilder.PlaceBottomCenter(strip, 45f);
-
-            // HUD ไม่มีใครสั่ง refresh ให้ (จอ Level Up มี LevelUpUI.Show()) จึงต้องเดินเอง
-            // 0.4s เท่าจังหวะที่ WeaponStatHUD เดินอยู่เดิม ไม่ใช่ตัวเลขใหม่
-            strip.autoRefreshInterval = 0.4f;
-
-            // ── ของเดิม: สร้างครบแต่ปิดไว้ ────────────────────────────────
-            // `WeaponStatHUD` ใช้ **อาเรย์ขนาดตายตัว** ที่ชี้ `bg`/`icon`/`nameTxt`/`levelTxt`
-            // ทีละช่อง ช่องทั้งหมดจึงต้องมีอยู่จริงในซีน ไม่งั้นช่องที่ขาดจะเงียบไปเฉยๆ
-            weapons.weaponSlots = SlotStrip(root, "Legacy_HudWeaponRow", "WEAPONS", 132f,
-                                            PlayerWeaponManager.MaxWeaponSlots, hidden: true);
-            weapons.statSlots   = SlotStrip(root, "Legacy_HudStatRow",   "PASSIVES", 56f,
-                                            PlayerStatManager.MaxStatSlots, hidden: true);
+            // ระยะสองแถวต้องเผื่อป้ายกำกับที่ลอยอยู่เหนือแต่ละแถว — ชิดกว่านี้ป้ายของแถวล่าง
+            // จะไปทับช่องของแถวบน (เห็นชัดตอนช่องถูกเฉือน มุมมันยื่นออกมา)
+            weapons.weaponSlots = SlotStrip(root, "WeaponRow", "WEAPONS", 132f,
+                                            PlayerWeaponManager.MaxWeaponSlots);
+            weapons.statSlots   = SlotStrip(root, "StatRow",   "PASSIVES", 56f,
+                                            PlayerStatManager.MaxStatSlots);
         }
 
         private static WeaponStatHUD.SlotUI[] SlotStrip(RectTransform root, string name,
-                                                        string label, float y, int count,
-                                                        bool hidden = false)
+                                                        string label, float y, int count)
         {
             const float SlotW = 62f, SlotH = 48f, Gap = 10f;
             float width = count * SlotW + (count - 1) * Gap;
 
             var strip = NewRect(name, root);
-            if (hidden) strip.gameObject.SetActive(false);
             strip.anchorMin = strip.anchorMax = new Vector2(0.5f, 0f);
             strip.pivot     = new Vector2(0.5f, 0f);
             strip.sizeDelta = new Vector2(width, SlotH);

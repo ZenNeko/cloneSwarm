@@ -829,16 +829,23 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildBuildStrip(RectTransform panel, LevelUpUI ui)
         {
-            // โครงแถบอยู่ที่ P3RBuildStripBuilder — **HUD ตอนเล่นเรียกตัวเดียวกันนี้**
-            // จอ Level Up กับ HUD เคยมีแถบคนละแบบทั้งที่แสดงของชุดเดียวกัน
-            // ย้ายมารวมที่เดียวแล้วเพื่อให้แก้หน้าตาทีเดียวเปลี่ยนพร้อมกัน ไม่ใช่ทำให้เหมือน
-            var strip = P3RBuildStripBuilder.Build(panel, monoFont, displayFont);
-            P3RBuildStripBuilder.PlaceBottomRight(strip, -57f, 45f);
+            const float stripW = 600f, rowH = 90f, rowGap = 14f;
+            const float padX = 20f, labelW = 132f, edgeW = 6f;
 
-            // จอนี้ไม่ต้องเดินจังหวะเอง — LevelUpUI.Show() สั่ง refresh ให้ตอนเปิด
-            // ซึ่งเป็นจังหวะที่ข้อมูลนิ่งพอดี
-            strip.autoRefreshInterval = 0f;
+            var root = NewRect("BuildStrip", panel);
+            root.anchorMin = root.anchorMax = new Vector2(1f, 0f);
+            root.pivot     = new Vector2(1f, 0f);
+            root.sizeDelta = new Vector2(stripW, rowH * 2f + rowGap);
+            root.anchoredPosition = new Vector2(-57f, 45f);
+
+            var strip = root.gameObject.AddComponent<BuildStripUI>();
             ui.buildStrip = strip;
+
+            strip.weaponSlotArea  = BuildStripRow(root, "Row_Weapons",  "WEAPONS",  BlueSlot,
+                                                  0f, rowH, padX, labelW, edgeW);
+            strip.passiveSlotArea = BuildStripRow(root, "Row_Passives", "PASSIVES", Green,
+                                                  -(rowH + rowGap), rowH, padX, labelW, edgeW);
+            strip.slotTemplate = BuildSlotTemplate(root);
 
             // เติมของตัวอย่างให้เห็นในซีน — ตอนรัน BuildStripUI.RefreshFromLocalPlayer()
             // ล้างแล้วสร้างใหม่จาก PlayerWeaponManager จริง ตัวอย่างจึงไม่กลายเป็นของค้าง
@@ -857,6 +864,45 @@ namespace CloneSwarm.EditorTools
                 });
         }
 
+        private static RectTransform BuildStripRow(RectTransform parent, string name, string label,
+                                                   Color accent, float y, float rowH,
+                                                   float padX, float labelW, float edgeW)
+        {
+            var row = NewRect(name, parent);
+            row.anchorMin = new Vector2(0f, 1f);
+            row.anchorMax = new Vector2(1f, 1f);
+            row.pivot     = new Vector2(0.5f, 1f);
+            row.sizeDelta = new Vector2(0f, rowH);
+            row.anchoredPosition = new Vector2(0f, y);
+
+            var bg = NewImage("Bg", row, new Color32(0x0A, 0x0E, 0x1E, 0xB8));   // rgba(10,14,30,.72)
+            Stretch(bg.rectTransform);
+
+            // เส้นเน้นซ้าย 6px — ลายเซ็นของการ์ดทุกใบในระบบ (design tokens §รูปทรง)
+            var edge = NewImage("LeftEdge", row, accent);
+            var ert = edge.rectTransform;
+            ert.anchorMin = new Vector2(0f, 0f);
+            ert.anchorMax = new Vector2(0f, 1f);
+            ert.pivot     = new Vector2(0f, 0.5f);
+            ert.sizeDelta = new Vector2(edgeW, 0f);
+
+            var text = NewMono("Label", row, label, 15f, 0.20f);
+            text.color     = new Color(1f, 1f, 1f, 0.62f);
+            text.alignment = TextAlignmentOptions.MidlineLeft;
+            var trt = text.rectTransform;
+            trt.anchorMin = trt.anchorMax = new Vector2(0f, 0.5f);
+            trt.pivot     = new Vector2(0f, 0.5f);
+            trt.sizeDelta = new Vector2(labelW, 26f);
+            trt.anchoredPosition = new Vector2(edgeW + padX, 0f);
+
+            var area = NewRect("SlotArea", row);
+            area.anchorMin = area.anchorMax = new Vector2(0f, 0.5f);
+            area.pivot     = new Vector2(0f, 0.5f);
+            area.sizeDelta = new Vector2(420f, 62f);
+            area.anchoredPosition = new Vector2(edgeW + padX + labelW, 0f);
+            return area;
+        }
+
         private static void SpawnStatRow(RectTransform parent, UpgradeStatRowUI template,
                                          string statName, string before, string after)
         {
@@ -864,6 +910,50 @@ namespace CloneSwarm.EditorTools
             var row = Object.Instantiate(template, parent);
             row.gameObject.SetActive(true);
             row.SetData(statName, before, after);
+        }
+
+        private static BuildStripSlot BuildSlotTemplate(RectTransform parent)
+        {
+            var rt = NewRect("Slot_Template", parent);
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
+            rt.pivot     = new Vector2(0f, 0.5f);
+            rt.sizeDelta = new Vector2(62f, 62f);
+
+            var slot = rt.gameObject.AddComponent<BuildStripSlot>();
+
+            var fill = NewImage("Fill", rt, new Color(1f, 1f, 1f, 0.08f));
+            Stretch(fill.rectTransform);
+            slot.fill = fill;
+
+            var icon = NewImage("Icon", rt, Color.white);
+            Stretch(icon.rectTransform);
+            icon.rectTransform.offsetMin = new Vector2(8f, 8f);
+            icon.rectTransform.offsetMax = new Vector2(-8f, -8f);
+            icon.enabled = false;
+            slot.icon = icon;
+
+            var abbrev = NewMono("Abbrev", rt, "BLD", 15f, 0.10f);
+            abbrev.color     = new Color(1f, 1f, 1f, 0.75f);
+            abbrev.alignment = TextAlignmentOptions.Midline;
+            Stretch(abbrev.rectTransform);
+            slot.abbrevLabel = abbrev;
+
+            var lv = NewMono("Level", rt, "Lv3", 15f, 0.02f);
+            lv.color     = Color.white;
+            lv.fontStyle = FontStyles.Bold;
+            lv.alignment = TextAlignmentOptions.BottomRight;
+            var lrt = lv.rectTransform;
+            lrt.anchorMin = new Vector2(0f, 0f);
+            lrt.anchorMax = new Vector2(1f, 0f);
+            lrt.pivot     = new Vector2(0.5f, 0f);
+            lrt.sizeDelta = new Vector2(-6f, 20f);
+            lrt.anchoredPosition = new Vector2(0f, 3f);
+            slot.levelLabel = lv;
+
+            slot.borderEdges = AddBorder(rt, "Border", 1f, new Color(1f, 1f, 1f, 0.26f));
+
+            rt.gameObject.SetActive(false);
+            return slot;
         }
 
         // ═══════════════════════════════════════════════════════════════════
