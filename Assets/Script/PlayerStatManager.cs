@@ -3,13 +3,19 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// จัดการ Stat Upgrades ของผู้เล่น (max 6 slots, Lv1-5 ต่อ type)
+/// จัดการ Stat Upgrades ของผู้เล่น (Lv1-5 ต่อ type)
 /// ทำงานบน Owner เท่านั้น
 /// WeaponBase และ playermove อ่าน multipliers จาก class นี้ทุก frame
 /// </summary>
 public class PlayerStatManager : NetworkBehaviour
 {
-    public const int MaxStatSlots = 6;
+    /// <summary>เพดานช่องสเตตัสตามที่ออกแบบไว้ — 5 ช่อง เท่ากับช่องอาวุธ
+    ///
+    /// **โบนัสที่ไม่ใช่การ์ดไม่กินช่อง** — talent ถาวรกับ augment เข้าทาง
+    /// <see cref="AddPermanentBonus"/> ซึ่งบวกเข้า total ตรงๆ ไม่ขึ้น stat level
+    ///
+    /// ทุกที่ที่นับช่องต้องอ่านค่านี้ ห้าม hardcode — HUD กับแถบ build ก็อ่านจากตรงนี้</summary>
+    public const int MaxStatSlots = 5;
 
     private Dictionary<StatType, int>   statLevels    = new();   // type → current level (1-based)
     private Dictionary<StatType, float> statTotals    = new();   // type → total accumulated

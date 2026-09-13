@@ -83,11 +83,11 @@ bullet-heaven โดนตีหลายสิบครั้ง/วินา�
 |---|---|---|
 | character index | 1 int | ✅ มี `NetworkVariable` แล้ว (`PlayerVisual._charIndex`) |
 | HP / maxHP / isDead | 3 ค่า | ✅ มี `NetworkVariable` แล้ว |
-| **stat levels** | **สูงสุด 6 × (StatType, int)** | ❌ `Dictionary` ฝั่ง client |
+| **stat levels** | **สูงสุด 5 × (StatType, int)** | ❌ `Dictionary` ฝั่ง client |
 | **weapons** | **สูงสุด 5 × (weaponName, level)** | ❌ `List<WeaponSlot>` ฝั่ง client |
 | carried quest items | 1 int | ✅ มี `NetworkVariable` แล้ว |
 
-**รวมแล้วไม่กี่ร้อยไบต์ต่อผู้เล่น** — `MaxStatSlots = 6` และ `MaxWeaponSlots = 5` เป็นเพดานที่มีอยู่แล้ว
+**รวมแล้วไม่กี่ร้อยไบต์ต่อผู้เล่น** — `MaxStatSlots = 5` และ `MaxWeaponSlots = 5` เป็นเพดานที่มีอยู่แล้ว
 
 **`statTotals` ไม่ต้อง replicate** — คำนวณกลับจาก `statLevels` + `StatData` asset ได้
 เก็บแค่ level แล้ว derive ที่เหลือ ลดขนาดและตัดโอกาส desync

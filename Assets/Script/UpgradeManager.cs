@@ -270,10 +270,15 @@ public class UpgradeManager : NetworkBehaviour
         {
             foreach (var s in allStats)
             {
-                if (s != null && s.statType == type) return s.icon;
+                // **`s.Icon` ไม่ใช่ `s.icon`** — ช่อง icon ของ StatData ทุกใบว่างอยู่
+                // รูปจริงอยู่ที่ StatIcons.asset · อ่าน field ตรงๆ = คืน null ทุกครั้ง
+                // แล้วไอคอน synergy ฝั่งสเตตัสบนการ์ดหายไปเงียบๆ
+                if (s != null && s.statType == type) return s.Icon;
             }
         }
-        return null;
+
+        // ไม่มีใน allStats ก็ยังหาได้จากชุดรูปกลาง — ใช้กับ StatType ที่ไม่มี asset ของตัวเอง
+        return StatIconSet.For(type);
     }
 
     private void PopulateSynergyInfo(UpgradeCardInfo card)

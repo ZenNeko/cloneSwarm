@@ -10,8 +10,10 @@ using UnityEngine.SceneManagement;
 namespace CloneSwarm.EditorTools
 {
     /// <summary>
-    /// ตัดช่องอาวุธบน HUD ให้เหลือเท่า <see cref="PlayerWeaponManager.MaxWeaponSlots"/>
-    /// เมนู: Tools > Clone Swarm > Trim Weapon Slots → MaxWeaponSlots
+    /// ตัดช่องบน HUD ให้เหลือเท่าเพดานจริง — อาวุธตาม
+    /// <see cref="PlayerWeaponManager.MaxWeaponSlots"/> · สเตตัสตาม
+    /// <see cref="PlayerStatManager.MaxStatSlots"/>
+    /// เมนู: Tools > Clone Swarm > Trim HUD Slots → Max*Slots
     ///
     /// ═══ ทำไมต้องมีตัวนี้ ═══
     ///
@@ -39,20 +41,22 @@ namespace CloneSwarm.EditorTools
             "Assets/GameScenes/SampleScene.unity",
         };
 
-        [MenuItem("Tools/Clone Swarm/Trim Weapon Slots → MaxWeaponSlots")]
+        [MenuItem("Tools/Clone Swarm/Trim HUD Slots → Max*Slots")]
         public static void Trim()
         {
+            int maxW = PlayerWeaponManager.MaxWeaponSlots;
+            int maxS = PlayerStatManager.MaxStatSlots;
+
             if (!Application.isBatchMode &&
                 !EditorUtility.DisplayDialog(
-                    "ตัดช่องอาวุธให้เหลือ " + PlayerWeaponManager.MaxWeaponSlots,
-                    "จะลบ GameObject ของช่องอาวุธที่เกินเพดานออกจาก HUD ในซีนเกม\n" +
+                    $"ตัดช่อง HUD ให้เหลือ อาวุธ {maxW} · สเตตัส {maxS}",
+                    "จะลบ GameObject ของช่องที่เกินเพดานออกจาก HUD ในซีนเกม\n" +
                     "แล้วจัดแถวใหม่ให้อยู่กลางเหมือนเดิม\n\n" +
                     "ควรมี working tree ที่สะอาดก่อนกด",
                     "ตัด", "ยกเลิก"))
                 return;
 
-            int max = PlayerWeaponManager.MaxWeaponSlots;
-            var log = new StringBuilder($"[ตัดช่องอาวุธ] เพดาน = {max}\n");
+            var log = new StringBuilder($"[ตัดช่อง HUD] เพดาน อาวุธ {maxW} · สเตตัส {maxS}\n");
 
             foreach (var path in Scenes)
             {
@@ -62,7 +66,10 @@ namespace CloneSwarm.EditorTools
                 foreach (var hud in Object.FindObjectsByType<WeaponStatHUD>(
                              FindObjectsInactive.Include, FindObjectsSortMode.None))
                 {
-                    changed += TrimHud(hud, max, log);
+                    changed += TrimRow(hud, "อาวุธ", hud.weaponSlots, maxW,
+                                       a => hud.weaponSlots = a, log);
+                    changed += TrimRow(hud, "สเตตัส", hud.statSlots, maxS,
+                                       a => hud.statSlots = a, log);
                 }
 
                 if (changed > 0)
@@ -81,14 +88,15 @@ namespace CloneSwarm.EditorTools
             Debug.Log(log.ToString());
         }
 
-        /// <summary>คืนจำนวนช่องที่ถูกลบ</summary>
-        private static int TrimHud(WeaponStatHUD hud, int max, StringBuilder log)
+        /// <summary>คืนจำนวนช่องที่ถูกลบ · `assign` เขียนอาเรย์ที่ย่อแล้วกลับเข้า field ที่ถูกตัว</summary>
+        private static int TrimRow(WeaponStatHUD hud, string what, WeaponStatHUD.SlotUI[] slots,
+                                   int max, System.Action<WeaponStatHUD.SlotUI[]> assign,
+                                   StringBuilder log)
         {
-            var slots = hud.weaponSlots;
             if (slots == null || slots.Length <= max) return 0;
 
             string where = Path(hud.transform);
-            log.AppendLine($"  {where} — {slots.Length} ช่อง → {max}");
+            log.AppendLine($"  {where} · {what} — {slots.Length} ช่อง → {max}");
 
             // ── จำแถวไว้ก่อนลบ เพราะพอลบแล้วจะหาที่อยู่ไม่ได้ ─────────────────
             RectTransform strip = null;
@@ -115,7 +123,7 @@ namespace CloneSwarm.EditorTools
 
             var trimmed = new WeaponStatHUD.SlotUI[max];
             System.Array.Copy(slots, trimmed, max);
-            hud.weaponSlots = trimmed;
+            assign(trimmed);
             EditorUtility.SetDirty(hud);
 
             Relayout(strip, keptRoots, oldWidth, log);

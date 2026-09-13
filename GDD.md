@@ -202,7 +202,7 @@ Normal weapon ต้องถึง Lv5 + เงื่อนไขเพิ่�
 
 ## 5. Stat System
 
-### 5.1 Player Stats (max 6 slots, Lv1-5 each)
+### 5.1 Player Stats (max 5 slots, Lv1-5 each)
 
 #### Combat Stats
 | Stat | Per Level | Effect |

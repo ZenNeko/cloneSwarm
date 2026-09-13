@@ -127,15 +127,44 @@ namespace CloneSwarm.UI.P3R
                 });
             }
 
-            // "PASSIVES" ในแบบ = augment ที่เก็บได้ใน run นี้
-            // (passive weapon ของตัวละครไม่ถูกนับใน PlayerWeaponManager.slots จึงดึงไม่ได้จากที่นี่ — ดูรายงาน)
+            // ── แถว PASSIVES = สเตตัส ตามที่ HUD ตอนเล่นเรียก ────────────────
+            //
+            // เดิมแถวนี้ดึงจาก `PlayerAugmentManager` อย่างเดียว ซึ่ง **ไม่ใช่ของเดียวกับ
+            // ที่ HUD เรียกว่า PASSIVES** — HUD โชว์สเตตัส (DAMAGE · MAXHEALTH · …)
+            // ส่วน augment ได้เฉพาะเลเวลที่กำหนดไว้เท่านั้น การเล่นปกติจึงไม่มีสักใบ
+            // ผลคือแถวนี้ว่างเปล่าทั้งที่ผู้เล่นถือสเตตัสอยู่ห้าตัว — จอ Level Up
+            // ซึ่งมีไว้ให้ตัดสินใจ กลับไม่บอกว่าตัวเองถืออะไรอยู่
+            //
+            // สเตตัสมาก่อน แล้วต่อด้วย augment ถ้ายังเหลือช่อง
             var passives = new List<Entry>();
+
+            var psm = pwm.GetComponent<PlayerStatManager>();
+            if (psm != null)
+            {
+                foreach (var (sd, lv) in psm.GetEquippedStats())
+                {
+                    if (sd == null) continue;
+                    passives.Add(new Entry
+                    {
+                        // `sd.Icon` ไม่ใช่ `sd.icon` — รูปจริงอยู่ที่ StatIcons.asset
+                        // ช่อง icon ของ StatData ทุกใบในโปรเจกต์ว่างอยู่ (ดู StatData.Icon)
+                        icon      = sd.Icon,
+                        abbrev    = Abbrev(sd.statName),
+                        level     = lv,
+                        highlight = false
+                    });
+                }
+            }
+
             var pam = pwm.GetComponent<PlayerAugmentManager>();
             if (pam != null)
             {
+                // GetAcquired คืนใบซ้ำหนึ่งใบต่อหนึ่ง stack — ต้องยุบเอง
+                // ไม่งั้น augment ที่ซ้อนสาม stack จะกินสามช่องด้วยรูปเดียวกัน
+                var seen = new HashSet<AugmentData>();
                 foreach (var a in pam.GetAcquired())
                 {
-                    if (a == null) continue;
+                    if (a == null || !seen.Add(a)) continue;
                     passives.Add(new Entry
                     {
                         icon      = a.icon,

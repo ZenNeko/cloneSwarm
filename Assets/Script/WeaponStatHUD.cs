@@ -124,9 +124,25 @@ public class WeaponStatHUD : MonoBehaviour
     void SetSlotEmpty(SlotUI s)
     {
         if (s.bg)       s.bg.color      = colorEmpty;
-        if (s.icon)   { s.icon.sprite   = null; s.icon.color = new Color(0f, 0f, 0f, 0f); }
+        SetIcon(s, null);
         if (s.nameTxt)  s.nameTxt.text  = "—";
         if (s.levelTxt) s.levelTxt.text = "";
+    }
+
+    /// <summary>
+    /// ใส่รูปลงช่อง — **ต้องสลับ `enabled` ด้วย ไม่ใช่แค่ sprite กับสี**
+    ///
+    /// `Image` ที่ไม่มี sprite ไม่ได้วาดเปล่า มันวาดสี่เหลี่ยมทึบเต็มช่อง
+    /// (`Graphic.OnPopulateMesh` ไม่สนใจว่ามี sprite ไหม) จอจึงเคยมีกล่องขาว
+    /// เรียงเป็นแถว · builder ของ HUD v2 จึงปิด icon ไว้ตั้งแต่แรกแล้วฝากให้ที่นี่เปิด
+    /// ซึ่งโค้ดเดิม **ไม่เคยเปิดเลย** — ไอคอนทุกช่องเลยไม่เคยโผล่สักครั้ง
+    /// </summary>
+    void SetIcon(SlotUI s, Sprite sprite)
+    {
+        if (s.icon == null) return;
+        s.icon.sprite  = sprite;
+        s.icon.enabled = sprite != null;
+        s.icon.color   = Color.white;
     }
 
     void SetSlotWeapon(SlotUI s, WeaponData w, int level)
@@ -138,17 +154,16 @@ public class WeaponStatHUD : MonoBehaviour
             _                 => colorNormal
         };
 
-        if (s.icon)
-        {
-            s.icon.sprite = w.icon;
-            s.icon.color  = w.icon != null ? Color.white : new Color(1f, 1f, 1f, 0.25f);
-        }
+        SetIcon(s, w.icon);
 
         if (s.nameTxt)  s.nameTxt.text  = w.DisplayName;   // ชื่อที่โชว์ ไม่ใช่ weaponName ที่เป็น ID
+
+        // ★ / ★★ ถูกถอดออก — ไม่มีฟอนต์ไหนในโปรเจกต์มีอักขระนี้ TMP วาดเป็นกล่องสี่เหลี่ยม
+        // ซึ่งอ่านเหมือนฟอนต์เสียมากกว่าเหมือนดาว · ระดับชั้นบอกด้วยสีพื้นช่องอยู่แล้ว
         if (s.levelTxt) s.levelTxt.text = w.tier switch
         {
-            WeaponTier.Super  => "★",
-            WeaponTier.Fusion => "★★",
+            WeaponTier.Super  => "SUP",
+            WeaponTier.Fusion => "FUS",
             _                 => $"Lv{level}"
         };
     }
@@ -157,13 +172,14 @@ public class WeaponStatHUD : MonoBehaviour
     {
         if (s.bg) s.bg.color = colorStat;
 
-        if (s.icon)
-        {
-            s.icon.sprite = sd.icon;
-            s.icon.color  = sd.icon != null ? Color.white : new Color(1f, 1f, 1f, 0.25f);
-        }
+        // **`sd.Icon` ไม่ใช่ `sd.icon`** — ช่อง icon ของ StatData ทุกใบในโปรเจกต์ว่างอยู่
+        // รูปจริงอยู่ที่ StatIcons.asset คีย์ด้วย StatType ซึ่ง property ตัวใหญ่เป็นคนไปหยิบให้
+        // อ่าน field ตรงๆ = ได้ null ทุกใบ แล้วช่องสเตตัสไม่มีรูปสักช่อง (อาการที่เคยเป็น)
+        SetIcon(s, sd.Icon);
 
-        if (s.nameTxt)  s.nameTxt.text  = sd.statName;
+        // DisplayName ไม่ใช่ statName — statName เป็น ID ไว้ใช้ใน log
+        // จอเคยขึ้น 'CRITICALCHANCE' ทับกันจนอ่านไม่ออกเพราะหยิบ ID มาโชว์
+        if (s.nameTxt)  s.nameTxt.text  = sd.DisplayName;
         if (s.levelTxt) s.levelTxt.text = $"Lv{level}";
     }
 }

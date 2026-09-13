@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using CloneSwarm.Meta;
 using CloneSwarm.UI.P3R;
@@ -809,6 +810,7 @@ namespace CloneSwarm.EditorTools
                 CheckLevelUpCards();
                 CheckBuildStripSlots();
                 CheckWeaponSlotCap();
+                CheckStatIcons();
                 CheckMissingGlyphs();
             }
 
@@ -867,6 +869,18 @@ namespace CloneSwarm.EditorTools
                     Require(wired == n,
                             $"HUD: ช่องอาวุธต่อสายครบทุกช่อง ({wired}/{n})");
 
+                    // ไม่มีช่อง icon = ต่อให้ดึงรูปจาก SO ถูกก็ไม่มีที่ให้วาด
+                    int icons = hud.weaponSlots == null ? 0
+                              : hud.weaponSlots.Count(s => s != null && s.icon != null);
+                    Require(icons == n,
+                            $"HUD: ช่องอาวุธมีที่วางไอคอนครบ ({icons}/{n})");
+
+                    int statIcons = hud.statSlots == null ? 0
+                                  : hud.statSlots.Count(s => s != null && s.icon != null);
+                    Require(hud.statSlots == null || statIcons == hud.statSlots.Length,
+                            $"HUD: ช่องสเตตัสมีที่วางไอคอนครบ " +
+                            $"({statIcons}/{hud.statSlots?.Length ?? 0})");
+
                     int sn = hud.statSlots != null ? hud.statSlots.Length : 0;
                     Require(sn == maxS,
                             $"HUD: ช่องพาสซีฟเท่าเพดาน ({sn} ช่อง · เพดาน {maxS})");
@@ -882,6 +896,84 @@ namespace CloneSwarm.EditorTools
                             $"แถบ build: ตั้งช่องพาสซีฟเท่าเพดาน " +
                             $"({strip.passiveSlotCount} · เพดาน {maxS})");
                 }
+            }
+
+            /// <summary>
+            /// สเตตัสทุกตัวต้องหารูปเจอ
+            ///
+            /// `StatData.icon` ของทุกใบในโปรเจกต์ **ว่างอยู่** — รูปจริงเก็บรวมไว้ที่
+            /// `StatIcons.asset` คีย์ด้วย StatType แล้วให้ property `StatData.Icon`
+            /// ไปหยิบให้ · ที่แสดงผลไหนอ่าน field `icon` ตรงๆ จะได้ null ทุกใบ
+            /// แล้วช่องสเตตัสไม่มีรูปสักช่อง โดยไม่มี error ให้เห็น (HUD เคยเป็นแบบนี้)
+            ///
+            /// เทสต์นี้เฝ้าทั้งสองฝั่ง — ทั้งไฟล์ StatIcons ที่อาจหาย และ StatType
+            /// ที่เพิ่มใหม่แล้วลืมใส่รูป
+            /// </summary>
+            private void CheckStatIcons()
+            {
+                var stats = AssetDatabase.FindAssets("t:StatData")
+                                         .Select(AssetDatabase.GUIDToAssetPath)
+                                         .Select(AssetDatabase.LoadAssetAtPath<StatData>)
+                                         .Where(s => s != null)
+                                         .ToList();
+
+                Require(stats.Count > 0, "หา StatData ในโปรเจกต์เจอ");
+
+                var blind = stats.Where(s => s.Icon == null).Select(s => s.statName).ToList();
+                Require(blind.Count == 0,
+                        $"สเตตัสทุกใบหารูปเจอผ่าน StatData.Icon " +
+                        $"({stats.Count - blind.Count}/{stats.Count})");
+                if (blind.Count > 0)
+                    lines.Add($"        └ ไม่มีรูป: {string.Join(" · ", blind)}");
+
+                // อาวุธไม่มีชุดรูปกลางแบบสเตตัส — รูปอยู่ที่ช่อง icon ของแต่ละใบเท่านั้น
+                // ใบที่ยังว่างคือช่องว่างทางคอนเทนต์ ไม่ใช่บั๊ก จึงรายงานเฉยๆ ไม่ตัดสิน
+                var noIcon = AssetDatabase.FindAssets("t:WeaponData")
+                                          .Select(AssetDatabase.GUIDToAssetPath)
+                                          .Select(AssetDatabase.LoadAssetAtPath<WeaponData>)
+                                          .Where(w => w != null && w.icon == null)
+                                          .Select(w => w.weaponName)
+                                          .ToList();
+                if (noIcon.Count > 0)
+                    lines.Add($"   หมายเหตุ  อาวุธที่ยังไม่มีรูป {noIcon.Count} ใบ: " +
+                              string.Join(" · ", noIcon));
+
+                CheckHudPutsIconOnSlot(stats.FirstOrDefault(s => s.Icon != null));
+            }
+
+            /// <summary>
+            /// HUD เอารูปขึ้นช่องจริง — ไม่ใช่แค่มีรูปให้หยิบ
+            ///
+            /// บั๊กที่เจอไม่ได้อยู่ที่ข้อมูล แต่อยู่ที่ปลายทาง: builder ปิด `icon.enabled`
+            /// ไว้ตั้งแต่สร้างช่อง แล้วฝากให้ `WeaponStatHUD` เปิดตอนมีของจริง
+            /// ซึ่งโค้ดเดิมตั้งแต่ sprite กับสีแต่**ไม่เคยแตะ enabled** — ไอคอนจึงไม่เคยโผล่
+            ///
+            /// เรนเดอร์จับไม่ได้เพราะตอนแคปไม่มีผู้เล่นในซีน `Refresh()` จึงไม่เคยวิ่ง
+            /// จึงเรียก setter ตรงๆ กับช่องจำลอง — ช่องจริงในซีนไม่ถูกแตะ
+            /// </summary>
+            private void CheckHudPutsIconOnSlot(StatData sd)
+            {
+                var hud = FindAnyObjectByType<WeaponStatHUD>(FindObjectsInactive.Include);
+                if (hud == null || sd == null) return;
+
+                var m = typeof(WeaponStatHUD).GetMethod(
+                    "SetSlotStat", BindingFlags.NonPublic | BindingFlags.Instance);
+                Require(m != null, "หา WeaponStatHUD.SetSlotStat เจอ");
+                if (m == null) return;
+
+                var probe = new GameObject("__smoke_slot_probe", typeof(RectTransform))
+                            { hideFlags = HideFlags.HideAndDontSave };
+                var icon = probe.AddComponent<Image>();
+                icon.enabled = false;             // สภาพเดียวกับที่ builder ทิ้งช่องไว้
+
+                m.Invoke(hud, new object[] { new WeaponStatHUD.SlotUI { icon = icon }, sd, 1 });
+
+                Require(icon.sprite != null,
+                        $"HUD: ช่องสเตตัสได้รูปจาก SO จริง ('{sd.statName}')");
+                Require(icon.enabled,
+                        "HUD: ช่องสเตตัสเปิดไอคอนให้เห็น (ไม่ใช่ตั้ง sprite ทิ้งไว้ทั้งที่ปิดอยู่)");
+
+                UnityEngine.Object.DestroyImmediate(probe);
             }
 
             private static int CountSlots(RectTransform area, BuildStripUI strip)

@@ -17563,7 +17563,7 @@ MonoBehaviour:
   weaponSlotArea: {fileID: 1778742783}
   passiveSlotArea: {fileID: 911344521}
   weaponSlotCount: 5
-  passiveSlotCount: 6
+  passiveSlotCount: 5
   slotSize: 62
   slotGap: 8
   weaponColor: {r: 0.2509804, g: 0.4509804, b: 0.8509804, a: 1}
