@@ -15,7 +15,7 @@ MonoBehaviour:
   sourceScene: Assets/GameScenes/SampleScene.unity
   panelName: P3R_HUD
   capturedDepth: 3
-  capturedAt: 2569-09-14 01:13
+  capturedAt: 2569-09-14 01:54
   entries:
   - path: TimeSlab
     anchorMin: {x: 0, y: 1}
@@ -654,119 +654,119 @@ MonoBehaviour:
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 0, y: 0}
     activeSelf: 1
-  - path: BuildStrip
+  - path: Legacy_HudBuildStrip
     anchorMin: {x: 1, y: 0}
     anchorMax: {x: 1, y: 0}
-    pivot: {x: 0.5, y: 0}
-    anchoredPosition: {x: -333.70007, y: 18}
+    pivot: {x: 1, y: 0}
+    anchoredPosition: {x: -50, y: 50}
     sizeDelta: {x: 600, y: 194}
-    activeSelf: 1
-  - path: BuildStrip/Row_Weapons
+    activeSelf: 0
+  - path: Legacy_HudBuildStrip/Row_Weapons
     anchorMin: {x: 0, y: 1}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 1}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 0, y: 90}
     activeSelf: 1
-  - path: BuildStrip/Row_Weapons/Bg
+  - path: Legacy_HudBuildStrip/Row_Weapons/Bg
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 0, y: 0}
     activeSelf: 1
-  - path: BuildStrip/Row_Weapons/LeftEdge
+  - path: Legacy_HudBuildStrip/Row_Weapons/LeftEdge
     anchorMin: {x: 1, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 6, y: 0}
     activeSelf: 1
-  - path: BuildStrip/Row_Weapons/Label
+  - path: Legacy_HudBuildStrip/Row_Weapons/Label
     anchorMin: {x: 1, y: 0.5}
     anchorMax: {x: 1, y: 0.5}
     pivot: {x: 1, y: 0.5}
     anchoredPosition: {x: -15, y: 0}
     sizeDelta: {x: 132, y: 26}
     activeSelf: 1
-  - path: BuildStrip/Row_Weapons/SlotArea
+  - path: Legacy_HudBuildStrip/Row_Weapons/SlotArea
     anchorMin: {x: 0, y: 0.5}
     anchorMax: {x: 0, y: 0.5}
     pivot: {x: 0, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 420, y: 62}
     activeSelf: 1
-  - path: BuildStrip/Row_Passives
+  - path: Legacy_HudBuildStrip/Row_Passives
     anchorMin: {x: 0, y: 1}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 1}
     anchoredPosition: {x: 0, y: -104}
     sizeDelta: {x: 0, y: 90}
     activeSelf: 1
-  - path: BuildStrip/Row_Passives/Bg
+  - path: Legacy_HudBuildStrip/Row_Passives/Bg
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 0, y: 0}
     activeSelf: 1
-  - path: BuildStrip/Row_Passives/LeftEdge
+  - path: Legacy_HudBuildStrip/Row_Passives/LeftEdge
     anchorMin: {x: 1, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 6, y: 0}
     activeSelf: 1
-  - path: BuildStrip/Row_Passives/Label
+  - path: Legacy_HudBuildStrip/Row_Passives/Label
     anchorMin: {x: 1, y: 0.5}
     anchorMax: {x: 1, y: 0.5}
     pivot: {x: 1, y: 0.5}
     anchoredPosition: {x: -15, y: 0}
     sizeDelta: {x: 132, y: 26}
     activeSelf: 1
-  - path: BuildStrip/Row_Passives/SlotArea
+  - path: Legacy_HudBuildStrip/Row_Passives/SlotArea
     anchorMin: {x: 0, y: 0.5}
     anchorMax: {x: 0, y: 0.5}
     pivot: {x: 0, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 420, y: 62}
     activeSelf: 1
-  - path: BuildStrip/Slot_Template
+  - path: Legacy_HudBuildStrip/Slot_Template
     anchorMin: {x: 0, y: 0.5}
     anchorMax: {x: 0, y: 0.5}
     pivot: {x: 0, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 62, y: 62}
     activeSelf: 0
-  - path: BuildStrip/Slot_Template/Fill
+  - path: Legacy_HudBuildStrip/Slot_Template/Fill
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 0, y: 0}
     activeSelf: 1
-  - path: BuildStrip/Slot_Template/Icon
+  - path: Legacy_HudBuildStrip/Slot_Template/Icon
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: -16, y: -16}
     activeSelf: 1
-  - path: BuildStrip/Slot_Template/Abbrev
+  - path: Legacy_HudBuildStrip/Slot_Template/Abbrev
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 0.5}
     anchoredPosition: {x: 0, y: 0}
     sizeDelta: {x: 0, y: 0}
     activeSelf: 1
-  - path: BuildStrip/Slot_Template/Level
+  - path: Legacy_HudBuildStrip/Slot_Template/Level
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 0}
     pivot: {x: 0.5, y: 0}
     anchoredPosition: {x: 0, y: 3}
     sizeDelta: {x: -6, y: 20}
     activeSelf: 1
-  - path: BuildStrip/Slot_Template/Border
+  - path: Legacy_HudBuildStrip/Slot_Template/Border
     anchorMin: {x: 0, y: 0}
     anchorMax: {x: 1, y: 1}
     pivot: {x: 0.5, y: 0.5}

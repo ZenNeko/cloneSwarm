@@ -24,7 +24,7 @@ namespace CloneSwarm.UI.P3R
     {
         [Tooltip("องศาที่เอน · ค่าบวก = ด้านบนเอนไปทางขวา\n" +
                  "CSS skewX(-9deg) ของ design handoff = 9 ที่นี่")]
-        [Range(-45f, 45f)] public float angleDegrees = 9f;
+        [Range(-180f, 180f)] public float angleDegrees = 9f;
 
         [Tooltip("เฉือนแนวตั้งแทน (y ขยับตาม x) — สำหรับแบนเนอร์ที่แบบใช้ skewY(-4.5deg)\n" +
                  "CSS skewY(-4.5deg) = angleDegrees 4.5 พร้อมติ๊กช่องนี้")]

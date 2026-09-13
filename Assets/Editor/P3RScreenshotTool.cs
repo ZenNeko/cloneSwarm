@@ -109,6 +109,35 @@ namespace CloneSwarm.EditorTools
             }
         }
 
+        /// <summary>
+        /// แคปซีนเกมตอน **จอ Level Up เปิดอยู่** — ไว้พิสูจน์ลำดับการวาด
+        ///
+        /// จอ Level Up ปูแผ่นทึบ 98% เต็มจอ · แถบ `BuildStrip_Shared` ต้องอยู่ **เหนือ**
+        /// แผ่นนั้นเพราะเป็นลูกของ `HUDCanvas` ลำดับหลัง `P3R_LevelUp`
+        /// ถ้าภาพออกมาไม่เห็นแถบ แปลว่าลำดับพี่น้องผิด ไม่ใช่เรื่องสี
+        ///
+        /// ยังต้องปิด `P3R_Pause` กับ `P3R_WinLose` — edit mode ไม่มี Awake ให้จอพวกนั้น
+        /// ซ่อนตัวเอง มันจึงทับทุกอย่างจนไม่เหลืออะไรให้ดู
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD + Level Up")]
+        public static void CaptureGameplayHudWithLevelUp()
+        {
+            const string scenePath = "Assets/GameScenes/SampleScene.unity";
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+            string png = Path.Combine(outDir, "SampleScene_HUD_LevelUp.png");
+
+            try
+            {
+                Capture(scenePath, png, hideObjects: new[] { "P3R_Pause", "P3R_WinLose" });
+                Debug.Log($"[Shot] {png}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Shot] {scenePath} ล้มเหลว: {e}");
+            }
+        }
+
         private static void Capture(string scenePath, string pngPath, string[] hideObjects = null)
         {
             var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);

@@ -100,7 +100,7 @@ namespace CloneSwarm.EditorTools
             Stretch(bg.rectTransform);
 
             // เส้นเน้นซ้าย 6px — ลายเซ็นของการ์ดทุกใบในระบบ (design tokens §รูปทรง)
-            var edge = NewImage("LeftEdge", row, accent);
+            var edge = NewImage("Edge", row, accent);
             var ert  = edge.rectTransform;
             ert.anchorMin = new Vector2(0f, 0f);
             ert.anchorMax = new Vector2(0f, 1f);
