@@ -1,0 +1,880 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff196400815331142bf8e92ebb73b845, type: 3}
+  m_Name: P3RHudLayout
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RUILayout
+  sourceScene: Assets/GameScenes/SampleScene.unity
+  panelName: P3R_HUD
+  capturedDepth: 3
+  capturedAt: 2569-09-14 01:13
+  entries:
+  - path: TimeSlab
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 40, y: -40}
+    sizeDelta: {x: 208, y: 62}
+    activeSelf: 1
+  - path: TimeSlab/TimerText
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: WaveLabel
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 266, y: -56}
+    sizeDelta: {x: 260, y: 32}
+    activeSelf: 1
+  - path: BossPanel
+    anchorMin: {x: 0.5, y: 1}
+    anchorMax: {x: 0.5, y: 1}
+    pivot: {x: 0.5, y: 1}
+    anchoredPosition: {x: 0, y: -40}
+    sizeDelta: {x: 760, y: 96}
+    activeSelf: 1
+  - path: BossPanel/BossContainer
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: CastBar
+    anchorMin: {x: 0.5, y: 1}
+    anchorMax: {x: 0.5, y: 1}
+    pivot: {x: 0.5, y: 1}
+    anchoredPosition: {x: 0, y: -144}
+    sizeDelta: {x: 560, y: 34}
+    activeSelf: 1
+  - path: CastBar/CastName
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 380, y: 22}
+    activeSelf: 1
+  - path: CastBar/CastTrack
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 560, y: 10}
+    activeSelf: 1
+  - path: CastBar/CastTrack/Fill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: ObjectivePanel
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -40, y: -40}
+    sizeDelta: {x: 420, y: 220}
+    activeSelf: 1
+  - path: ObjectivePanel/Head
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 420, y: 24}
+    activeSelf: 1
+  - path: ObjectivePanel/ObjectiveContainer
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -0, y: -32}
+    sizeDelta: {x: 420, y: 188}
+    activeSelf: 1
+  - path: Announcement
+    anchorMin: {x: 0.5, y: 0.5}
+    anchorMax: {x: 0.5, y: 0.5}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 168}
+    sizeDelta: {x: 900, y: 64}
+    activeSelf: 1
+  - path: LevelSlab
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 40, y: 96}
+    sizeDelta: {x: 108, y: 52}
+    activeSelf: 1
+  - path: LevelSlab/Level_Text
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: HP_Text
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 166, y: 108}
+    sizeDelta: {x: 300, y: 40}
+    activeSelf: 1
+  - path: HP_BarTrack
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 166, y: 62}
+    sizeDelta: {x: 420, y: 14}
+    activeSelf: 1
+  - path: HP_BarTrack/Fill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: EXP_BarTrack
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 166, y: 44}
+    sizeDelta: {x: 420, y: 8}
+    activeSelf: 1
+  - path: EXP_BarTrack/Fill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Shield_BarTrack
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 166, y: 80}
+    sizeDelta: {x: 420, y: 8}
+    activeSelf: 1
+  - path: Shield_BarTrack/Fill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: ExpLabel
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 596, y: 40}
+    sizeDelta: {x: 180, y: 22}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow
+    anchorMin: {x: 0.5, y: 0}
+    anchorMax: {x: 0.5, y: 0}
+    pivot: {x: 0.5, y: 0}
+    anchoredPosition: {x: 0, y: 132}
+    sizeDelta: {x: 350, y: 48}
+    activeSelf: 0
+  - path: Legacy_HudWeaponRow/Label
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 0, y: 16}
+    sizeDelta: {x: 350, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_0
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_0/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_0/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_0/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_0/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_1
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 72, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_1/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_1/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_1/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_1/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_2
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 144, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_2/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_2/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_2/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_2/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_3
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 216, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_3/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_3/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_3/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_3/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_4
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 288, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_4/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_4/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_4/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudWeaponRow/Slot_4/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudStatRow
+    anchorMin: {x: 0.5, y: 0}
+    anchorMax: {x: 0.5, y: 0}
+    pivot: {x: 0.5, y: 0}
+    anchoredPosition: {x: 0, y: 56}
+    sizeDelta: {x: 350, y: 48}
+    activeSelf: 0
+  - path: Legacy_HudStatRow/Label
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 0, y: 16}
+    sizeDelta: {x: 350, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_0
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_0/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_0/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_0/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_0/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_1
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 72, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_1/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_1/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_1/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_1/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_2
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 144, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_2/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_2/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_2/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_2/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_3
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 216, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_3/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_3/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_3/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_3/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_4
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 288, y: 0}
+    sizeDelta: {x: 62, y: 48}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_4/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_4/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 4}
+    sizeDelta: {x: -20, y: -24}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_4/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 0, y: 2}
+    sizeDelta: {x: 62, y: 16}
+    activeSelf: 1
+  - path: Legacy_HudStatRow/Slot_4/Level
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -4, y: -3}
+    sizeDelta: {x: 34, y: 14}
+    activeSelf: 1
+  - path: Q_Slot
+    anchorMin: {x: 1, y: 0}
+    anchorMax: {x: 1, y: 0}
+    pivot: {x: 1, y: 0}
+    anchoredPosition: {x: -141.7, y: 250}
+    sizeDelta: {x: 100, y: 100}
+    activeSelf: 1
+  - path: Q_Slot/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Q_Slot/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: -36, y: -36}
+    activeSelf: 1
+  - path: Q_Slot/ActiveGlow
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 0
+  - path: Q_Slot/CooldownFill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: Q_Slot/KeyHint
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 12, y: -8}
+    sizeDelta: {x: 80, y: 22}
+    activeSelf: 1
+  - path: Q_Slot/CDText
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: E_Slot
+    anchorMin: {x: 1, y: 0}
+    anchorMax: {x: 1, y: 0}
+    pivot: {x: 1, y: 0}
+    anchoredPosition: {x: -23.700073, y: 250.00003}
+    sizeDelta: {x: 100, y: 100}
+    activeSelf: 1
+  - path: E_Slot/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: E_Slot/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: -36, y: -36}
+    activeSelf: 1
+  - path: E_Slot/ActiveGlow
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 0
+  - path: E_Slot/CooldownFill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: E_Slot/KeyHint
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 12, y: -8}
+    sizeDelta: {x: 80, y: 22}
+    activeSelf: 1
+  - path: E_Slot/CDText
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: BuildStrip
+    anchorMin: {x: 1, y: 0}
+    anchorMax: {x: 1, y: 0}
+    pivot: {x: 0.5, y: 0}
+    anchoredPosition: {x: -333.70007, y: 18}
+    sizeDelta: {x: 600, y: 194}
+    activeSelf: 1
+  - path: BuildStrip/Row_Weapons
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 1}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 90}
+    activeSelf: 1
+  - path: BuildStrip/Row_Weapons/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: BuildStrip/Row_Weapons/LeftEdge
+    anchorMin: {x: 1, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 6, y: 0}
+    activeSelf: 1
+  - path: BuildStrip/Row_Weapons/Label
+    anchorMin: {x: 1, y: 0.5}
+    anchorMax: {x: 1, y: 0.5}
+    pivot: {x: 1, y: 0.5}
+    anchoredPosition: {x: -15, y: 0}
+    sizeDelta: {x: 132, y: 26}
+    activeSelf: 1
+  - path: BuildStrip/Row_Weapons/SlotArea
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 420, y: 62}
+    activeSelf: 1
+  - path: BuildStrip/Row_Passives
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 1}
+    anchoredPosition: {x: 0, y: -104}
+    sizeDelta: {x: 0, y: 90}
+    activeSelf: 1
+  - path: BuildStrip/Row_Passives/Bg
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: BuildStrip/Row_Passives/LeftEdge
+    anchorMin: {x: 1, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 6, y: 0}
+    activeSelf: 1
+  - path: BuildStrip/Row_Passives/Label
+    anchorMin: {x: 1, y: 0.5}
+    anchorMax: {x: 1, y: 0.5}
+    pivot: {x: 1, y: 0.5}
+    anchoredPosition: {x: -15, y: 0}
+    sizeDelta: {x: 132, y: 26}
+    activeSelf: 1
+  - path: BuildStrip/Row_Passives/SlotArea
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 420, y: 62}
+    activeSelf: 1
+  - path: BuildStrip/Slot_Template
+    anchorMin: {x: 0, y: 0.5}
+    anchorMax: {x: 0, y: 0.5}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 62, y: 62}
+    activeSelf: 0
+  - path: BuildStrip/Slot_Template/Fill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: BuildStrip/Slot_Template/Icon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: -16, y: -16}
+    activeSelf: 1
+  - path: BuildStrip/Slot_Template/Abbrev
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: BuildStrip/Slot_Template/Level
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 0}
+    pivot: {x: 0.5, y: 0}
+    anchoredPosition: {x: 0, y: 3}
+    sizeDelta: {x: -6, y: 20}
+    activeSelf: 1
+  - path: BuildStrip/Slot_Template/Border
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: ChargeBar_Panel
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 166, y: 160}
+    sizeDelta: {x: 340, y: 30}
+    activeSelf: 1
+  - path: ChargeBar_Panel/ChargeLabel
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 1}
+    anchoredPosition: {x: 0, y: -4}
+    sizeDelta: {x: 110, y: 22}
+    activeSelf: 1
+  - path: ChargeBar_Panel/Charge_BarTrack
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 116, y: 11}
+    sizeDelta: {x: 160, y: 10}
+    activeSelf: 1
+  - path: ChargeBar_Panel/Charge_BarTrack/Fill
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: ChargeBar_Panel/ChargeText
+    anchorMin: {x: 1, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 1}
+    anchoredPosition: {x: -0, y: -4}
+    sizeDelta: {x: 60, y: 22}
+    activeSelf: 1
+  - path: TabHint
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 166, y: 196}
+    sizeDelta: {x: 240, y: 22}
+    activeSelf: 1
+  - path: RespawnOverlay
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 0
+  - path: RespawnOverlay/RespawnText
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: CharacterIcon_Box
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 0}
+    pivot: {x: 0, y: 0}
+    anchoredPosition: {x: 40, y: 160}
+    sizeDelta: {x: 108, y: 108}
+    activeSelf: 1
+  - path: CharacterIcon_Box/Border
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 0}
+    activeSelf: 1
+  - path: CharacterIcon_Box/Border/Top
+    anchorMin: {x: 0, y: 1}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 1}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 1}
+    activeSelf: 1
+  - path: CharacterIcon_Box/Border/Bottom
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 0}
+    pivot: {x: 0.5, y: 0}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 0, y: 1}
+    activeSelf: 1
+  - path: CharacterIcon_Box/Border/Left
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 0, y: 1}
+    pivot: {x: 0, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 1, y: 0}
+    activeSelf: 1
+  - path: CharacterIcon_Box/Border/Right
+    anchorMin: {x: 1, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 1, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: 1, y: 0}
+    activeSelf: 1
+  - path: CharacterIcon_Box/CharacterIcon
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    anchoredPosition: {x: 0, y: 0}
+    sizeDelta: {x: -12, y: -12}
+    activeSelf: 1
