@@ -788,6 +788,7 @@ namespace CloneSwarm.EditorTools
             {
                 Require(LevelUpUI.Instance  != null, "LevelUpUI.Instance ไม่เป็น null");
                 Require(WinLoseUI.Instance  != null, "WinLoseUI.Instance ไม่เป็น null");
+                CheckResultScreenListens();
                 Require(FindAnyObjectByType<PauseMenuUI>(FindObjectsInactive.Include) != null,
                         "หา PauseMenuUI เจอ");
 
@@ -1104,6 +1105,45 @@ namespace CloneSwarm.EditorTools
                     Require(Close(border.color, head.color),
                             $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
                             $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
+                }
+            }
+
+            /// <summary>
+            /// จอผลลัพธ์ต้อง **ฟัง** event จบเกมอยู่จริง ไม่ใช่แค่มี Instance
+            ///
+            /// ═══ บั๊กที่เทสต์นี้เกิดมาเพื่อดัก ═══
+            ///
+            /// `WinLoseUI.panelRoot` ชี้ที่ GameObject ตัวเดียวกับที่ component เกาะอยู่
+            /// `Awake` สั่ง `SetActive(false)` ซ่อนตัวเอง → **Unity ไม่เรียก `OnEnable`** →
+            /// `GameTimeline.OnGameWon/OnGameLost` ไม่เคยถูก subscribe
+            /// บอสตาย/ผู้เล่นตาย จอผลลัพธ์ไม่ขึ้นเลยทั้งสองทาง ไม่มี error สักบรรทัด
+            ///
+            /// `Instance != null` **ผ่านตลอด** เพราะ `Awake` วิ่งก่อนจะปิดตัวเอง —
+            /// เทสต์เดิมจึงเขียวทั้งที่ฟีเจอร์ตายสนิท · ต้องเช็คที่ subscription จริง
+            ///
+            /// อ่าน invocation list ของ static event ผ่าน reflection — ชื่อ event เป็น
+            /// API สาธารณะอยู่แล้ว การผูกกับมันจึงไม่เปราะไปกว่าการเรียกใช้ตรงๆ
+            /// </summary>
+            private void CheckResultScreenListens()
+            {
+                var win = WinLoseUI.Instance;
+                if (win == null) return;
+
+                Require(win.gameObject.activeInHierarchy,
+                        "แผงผลลัพธ์ยังเปิดอยู่หลัง Awake (ปิดตัวเอง = OnEnable ไม่วิ่ง)");
+
+                foreach (var ev in new[] { "OnGameWon", "OnGameLost" })
+                {
+                    var f = typeof(GameTimeline).GetField(
+                        ev, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+
+                    if (f == null) { Require(false, $"หา event {ev} ใน GameTimeline เจอ"); continue; }
+
+                    var d = f.GetValue(null) as System.Delegate;
+                    bool listening = d != null && d.GetInvocationList()
+                                                   .Any(x => x.Target is WinLoseUI);
+
+                    Require(listening, $"WinLoseUI subscribe {ev} แล้ว (ไม่งั้นจอจบเกมไม่ขึ้น)");
                 }
             }
 
