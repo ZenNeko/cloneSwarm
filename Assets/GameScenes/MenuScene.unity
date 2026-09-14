@@ -23377,6 +23377,9 @@ MonoBehaviour:
   detailName: {fileID: 2015589143}
   detailDescription: {fileID: 1038604049}
   detailLevelText: {fileID: 891659142}
+  detailPips: {fileID: 0}
+  detailPipFilled: {r: 0.173, g: 0.773, b: 0.627, a: 1}
+  detailPipEmpty: {r: 0.141, g: 0.165, b: 0.212, a: 1}
   detailCurrentValue: {fileID: 408658998}
   detailArrow: {fileID: 1803514239}
   detailNextValue: {fileID: 870228210}

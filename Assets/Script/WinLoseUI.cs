@@ -445,6 +445,10 @@ public class WinLoseUI : MonoBehaviour
         if (nm != null && nm.IsListening)
             nm.Shutdown();
 
+        // เข้าเมนูหลักตรงๆ ไม่ต้องผ่านจอไตเติล — ไตเติลเป็นพิธีเปิดของการเปิดเกม
+        // ไม่ใช่ของการจบรอบ · MenuManager.Start ล้างธงนี้ทิ้งทันทีหลังใช้
+        MenuManager.ReturningFromRun = true;
+
         SceneManager.LoadScene("MenuScene");
     }
 

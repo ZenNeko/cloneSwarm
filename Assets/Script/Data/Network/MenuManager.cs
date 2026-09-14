@@ -68,6 +68,17 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════
+    /// <summary>
+    /// true = เข้า MenuScene รอบนี้เพราะเพิ่งเล่นจบ ไม่ใช่เพราะเพิ่งเปิดเกม
+    ///
+    /// static เพราะต้องข้ามซีน — ตัวตั้งค่าคือ `WinLoseUI.ReturnToMenu` ซึ่งอยู่ใน
+    /// SampleScene แล้วตายไปพร้อมซีนก่อนที่ `MenuManager` จะเกิด · จะส่งต่อด้วย
+    /// reference ไม่ได้ และไม่คุ้มที่จะทำ object DontDestroyOnLoad เพิ่มเพื่อ bool ตัวเดียว
+    ///
+    /// `MenuManager.Start` ล้างทิ้งทันทีหลังใช้ — เปิดเกมรอบหน้าต้องเห็นจอไตเติลตามปกติ
+    /// </summary>
+    public static bool ReturningFromRun;
+
     void Awake()
     {
         if (versionText) versionText.text = $"v{Application.version}";
@@ -109,8 +120,14 @@ public class MenuManager : MonoBehaviour
         // จอแรกคือ Title ถ้ามี — ไม่มีก็เข้า Main เลย
         // panel ถูกปล่อยให้เปิดค้างไว้ในซีนเพื่อให้ Awake ของลูกๆ วิ่งตอนโหลด
         // ShowPanel ตัวแรกนี้คือคนที่ปิดตัวที่ไม่ใช่จอแรกทิ้ง
-        if (titlePanel != null) ShowTitle();
-        else                    ShowMain();
+        //
+        // **ยกเว้นตอนกลับมาจากเกม** — จอไตเติลเป็นพิธีเปิดของการเปิดเกม ไม่ใช่ของ
+        // การจบรอบ · คนที่เพิ่งเล่นจบแล้วกด "กลับเมนู" ต้องการเมนูหลัก ไม่ใช่ถูกส่งกลับ
+        // ไปกดผ่านจอไตเติลอีกรอบทุกครั้งที่เล่นจบ
+        if (titlePanel != null && !ReturningFromRun) ShowTitle();
+        else                                        ShowMain();
+
+        ReturningFromRun = false;   // ใช้ครั้งเดียวแล้วล้าง — เปิดเกมรอบหน้าต้องเห็นไตเติล
     }
 
     void HandleSessionJoined(ISession _)
