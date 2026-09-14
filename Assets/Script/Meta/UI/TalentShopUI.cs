@@ -36,6 +36,11 @@ namespace CloneSwarm.Meta
         public TextMeshProUGUI detailName;
         public TextMeshProUGUI detailDescription;
         public TextMeshProUGUI detailLevelText;      // "Lv 3 / 5"
+        [Tooltip("ขีดบอกเลเวลข้างป้าย Lv — ใส่ child Image เผื่อไว้เท่ากับ maxLevel สูงสุด\n" +
+                 "ปล่อยว่าง = ไม่มีขีด · **ห้ามฝังสีไว้ในซีน** เพราะจะขัดกับป้าย Lv ข้างๆ")]
+        public Transform       detailPips;
+        public Color           detailPipFilled = new Color(0.173f, 0.773f, 0.627f);  // #2CC5A0
+        public Color           detailPipEmpty  = new Color(0.141f, 0.165f, 0.212f);  // #242A36
         [Tooltip("ค่าปัจจุบัน เช่น \"+9% Damage\"")]
         public TextMeshProUGUI detailCurrentValue;
         [Tooltip("ลูกศร › ระหว่างค่าปัจจุบันกับค่าถัดไป — ซ่อนเองตอนตัน")]
@@ -194,6 +199,10 @@ namespace CloneSwarm.Meta
             if (detailName        != null) detailName.text        = selected.DisplayName;
             if (detailDescription != null) detailDescription.text = selected.Description;
             if (detailLevelText   != null) detailLevelText.text   = $"Lv {level} / {maxLv}";
+
+            // ขีดต้องตรงกับป้าย Lv ข้างๆ — ของเดิม builder ฝังไว้ว่าเต็มสามขีดแล้วไม่มีใคร
+            // แตะอีก แผงขวาจึงขึ้น 3/5 ตลอด ขัดกับทั้งป้ายตัวเองและขีดบนช่องฝั่งซ้าย
+            TalentTileUI.ApplyPips(detailPips, level, maxLv, detailPipFilled, detailPipEmpty);
 
             // ค่าปัจจุบัน  ›  ค่าหลังอัป   (ตันแล้วเหลือแค่ค่าปัจจุบัน + หมายเหตุ)
             // ใช้แบบสั้น (ไม่มีชื่อสเตตัส) — ช่อง NOW กับ NEXT วางเรียงกันในแนวนอน
