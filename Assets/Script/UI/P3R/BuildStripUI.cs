@@ -94,8 +94,30 @@ namespace CloneSwarm.UI.P3R
 
         private void Awake()
         {
-            if (slotTemplate != null) slotTemplate.gameObject.SetActive(false);
+            HideSceneTemplate();
             EnsureSlots();
+        }
+
+        /// <summary>
+        /// ปิดแม่แบบ **เฉพาะตอนที่มันเป็น object ในซีน**
+        ///
+        /// `slotTemplate` ควรเป็น prefab asset (builder เซฟไว้ที่
+        /// <c>Assets/Prefab/UI/P3R/BuildStripSlot.prefab</c>) ซึ่งปิดมาในตัวอยู่แล้ว
+        /// **สั่ง SetActive ใส่ prefab asset = ไปแก้ไฟล์ต้นฉบับ** ทุกซีนที่ใช้แม่แบบนี้
+        /// โดนไปด้วย และใน Editor มันทำให้ไฟล์ dirty ทั้งที่ไม่มีใครตั้งใจแก้
+        ///
+        /// `gameObject.scene.IsValid()` เป็น false สำหรับ asset — เช็คนี้ใช้ได้ทั้งใน
+        /// เอดิเตอร์และในบิลด์ ไม่ต้องพึ่ง UnityEditor API
+        ///
+        /// ที่ยังต้องปิดให้กรณีซีน เพราะซีนที่ยังไม่ถูกสร้างใหม่จาก builder ยังชี้
+        /// แม่แบบที่เป็นลูกของแถบอยู่ — ถ้าไม่ปิดมันจะโผล่เป็นช่องเปล่าค้างในแถว
+        /// </summary>
+        private void HideSceneTemplate()
+        {
+            if (slotTemplate == null) return;
+            var go = slotTemplate.gameObject;
+            if (!go.scene.IsValid()) return;      // prefab asset — ห้ามแตะ
+            if (go.activeSelf) go.SetActive(false);
         }
 
         /// <summary>
@@ -215,7 +237,7 @@ namespace CloneSwarm.UI.P3R
             if (built || slotTemplate == null) return;
             built = true;
 
-            slotTemplate.gameObject.SetActive(false);
+            HideSceneTemplate();
             SpawnRow(weaponSlotArea,  weaponSlotCount,  weaponSlots,  "W");
             SpawnRow(passiveSlotArea, passiveSlotCount, passiveSlots, "P");
         }

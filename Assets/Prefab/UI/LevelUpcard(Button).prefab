@@ -770,6 +770,9 @@ MonoBehaviour:
   levelText: {fileID: 5878632543013134988}
   selectButton: {fileID: 6156508435488723007}
   evolutionBadge: {fileID: 8283962242184485794}
+  synergyLineTemplate: {fileID: 0}
+  synergyMetColor: {r: 0.3, g: 0.78, b: 0.45, a: 1}
+  synergyPendingColor: {r: 1, g: 1, b: 1, a: 0.65}
   synergyIconImages:
   - {fileID: 2222879888320729809}
   - {fileID: 1800317821621263221}
@@ -780,6 +783,8 @@ MonoBehaviour:
   statRowPrefab: {fileID: 5367329645310954587, guid: e6c566146c5241d40bae15375ca016e8, type: 3}
   statRowsContainer: {fileID: 6807980325888588869}
   cardBackground: {fileID: 8892489100998375598}
+  accentTargets: []
+  recommendedLift: 22
   weaponColor: {r: 0.25, g: 0.45, b: 0.85, a: 1}
   statColor: {r: 0.3, g: 0.65, b: 0.35, a: 1}
   superColor: {r: 0.85, g: 0.6, b: 0.1, a: 1}

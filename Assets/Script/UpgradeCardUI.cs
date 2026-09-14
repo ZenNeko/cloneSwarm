@@ -18,7 +18,18 @@ public class UpgradeCardUI : MonoBehaviour
 
     [Header("Evolution Synergy")]
     public GameObject      evolutionBadge;
+    [Tooltip("แม่แบบหนึ่งบรรทัด — ปิดไว้เสมอ · ถูก clone ตามจำนวนบรรทัดที่ได้รับจริง\n" +
+             "ว่าง = ตกกลับไปใช้ synergyIconImages แบบเดิม (โชว์ได้แค่รูป)")]
+    public SynergyLineUI   synergyLineTemplate;
+    [Tooltip("สีข้อความของเงื่อนไขที่ครบแล้ว")]
+    public Color synergyMetColor     = new Color(0.30f, 0.78f, 0.45f, 1f);
+    [Tooltip("สีข้อความของเงื่อนไขที่ยังขาด")]
+    public Color synergyPendingColor = new Color(1f, 1f, 1f, 0.65f);
+
+    [Tooltip("ช่องไอคอนแบบเก่า — ใช้เฉพาะตอนยังไม่มี synergyLineTemplate")]
     public System.Collections.Generic.List<Image> synergyIconImages = new();
+
+    private readonly System.Collections.Generic.List<SynergyLineUI> spawnedLines = new();
 
     [Header("UI Elements - Premium Highlights")]
     public GameObject      recommendedGlowOutline;
@@ -92,13 +103,20 @@ public class UpgradeCardUI : MonoBehaviour
             if (showDescription) descriptionText.text = card.DisplayDescription;
         }
 
-        // --- Premium Highlights ---
+        // --- ระบบ "แนะนำ" ถูกถอดออกตาม ADR-009 ---
+        //
+        // วงเรืองแสงเป็นของ **hover เท่านั้น** แล้ว (UpgradeCardGlowOnHover เป็นคนเปิด)
+        // ที่นี่ปิดไว้เสมอเพื่อให้สถานะตั้งต้นถูก ไม่ใช่ค้างจากการ์ดใบก่อนที่ถูกใช้ซ้ำ
         if (recommendedGlowOutline)
-            recommendedGlowOutline.SetActive(card.isRecommended);
+            recommendedGlowOutline.SetActive(false);
+
+        // ป้าย "แนะนำ" ปิดตายจนกว่าจะถูกถอดออกจาก prefab จริง — ปิดที่นี่ก่อน
+        // เพราะ object ยังอยู่ใน LevelUpCard.prefab และถ้าไม่มีใครสั่งปิด
+        // มันจะโผล่บนการ์ดทุกใบตามสถานะที่ถูกเซฟไว้
         if (recommendedRibbon)
-            recommendedRibbon.SetActive(card.isRecommended);
+            recommendedRibbon.SetActive(false);
         if (cardAnimator)
-            cardAnimator.SetBool("IsRecommended", card.isRecommended);
+            cardAnimator.SetBool("IsRecommended", false);
 
         // --- Comparative Stats ---
         // 1. ลบแถวเดิมออกก่อน
@@ -132,32 +150,10 @@ public class UpgradeCardUI : MonoBehaviour
             t.graphic.color = new Color(accent.r, accent.g, accent.b, t.alpha);
         }
 
-        ApplyRecommendedLift(card.isRecommended);
+        // การยกใบที่แนะนำหายไปพร้อมระบบแนะนำ — การ์ดเรียบระดับเดียวกันเสมอ
+        ApplyRecommendedLift(false);
 
-        // --- Evolution Synergy Panel ---
-        if (evolutionBadge)
-        {
-            bool hasSynergy = card.showSynergy && card.synergyIcons != null && card.synergyIcons.Count > 0;
-            evolutionBadge.SetActive(hasSynergy);
-            if (hasSynergy && synergyIconImages != null)
-            {
-                for (int i = 0; i < synergyIconImages.Count; i++)
-                {
-                    if (synergyIconImages[i] != null)
-                    {
-                        if (i < card.synergyIcons.Count && card.synergyIcons[i] != null)
-                        {
-                            synergyIconImages[i].gameObject.SetActive(true);
-                            synergyIconImages[i].sprite = card.synergyIcons[i];
-                        }
-                        else
-                        {
-                            synergyIconImages[i].gameObject.SetActive(false);
-                        }
-                    }
-                }
-            }
-        }
+        PopulateSynergy(card);
 
         if (selectButton)
         {
@@ -351,6 +347,75 @@ public class UpgradeCardUI : MonoBehaviour
         UpgradeCardType.Stat         => statColor,
         _                            => weaponColor
     };
+
+    // ══════════════════════════════════════════════════════════════════════
+    // EVOLUTION SYNERGY
+    //
+    // ระบบ "แนะนำ" ถูกถอดออก (ADR-009) แถบนี้จึงเป็น **ช่องทางเดียว** ที่เกม
+    // ใช้บอกทางผู้เล่น · มันต้องแบกข้อมูลได้มากกว่าไอคอนเปล่าๆ แบบเดิม
+    //
+    // สร้างบรรทัดตามจำนวนที่ได้รับจริงจาก template แทนการมีช่องตายตัว —
+    // ของเดิมมีช่องฝังไว้ 2 ช่องขณะที่ฝั่งข้อมูลส่งมาได้ถึง 3 บรรทัดนี้จึง
+    // **หายเงียบ** ทุกครั้งที่มีบรรทัดที่สาม (บั๊กเดียวกับที่ EnsureCardSlots แก้ไป)
+    // ══════════════════════════════════════════════════════════════════════
+    void PopulateSynergy(UpgradeCardInfo card)
+    {
+        bool has = card.showSynergy && card.synergyLines != null && card.synergyLines.Count > 0;
+        if (evolutionBadge) evolutionBadge.SetActive(has);
+        if (!has) { HideSpawnedLines(0); return; }
+
+        // ยังไม่มี template ในซีน → ตกกลับไปใช้ช่องไอคอนตายตัวแบบเดิม
+        // (การ์ดรุ่นเก่าที่ยังไม่ถูกสร้างใหม่จาก builder ต้องไม่พังไปด้วย)
+        if (synergyLineTemplate == null)
+        {
+            FallbackIconsOnly(card);
+            return;
+        }
+
+        EnsureLines(card.synergyLines.Count);
+
+        for (int i = 0; i < spawnedLines.Count; i++)
+        {
+            bool used = i < card.synergyLines.Count;
+            spawnedLines[i].gameObject.SetActive(used);
+            if (used) spawnedLines[i].SetData(card.synergyLines[i], synergyMetColor, synergyPendingColor);
+        }
+    }
+
+    void EnsureLines(int count)
+    {
+        while (spawnedLines.Count < count)
+        {
+            var line = Instantiate(synergyLineTemplate, synergyLineTemplate.transform.parent);
+            line.name = $"SynergyLine_{spawnedLines.Count}";
+            spawnedLines.Add(line);
+        }
+    }
+
+    void HideSpawnedLines(int from)
+    {
+        for (int i = from; i < spawnedLines.Count; i++)
+            if (spawnedLines[i] != null) spawnedLines[i].gameObject.SetActive(false);
+    }
+
+    /// <summary>ทางหนีสำหรับการ์ดที่ยังไม่มี template — โชว์ได้แค่รูป ไม่มีข้อความ</summary>
+    void FallbackIconsOnly(UpgradeCardInfo card)
+    {
+        if (synergyIconImages == null) return;
+        var icons = card.SynergyIcons;
+        for (int i = 0; i < synergyIconImages.Count; i++)
+        {
+            if (synergyIconImages[i] == null) continue;
+            bool used = i < icons.Count && icons[i] != null;
+            synergyIconImages[i].gameObject.SetActive(used);
+            if (used) synergyIconImages[i].sprite = icons[i];
+        }
+
+        if (icons.Count > synergyIconImages.Count)
+            Debug.LogWarning($"[UpgradeCard] synergy {icons.Count} บรรทัด แต่การ์ดมีช่อง " +
+                             $"{synergyIconImages.Count} — ที่เกินหายไป · " +
+                             "สร้างการ์ดใหม่จาก builder เพื่อให้ได้ SynergyLine template");
+    }
 
     /// <summary>
     /// ยกใบที่แนะนำขึ้นตาม <see cref="recommendedLift"/>

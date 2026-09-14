@@ -796,6 +796,7 @@ namespace CloneSwarm.EditorTools
                 Require(strip != null, "หา BuildStripUI เจอ");
                 Require(strip != null && strip.slotTemplate != null,
                         "BuildStripUI.slotTemplate ไม่หลุด (คลาสรองข้ามซีนแล้วเคยกลายเป็น null)");
+                CheckTemplatesArePrefabs();
 
                 // component ที่สคริปต์หายจะโผล่เป็น null ใน GetComponents
                 int broken = 0;
@@ -808,6 +809,7 @@ namespace CloneSwarm.EditorTools
                 Require(broken == 0, $"ไม่มี component ที่สคริปต์หายในซีนเกม (เจอ {broken})");
 
                 CheckLevelUpCards();
+                CheckSynergyLines();
                 CheckBuildStripSlots();
                 CheckWeaponSlotCap();
                 CheckStatIcons();
@@ -1063,11 +1065,11 @@ namespace CloneSwarm.EditorTools
                 }
 
                 CheckCardAccentFollowsType(slots, cards);
-                CheckRecommendedLift(slots, cards);
+                CheckCardsLevel(slots);
+                CheckNoRecommendation(slots);
 
                 // กดจริงผ่านปุ่มของการ์ด — ต้องยิง callback ใบนั้นครั้งเดียว
-                int target = cards.FindIndex(c => c.isRecommended);
-                if (target < 0) target = 0;
+                int target = 0;
                 slots[target].selectButton?.onClick.Invoke();
                 Require(picked == 1, $"กดการ์ดแล้ว callback ยิงครั้งเดียว (ยิงไป {picked} ครั้ง)");
                 Require(ReferenceEquals(pickedCard, cards[target]),
@@ -1106,33 +1108,97 @@ namespace CloneSwarm.EditorTools
             }
 
             /// <summary>
-            /// ใบที่ถูกยกขึ้นต้องเป็นใบเดียวกับใบที่ติดป้ายแนะนำ
-            /// builder อบการยก 22px ไว้ที่ช่องกลางตายตัว ส่วนป้ายวิ่งตาม isRecommended จริง
-            /// สองอย่างนี้จึงหลุดจากกันได้ และผู้เล่นจะเห็นใบหนึ่งเด่นแต่อีกใบติดป้าย
+            /// แม่แบบของที่ถูกสร้างซ้ำต้องเป็น **prefab asset** ไม่ใช่ object ในซีน
+            ///
+            /// object ในซีนถูกอ้างด้วย `fileID` ซึ่งเปลี่ยนทุกครั้งที่ panel ถูกย้าย
+            /// หรือสร้างใหม่ · `P3RScreenMigrator` ลบ panel เดิมทั้งอัน แม่แบบตายไปด้วย
+            /// แล้วช่องหายทั้งแถบ **ตอนกลางเกม** โดยไม่มี error สักบรรทัด
+            /// prefab asset อ้างด้วย guid — ย้ายซีนกี่รอบก็ไม่หลุด
+            ///
+            /// `gameObject.scene.IsValid()` เป็น false เฉพาะกับ asset — เช็คได้ทั้งสองฝั่ง
             /// </summary>
-            private void CheckRecommendedLift(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            private void CheckTemplatesArePrefabs()
             {
-                int rec = cards.FindIndex(c => c.isRecommended);
-                if (rec < 0 || slots.Count == 0) return;
-
-                // เช็คตาม **ค่าที่ตั้งไว้จริง** ไม่ใช่สมมติว่าต้องยกเสมอ
-                // เจ้าของเลือกให้การ์ดเรียบเสมอกัน (recommendedLift = 0) · ป้ายแนะนำทำหน้าที่แทน
-                // เขียนแบบนี้ทำให้เทสต์ยังมีความหมายไม่ว่าจะตั้งค่าไหน
-                float lift = slots[rec].recommendedLift;
-                float recY = ((RectTransform)slots[rec].transform).anchoredPosition.y;
-
-                for (int i = 0; i < slots.Count; i++)
+                foreach (var s in FindObjectsByType<BuildStripUI>(
+                             FindObjectsInactive.Include, FindObjectsSortMode.None))
                 {
-                    if (i == rec) continue;
-                    float y = ((RectTransform)slots[i].transform).anchoredPosition.y;
-
-                    if (lift > 0f)
-                        Require(recY > y + 1f,
-                                $"ใบที่แนะนำ (ใบ {rec + 1}) ถูกยกสูงกว่าใบ {i + 1} ({recY:0} vs {y:0})");
-                    else
-                        Require(Mathf.Abs(recY - y) < 0.5f,
-                                $"การ์ดใบ {i + 1} อยู่ระดับ Y เดียวกับใบอื่น ({y:0} vs {recY:0})");
+                    if (s.slotTemplate == null) continue;
+                    Require(!s.slotTemplate.gameObject.scene.IsValid(),
+                            $"'{s.name}' slotTemplate ชี้ prefab asset ไม่ใช่ object ในซีน");
                 }
+
+                foreach (var ui in FindObjectsByType<LevelUpUI>(
+                             FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (ui.cardTemplate == null) continue;
+                    Require(!ui.cardTemplate.gameObject.scene.IsValid(),
+                            $"'{ui.name}' cardTemplate ชี้ prefab asset ไม่ใช่ object ในซีน");
+                }
+            }
+
+            /// <summary>การ์ดทุกใบอยู่ระดับ Y เดียวกัน — การยกใบแนะนำหายไปพร้อมระบบแนะนำ</summary>
+            private void CheckCardsLevel(List<UpgradeCardUI> slots)
+            {
+                if (slots.Count < 2) return;
+                float y0 = ((RectTransform)slots[0].transform).anchoredPosition.y;
+
+                for (int i = 1; i < slots.Count; i++)
+                {
+                    float y = ((RectTransform)slots[i].transform).anchoredPosition.y;
+                    Require(Mathf.Abs(y - y0) < 0.5f,
+                            $"การ์ดใบ {i + 1} อยู่ระดับ Y เดียวกับใบแรก ({y:0} vs {y0:0})");
+                }
+            }
+
+            /// <summary>
+            /// ไม่มีอะไรบนจอชี้นำว่าควรกดใบไหน — ADR-009 ถอดระบบแนะนำออก
+            ///
+            /// เจ้าของตัดสินใจว่าเกมไม่ควรชักจูงผู้เล่น · เทสต์นี้เฝ้าการตัดสินใจนั้น
+            /// ไม่ใช่เฝ้าโค้ด — ถ้าวันหนึ่งมีคนเปิดป้ายกลับมาโดยไม่ได้ตั้งใจ (เช่น
+            /// สร้าง prefab ใหม่แล้วป้ายกลับมา active) ตรงนี้จะดักได้ทันที
+            ///
+            /// **ไม่ได้ห้ามวงเรืองแสง** — มันเป็นของ hover ซึ่งบอกว่า "เมาส์อยู่ตรงนี้"
+            /// ไม่ได้บอกว่าควรกด · ที่เช็คคือตอนตั้งต้นต้องไม่มีใบไหนเรืองอยู่เอง
+            /// </summary>
+            private void CheckNoRecommendation(List<UpgradeCardUI> slots)
+            {
+                int ribbons = slots.Count(c => c.recommendedRibbon != null &&
+                                               c.recommendedRibbon.activeSelf);
+                Require(ribbons == 0, $"ไม่มีป้ายแนะนำโผล่บนการ์ดใบไหน (เจอ {ribbons})");
+
+                int glows = slots.Count(c => c.recommendedGlowOutline != null &&
+                                             c.recommendedGlowOutline.activeSelf);
+                Require(glows == 0, $"ไม่มีใบไหนเรืองแสงเองตอนยังไม่ได้ชี้ (เจอ {glows})");
+            }
+
+            /// <summary>
+            /// แถบ Evolution Synergy โชว์ได้ครบตามจำนวนบรรทัดที่ได้รับ
+            ///
+            /// ของเดิมมีช่องไอคอนฝังไว้ 2 ช่องขณะที่ฝั่งข้อมูลส่งมาได้ถึง 3 —
+            /// บรรทัดที่สามหายเงียบทุกครั้ง ไม่มี error ไม่มีคำเตือน
+            /// ตอนนี้แถบเป็นช่องทางเดียวที่เกมใช้บอกทาง การหายเงียบจึงแพงกว่าเดิมมาก
+            /// </summary>
+            private void CheckSynergyLines()
+            {
+                var card = FindAnyObjectByType<UpgradeCardUI>(FindObjectsInactive.Include);
+                if (card == null) return;
+
+                bool hasTemplate = card.synergyLineTemplate != null;
+                Require(hasTemplate || card.synergyIconImages.Count > 0,
+                        "การ์ดมีที่วางบรรทัด synergy (template หรือช่องไอคอนอย่างน้อยหนึ่ง)");
+
+                if (!hasTemplate)
+                {
+                    lines.Add($"   หมายเหตุ  การ์ดยังไม่มี SynergyLine template — " +
+                              $"โชว์ได้แค่รูป {card.synergyIconImages.Count} ช่อง ไม่มีข้อความ " +
+                              "· สร้างการ์ดใหม่จาก builder เพื่อให้ได้ของครบ");
+                    return;
+                }
+
+                Require(!card.synergyLineTemplate.gameObject.activeSelf,
+                        "SynergyLine template ถูกปิดไว้ (ไม่งั้นจะโผล่เป็นบรรทัดเปล่า)");
+                Require(card.synergyLineTemplate.transform.parent != null,
+                        "SynergyLine template มีพ่อให้ clone ลงไป");
             }
 
             // ── helpers ของเทสต์การ์ด ──────────────────────────────────────
@@ -1148,8 +1214,6 @@ namespace CloneSwarm.EditorTools
                                          .Where(s => s != null).Take(Want).ToList();
                 if (stats.Count < Want) return null;
 
-                // ใบแรกเป็นใบแนะนำโดยตั้งใจ — ของเดิมอบการยกไว้ที่ใบกลาง ถ้าเลือกใบกลาง
-                // เทสต์จะผ่านเพราะบังเอิญตรง ไม่ใช่เพราะโค้ดถูก
                 var list = new List<UpgradeCardInfo>();
                 for (int i = 0; i < Want; i++)
                     list.Add(new UpgradeCardInfo
@@ -1157,7 +1221,6 @@ namespace CloneSwarm.EditorTools
                         type             = UpgradeCardType.Stat,
                         stat             = stats[i],
                         currentStatLevel = i % 3,
-                        isRecommended    = i == 0,
                     });
                 return list;
             }

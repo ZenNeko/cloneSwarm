@@ -845,7 +845,11 @@ namespace CloneSwarm.EditorTools
                                                   0f, rowH, padX, labelW, edgeW);
             strip.passiveSlotArea = BuildStripRow(root, "Row_Passives", "PASSIVES", Green,
                                                   -(rowH + rowGap), rowH, padX, labelW, edgeW);
-            strip.slotTemplate = BuildSlotTemplate(root);
+
+            // ช่องเป็น **prefab asset** ไม่ใช่ลูกของแถบ — ของที่ถูก Instantiate ซ้ำ
+            // สิบกว่าครั้งตอนรันต้องเป็น prefab ตามกติกาของโปรเจกต์
+            // นิยามหน้าตาอยู่ที่ P3RBuildStripBuilder ที่เดียว ไม่ใช่ก๊อปมาไว้ที่นี่อีกชุด
+            strip.slotTemplate = P3RBuildStripBuilder.BuildSlotPrefab(monoFont, displayFont);
 
             // เติมของตัวอย่างให้เห็นในซีน — ตอนรัน BuildStripUI.RefreshFromLocalPlayer()
             // ล้างแล้วสร้างใหม่จาก PlayerWeaponManager จริง ตัวอย่างจึงไม่กลายเป็นของค้าง

@@ -60,7 +60,7 @@ namespace CloneSwarm.EditorTools
             strip.weaponSlotArea  = Row(root, "Row_Weapons",  "WEAPONS",  Blue,  0f, mono, display);
             strip.passiveSlotArea = Row(root, "Row_Passives", "PASSIVES", Green,
                                         -(RowHeight + RowGap), mono, display);
-            strip.slotTemplate    = SlotTemplate(root, mono, display);
+            strip.slotTemplate    = SlotTemplate(mono, display);
             return strip;
         }
 
@@ -124,10 +124,39 @@ namespace CloneSwarm.EditorTools
             return area;
         }
 
-        private static BuildStripSlot SlotTemplate(RectTransform parent,
-                                                   TMP_FontAsset mono, TMP_FontAsset display)
+        /// <summary>ช่องหนึ่งช่องของแถบ build — **prefab asset ไม่ใช่ object ในซีน**</summary>
+        public const string SlotPrefabPath = "Assets/Prefab/UI/P3R/BuildStripSlot.prefab";
+
+        /// <summary>
+        /// เขียน prefab ของช่องแล้วคืน component ของ asset
+        ///
+        /// เปิดออกมาให้ builder ของจออื่นเรียกได้ — **นิยามหน้าตาช่องต้องอยู่ที่เดียว**
+        /// ก๊อปโค้ดสร้างช่องไปไว้ที่ builder ของแต่ละจอคือทางที่ทำให้สองจอ
+        /// ค่อยๆ เพี้ยนออกจากกัน ซึ่งเคยเกิดมาแล้วกับแถบนี้ทั้งแถบ
+        /// </summary>
+        public static BuildStripSlot BuildSlotPrefab(TMP_FontAsset mono, TMP_FontAsset display)
+            => SlotTemplate(mono, display);
+
+        /// <summary>
+        /// สร้างช่องต้นแบบเป็น **prefab asset**
+        ///
+        /// ═══ ทำไมต้องเป็น prefab ไม่ใช่ลูกในแถบ ═══
+        ///
+        /// ช่องถูก `Instantiate` ซ้ำสิบกว่าครั้งตอนรัน — ตามกติกาของโปรเจกต์
+        /// (ดู skill `game-ui` §"prefab หรือ builder") ของที่ถูกสร้างซ้ำต้องเป็น prefab
+        ///
+        /// แต่เหตุผลที่หนักกว่านั้นคือ **ความอยู่รอด**: ของเดิมเป็นลูกของแถบในซีน
+        /// `BuildStripUI.slotTemplate` จึงเป็น `fileID` ของ object ในซีน ซึ่งเปลี่ยนทุกครั้ง
+        /// ที่ panel ถูกย้าย/สร้างใหม่ · `P3RScreenMigrator` ลบ panel เดิมทั้งอัน
+        /// แม่แบบจึงตายไปพร้อมกัน แล้ว `slotTemplate` กลายเป็น null โดยไม่มีอะไรฟ้อง
+        /// จนกว่าจะถึงเวลาสร้างช่องจริง — ซึ่งคือกลางเกม
+        ///
+        /// prefab asset อ้างด้วย guid ย้ายซีนกี่รอบก็ไม่หลุด
+        /// </summary>
+        private static BuildStripSlot SlotTemplate(TMP_FontAsset mono, TMP_FontAsset display)
         {
-            var rt = NewRect("Slot_Template", parent);
+            // parent = null → สร้างลอยไว้ก่อน แล้ว SavePrefab เขียนลงไฟล์ + ลบตัวชั่วคราวทิ้ง
+            var rt = NewRect("BuildStripSlot", null);
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
             rt.pivot     = new Vector2(0f, 0.5f);
             rt.sizeDelta = new Vector2(SlotSize, SlotSize);
@@ -166,8 +195,13 @@ namespace CloneSwarm.EditorTools
 
             slot.borderEdges = Border(rt, "Border", 1f, new Color(1f, 1f, 1f, 0.26f));
 
+            // ปิดไว้ในตัว prefab เอง — instantiate ออกมาแล้วค่อยเปิด
+            // ไม่งั้น BuildStripUI ต้องไปสั่งปิดตัว asset ซึ่งเป็นการแก้ไฟล์ต้นฉบับ
             rt.gameObject.SetActive(false);
-            return slot;
+
+            // SavePrefab ผ่าน hash guard — ถ้ามีคนแก้ไฟล์ด้วยมือไว้ มันจะไม่ทับให้
+            var asset = P3RBuilderKit.SavePrefab(rt.gameObject, SlotPrefabPath);
+            return asset != null ? asset.GetComponent<BuildStripSlot>() : null;
         }
 
         // ── helpers ────────────────────────────────────────────────────────

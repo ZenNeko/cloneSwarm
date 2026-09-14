@@ -10,13 +10,44 @@ public enum UpgradeCardType
     Augment         // Augment — ได้เฉพาะ level ที่กำหนดใน SharedExperienceManager
 }
 
+/// <summary>
+/// หนึ่งบรรทัดของ Evolution Synergy — **บอกข้อเท็จจริง ไม่ชี้นำ**
+///
+/// เส้นแบ่งนี้คือเหตุผลที่ระบบ "แนะนำ" ถูกถอดออก (ADR-009) — เกมบอกได้ว่า
+/// *อะไรเชื่อมกับอะไร และห่างอีกเท่าไร* แต่ไม่บอกว่า *ควรกดใบไหน*
+/// ข้อความในนี้จึงต้องเป็นสภาพปัจจุบันเสมอ ห้ามมีคำว่าควร/แนะนำ/คุ้ม
+/// </summary>
+public struct SynergyLine
+{
+    public Sprite icon;
+    /// <summary>ชื่อของที่เกี่ยว — อาวุธ (บนการ์ดสเตตัส) หรือสเตตัส (บนการ์ดอาวุธ)</summary>
+    public string label;
+    /// <summary>สภาพตอนนี้ เช่น "Lv5 · ขาด Armor อีก 2" — ว่างได้ถ้าไม่มีอะไรจะบอก</summary>
+    public string detail;
+    /// <summary>เงื่อนไขฝั่งนี้ครบแล้ว — ใช้ย้อมให้ต่างจากที่ยังขาด</summary>
+    public bool   met;
+}
+
 /// <summary>ข้อมูลการ์ดที่จะแสดงใน LevelUpUI / ObjectiveRewardUI</summary>
 public class UpgradeCardInfo
 {
     public UpgradeCardType type;
-    public bool            isRecommended;
-    public System.Collections.Generic.List<Sprite> synergyIcons = new();
-    public bool            showSynergy;
+
+    // ── Evolution Synergy ─────────────────────────────────────────────────
+    /// <summary>บรรทัดที่จะโชว์ในแถบ EVOLUTION — เรียงจากใกล้ครบที่สุดไปหาไกลสุด</summary>
+    public System.Collections.Generic.List<SynergyLine> synergyLines = new();
+    public bool showSynergy;
+
+    /// <summary>รูปอย่างเดียว — ตัวช่วยสำหรับที่แสดงผลเก่าที่ยังรับแค่ sprite</summary>
+    public System.Collections.Generic.List<Sprite> SynergyIcons
+    {
+        get
+        {
+            var list = new System.Collections.Generic.List<Sprite>();
+            foreach (var l in synergyLines) if (l.icon != null) list.Add(l.icon);
+            return list;
+        }
+    }
 
     // ── Weapon fields ─────────────────────────────────────────────────────
     public WeaponData weapon;

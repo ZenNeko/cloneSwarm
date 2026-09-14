@@ -7060,7 +7060,7 @@ GameObject:
   - component: {fileID: 816061067}
   - component: {fileID: 816061068}
   m_Layer: 0
-  m_Name: Slot_Template
+  m_Name: Legacy_Slot_Template
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12528,7 +12528,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5383588aa31119549b244a9b9c1b3abb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.BuildStripUI
-  slotTemplate: {fileID: 816061068}
+  slotTemplate: {fileID: 5567120790125349786, guid: 65312c2694d28674889272a6e499b6f5, type: 3}
   weaponSlotArea: {fileID: 260596928}
   passiveSlotArea: {fileID: 327507659}
   weaponSlotCount: 5
