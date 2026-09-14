@@ -352,7 +352,10 @@ namespace CloneSwarm.EditorTools
             if (typeLabel) { typeLabel.text = data.type; typeLabel.color = data.onAccent; }
             if (c.levelText) c.levelText.color = data.onAccent;
 
-            if (c.recommendedRibbon) c.recommendedRibbon.SetActive(data.recommended);
+            // ป้าย "แนะนำ" ถูกถอดออกทั้งระบบตาม ADR-009 — เจ้าของตัดสินว่าชักจูงผู้เล่นเกินไป
+            // ตัวอย่างในซีนต้นแบบต้องปิดตามด้วย ไม่งั้นภาพอ้างอิงจะโกหกว่าฟีเจอร์ยังมีอยู่
+            // (ตอนรันจริง `UpgradeCardUI.Populate` บังคับปิดให้อยู่แล้ว แต่ภาพนี้ไม่ผ่านตรงนั้น)
+            if (c.recommendedRibbon) c.recommendedRibbon.SetActive(false);
             if (c.statRowsContainer) c.statRowsContainer.gameObject.SetActive(data.useStatRows);
             if (c.descriptionText)   c.descriptionText.gameObject.SetActive(!data.useStatRows);
 
@@ -375,25 +378,69 @@ namespace CloneSwarm.EditorTools
         ///  • ตัวอักษรกลวงจริง (face โปร่ง) ทำให้ vertex alpha กลืนขอบไปด้วย
         ///    จึงใช้ face สีพื้นจอแทน — บนพื้นมืดอ่านออกเหมือนกลวง
         /// </summary>
-        private static void BuildTitle(RectTransform section, LevelUpUI ui)
+        /// <summary>
+        /// หนึ่งชั้นของหัวเรื่อง — ทุกใบเหมือนกันหมดยกเว้นตำแหน่งเหลื่อมกับสี
+        ///
+        /// `UIShear` ใช้กับ TMP ไม่ได้ (ดูคอมเมนต์ในไฟล์นั้น) — skewX(-11deg) ของแบบ
+        /// จึงใช้ `Italic` แทน ทิศทางตรงกันแต่องศาเป็นของฟอนต์ ไม่ใช่ 11 เป๊ะ
+        /// </summary>
+        private static TextMeshProUGUI TitleLayer(RectTransform parent, string name, Vector2 offset)
         {
-            var t = NewText("Title", section, "LEVEL\nUP!");
+            var t = NewText(name, parent, "LEVEL\nUP!");
             t.font        = displayFont;
             t.fontSize    = 150f;
             t.lineSpacing = -18f;                 // ≈ line-height 0.84
-            P3RText.SetTracking(t, -3.5f);           // letter-spacing -0.035em
+            P3RText.SetTracking(t, -3.5f);        // letter-spacing -0.035em
             t.fontStyle   = FontStyles.Italic;
-            t.color       = Ink;
-            t.outlineColor = Gold;
-            t.outlineWidth = 0.28f;               // ≈ text-stroke 3px ที่ 150px
             t.alignment   = TextAlignmentOptions.TopLeft;
+            t.raycastTarget = false;
 
             var rt = t.rectTransform;
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot     = new Vector2(0f, 1f);
             rt.sizeDelta = new Vector2(700f, 300f);
-            rt.anchoredPosition = new Vector2(86f, -96f);
-            rt.localScale = new Vector3(0.84f, 1f, 1f);   // scaleX(0.84)
+            rt.anchoredPosition = offset;
+            return t;
+        }
+
+        private static void BuildTitle(RectTransform section, LevelUpUI ui)
+        {
+            // ── หัวเรื่องสามชั้น ───────────────────────────────────────────
+            //
+            // ตัวทึบ + เส้นโครงเหลื่อม + เงานูน · ทำด้วย TMP ใบเดียวไม่ได้เพราะ
+            // `outlineWidth` ให้ได้แค่ขอบรอบตัวอักษรตรงกลาง ไม่ใช่สำเนาที่เหลื่อมออกไป
+            //
+            // ลำดับใน Hierarchy = ลำดับการวาด ลูกคนหลังทับลูกคนก่อน:
+            //   Title_Shadow  เงานูน  เหลื่อมลงขวา   วาดก่อน อยู่หลังสุด
+            //   Title         ตัวทึบ   ตำแหน่งจริง
+            //   Title_Wire    เส้นโครง เหลื่อมขึ้นซ้าย วาดหลัง อยู่หน้าสุด
+            //
+            // ตัวที่โค้ดอื่นเขียนข้อความใส่คือ `Title` — อีกสองใบตามผ่าน P3RLayeredText
+            var group = NewRect("TitleGroup", section);
+            group.anchorMin = group.anchorMax = new Vector2(0f, 1f);
+            group.pivot     = new Vector2(0f, 1f);
+            group.sizeDelta = new Vector2(700f, 300f);
+            group.anchoredPosition = new Vector2(86f, -96f);
+            group.localScale = new Vector3(0.84f, 1f, 1f);   // scaleX(0.84) ทั้งกลุ่ม
+
+            var shadow = TitleLayer(group, "Title_Shadow", new Vector2(10f, -10f));
+            shadow.color = InkDeep;
+
+            var t = TitleLayer(group, "Title", Vector2.zero);
+            t.color = Gold;
+
+            // **face ของใบเส้นโครงต้องเป็นสีเดียวกับใบทึบ ห้ามโปร่ง** —
+            // ตั้ง alpha 0 แล้ว vertex alpha ของ TMP จะคูณทับ outline ไปด้วย
+            // ขอบจางหายตามกัน · ตั้งเป็นสีเดียวกันแล้วส่วนที่ทับกันกลืนเป็นเนื้อเดียว
+            // เหลือแค่ขอบของสำเนาที่เหลื่อมออกไปให้เห็น ซึ่งคือเอฟเฟกต์ที่ต้องการ
+            var wire = TitleLayer(group, "Title_Wire", new Vector2(-6f, 6f));
+            wire.color        = Gold;
+            wire.outlineColor = Teal;
+            wire.outlineWidth = 0.18f;            // ≈ เส้น 2px ที่ fontSize 150
+
+            var layered = group.gameObject.AddComponent<P3RLayeredText>();
+            layered.source    = t;
+            layered.followers = new[] { shadow, wire };
 
             ui.levelLabel = t;
             // หัวเรื่องเป็นสองบรรทัดตามแบบ — เลเวลใหม่ไปอยู่ในข้อความเดียวกันไม่ได้

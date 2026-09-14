@@ -32,8 +32,14 @@ namespace CloneSwarm.EditorTools
 
         /// <summary>
         /// panel ที่ต้อง active เสมอ — เพิ่มชื่อที่นี่เมื่อมีจอใหม่ที่ตั้ง singleton ใน Awake
+        ///
+        /// public เพราะ <see cref="P3RScreenMigrator"/> ต้องอ่านด้วย — มันปิดแผงที่ย้ายเข้ามา
+        /// ทุกครั้งโดยตั้งใจ (กันชนกับแผงเดิมก่อนต่อสาย) ซึ่งถูกสำหรับจอเมนู
+        /// แต่ **ผิดสำหรับจอที่ถือ singleton** เพราะมันจะไม่มีใครเปิดกลับให้เลย
+        ///
+        /// มีลิสต์เดียวสองคนอ่าน — ก๊อปไปสองที่คือรับประกันว่าวันหนึ่งจะไม่ตรงกัน
         /// </summary>
-        private static readonly string[] MustBeActive =
+        public static readonly string[] MustBeActive =
         {
             "P3R_LevelUp", "P3R_WinLose", "P3R_Pause",
         };

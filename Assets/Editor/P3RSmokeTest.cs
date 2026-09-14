@@ -798,6 +798,7 @@ namespace CloneSwarm.EditorTools
                 Require(strip != null && strip.slotTemplate != null,
                         "BuildStripUI.slotTemplate ไม่หลุด (คลาสรองข้ามซีนแล้วเคยกลายเป็น null)");
                 CheckTemplatesArePrefabs();
+                CheckOneActiveBuildStrip();
 
                 // component ที่สคริปต์หายจะโผล่เป็น null ใน GetComponents
                 int broken = 0;
@@ -1106,6 +1107,37 @@ namespace CloneSwarm.EditorTools
                             $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
                             $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
                 }
+            }
+
+            /// <summary>
+            /// แถบ build ต้องเปิดอยู่ **ตัวเดียว** ทั้งซีน
+            ///
+            /// ทุกครั้งที่ migrate จอ Level Up ใหม่ builder จะพาแถบของตัวเองกลับเข้ามา
+            /// แล้วมันไปทับตัวร่วมบน HUDCanvas — ผู้เล่นเห็น WEAPONS/PASSIVES
+            /// ซ้อนกันสองชุด ตัวเลขคนละค่า ไม่รู้ว่าอันไหนจริง
+            ///
+            /// เทสต์เดิมเช็คแค่ "แถบที่ FindAnyObjectByType หยิบมาได้" ซึ่งผ่านเสมอ
+            /// แม้จะมีสองอัน — ต้องนับหัว ไม่ใช่ดูตัวแทน
+            /// </summary>
+            private void CheckOneActiveBuildStrip()
+            {
+                var active = FindObjectsByType<BuildStripUI>(
+                                 FindObjectsInactive.Include, FindObjectsSortMode.None)
+                             .Where(s => s.gameObject.activeInHierarchy)
+                             .ToList();
+
+                Require(active.Count == 1,
+                        $"แถบ build เปิดอยู่ตัวเดียว (เจอ {active.Count})");
+
+                if (active.Count > 1)
+                    foreach (var s in active) lines.Add($"        └ {PathOf(s.transform)}");
+            }
+
+            private static string PathOf(Transform t)
+            {
+                var sb = new StringBuilder(t.name);
+                for (var p = t.parent; p != null; p = p.parent) sb.Insert(0, p.name + "/");
+                return sb.ToString();
             }
 
             /// <summary>

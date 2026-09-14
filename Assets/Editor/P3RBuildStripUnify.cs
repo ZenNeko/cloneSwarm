@@ -134,15 +134,24 @@ namespace CloneSwarm.EditorTools
                 log.AppendLine("  ตั้ง autoRefreshInterval = 0.4s");
             }
 
-            // ── 4. ปิดแถบของ HUD ที่กลายเป็นตัวซ้ำ ─────────────────────────
-            var hudStrip = hud.Find("BuildStrip") as RectTransform;
-            if (hudStrip != null && hudStrip != shared)
+            // ── 4. ปิดแถบอื่นทุกตัวที่ไม่ใช่ตัวร่วม ─────────────────────────
+            //
+            // **ไล่จากทั้งซีน ไม่ใช่เจาะหาแค่ใต้ P3R_HUD** — ทุกครั้งที่ migrate จอ Level Up
+            // ใหม่ `P3RLevelUpSceneBuilder` จะพาแถบของตัวเองกลับเข้ามาด้วย
+            // แล้วมันไปทับตัวร่วมจนเห็น WEAPONS/PASSIVES ซ้อนกันสองชุด
+            //
+            // เจาะหาตามชื่อ/ตามพ่อคนใดคนหนึ่งแปลว่าต้องกลับมาแก้ทุกครั้งที่ตัวซ้ำ
+            // ไปโผล่ที่ใหม่ · นับจาก component แทน ครอบได้ทุกที่มาโดยไม่ต้องเดา
+            foreach (var other in FindAll<BuildStripUI>(scene))
             {
-                hudStrip.gameObject.SetActive(false);
-                hudStrip.name = "Legacy_HudBuildStrip";
-                EditorUtility.SetDirty(hudStrip.gameObject);
+                if (other == strip) continue;
+                if (!other.gameObject.activeSelf && other.name.StartsWith("Legacy_")) continue;
+
+                other.gameObject.SetActive(false);
+                if (!other.name.StartsWith("Legacy_")) other.name = "Legacy_" + other.name;
+                EditorUtility.SetDirty(other.gameObject);
                 moved++;
-                log.AppendLine($"  ปิดแถบของ {HudPanel} → {hudStrip.name}");
+                log.AppendLine($"  ปิดแถบซ้ำ '{Path(other.transform)}' → {other.name}");
             }
 
             // ── 5. LevelUpUI ยังชี้ตัวร่วมได้เหมือนเดิม ───────────────────
@@ -169,6 +178,13 @@ namespace CloneSwarm.EditorTools
             => scene.GetRootGameObjects()
                     .SelectMany(r => r.GetComponentsInChildren<T>(true))
                     .ToArray();
+
+        private static string Path(Transform t)
+        {
+            var sb = new StringBuilder(t.name);
+            for (var p = t.parent; p != null; p = p.parent) sb.Insert(0, p.name + "/");
+            return sb.ToString();
+        }
 
         private static GameObject FindInScene(Scene scene, string name)
         {
