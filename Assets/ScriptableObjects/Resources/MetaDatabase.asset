@@ -33,7 +33,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 81a384ab5019def4881c9c12376fb635, type: 2}
   - {fileID: 0}
   - {fileID: 0}
-  augments: []
+  augments:
+  - {fileID: 11400000, guid: df77247c6c5bb76409b6d54a6f9d698c, type: 2}
+  - {fileID: 11400000, guid: 8b1ca8716ed8bd54080f2287bd4baaf2, type: 2}
+  - {fileID: 11400000, guid: 858658bcd0554b34bb1f27a52c8544a6, type: 2}
+  - {fileID: 11400000, guid: ecf6f139dcae8324f858ead9b057aca9, type: 2}
+  - {fileID: 11400000, guid: 891b7e6b9b0018b4e84bbf2f948eae35, type: 2}
+  - {fileID: 11400000, guid: a606e5c6d552eae45bd03b4ff0719a98, type: 2}
+  - {fileID: 11400000, guid: 4d97b9d4ce972cd4881fa13db9c1e7e2, type: 2}
+  - {fileID: 11400000, guid: f834f36607f7a2943a95008288adab8d, type: 2}
+  - {fileID: 11400000, guid: 0361059fa7ddf5d4e9c0306a4388b5b7, type: 2}
+  statuses: []
   goldPerExp: 0.1
   winBonusGold: 500
   goldPerMinuteSurvived: 20

@@ -13,7 +13,11 @@ public class UpgradeCardUI : MonoBehaviour
     public Image           iconImage;
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI descriptionText;
-    public TextMeshProUGUI levelText;   // "Lv 3 / 5" / "NEW" / "SUPER ★"
+    public TextMeshProUGUI levelText;   // "Lv 3 / 5" / "NEW" / "SUPER"
+    [Tooltip("ป้ายซ้ายบน — ระบบที่การ์ดมาจาก (WEAPON / STAT / AUGMENT)\n\n" +
+             "เคยถูกอบค่าไว้ใน prefab แล้วไม่มีใครเขียนตอนรัน — ผลคือทุกใบว่างเปล่า\n" +
+             "ปล่อยว่างได้ การ์ดยังบอกชนิดด้วยสีกับป้ายขวาอยู่")]
+    public TextMeshProUGUI typeLabel;
     public Button          selectButton;
 
     [Header("Evolution Synergy")]
@@ -84,9 +88,18 @@ public class UpgradeCardUI : MonoBehaviour
         currentCard = card;
         onPicked    = pickedCallback;
 
-        if (iconImage)       iconImage.sprite    = card.DisplayIcon;
+        // **ต้องปิด Image เมื่อไม่มีรูป** — Image ที่ไม่มี sprite วาดเป็นสี่เหลี่ยมทึบ
+        // ไม่ใช่ว่าง · augment ทุกใบตอนนี้ยังไม่มีไอคอน ถ้าไม่ปิดจะได้กล่องขาวเต็มใบ
+        // (บั๊กเดียวกับที่ WeaponStatHUD เคยเป็น) · พื้นไอคอนกับกรอบเป็นคนละ object
+        // จึงยังเห็นช่องไอคอนเป็นกรอบเปล่าตามแบบ ไม่ใช่หายไปทั้งก้อน
+        if (iconImage)
+        {
+            iconImage.sprite  = card.DisplayIcon;
+            iconImage.enabled = card.DisplayIcon != null;
+        }
         if (nameText)        nameText.text = card.DisplayName;
         if (levelText)       levelText.text       = card.DisplayLevelText;
+        if (typeLabel)       typeLabel.text       = card.TypeLabel;
 
         // ได้ครั้งแรก -> คำอธิบายอย่างเดียว · level up -> สเตตัสที่เพิ่มอย่างเดียว
         // สองอย่างนี้ไม่เคยโชว์พร้อมกัน กฎหลักอ่านจาก card.IsFirstAcquisition

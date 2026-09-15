@@ -861,6 +861,9 @@ namespace CloneSwarm.EditorTools
                 int maxW = PlayerWeaponManager.MaxWeaponSlots;
                 int maxS = PlayerStatManager.MaxStatSlots;
 
+                // **ของเก่าที่ปลดระวางแล้ว** — ถอดออกจากซีนเกมไปแล้ว บล็อกนี้จึงข้ามไปเอง
+                // ยังเก็บไว้เพราะซีนอื่น (WeaponTestScene · Proto_GameplayHUD2) ยังใช้
+                // ถ้าวันหนึ่งซีนไหนพามันกลับเข้ามา ข้อบังคับเดิมก็กลับมาทำงานพร้อมกัน
                 var hud = FindAnyObjectByType<WeaponStatHUD>(FindObjectsInactive.Include);
                 if (hud != null)
                 {
@@ -942,40 +945,45 @@ namespace CloneSwarm.EditorTools
                     lines.Add($"   หมายเหตุ  อาวุธที่ยังไม่มีรูป {noIcon.Count} ใบ: " +
                               string.Join(" · ", noIcon));
 
-                CheckHudPutsIconOnSlot(stats.FirstOrDefault(s => s.Icon != null));
+                CheckSlotPutsIconOnScreen(stats.FirstOrDefault(s => s.Icon != null));
             }
 
             /// <summary>
-            /// HUD เอารูปขึ้นช่องจริง — ไม่ใช่แค่มีรูปให้หยิบ
+            /// ช่องเอารูปขึ้นจอจริง — ไม่ใช่แค่มีรูปให้หยิบ
             ///
-            /// บั๊กที่เจอไม่ได้อยู่ที่ข้อมูล แต่อยู่ที่ปลายทาง: builder ปิด `icon.enabled`
-            /// ไว้ตั้งแต่สร้างช่อง แล้วฝากให้ `WeaponStatHUD` เปิดตอนมีของจริง
-            /// ซึ่งโค้ดเดิมตั้งแต่ sprite กับสีแต่**ไม่เคยแตะ enabled** — ไอคอนจึงไม่เคยโผล่
+            /// บั๊กที่เจอไม่ได้อยู่ที่ข้อมูล แต่อยู่ที่ปลายทาง: ตัวสร้างปิด `icon.enabled`
+            /// ไว้ตั้งแต่สร้างช่อง แล้วฝากให้โค้ดเปิดตอนมีของจริง — โค้ดเดิมตั้ง sprite
+            /// กับสีแต่ **ไม่เคยแตะ enabled** ไอคอนจึงไม่เคยโผล่ โดยไม่มี error สักบรรทัด
             ///
             /// เรนเดอร์จับไม่ได้เพราะตอนแคปไม่มีผู้เล่นในซีน `Refresh()` จึงไม่เคยวิ่ง
             /// จึงเรียก setter ตรงๆ กับช่องจำลอง — ช่องจริงในซีนไม่ถูกแตะ
+            ///
+            /// **ย้ายจาก `WeaponStatHUD` มาที่ `BuildStripSlot`** ตอนแถวช่องเก่าปลดระวาง
+            /// บั๊กคลาสนี้ไม่ได้หายไปกับของเก่า มันแค่ย้ายบ้าน — เทสต์ต้องย้ายตาม
+            /// ไม่ใช่ถูกลบทิ้งพร้อมกัน · ตอนนี้เรียกเมธอด public ตรงๆ ไม่ต้องใช้ reflection
             /// </summary>
-            private void CheckHudPutsIconOnSlot(StatData sd)
+            private void CheckSlotPutsIconOnScreen(StatData sd)
             {
-                var hud = FindAnyObjectByType<WeaponStatHUD>(FindObjectsInactive.Include);
-                if (hud == null || sd == null) return;
-
-                var m = typeof(WeaponStatHUD).GetMethod(
-                    "SetSlotStat", BindingFlags.NonPublic | BindingFlags.Instance);
-                Require(m != null, "หา WeaponStatHUD.SetSlotStat เจอ");
-                if (m == null) return;
+                if (sd == null) return;
 
                 var probe = new GameObject("__smoke_slot_probe", typeof(RectTransform))
                             { hideFlags = HideFlags.HideAndDontSave };
-                var icon = probe.AddComponent<Image>();
-                icon.enabled = false;             // สภาพเดียวกับที่ builder ทิ้งช่องไว้
+                var slot = probe.AddComponent<BuildStripSlot>();
 
-                m.Invoke(hud, new object[] { new WeaponStatHUD.SlotUI { icon = icon }, sd, 1 });
+                var iconGo = new GameObject("Icon", typeof(RectTransform));
+                iconGo.transform.SetParent(probe.transform, false);
+                var icon = iconGo.AddComponent<Image>();
+                icon.enabled = false;             // สภาพเดียวกับที่ตัวสร้างทิ้งช่องไว้
+                slot.icon = icon;
+
+                slot.ShowEntry(
+                    new BuildStripUI.Entry { icon = sd.Icon, abbrev = "TST", level = 1 },
+                    Color.white, Color.white, Color.white);
 
                 Require(icon.sprite != null,
-                        $"HUD: ช่องสเตตัสได้รูปจาก SO จริง ('{sd.statName}')");
+                        $"ช่องแถบ build ได้รูปจาก SO จริง ('{sd.statName}')");
                 Require(icon.enabled,
-                        "HUD: ช่องสเตตัสเปิดไอคอนให้เห็น (ไม่ใช่ตั้ง sprite ทิ้งไว้ทั้งที่ปิดอยู่)");
+                        "ช่องแถบ build เปิดไอคอนให้เห็น (ไม่ใช่ตั้ง sprite ทิ้งไว้ทั้งที่ปิดอยู่)");
 
                 UnityEngine.Object.DestroyImmediate(probe);
             }
@@ -1042,15 +1050,41 @@ namespace CloneSwarm.EditorTools
                         PrefabUtility.GetPrefabAssetType(ui.cardTemplate) != PrefabAssetType.NotAPrefab,
                         "cardTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
 
+                // หัวเรื่องที่จัดไว้ในซีน — จดไว้ก่อน `Show` เพื่อพิสูจน์ว่าไม่ถูกเขียนทับ
+                //
+                // เคยถูกเขียนทับทุกครั้งที่จอเปิด แปลว่าคำที่พิมพ์ไว้ใน Editor หายตอนกด Play
+                // โดยไม่มีอะไรบอก · ตาเปล่าจับไม่ได้เพราะคำเก่ากับคำใหม่ใกล้กันมาก
+                // ("LEVEL UP!" กับ "LEVEL\nUP!") — ต้องเทียบสตริงถึงจะเห็น
+                var  layeredTitle = ui.GetComponentInChildren<P3RLayeredText>(true);
+                var  titleText    = layeredTitle != null ? layeredTitle.source : null;
+                string titleBefore = titleText != null ? titleText.text : null;
+
                 int picked = 0;
                 UpgradeCardInfo pickedCard = null;
                 ui.Show(cards, c => { picked++; pickedCard = c; }, level: 7);
 
-                // เลขเลเวลที่เพิ่งคืนกลับมา — ของเดิมมี จอ P3R เคยตัดทิ้ง
-                Require(ui.levelValueLabel != null && ui.levelValueLabel.gameObject.activeSelf,
-                        "ป้ายเลเวลโผล่ตอน Show ที่มีเลเวล");
-                Require(ui.levelValueLabel != null && ui.levelValueLabel.text == "Lv 7",
-                        $"ป้ายเลเวลเป็น 'Lv 7' · ได้ '{ui.levelValueLabel?.text}'");
+                if (titleText != null)
+                    Require(titleText.text == titleBefore,
+                            $"หัวเรื่องไม่ถูกเขียนทับตอน Show ('{titleBefore}')");
+
+                CheckTimerHiddenUntilItTicks(ui);
+
+                // เลขเลเวลที่เพิ่งได้ — **ป้ายนี้ไม่ต่อก็ได้**
+                //
+                // เดิมข้อนี้บังคับให้ต้องมี ซึ่งกลายเป็นว่าเทสต์ไปกำหนดหน้าตาจอแทนคนจัด:
+                // พอเจ้าของจอลบป้ายทิ้งเพราะไม่เอา เทสต์ก็แดงทั้งที่ไม่มีอะไรพัง
+                //
+                // สิ่งที่ต้องคุ้มคือ **สัญญา**: ถ้าต่อไว้ ต้องโผล่และต้องเป็นเลขที่ถูก
+                // มีป้ายแล้วเลขผิดคือบั๊ก · ไม่มีป้ายคือการตัดสินใจ
+                if (ui.levelValueLabel == null)
+                    lines.Add("   ผ่าน  ไม่ได้ต่อป้ายเลเวล — จอนี้ไม่บอกเลเวล (ตั้งใจ)");
+                else
+                {
+                    Require(ui.levelValueLabel.gameObject.activeSelf,
+                            "ป้ายเลเวลโผล่ตอน Show ที่มีเลเวล");
+                    Require(ui.levelValueLabel.text == "Lv 7",
+                            $"ป้ายเลเวลเป็น 'Lv 7' · ได้ '{ui.levelValueLabel.text}'");
+                }
 
                 var slots = VisibleCards(ui);
                 Require(slots.Count == cards.Count,
@@ -1069,6 +1103,9 @@ namespace CloneSwarm.EditorTools
                 CheckCardAccentFollowsType(slots, cards);
                 CheckCardsLevel(slots);
                 CheckNoRecommendation(slots);
+                CheckCardTypeLabels(slots, cards);
+                CheckEmptyIconsAreHidden(slots, cards);
+                CheckAugmentsReachable();
 
                 // กดจริงผ่านปุ่มของการ์ด — ต้องยิง callback ใบนั้นครั้งเดียว
                 int target = 0;
@@ -1078,6 +1115,41 @@ namespace CloneSwarm.EditorTools
                         "callback ได้การ์ดใบที่กดจริง ไม่ใช่ใบอื่น");
 
                 ui.Hide();
+            }
+
+            /// <summary>
+            /// นาฬิกาต้อง **ไม่โผล่จนกว่ามันจะเดินจริง**
+            ///
+            /// `SharedExperienceManager` เริ่มนับต่อเมื่อมีคนเลือกไปแล้วหนึ่งคน **และ**
+            /// มีผู้เล่นมากกว่าหนึ่ง — เล่นคนเดียวจึงไม่มีนาฬิกาเลยสักครั้ง
+            /// ของเดิมล้างแค่ตัวเลขเป็น "" เหลือแถบทองเต็มค้างอยู่ ซึ่งอ่านว่า
+            /// "เวลายังเหลือทั้งหมด" ทั้งที่ไม่มีการนับ
+            ///
+            /// ยิง tick เข้าตรงๆ ผ่าน reflection เพราะ `OnTimerTick` เป็น static event
+            /// ที่ปลุกได้จากในคลาสเจ้าของเท่านั้น · เทสต์ปลุกแทนเซิร์ฟเวอร์ไม่ได้
+            /// </summary>
+            private void CheckTimerHiddenUntilItTicks(LevelUpUI ui)
+            {
+                bool Shown() => ui.timerGroup != null
+                              ? ui.timerGroup.activeSelf
+                              : ui.timerLabel != null && ui.timerLabel.gameObject.activeSelf;
+
+                Require(ui.timerGroup != null,
+                        "ต่อ LevelUpUI.timerGroup ไว้ (ซ่อนนาฬิกาได้ทั้งก้อน)");
+                Require(!Shown(), "นาฬิกายังไม่โผล่ตอน Show — ยังไม่มี tick สักครั้ง");
+
+                var tick = typeof(LevelUpUI).GetMethod(
+                    "UpdateTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (tick == null)
+                {
+                    Require(false, "หา LevelUpUI.UpdateTimer เจอ (เทสต์ยิง tick เองผ่าน reflection)");
+                    return;
+                }
+
+                tick.Invoke(ui, new object[] { 12f });
+                Require(Shown(), "นาฬิกาโผล่ทันทีที่ tick แรกมาถึง");
+                Require(ui.timerLabel != null && ui.timerLabel.text == "12",
+                        $"ตัวเลขนาฬิกาเป็น '12' · ได้ '{ui.timerLabel?.text}'");
             }
 
             /// <summary>
@@ -1107,6 +1179,89 @@ namespace CloneSwarm.EditorTools
                             $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
                             $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
                 }
+            }
+
+            /// <summary>
+            /// ป้ายชนิดการ์ดต้องมาจากการ์ด ไม่ใช่จากที่อบไว้ใน prefab
+            ///
+            /// `Header/TypeLabel` ถูกสร้างพร้อมการ์ดมาตั้งแต่แรกและตัวสร้างอบข้อความ
+            /// ตัวอย่างใส่ (WEAPON / SUPER / STAT) ภาพเรนเดอร์จึงดูถูกต้องมาตลอด
+            /// แต่ `UpgradeCardUI` ไม่เคยมีช่องให้มัน — ตอนรันจริงว่างเปล่าทุกใบ
+            ///
+            /// **ภาพ edit mode แยก "ของที่อบไว้" กับ "ของที่โค้ดเขียน" ไม่ออก** —
+            /// ต้องเรียก Populate จริงแล้วอ่านค่ากลับถึงจะเห็น
+            /// </summary>
+            private void CheckCardTypeLabels(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                int wired = slots.Count(s => s.typeLabel != null);
+                if (wired == 0)
+                {
+                    Require(false, "ต่อ UpgradeCardUI.typeLabel ไว้ (ป้ายชนิดการ์ดซ้ายบน)");
+                    return;
+                }
+
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    if (slots[i].typeLabel == null) continue;
+                    Require(slots[i].typeLabel.text == cards[i].TypeLabel,
+                            $"การ์ดใบ {i + 1} ป้ายชนิดเป็น '{cards[i].TypeLabel}' " +
+                            $"· ได้ '{slots[i].typeLabel.text}'");
+                }
+            }
+
+            /// <summary>
+            /// การ์ดที่ไม่มีไอคอนต้อง **ปิด Image** ไม่ใช่ปล่อยให้เป็นกล่องขาว
+            ///
+            /// `Image` ที่ไม่มี sprite วาดเป็นสี่เหลี่ยมทึบเต็มกรอบ ไม่ใช่ว่างเปล่า
+            /// augment ทั้ง 9 ใบที่สร้างจากตัวอย่างยังไม่มีไอคอน — ถ้าไม่ปิด
+            /// ผู้เล่นจะเห็นกล่องขาวกลางการ์ดทุกใบแล้วนึกว่ารูปโหลดไม่ขึ้น
+            ///
+            /// บั๊กคลาสเดียวกับที่ `WeaponStatHUD` เคยเป็น — ตั้ง sprite แล้วลืม enabled
+            /// </summary>
+            private void CheckEmptyIconsAreHidden(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    var img = slots[i].iconImage;
+                    if (img == null) continue;
+
+                    bool hasIcon = cards[i].DisplayIcon != null;
+                    Require(img.enabled == hasIcon,
+                            $"การ์ดใบ {i + 1} ({cards[i].type}) " +
+                            (hasIcon ? "มีไอคอน → Image เปิด" : "ไม่มีไอคอน → Image ปิด") +
+                            $" · enabled = {img.enabled}");
+                }
+            }
+
+            /// <summary>
+            /// ถ้าตั้งเลเวลแจก augment ไว้ pool ต้องไม่ว่าง
+            ///
+            /// ═══ บั๊กที่เทสต์นี้เกิดมาเพื่อดัก ═══
+            ///
+            /// `MetaDatabase.augments` ว่างเปล่ามาตลอด และ `UpgradeManager` **ถอยกลับ
+            /// ไปแจกการ์ดปกติเงียบๆ** ไม่มี log ไม่มี warning · ผลคือฟีเจอร์ทั้งก้อน
+            /// — 715 บรรทัด + netcode + HUD — ไม่เคยทำงานสักครั้งโดยไม่มีใครรู้
+            ///
+            /// ว่างโดยตั้งใจก็ได้ แต่ต้องล้าง `augmentLevels` ให้ว่างด้วย
+            /// **ตั้งใจแจกแล้วไม่มีของแจก คือความไม่ตรงกันที่ต้องแดง**
+            /// </summary>
+            private void CheckAugmentsReachable()
+            {
+                var sem = FindAnyObjectByType<SharedExperienceManager>(FindObjectsInactive.Include);
+                if (sem == null) return;      // ไม่ใช่ซีนเกม ข้ามไป
+
+                int levels = sem.augmentLevels?.Length ?? 0;
+                if (levels == 0)
+                {
+                    lines.Add("   ผ่าน  ไม่ได้ตั้งเลเวลแจก augment — ปิดระบบไว้ (ตั้งใจ)");
+                    return;
+                }
+
+                var db = CloneSwarm.Meta.MetaDatabase.Instance;
+                int pool = db?.augments?.Count(a => a != null) ?? 0;
+
+                Require(pool > 0,
+                        $"ตั้งเลเวลแจก augment ไว้ {levels} เลเวล → pool ต้องมีของ (มี {pool} ใบ)");
             }
 
             /// <summary>
@@ -1294,6 +1449,21 @@ namespace CloneSwarm.EditorTools
                         stat             = stats[i],
                         currentStatLevel = i % 3,
                     });
+
+                // ใบสุดท้ายเป็น **augment** — augment ไม่ใช่ระบบแยก มันคือการ์ดใบหนึ่ง
+                // ที่ได้จากทางเฉพาะ · ถ้าไม่เอามาเดินเส้นทางเดียวกับการ์ดอื่นในเทสต์
+                // ความพังของมันจะโผล่เฉพาะตอนเลเวล 3/7/12/18 ในเกมจริงเท่านั้น
+                var aug = AssetDatabase.FindAssets("t:AugmentData")
+                                       .Select(AssetDatabase.GUIDToAssetPath)
+                                       .Select(AssetDatabase.LoadAssetAtPath<AugmentData>)
+                                       .FirstOrDefault(a => a != null);
+                if (aug != null)
+                    list[Want - 1] = new UpgradeCardInfo
+                    {
+                        type    = UpgradeCardType.Augment,
+                        augment = aug,
+                    };
+
                 return list;
             }
 

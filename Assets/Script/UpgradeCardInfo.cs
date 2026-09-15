@@ -111,6 +111,24 @@ public class UpgradeCardInfo
         _                             => true,
     };
 
+    /// <summary>
+    /// ป้ายซ้ายบนของการ์ด — **ระบบที่การ์ดใบนี้มาจาก** ไม่ใช่สิ่งที่จะได้
+    ///
+    /// คู่กับ <see cref="DisplayLevelText"/> ที่อยู่ขวาบนและบอก "ได้อะไร"
+    /// (NEW · Lv 3 / 5 · SUPER · FUSION · SILVER) · แยกกันแบบนี้แล้วไม่มีคำซ้ำ:
+    /// การ์ด Super อ่านว่า WEAPON | SUPER  ·  augment อ่านว่า AUGMENT | GOLD
+    ///
+    /// **Augment เป็นการ์ดเหมือนใบอื่นทุกอย่าง** ต่างแค่ทางที่ได้มา (เฉพาะเลเวลที่
+    /// กำหนดไว้ใน SharedExperienceManager.augmentLevels) — ระบบที่ทำงานกับการ์ด
+    /// ทั้งกอง (เช่น reroll ในอนาคต) จึงใช้กับมันได้โดยไม่ต้องเขียนทางแยก
+    /// </summary>
+    public string TypeLabel => type switch
+    {
+        UpgradeCardType.Stat    => "STAT",
+        UpgradeCardType.Augment => "AUGMENT",
+        _                       => "WEAPON",
+    };
+
     public string DisplayLevelText => type switch
     {
         UpgradeCardType.WeaponNew     => "NEW",

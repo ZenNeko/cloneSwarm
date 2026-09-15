@@ -415,7 +415,8 @@ namespace CloneSwarm.EditorTools
             //   Title         ตัวทึบ   ตำแหน่งจริง
             //   Title_Wire    เส้นโครง เหลื่อมขึ้นซ้าย วาดหลัง อยู่หน้าสุด
             //
-            // ตัวที่โค้ดอื่นเขียนข้อความใส่คือ `Title` — อีกสองใบตามผ่าน P3RLayeredText
+            // ใบที่ถือข้อความจริงคือ `Title` — อีกสองใบตามผ่าน P3RLayeredText
+            // แก้คำที่ใบเดียวพอ ไม่ต้องไล่แก้ทีละใบให้ตกหล่น
             var group = NewRect("TitleGroup", section);
             group.anchorMin = group.anchorMax = new Vector2(0f, 1f);
             group.pivot     = new Vector2(0f, 1f);
@@ -442,10 +443,9 @@ namespace CloneSwarm.EditorTools
             layered.source    = t;
             layered.followers = new[] { shadow, wire };
 
-            ui.levelLabel = t;
-            // หัวเรื่องเป็นสองบรรทัดตามแบบ — เลเวลใหม่ไปอยู่ในข้อความเดียวกันไม่ได้
-            ui.titleFormat        = "LEVEL\nUP!";
-            ui.titleFormatNoLevel = "LEVEL\nUP!";
+            // **ไม่ต่อหัวเรื่องเข้า LevelUpUI** — ตัวสร้างวางข้อความไว้ครั้งเดียวแล้วจบ
+            // จากนั้นเป็นของคนจัดซีน · โค้ดตอนรันไม่เขียนทับ ไม่งั้นสิ่งที่เห็นใน Editor
+            // ไม่ใช่สิ่งที่เห็นในเกม (เคยเป็นแบบนั้นมาแล้ว: แก้หัวเรื่องในซีนแล้วหายตอน Play)
 
             // เลเวลใหม่เป็น **ป้ายแยกใต้หัวเรื่อง**
             //
@@ -531,6 +531,7 @@ namespace CloneSwarm.EditorTools
             typeLabel.color     = onAccent;
             typeLabel.alignment = TextAlignmentOptions.MidlineLeft;
             Inset(typeLabel.rectTransform, 16f, 0f);
+            card.typeLabel = typeLabel;
 
             var statusLabel = NewMono("LevelText", hrt, status, 15f, 0.14f);
             statusLabel.color     = onAccent;
@@ -750,6 +751,8 @@ namespace CloneSwarm.EditorTools
         private static void BuildTimer(RectTransform panel, LevelUpUI ui)
         {
             var root = NewRect("Timer", panel);
+            // ทั้งก้อนถูกซ่อนจนกว่านาฬิกาจะเดินจริง — เล่นคนเดียวไม่มีนาฬิกาเลย
+            ui.timerGroup = root.gameObject;
             root.anchorMin = root.anchorMax = new Vector2(1f, 1f);
             root.pivot     = new Vector2(1f, 1f);
             root.sizeDelta = new Vector2(320f, 200f);

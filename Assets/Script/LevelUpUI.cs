@@ -24,11 +24,10 @@ public class LevelUpUI : MonoBehaviour
     public GameObject panelRoot;
 
     [Header("Cards Section")]
-    [Tooltip("GameObject ที่ครอบ levelLabel + cardSlots ทั้งหมด — ซ่อนหลังเลือกแล้ว แต่ panelRoot ยังเปิดอยู่")]
+    [Tooltip("GameObject ที่ครอบหัวเรื่อง + cardSlots ทั้งหมด — ซ่อนหลังเลือกแล้ว แต่ panelRoot ยังเปิดอยู่")]
     public GameObject cardsSection;
     [Tooltip("Parent ของ card ทั้งหมด (Panel) — ถ้าไม่ assign จะหาจาก cardsSection อัตโนมัติ")]
     public GameObject cardsContainer;
-    public TextMeshProUGUI levelLabel;      // "LEVEL UP!  →  Level 5"
     [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่ — ใช้เฉพาะตอนไม่มี cardTemplate")]
     public List<UpgradeCardUI> cardSlots = new();
 
@@ -41,21 +40,31 @@ public class LevelUpUI : MonoBehaviour
     [Tooltip("ระยะห่างระหว่างการ์ด (px) — ใช้ตอนสร้างจาก cardTemplate")]
     public float cardGap = 30f;
 
-    [Tooltip("รูปแบบหัวเรื่องเมื่อรู้เลเวลใหม่ · {0} = เลเวล · ใส่ \\n ขึ้นบรรทัดได้\n" +
-             "ซีน P3R ตั้งเป็น 'LEVEL\\nUP!' สองบรรทัดตามแบบ (เลเวลไม่อยู่ในหัวเรื่องแล้ว)")]
-    public string titleFormat        = "LEVEL UP!   Level {0}";
-    [Tooltip("รูปแบบหัวเรื่องเมื่อไม่รู้เลเวล (Orb phase)")]
-    public string titleFormatNoLevel = "LEVEL UP!";
+    // ── หัวเรื่อง "LEVEL UP!" ไม่ได้อยู่ที่นี่แล้ว ────────────────────────
+    //
+    // เคยมี `levelLabel` + `titleFormat` + `titleFormatNoLevel` ให้โค้ดเขียนหัวเรื่อง
+    // ตอน `Show()` · ถอดออกแล้วเพราะ **หัวเรื่องเป็นงานจัดวาง ไม่ใช่ข้อมูล**
+    //
+    // มันเป็นข้อความคงที่ที่ถูกจัดทรงมาในซีน (ตัวซ้อนหลายชั้น · ขนาด · การตัดบรรทัด)
+    // การเขียนทับตอนรันแปลว่าสิ่งที่เห็นใน Editor ไม่ใช่สิ่งที่เห็นในเกม — แก้ในซีน
+    // แล้วหายทุกครั้งที่กด Play โดยไม่มีอะไรบอก
+    //
+    // เลเวลที่เพิ่งได้เป็น **ข้อมูล** จึงยังเขียนอยู่ — แต่ลง `levelValueLabel` ซึ่ง
+    // เป็นป้ายของมันเอง ไม่ไปยุ่งกับทรงของหัวเรื่อง
 
-    [Tooltip("ป้ายเลเวลใหม่แยกจากหัวเรื่อง — ปล่อยว่างได้\n\n" +
-             "หัวเรื่องของแบบ P3R เป็นสองบรรทัดมีเส้นขอบ ยัดเลขเข้าไปในข้อความเดียวกัน\n" +
-             "แล้วทรงพัง จอ P3R จึงตัดเลขทิ้งไปเลย — ซึ่งทำให้ข้อมูลที่จอเดิมเคยบอก\n" +
-             "('ขึ้นเลเวลอะไร') หายไปด้วย · ช่องนี้เอามันกลับมาโดยไม่แตะหัวเรื่อง")]
+    [Tooltip("ป้ายเลเวลใหม่แยกจากหัวเรื่อง — ปล่อยว่างได้ (ไม่ต่อ = ไม่บอกเลเวล)\n\n" +
+             "หัวเรื่องเป็นข้อความคงที่ที่จัดทรงไว้ในซีน โค้ดไม่แตะ · เลเวลที่เพิ่งได้\n" +
+             "เป็นข้อมูลที่เปลี่ยนทุกครั้ง จึงต้องมีป้ายของตัวเองแยกออกมา")]
     public TextMeshProUGUI levelValueLabel;
     [Tooltip("รูปแบบของป้ายเลเวลแยก · {0} = เลเวลใหม่")]
     public string levelValueFormat = "Lv {0}";
 
     [Header("Timer")]
+    [Tooltip("**ทั้งก้อนของนาฬิกา** (ตัวเลข + แถบ + คำว่า SECONDS) — ซ่อนทั้งก้อนตอนไม่มีการนับ\n\n" +
+             "นาฬิกาไม่ได้เดินทุกครั้งที่จอเปิด · เซิร์ฟเวอร์เริ่มนับต่อเมื่อ **มีคนเลือกไปแล้ว\n" +
+             "หนึ่งคน และมีผู้เล่นมากกว่าหนึ่ง** — เล่นคนเดียวจึงไม่มีนาฬิกาเลย\n" +
+             "ไม่ต่อช่องนี้ = ถอยไปซ่อนเฉพาะตัวเลขกับแถบ คำว่า SECONDS จะค้างอยู่")]
+    public GameObject timerGroup;
     [Tooltip("แสดง countdown  เช่น '28'  — ซ่อนได้ถ้าไม่ต้องการ")]
     public TextMeshProUGUI timerLabel;
     [Tooltip("แถบเติมเวลา 180×6 ใต้ตัวเลข — ต้องเป็น Image type = Filled, Horizontal, Origin Left")]
@@ -144,12 +153,8 @@ public class LevelUpUI : MonoBehaviour
         if (cardsContainer) cardsContainer.SetActive(true);
         if (waitingStrip)   waitingStrip.SetActive(false);
 
-        // 2. Header
-        if (levelLabel)
-            levelLabel.text = level > 0
-                ? string.Format(titleFormat, level)
-                : titleFormatNoLevel;
-
+        // 2. Header — **หัวเรื่องไม่ถูกแตะ** ข้อความของมันเป็นของซีน
+        //
         // เลเวลใหม่แยกป้าย — ซ่อนตอน Orb phase ที่ไม่มีเลเวลให้บอก
         // (ดีกว่าโชว์ "Lv 0" ซึ่งอ่านแล้วเข้าใจผิดว่าเลเวลตก)
         if (levelValueLabel)
@@ -180,6 +185,16 @@ public class LevelUpUI : MonoBehaviour
         cardsInteractable = visibleSlots.Count > 0;
 
         // 4. Reset timer / waiting
+        //
+        // **ซ่อนนาฬิกาทั้งก้อนจนกว่าจะมี tick แรกจริง** — ไม่ใช่แค่ล้างตัวเลขเป็น ""
+        //
+        // เดิมล้างแต่ตัวเลข เหลือแถบทองเต็มกับคำว่า SECONDS ค้างอยู่ ซึ่ง **โกหก**:
+        // แถบเต็มอ่านว่า "เวลายังเหลือทั้งหมด" ทั้งที่ความจริงคือไม่มีการนับเลย
+        // และนั่นคือกรณีปกติ ไม่ใช่กรณีขอบ — เซิร์ฟเวอร์เริ่มนับต่อเมื่อมีคนเลือกไปแล้ว
+        // หนึ่งคน **และ** มีผู้เล่นมากกว่าหนึ่ง เล่นคนเดียวจึงเห็นแถบเต็มค้างตลอดทุกครั้ง
+        //
+        // นาฬิกาโผล่เองใน UpdateTimer ตอน tick แรก — จังหวะที่มันเริ่มมีความหมายพอดี
+        SetTimerVisible(false);
         ResetTimerTotal();
         if (timerLabel)  { timerLabel.color = timerNormalColor; timerLabel.text = ""; }
         if (timerFillBar) { timerFillBar.color = timerFillColor; timerFillBar.fillAmount = 1f; }
@@ -355,8 +370,27 @@ public class LevelUpUI : MonoBehaviour
         timerTotal = configured > 0f ? configured : 0f;
     }
 
+    /// <summary>
+    /// ซ่อน/โชว์นาฬิกาทั้งก้อน
+    ///
+    /// ไม่ต่อ <c>timerGroup</c> ก็ยังดีกว่าเดิม — ซ่อนตัวเลขกับแถบให้เท่าที่รู้จัก
+    /// แต่คำว่า SECONDS ที่เป็นลูกของก้อนเดียวกันจะค้างอยู่ เพราะโค้ดไม่รู้จักมัน
+    /// **ไม่เดาจาก parent ของตัวเลข** — วันที่มีใครย้ายตัวเลขไปอยู่ใต้ของอื่น
+    /// มันจะซ่อนของผิดชิ้นโดยไม่มีใครรู้ · ต่อช่องให้ชัดถูกกว่าเดาให้ฉลาด
+    /// </summary>
+    void SetTimerVisible(bool on)
+    {
+        if (timerGroup != null) { timerGroup.SetActive(on); return; }
+
+        if (timerLabel   != null) timerLabel.gameObject.SetActive(on);
+        if (timerFillBar != null) timerFillBar.gameObject.SetActive(on);
+    }
+
     void UpdateTimer(float remaining)
     {
+        // tick แรกคือสัญญาณเดียวที่บอกว่า "นาฬิกาเดินจริง" — ไม่มีธงอื่นให้ดู
+        SetTimerVisible(true);
+
         if (timerTotal <= 0f) timerTotal = Mathf.Max(remaining, 0.0001f);
 
         if (timerLabel != null)

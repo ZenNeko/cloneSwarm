@@ -647,8 +647,8 @@ RectTransform:
   - {fileID: 5628328765394672576}
   - {fileID: 5415498769571906117}
   - {fileID: 5377434859054929725}
-  - {fileID: 1149750446583972645}
   - {fileID: 3296133662683288495}
+  - {fileID: 1149750446583972645}
   - {fileID: 5408887012371126556}
   - {fileID: 7369890411492840083}
   - {fileID: 6325794332683939968}
@@ -657,7 +657,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 340, y: 480}
+  m_SizeDelta: {x: 350, y: 550}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1608226244356075470
 MonoBehaviour:
@@ -675,6 +675,7 @@ MonoBehaviour:
   nameText: {fileID: 7285526690337990731}
   descriptionText: {fileID: 551839514538641181}
   levelText: {fileID: 5403919575795610129}
+  typeLabel: {fileID: 9144528030166364473}
   selectButton: {fileID: 5880957803903688645}
   evolutionBadge: {fileID: 3492234909103085402}
   synergyLineTemplate: {fileID: 0}
@@ -1544,7 +1545,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 20}
-  m_SizeDelta: {x: -40, y: 176}
+  m_SizeDelta: {x: -40, y: 224}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!1 &7236198131984676296
 GameObject:
@@ -1646,7 +1647,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8848888504385467256}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1655,7 +1656,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -224}
+  m_AnchoredPosition: {x: 0, y: -210}
   m_SizeDelta: {x: -40, y: 96}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &6207014401300099641

@@ -42,12 +42,18 @@ public abstract class AugmentData : ScriptableObject
     /// <summary>ทำงานตอนผู้เล่นเลือกการ์ดใบนี้ — รันบน owner client (และ server ผ่าน mirror RPC)</summary>
     public abstract void OnAcquire(PlayerAugmentManager ctx);
 
-    /// <summary>ข้อความ rarity สำหรับโชว์บนการ์ด</summary>
+    /// <summary>
+    /// ข้อความ rarity สำหรับโชว์บนการ์ด
+    ///
+    /// **ห้ามใส่ ★** — ไม่มีฟอนต์ไหนในโปรเจกต์มีกลิฟนี้ TMP วาดเป็นกล่องสี่เหลี่ยม
+    /// กฎเดียวกับ <see cref="UpgradeCardInfo.DisplayLevelText"/> ซึ่งเคยเจอมาแล้ว
+    /// กับคำว่า SUPER / FUSION · สีของการ์ดบอกระดับอยู่แล้ว ดาวเป็นของประดับล้วน
+    /// </summary>
     public string RarityLabel => rarity switch
     {
         AugmentRarity.Silver    => "SILVER",
-        AugmentRarity.Gold      => "GOLD ★",
-        AugmentRarity.Prismatic => "PRISMATIC ★★★",
+        AugmentRarity.Gold      => "GOLD",
+        AugmentRarity.Prismatic => "PRISMATIC",
         _                       => "",
     };
 

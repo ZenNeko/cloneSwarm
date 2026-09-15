@@ -72,8 +72,24 @@ public class UpgradeManager : NetworkBehaviour
             : PickCards(cardsPerLevel, isOrbReward: false);
 
         // ถ้า augment pool หมด (เลือกครบทุกใบแล้ว) → ตกกลับเป็น card ปกติ
+        //
+        // **ต้องส่งเสียง** — การถอยกลับแบบเงียบทำให้ระบบ augment ทั้งก้อนไม่ทำงาน
+        // อยู่หลายเดือนโดยไม่มีใครรู้ (MetaDatabase.augments ว่างเปล่า) ผู้เล่นเห็น
+        // การ์ดปกติแล้วไม่รู้ว่าพลาดอะไร คนทำเกมก็ไม่เห็นอะไรผิดเพราะไม่มีอะไรผิด
+        //
+        // "เลือกครบทุกใบแล้ว" กับ "ไม่มีใบให้เลือกตั้งแต่แรก" หน้าตาเหมือนกันตรงนี้
+        // แต่คนละเรื่องกันโดยสิ้นเชิง — แยกให้เห็นในข้อความ
         if (isAugmentLevel && currentOptions.Count == 0)
+        {
+            int pool = CloneSwarm.Meta.MetaDatabase.Instance?.augments?.Count ?? 0;
+            Debug.LogWarning(
+                $"[Upgrade] เลเวล {newLevel} ตั้งไว้ว่าแจก augment แต่ไม่มีใบให้เลือก → ถอยไปใช้การ์ดปกติ · " +
+                (pool == 0
+                    ? "MetaDatabase.augments ว่างเปล่า — รัน Tools > Clone Swarm > Meta > Create Sample Augments"
+                    : $"ถือครบ maxStacks ทุกใบใน pool แล้ว ({pool} ใบ)"));
+
             currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
+        }
 
         if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);

@@ -99,8 +99,11 @@ namespace CloneSwarm.EditorTools
                 // Instance เป็น null · ตอนเล่นจริงมันซ่อนตัวเองใน Awake/Start แต่ edit mode
                 // ไม่มี Awake ทั้งสามจอจึงซ้อนทับ HUD จนมองไม่เห็นอะไรเลย
                 // ปิดให้เฉพาะตอนแคป — Capture ไม่เซฟซีนอยู่แล้ว สถานะในไฟล์จึงไม่ถูกแตะ
+                // `P3R_Loading` อยู่ในลิสต์ด้วยเหตุผลเดียวกันแต่คนละกลไก — ม่านรอผู้เล่น
+                // ถูกเปิดค้างในซีนแล้วให้ `GameplayLoadingGate` ปิดตอนรัน · edit mode
+                // ไม่มีใครปิดให้ มันจึงทึบเต็มจอจนภาพออกมาเป็นหน้า NOW LOADING ล้วน
                 Capture(scenePath, png,
-                        hideObjects: new[] { "P3R_LevelUp", "P3R_Pause", "P3R_WinLose" });
+                        hideObjects: new[] { "P3R_LevelUp", "P3R_Pause", "P3R_WinLose", "P3R_Loading" });
                 Debug.Log($"[Shot] {png}");
             }
             catch (System.Exception e)
@@ -116,8 +119,12 @@ namespace CloneSwarm.EditorTools
         /// แผ่นนั้นเพราะเป็นลูกของ `HUDCanvas` ลำดับหลัง `P3R_LevelUp`
         /// ถ้าภาพออกมาไม่เห็นแถบ แปลว่าลำดับพี่น้องผิด ไม่ใช่เรื่องสี
         ///
-        /// ยังต้องปิด `P3R_Pause` กับ `P3R_WinLose` — edit mode ไม่มี Awake ให้จอพวกนั้น
-        /// ซ่อนตัวเอง มันจึงทับทุกอย่างจนไม่เหลืออะไรให้ดู
+        /// ยังต้องปิด `P3R_Pause` · `P3R_WinLose` · `P3R_Loading` — edit mode ไม่มี Awake
+        /// ให้จอพวกนั้นซ่อนตัวเอง มันจึงทับทุกอย่างจนไม่เหลืออะไรให้ดู
+        ///
+        /// **สิ่งที่ภาพนี้ยืนยันไม่ได้**: อะไรก็ตามที่เกิดตอน `Show()` — นาฬิกาที่ซ่อน
+        /// จนกว่าจะมี tick แรกจะยังโผล่อยู่ในภาพ เพราะ edit mode ไม่มีใครเรียก `Show()`
+        /// เรื่องนั้นเป็นของสโมกเทสต์ ไม่ใช่ของภาพ
         /// </summary>
         [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD + Level Up")]
         public static void CaptureGameplayHudWithLevelUp()
@@ -129,7 +136,8 @@ namespace CloneSwarm.EditorTools
 
             try
             {
-                Capture(scenePath, png, hideObjects: new[] { "P3R_Pause", "P3R_WinLose" });
+                Capture(scenePath, png,
+                        hideObjects: new[] { "P3R_Pause", "P3R_WinLose", "P3R_Loading" });
                 Debug.Log($"[Shot] {png}");
             }
             catch (System.Exception e)
