@@ -403,21 +403,16 @@ namespace CloneSwarm.EditorTools
             return t;
         }
 
-        private static void BuildTitle(RectTransform section, LevelUpUI ui)
+        /// <summary>
+        /// หัวเรื่องหนึ่งก้อน — สามชั้นซ้อนกัน พร้อม <see cref="P3RLayeredText"/> ที่ทำให้
+        /// แก้คำที่ใบเดียวแล้วอีกสองใบตามเอง
+        ///
+        /// แยกเป็นเมธอดเพราะจอนี้มีหัวเรื่องสองก้อน (ปกติ / augment) ที่เหมือนกันทุกอย่าง
+        /// ยกเว้นชื่อกับคำ — ก๊อปบล็อกนี้ไว้สองที่คือรับประกันว่าวันหนึ่งจะแก้ไม่ครบ
+        /// </summary>
+        private static RectTransform TitleStack(RectTransform section, string name, string text)
         {
-            // ── หัวเรื่องสามชั้น ───────────────────────────────────────────
-            //
-            // ตัวทึบ + เส้นโครงเหลื่อม + เงานูน · ทำด้วย TMP ใบเดียวไม่ได้เพราะ
-            // `outlineWidth` ให้ได้แค่ขอบรอบตัวอักษรตรงกลาง ไม่ใช่สำเนาที่เหลื่อมออกไป
-            //
-            // ลำดับใน Hierarchy = ลำดับการวาด ลูกคนหลังทับลูกคนก่อน:
-            //   Title_Shadow  เงานูน  เหลื่อมลงขวา   วาดก่อน อยู่หลังสุด
-            //   Title         ตัวทึบ   ตำแหน่งจริง
-            //   Title_Wire    เส้นโครง เหลื่อมขึ้นซ้าย วาดหลัง อยู่หน้าสุด
-            //
-            // ใบที่ถือข้อความจริงคือ `Title` — อีกสองใบตามผ่าน P3RLayeredText
-            // แก้คำที่ใบเดียวพอ ไม่ต้องไล่แก้ทีละใบให้ตกหล่น
-            var group = NewRect("TitleGroup", section);
+            var group = NewRect(name, section);
             group.anchorMin = group.anchorMax = new Vector2(0f, 1f);
             group.pivot     = new Vector2(0f, 1f);
             group.sizeDelta = new Vector2(700f, 300f);
@@ -439,13 +434,40 @@ namespace CloneSwarm.EditorTools
             wire.outlineColor = Teal;
             wire.outlineWidth = 0.18f;            // ≈ เส้น 2px ที่ fontSize 150
 
+            foreach (var layer in new[] { shadow, t, wire }) layer.text = text;
+
             var layered = group.gameObject.AddComponent<P3RLayeredText>();
             layered.source    = t;
             layered.followers = new[] { shadow, wire };
 
-            // **ไม่ต่อหัวเรื่องเข้า LevelUpUI** — ตัวสร้างวางข้อความไว้ครั้งเดียวแล้วจบ
-            // จากนั้นเป็นของคนจัดซีน · โค้ดตอนรันไม่เขียนทับ ไม่งั้นสิ่งที่เห็นใน Editor
-            // ไม่ใช่สิ่งที่เห็นในเกม (เคยเป็นแบบนั้นมาแล้ว: แก้หัวเรื่องในซีนแล้วหายตอน Play)
+            return group;
+        }
+
+        private static void BuildTitle(RectTransform section, LevelUpUI ui)
+        {
+            // ── หัวเรื่องสามชั้น ───────────────────────────────────────────
+            //
+            // ตัวทึบ + เส้นโครงเหลื่อม + เงานูน · ทำด้วย TMP ใบเดียวไม่ได้เพราะ
+            // `outlineWidth` ให้ได้แค่ขอบรอบตัวอักษรตรงกลาง ไม่ใช่สำเนาที่เหลื่อมออกไป
+            //
+            // ลำดับใน Hierarchy = ลำดับการวาด ลูกคนหลังทับลูกคนก่อน:
+            //   Title_Shadow  เงานูน  เหลื่อมลงขวา   วาดก่อน อยู่หลังสุด
+            //   Title         ตัวทึบ   ตำแหน่งจริง
+            //   Title_Wire    เส้นโครง เหลื่อมขึ้นซ้าย วาดหลัง อยู่หน้าสุด
+            //
+            // ใบที่ถือข้อความจริงคือ `Title` — อีกสองใบตามผ่าน P3RLayeredText
+            // แก้คำที่ใบเดียวพอ ไม่ต้องไล่แก้ทีละใบให้ตกหล่น
+            // **ตัวสร้างวางข้อความไว้ครั้งเดียวแล้วจบ** — จากนั้นเป็นของคนจัดซีน
+            // โค้ดตอนรันไม่เขียนทับ ไม่งั้นสิ่งที่เห็นใน Editor ไม่ใช่สิ่งที่เห็นในเกม
+            // (เคยเป็นแบบนั้นมาแล้ว: แก้หัวเรื่องในซีนแล้วหายตอน Play)
+            //
+            // สองก้อน สลับกันตามชนิดการ์ดที่กำลังโชว์ · **สลับก้อน ไม่ใช่เปลี่ยนคำ**
+            // เพราะความยาวคำไม่เท่ากัน ชั้นเงาที่เหลื่อมไว้พอดีกับคำหนึ่งจะเพี้ยนกับอีกคำ
+            ui.titleDefault = TitleStack(section, "TitleGroup",    "LEVEL\nUP!").gameObject;
+
+            var aug = TitleStack(section, "Augment_Title", "AUGMENT");
+            aug.gameObject.SetActive(false);        // LevelUpUI เปิดเองตอนแจก augment
+            ui.titleAugment = aug.gameObject;
 
             // เลเวลใหม่เป็น **ป้ายแยกใต้หัวเรื่อง**
             //

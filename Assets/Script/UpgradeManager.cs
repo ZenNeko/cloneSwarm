@@ -18,6 +18,12 @@ public class UpgradeManager : NetworkBehaviour
     [Tooltip("ลาก WeaponFusionRecipe ทั้งหมดมาใส่ที่นี่")]
     public List<WeaponFusionRecipe>  allRecipes = new();
     public int cardsPerLevel = 3;
+    [Tooltip("จำนวนการ์ด augment ต่อครั้ง — ใช้ทั้งตอนเลเวลที่กำหนดและตอนเก็บ orb\n\n" +
+             "แยกจาก cardsPerLevel เพราะ augment เป็นของที่ได้นานๆ ครั้งและเปลี่ยนสไตล์การเล่น\n" +
+             "จำนวนตัวเลือกจึงเป็นเรื่องบาลานซ์คนละเรื่องกับการ์ดอัปปกติ\n\n" +
+             "ได้ไม่เกินจำนวนใบที่ยังเหลือใน pool — ตั้ง 5 แต่เหลือ 2 ใบก็ได้ 2")]
+    [Min(1)]
+    public int augmentCardCount = 3;
 
     // ── References ────────────────────────────────────────────────────────
     private PlayerWeaponManager  weaponManager;
@@ -47,7 +53,7 @@ public class UpgradeManager : NetworkBehaviour
         SharedExperienceManager.OnUpgradePhaseStart += OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   += OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     += OnForceAutoPick;
-        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;   // Action<ulong>
+        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;   // Action<OrbReward>
     }
 
     public override void OnNetworkDespawn()
@@ -56,7 +62,7 @@ public class UpgradeManager : NetworkBehaviour
         SharedExperienceManager.OnUpgradePhaseStart -= OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   -= OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     -= OnForceAutoPick;
-        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;   // Action<ulong>
+        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;   // Action<OrbReward>
     }
 
     // ── Level Up (3 cards) ────────────────────────────────────────────────
@@ -68,7 +74,7 @@ public class UpgradeManager : NetworkBehaviour
         // เลเวลที่กำหนดไว้ → ให้เลือก Augment แทน card ปกติ
         bool isAugmentLevel = SharedExperienceManager.Instance?.IsAugmentLevel(newLevel) ?? false;
         currentOptions = isAugmentLevel
-            ? PickAugmentCards(cardsPerLevel)
+            ? PickAugmentCards(augmentCardCount)
             : PickCards(cardsPerLevel, isOrbReward: false);
 
         // ถ้า augment pool หมด (เลือกครบทุกใบแล้ว) → ตกกลับเป็น card ปกติ
@@ -95,12 +101,37 @@ public class UpgradeManager : NetworkBehaviour
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);
     }
 
-    // ── Orb Reward — ทุกคนได้ 1 card จาก weapon/stat ที่ตัวเองมีอยู่แล้ว ──
-    void OnOrbPhaseStart()
+    // ── Orb Reward — ทุกคนได้การ์ดเมื่อมีคนเก็บ orb ───────────────────────
+    //
+    // orb ปกติให้ใบเดียว (อัปของที่ถืออยู่ — ไม่ต้องคิดมาก)
+    // orb augment ให้ `augmentCardCount` ใบ เพราะ augment เปลี่ยนสไตล์การเล่น
+    // ให้ตัวเลือกเดียวคือบังคับ ไม่ใช่ให้เลือก
+    //
+    // กองที่สุ่มขึ้นกับชนิดของ orb · ที่เหลือเหมือนกันทุกอย่าง — จอเดียวกัน
+    // callback เดียวกัน (`ApplyOrbCard`) การนับคนเลือกครบเหมือนกัน
+    void OnOrbPhaseStart(OrbReward reward)
     {
         _isOrbPhase    = true;
         hasPicked      = false;
-        currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
+
+        currentOptions = reward == OrbReward.Augment
+                       ? PickAugmentCards(augmentCardCount)
+                       : PickCards(1, isOrbReward: true, ownedOnly: true);
+
+        // orb ที่ให้ augment แต่ไม่มี augment ให้หยิบ — ถอยไปใช้กองปกติ **พร้อมบอก**
+        // เหตุผลเดียวกับตอนเลเวลอัป: การถอยเงียบๆ คือสิ่งที่ทำให้ระบบตายโดยไม่มีใครรู้
+        if (reward == OrbReward.Augment && currentOptions.Count == 0)
+        {
+            int pool = CloneSwarm.Meta.MetaDatabase.Instance?.augments?.Count ?? 0;
+            Debug.LogWarning(
+                "[Orb] orb ใบนี้ตั้งไว้ว่าให้ augment แต่ไม่มีใบให้เลือก → ถอยไปใช้การ์ดปกติ · " +
+                (pool == 0
+                    ? "MetaDatabase.augments ว่างเปล่า — รัน Tools > Clone Swarm > Meta > Create Sample Augments"
+                    : $"ถือครบ maxStacks ทุกใบใน pool แล้ว ({pool} ใบ)"));
+
+            currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
+        }
+
         if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
         LevelUpUI.Instance?.Show(currentOptions, ApplyOrbCard, 0);
     }

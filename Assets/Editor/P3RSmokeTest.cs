@@ -815,6 +815,7 @@ namespace CloneSwarm.EditorTools
                 CheckBuildStripSlots();
                 CheckWeaponSlotCap();
                 CheckStatIcons();
+                CheckAugmentOrbWired();
                 CheckMissingGlyphs();
             }
 
@@ -1114,6 +1115,12 @@ namespace CloneSwarm.EditorTools
                 Require(ReferenceEquals(pickedCard, cards[target]),
                         "callback ได้การ์ดใบที่กดจริง ไม่ใช่ใบอื่น");
 
+                // **ต้องอยู่หลังการกด** — ข้อนี้เรียก `Show` ซ้ำเพื่อสลับหัวเรื่อง
+                // ซึ่งผูก callback ของการ์ดใหม่ทั้งแถว · วางไว้ก่อนหน้านี้แล้วปุ่มที่กด
+                // จะไปเรียก callback เปล่าของข้อนี้แทน แล้วข้อ "กดแล้วยิงครั้งเดียว" แดง
+                // โดยที่เกมไม่ได้พังอะไรเลย — เทสต์พังกันเอง
+                CheckAugmentTitleSwaps(ui, cards);
+
                 ui.Hide();
             }
 
@@ -1179,6 +1186,78 @@ namespace CloneSwarm.EditorTools
                             $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
                             $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
                 }
+            }
+
+            /// <summary>
+            /// หัวเรื่องต้องสลับก้อนตาม **การ์ดที่อยู่บนจอจริง**
+            ///
+            /// จอเดียวใช้แจกสองอย่าง — การ์ดอัปปกติกับ augment · ถ้าหัวเรื่องไม่สลับ
+            /// ผู้เล่นจะเห็น "LEVEL UP!" คู่กับการ์ด AUGMENT ซึ่งอ่านแล้วเข้าใจผิด
+            ///
+            /// เช็คทั้งสองทาง — สลับไปแล้ว **สลับกลับได้ด้วย** · ของที่เปิดแล้วไม่มีใคร
+            /// ปิดคือบั๊กที่โผล่รอบถัดไป ไม่ใช่รอบนี้ จึงหาต้นเหตุยากผิดกับความง่ายของมัน
+            /// </summary>
+            private void CheckAugmentTitleSwaps(LevelUpUI ui, List<UpgradeCardInfo> normalCards)
+            {
+                Require(ui.titleAugment != null,
+                        "ต่อ LevelUpUI.titleAugment ไว้ (หัวเรื่องตอนแจก augment)");
+                if (ui.titleAugment == null || ui.titleDefault == null) return;
+
+                var aug = AssetDatabase.FindAssets("t:AugmentData")
+                                       .Select(AssetDatabase.GUIDToAssetPath)
+                                       .Select(AssetDatabase.LoadAssetAtPath<AugmentData>)
+                                       .FirstOrDefault(a => a != null);
+                if (aug == null) return;      // ไม่มี augment ในโปรเจกต์ ข้อบนรายงานไปแล้ว
+
+                var augOnly = new List<UpgradeCardInfo>
+                {
+                    new UpgradeCardInfo { type = UpgradeCardType.Augment, augment = aug },
+                    new UpgradeCardInfo { type = UpgradeCardType.Augment, augment = aug },
+                };
+
+                ui.Show(augOnly, _ => { }, level: 0);
+                Require(ui.titleAugment.activeSelf && !ui.titleDefault.activeSelf,
+                        "การ์ด augment ล้วน → หัวเรื่อง AUGMENT โผล่ หัวเรื่องปกติหาย");
+
+                ui.Show(normalCards, _ => { }, level: 7);
+                Require(ui.titleDefault.activeSelf && !ui.titleAugment.activeSelf,
+                        "กลับมาการ์ดปกติ → หัวเรื่องปกติกลับมา หัวเรื่อง AUGMENT หาย");
+            }
+
+            /// <summary>
+            /// orb ที่ให้ augment ต้องต่อครบทั้งสามอย่าง
+            ///
+            /// ═══ ทำไมต้องมีเทสต์ให้ prefab ใบเดียว ═══
+            ///
+            /// ทั้งสามอย่างที่เช็คพังแบบ **เงียบ** และคนละอาการกัน:
+            ///   • ไม่มี ObjectiveOrb  → เป็นก้อนหินสวยๆ ที่เดินทะลุ
+            ///   • reward ไม่ใช่ Augment → เก็บได้ แต่ได้การ์ดผิดกอง ดูเผินๆ เหมือนทำงาน
+            ///   • ไม่ได้ลงทะเบียน network prefab → **host เห็นปกติ client ไม่เห็นเลย**
+            ///
+            /// ข้อสุดท้ายร้ายที่สุด เพราะเจอได้ต่อเมื่อทดสอบสองเครื่องเท่านั้น
+            /// ซึ่งเป็นสิ่งที่เทสต์นี้ทำไม่ได้ — จึงเช็คที่ลิสต์แทนการเช็คที่อาการ
+            /// </summary>
+            private void CheckAugmentOrbWired()
+            {
+                const string path = "Assets/Prefab/Exp orb/AugOrb.prefab";
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null) return;      // ยังไม่มี orb ใบนี้ ไม่ใช่ความผิดของใคร
+
+                var orb = go.GetComponent<ObjectiveOrb>();
+                Require(orb != null, "AugOrb: ต่อ ObjectiveOrb ไว้");
+                if (orb != null)
+                    Require(orb.reward == OrbReward.Augment,
+                            $"AugOrb: reward = Augment (ตอนนี้ {orb.reward})");
+
+                Require(go.GetComponent<Unity.Netcode.NetworkObject>() != null,
+                        "AugOrb: มี NetworkObject (ไม่มี = spawn ไม่ได้เลย)");
+
+                var list = AssetDatabase.LoadAssetAtPath<Unity.Netcode.NetworkPrefabsList>(
+                    "Assets/DefaultNetworkPrefabs.asset");
+                bool listed = list != null &&
+                              list.PrefabList.Any(p => p != null && p.Prefab == go);
+                Require(listed, "AugOrb: ลงทะเบียนใน DefaultNetworkPrefabs แล้ว " +
+                                "(ไม่ลง = client ไม่เห็น orb ทั้งที่ host เห็น)");
             }
 
             /// <summary>

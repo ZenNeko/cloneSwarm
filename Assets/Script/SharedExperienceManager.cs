@@ -5,6 +5,21 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
+/// orb ใบหนึ่งให้การ์ดจากกองไหน
+///
+/// **ไม่ใช่ "ระบบรางวัลคนละระบบ"** — เฟสเหมือนกันทุกอย่าง (หยุดเกม · โชว์จอเดียวกัน ·
+/// รอทุกคนเลือก · นาฬิกาเดียวกัน) ต่างกันแค่กองที่สุ่มการ์ดมา
+/// augment คือการ์ดใบหนึ่งที่ได้จากทางเฉพาะ ไม่ใช่ของคนละชนิด
+/// </summary>
+public enum OrbReward
+{
+    /// <summary>การ์ดจากอาวุธ/สเตตัสที่ผู้เล่นคนนั้นถืออยู่แล้ว (พฤติกรรมเดิมของ ObjectiveOrb)</summary>
+    OwnedCard,
+    /// <summary>การ์ด augment — กองเดียวกับที่แจกตอนเลเวลที่กำหนดไว้</summary>
+    Augment,
+}
+
+/// <summary>
 /// EXP และ Level เป็นของกลาง — ทุก player share กัน
 ///
 /// Upgrade Phase Flow:
@@ -55,12 +70,27 @@ public class SharedExperienceManager : NetworkBehaviour
     public static event Action<int, int> OnPickedCountChanged;   // (picked, total)
 
     // ── Orb Reward Events ─────────────────────────────────────────────────
-    /// <summary>ผู้เล่นเก็บ Objective Orb — ทุกคนได้ level-up card 1 ใบจาก weapon/stat ที่ตัวเองมี</summary>
-    public static event Action OnOrbPhaseStart;
+    /// <summary>
+    /// ผู้เล่นเก็บ orb — ทุกคนได้การ์ด 1 ใบ · ชนิดของกองที่สุ่มมาจาก <see cref="OrbReward"/>
+    ///
+    /// พารามิเตอร์บอกว่า orb ใบนั้นให้อะไร แทนที่จะให้ผู้รับไปเดาเอาจากสถานะอื่น —
+    /// orb ที่ให้ augment กับ orb ที่ให้การ์ดของที่มีอยู่ ใช้เฟสเดียวกันทุกอย่าง
+    /// ต่างกันแค่กองที่สุ่ม · แยกเป็นสองเฟสก็ได้ แต่จะได้ของซ้ำกันสองชุดให้เพี้ยนออกจากกัน
+    /// </summary>
+    public static event Action<OrbReward> OnOrbPhaseStart;
 
     // ── Server-side State ─────────────────────────────────────────────────
     private Queue<int>     pendingLevels    = new();
-    private Queue<ulong>   pendingOrbs      = new();
+    private Queue<PendingOrb> pendingOrbs   = new();
+
+    /// <summary>orb ที่รอคิวอยู่ — ใครเก็บ และใบนั้นให้อะไร</summary>
+    private readonly struct PendingOrb
+    {
+        public readonly ulong     collectorId;
+        public readonly OrbReward reward;
+        public PendingOrb(ulong collectorId, OrbReward reward)
+        { this.collectorId = collectorId; this.reward = reward; }
+    }
     private bool           isUpgradePhase   = false;
     private bool           isOrbPhase       = false;
     private HashSet<ulong> pickedPlayers    = new();
@@ -270,10 +300,11 @@ public class SharedExperienceManager : NetworkBehaviour
     /// เรียกจาก ObjectiveOrb (server-side) — แสดง card เฉพาะ collector
     /// </summary>
     /// <summary>เรียกจาก ObjectiveOrb (server-side) — ทุกคนได้ card พร้อมกัน</summary>
-    public void StartOrbPhaseForPlayer(ulong collectorClientId)
+    public void StartOrbPhaseForPlayer(ulong collectorClientId,
+                                       OrbReward reward = OrbReward.OwnedCard)
     {
         if (!IsServer) return;
-        pendingOrbs.Enqueue(collectorClientId);
+        pendingOrbs.Enqueue(new PendingOrb(collectorClientId, reward));
         ProcessNextPhase();
     }
 
@@ -281,24 +312,24 @@ public class SharedExperienceManager : NetworkBehaviour
     {
         if (pendingOrbs.Count == 0) return;
 
-        ulong collectorClientId = pendingOrbs.Dequeue();
+        var orb        = pendingOrbs.Dequeue();
         isOrbPhase     = true;
-        orbCollectorId = collectorClientId;   // เก็บไว้ log เท่านั้น
+        orbCollectorId = orb.collectorId;   // เก็บไว้ log เท่านั้น
         pickedPlayers.Clear();
 
         int total = NetworkManager.ConnectedClients.Count;
-        BeginOrbPhaseClientRpc(total);   // broadcast ทุกคน
+        BeginOrbPhaseClientRpc(total, orb.reward);   // broadcast ทุกคน
 
         if (timerCoroutine != null) StopCoroutine(timerCoroutine);
-        Debug.Log($"[OrbPhase] Client {collectorClientId} เริ่ม Orb Phase — ทุกคนได้ card");
+        Debug.Log($"[OrbPhase] Client {orb.collectorId} เก็บ orb ({orb.reward}) — ทุกคนได้ card");
     }
 
     [ClientRpc]
-    void BeginOrbPhaseClientRpc(int totalPlayers)
+    void BeginOrbPhaseClientRpc(int totalPlayers, OrbReward reward)
     {
         GamePause.Add(PauseReason.PhaseSelect);
         OnPickedCountChanged?.Invoke(0, totalPlayers);
-        OnOrbPhaseStart?.Invoke();
+        OnOrbPhaseStart?.Invoke(reward);
     }
 
     /// <summary>UpgradeManager เรียกหลังเลือก card — รอทุกคนเลือกครบ</summary>

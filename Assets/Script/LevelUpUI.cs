@@ -23,6 +23,16 @@ public class LevelUpUI : MonoBehaviour
     [Tooltip("Root GameObject ของ Panel ทั้งหมด — ตั้งค่า Inactive ไว้เริ่มต้น")]
     public GameObject panelRoot;
 
+    [Header("Title")]
+    [Tooltip("หัวเรื่องปกติ — ก้อน 'LEVEL UP!' ที่จัดไว้ในซีน")]
+    public GameObject titleDefault;
+    [Tooltip("หัวเรื่องตอนแจก augment — ก้อน 'AUGMENT' แยกอีกใบ\n\n" +
+             "**สลับก้อน ไม่ใช่เขียนทับข้อความ** — หัวเรื่องเป็นตัวซ้อนหลายชั้นที่จัดทรง\n" +
+             "มาในซีน เปลี่ยนคำอย่างเดียวแล้วทรงพัง (ความยาวคำไม่เท่ากัน ชั้นเงาเหลื่อมผิด)\n" +
+             "แยกเป็นสองก้อนแล้วแต่ละก้อนจัดทรงของตัวเองได้อิสระ\n\n" +
+             "ปล่อยว่าง = ใช้หัวเรื่องเดิมทุกกรณี (พฤติกรรมเดิม ไม่พัง)")]
+    public GameObject titleAugment;
+
     [Header("Cards Section")]
     [Tooltip("GameObject ที่ครอบหัวเรื่อง + cardSlots ทั้งหมด — ซ่อนหลังเลือกแล้ว แต่ panelRoot ยังเปิดอยู่")]
     public GameObject cardsSection;
@@ -153,7 +163,22 @@ public class LevelUpUI : MonoBehaviour
         if (cardsContainer) cardsContainer.SetActive(true);
         if (waitingStrip)   waitingStrip.SetActive(false);
 
-        // 2. Header — **หัวเรื่องไม่ถูกแตะ** ข้อความของมันเป็นของซีน
+        // 2. Header — **สลับก้อนหัวเรื่อง ไม่แตะข้อความ** ข้อความเป็นของซีน
+        //
+        // อ่านชนิดจาก **การ์ดที่กำลังจะโชว์จริง** ไม่ใช่จากพารามิเตอร์ที่ผู้เรียกส่งมา
+        // หัวเรื่องจึงไม่มีทางไม่ตรงกับของที่อยู่บนจอ · ถ้ารับเป็น flag แยก
+        // วันหนึ่งจะมีเส้นทางที่ลืมส่ง แล้วได้หัวเรื่อง "LEVEL UP!" คู่กับการ์ด augment
+        //
+        // ไม่ต่อ titleAugment = ไม่แตะอะไรเลย หัวเรื่องเดิมอยู่ครบ (ไม่ใช่จอไม่มีหัวเรื่อง)
+        if (titleAugment != null)
+        {
+            bool allAugment = cards.Count > 0
+                           && cards.TrueForAll(c => c != null && c.type == UpgradeCardType.Augment);
+
+            titleAugment.SetActive(allAugment);
+            if (titleDefault != null) titleDefault.SetActive(!allAugment);
+        }
+
         //
         // เลเวลใหม่แยกป้าย — ซ่อนตอน Orb phase ที่ไม่มีเลเวลให้บอก
         // (ดีกว่าโชว์ "Lv 0" ซึ่งอ่านแล้วเข้าใจผิดว่าเลเวลตก)
