@@ -18,7 +18,7 @@ public class UpgradeManager : NetworkBehaviour
     [Tooltip("ลาก WeaponFusionRecipe ทั้งหมดมาใส่ที่นี่")]
     public List<WeaponFusionRecipe>  allRecipes = new();
     public int cardsPerLevel = 3;
-    [Tooltip("จำนวนการ์ด augment ต่อครั้ง — ใช้ทั้งตอนเลเวลที่กำหนดและตอนเก็บ orb\n\n" +
+    [Tooltip("จำนวนการ์ด augment ต่อครั้งที่เก็บ orb ที่ให้ augment\n\n" +
              "แยกจาก cardsPerLevel เพราะ augment เป็นของที่ได้นานๆ ครั้งและเปลี่ยนสไตล์การเล่น\n" +
              "จำนวนตัวเลือกจึงเป็นเรื่องบาลานซ์คนละเรื่องกับการ์ดอัปปกติ\n\n" +
              "ได้ไม่เกินจำนวนใบที่ยังเหลือใน pool — ตั้ง 5 แต่เหลือ 2 ใบก็ได้ 2")]
@@ -66,36 +66,28 @@ public class UpgradeManager : NetworkBehaviour
     }
 
     // ── Level Up (3 cards) ────────────────────────────────────────────────
+    /// <summary>
+    /// เลเวลอัปแจกการ์ดอาวุธ/สเตตัสเสมอ — **ไม่มีเลเวลไหนแจก augment แล้ว**
+    ///
+    /// ═══ ทำไมสองระบบนี้ต้องไม่เกี่ยวกัน ═══
+    ///
+    /// ของเดิมเลเวล 3/7/12/18 จะ **แทนที่** การ์ดปกติด้วย augment · เลเวลเริ่มที่ 1
+    /// เลเวล 3 จึงคือการเลเวลอัปครั้งที่สอง ผู้เล่นเสียการ์ดอัปอาวุธไปหนึ่งครั้ง
+    /// ตั้งแต่ยังไม่ทันได้ตั้งตัว และไม่มีอะไรบอกว่าทำไม
+    ///
+    /// ที่แย่กว่าคือมันผูกจังหวะสองอย่างที่ควรจูนแยกกันไว้ด้วยกัน — ความเร็วเลเวล
+    /// เป็นเรื่องของ EXP ที่ผู้เล่นหาได้ ส่วนจังหวะที่ควรได้ augment เป็นเรื่องของ
+    /// การออกแบบรัน · จูน EXP ทีเดียวแล้วตาราง augment เลื่อนตามไปด้วยโดยไม่ตั้งใจ
+    ///
+    /// ตอนนี้ augment มาจากทางเดียว: เก็บ orb ที่ตั้ง reward = Augment ซึ่งมาจาก
+    /// โซนเควสต์แบบ augment ที่นัดไว้บนไทม์ไลน์ — เห็นนาทีชัดๆ และจูนได้ตรงจุด
+    /// </summary>
     void OnLevelUpPhaseStart(int newLevel)
     {
         _isOrbPhase    = false;
         hasPicked      = false;
 
-        // เลเวลที่กำหนดไว้ → ให้เลือก Augment แทน card ปกติ
-        bool isAugmentLevel = SharedExperienceManager.Instance?.IsAugmentLevel(newLevel) ?? false;
-        currentOptions = isAugmentLevel
-            ? PickAugmentCards(augmentCardCount)
-            : PickCards(cardsPerLevel, isOrbReward: false);
-
-        // ถ้า augment pool หมด (เลือกครบทุกใบแล้ว) → ตกกลับเป็น card ปกติ
-        //
-        // **ต้องส่งเสียง** — การถอยกลับแบบเงียบทำให้ระบบ augment ทั้งก้อนไม่ทำงาน
-        // อยู่หลายเดือนโดยไม่มีใครรู้ (MetaDatabase.augments ว่างเปล่า) ผู้เล่นเห็น
-        // การ์ดปกติแล้วไม่รู้ว่าพลาดอะไร คนทำเกมก็ไม่เห็นอะไรผิดเพราะไม่มีอะไรผิด
-        //
-        // "เลือกครบทุกใบแล้ว" กับ "ไม่มีใบให้เลือกตั้งแต่แรก" หน้าตาเหมือนกันตรงนี้
-        // แต่คนละเรื่องกันโดยสิ้นเชิง — แยกให้เห็นในข้อความ
-        if (isAugmentLevel && currentOptions.Count == 0)
-        {
-            int pool = CloneSwarm.Meta.MetaDatabase.Instance?.augments?.Count ?? 0;
-            Debug.LogWarning(
-                $"[Upgrade] เลเวล {newLevel} ตั้งไว้ว่าแจก augment แต่ไม่มีใบให้เลือก → ถอยไปใช้การ์ดปกติ · " +
-                (pool == 0
-                    ? "MetaDatabase.augments ว่างเปล่า — รัน Tools > Clone Swarm > Meta > Create Sample Augments"
-                    : $"ทุกใบใน pool ({pool}) ถือไปแล้วหรือยังไม่ถึงช่วงเวลาที่ออกได้"));
-
-            currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
-        }
+        currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
 
         if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);

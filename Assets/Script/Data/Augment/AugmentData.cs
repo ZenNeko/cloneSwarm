@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Augment — พลังพิเศษที่เลือกได้เป็นการ์ดใบหนึ่ง แต่ได้จากทางเฉพาะ
-/// (เลเวลที่กำหนดใน <c>SharedExperienceManager.augmentLevels</c> หรือเก็บ orb ที่ตั้ง reward = Augment)
+/// (เก็บ orb ที่ตั้ง reward = Augment เท่านั้น — เลเวลอัปไม่แจก augment)
 ///
 /// ═══ ไม่มีระดับ ไม่มีเลเวล — มี "ช่วงเวลาที่ออกได้" แทน ═══
 ///

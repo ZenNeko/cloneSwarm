@@ -118,8 +118,8 @@ public class UpgradeCardInfo
     /// (NEW · Lv 3 / 5 · SUPER · FUSION) · แยกกันแบบนี้แล้วไม่มีคำซ้ำ:
     /// การ์ด Super อ่านว่า WEAPON | SUPER  ·  augment มีแค่ AUGMENT เพราะไม่มีระดับ
     ///
-    /// **Augment เป็นการ์ดเหมือนใบอื่นทุกอย่าง** ต่างแค่ทางที่ได้มา (เฉพาะเลเวลที่
-    /// กำหนดไว้ใน SharedExperienceManager.augmentLevels) — ระบบที่ทำงานกับการ์ด
+    /// **Augment เป็นการ์ดเหมือนใบอื่นทุกอย่าง** ต่างแค่ทางที่ได้มา (เก็บ orb ที่
+    /// ตั้ง reward = Augment เท่านั้น) — ระบบที่ทำงานกับการ์ด
     /// ทั้งกอง (เช่น reroll ในอนาคต) จึงใช้กับมันได้โดยไม่ต้องเขียนทางแยก
     /// </summary>
     public string TypeLabel => type switch

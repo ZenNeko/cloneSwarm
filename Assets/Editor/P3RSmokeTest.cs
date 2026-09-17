@@ -1541,7 +1541,7 @@ namespace CloneSwarm.EditorTools
             }
 
             /// <summary>
-            /// ถ้าตั้งเลเวลแจก augment ไว้ pool ต้องไม่ว่าง
+            /// augment ต้องมีทางออกมาได้จริงอย่างน้อยหนึ่งทาง
             ///
             /// ═══ บั๊กที่เทสต์นี้เกิดมาเพื่อดัก ═══
             ///
@@ -1549,28 +1549,57 @@ namespace CloneSwarm.EditorTools
             /// ไปแจกการ์ดปกติเงียบๆ** ไม่มี log ไม่มี warning · ผลคือฟีเจอร์ทั้งก้อน
             /// — 715 บรรทัด + netcode + HUD — ไม่เคยทำงานสักครั้งโดยไม่มีใครรู้
             ///
-            /// ว่างโดยตั้งใจก็ได้ แต่ต้องล้าง `augmentLevels` ให้ว่างด้วย
-            /// **ตั้งใจแจกแล้วไม่มีของแจก คือความไม่ตรงกันที่ต้องแดง**
+            /// ═══ ทำไมเทสต์นี้สำคัญขึ้นหลังตัดทางเลเวลอัปทิ้ง ═══
+            ///
+            /// เดิม augment มีสองทาง — เลเวลที่กำหนด กับ orb · ทางเลเวลเป็นของที่
+            /// **รับประกันว่าเกิด** เพราะขึ้นกับ EXP ที่ยังไงก็ได้ ตอนนี้เหลือทางเดียว
+            /// และทางนั้นขึ้นกับการตั้งค่าในซีนหลายจุดที่ขาดได้ทีละจุด:
+            ///
+            ///   ไม่มีโซนแบบที่ orb ให้ augment  → ไม่มีทางได้เลย
+            ///   มีโซน แต่ไม่มีนัดหมายและน้ำหนัก 0 → โซนนั้นไม่มีวันถูกเลือก
+            ///   pool ว่าง                        → เก็บ orb แล้วได้การ์ดปกติแทน
+            ///
+            /// ทั้งสามแบบจบลงเหมือนกันคือ **ผู้เล่นไม่เคยเห็น augment ทั้งรัน** และ
+            /// ไม่มีอาการอื่นให้สังเกต — เกมยังเล่นได้ปกติทุกอย่าง
             /// </summary>
             private void CheckAugmentsReachable()
             {
-                var sem = FindAnyObjectByType<SharedExperienceManager>(FindObjectsInactive.Include);
-                if (sem == null) return;      // ไม่ใช่ซีนเกม ข้ามไป
+                var om = FindAnyObjectByType<ObjectiveManager>(FindObjectsInactive.Include);
+                if (om == null) return;      // ไม่ใช่ซีนเกม ข้ามไป
 
-                int levels = sem.augmentLevels?.Length ?? 0;
-                if (levels == 0)
-                {
-                    lines.Add("   ผ่าน  ไม่ได้ตั้งเลเวลแจก augment — ปิดระบบไว้ (ตั้งใจ)");
-                    return;
-                }
+                var augZones = (om.zoneVariants ?? new ObjectiveManager.ZoneVariant[0])
+                    .Where(v => v.prefab != null && GivesAugment(v.prefab))
+                    .ToList();
+
+                Require(augZones.Count > 0, "มีโซนเควสต์แบบที่ orb ให้ augment");
+                if (augZones.Count == 0) return;
+
+                bool byWeight = augZones.Any(v => v.weight > 0f);
+
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                bool byCue = gt != null && gt.cues != null && gt.cues.Any(c =>
+                    c != null && c.kind == TimelineCueKind.ZoneObjective && c.TimeCount > 0 &&
+                    augZones.Any(v => !string.IsNullOrEmpty(v.id) && v.id == c.variant));
+
+                Require(byWeight || byCue,
+                        "augment มีทางออกมาได้จริง — " +
+                        $"นัดหมาย {(byCue ? "มี" : "ไม่มี")} · น้ำหนักสุ่ม {(byWeight ? "มี" : "0")}");
 
                 var db = CloneSwarm.Meta.MetaDatabase.Instance;
                 int pool = db?.augments?.Count(a => a != null) ?? 0;
-
-                Require(pool > 0,
-                        $"ตั้งเลเวลแจก augment ไว้ {levels} เลเวล → pool ต้องมีของ (มี {pool} ใบ)");
+                Require(pool > 0, $"pool augment ต้องมีของ (มี {pool} ใบ)");
 
                 CheckAugmentWindows();
+            }
+
+            /// <summary>prefab โซนใบนี้ให้ orb ที่เป็น augment ไหม</summary>
+            private static bool GivesAugment(GameObject zonePrefab)
+            {
+                var zone = zonePrefab.GetComponent<ZoneObjective>();
+                if (zone == null || zone.orbPrefab == null) return false;
+
+                var orb = zone.orbPrefab.GetComponent<ObjectiveOrb>();
+                return orb != null && orb.reward == OrbReward.Augment;
             }
 
             /// <summary>
