@@ -39,8 +39,14 @@ public class WaveManager : NetworkBehaviour
              "wave 5 → interval × (1-0.10)^5 ≈ 0.59 ของ base")]
     public float spawnRateAccel       = 0.10f;
 
-    [Header("Wave Configs (by wave bracket)")]
-    [Tooltip("ลำดับ WaveConfig — เปลี่ยนทุก wavesPerConfig waves")]
+    [Header("Wave Configs — ช่วงตามนาที (แนะนำ)")]
+    // ตั้งแล้วจะแทน waveConfigs + wavesPerConfig ข้างล่างทั้งคู่
+    // แมพก็ตั้งทับได้อีกที ผ่าน MapData.TierContent.schedule.wavePhases
+    [Tooltip("ช่วงของ WaveConfig ตามนาที · ว่าง = ใช้แบบแบ่งตาม wave ข้างล่าง")]
+    public WavePhase[] wavePhases = new WavePhase[0];
+
+    [Header("Wave Configs (แบบเดิม — แบ่งตามจำนวน wave)")]
+    [Tooltip("ลำดับ WaveConfig — เปลี่ยนทุก wavesPerConfig waves · ใช้เมื่อ wavePhases ว่าง")]
     public WaveConfig[] waveConfigs;
     [Tooltip("กี่ wave ถึงจะเปลี่ยน config ถัดไป")]
     public int wavesPerConfig = 3;
@@ -55,6 +61,10 @@ public class WaveManager : NetworkBehaviour
     private EnemySpawner spawner;
     private bool         bossPaused;
     private Coroutine    waveCoroutine;
+
+    // นาฬิกาสำรองสำหรับซีนที่ไม่มี GameTimeline (เช่น WeaponTestScene) เท่านั้น
+    // เดินเฉพาะเมื่อไม่มีนาฬิกาจริงให้อ่าน — ไม่ใช่เรือนที่สองที่เดินคู่กันไป
+    private float _fallbackClock;
 
     /// <summary>Health multiplier ณ wave ปัจจุบัน — BossManager ใช้ scale mini boss HP</summary>
     public float CurrentHealthMultiplier { get; private set; } = 1f;
@@ -81,6 +91,12 @@ public class WaveManager : NetworkBehaviour
         if (spawner == null) { Debug.LogError("[WaveManager] ❌ EnemySpawner not found!"); return; }
 
         spawner.StopSpawning();
+
+        var phases = ActivePhases();
+        Debug.Log(phases != null && phases.Length > 0
+            ? $"[WaveManager] config ตามนาที {phases.Length} ช่วง"
+            : $"[WaveManager] config แบ่งตาม wave — ทุก {wavesPerConfig} wave");
+
         waveCoroutine = StartCoroutine(WaveLoop());
     }
 
@@ -126,6 +142,18 @@ public class WaveManager : NetworkBehaviour
     }
 
     // ── Wave Loop (Server-only logic, ไม่มี announcement) ────────────────
+    /// <summary>
+    /// เลข wave เป็น **ฟังก์ชันของนาฬิกาเกม** ไม่ใช่ตัวนับของตัวเอง
+    ///
+    /// ═══ ของเดิมเดินนาฬิกาเรือนที่สอง ═══
+    ///
+    /// loop เก่าสะสมเวลาด้วย `WaitForSeconds(waveDuration)` แยกจาก
+    /// `GameTimeline.gameTime` — สองเรือนตอบคำถามเดียวกันว่า "รันไปถึงไหนแล้ว"
+    /// เริ่มพร้อมกันเพราะทั้งคู่รอ `hasStarted` แต่หลังจากนั้นไม่มีอะไรผูกให้ตรงกัน
+    ///
+    /// ราคาที่แพงกว่าการคลาดเคลื่อนคือ **ตารางของ wave มองไม่เห็น** · ตอนนี้
+    /// wave N คือช่วงเวลาที่คำนวณกลับไปมาได้ ไม่ใช่ผลของลำดับ yield ที่ผ่านมา
+    /// </summary>
     IEnumerator WaveLoop()
     {
         // ไม่ปล่อยศัตรูจนกว่านาฬิกาเกมจะเริ่มจริง (GameTimeline รอให้ทุกคน spawn เสร็จก่อน)
@@ -134,34 +162,111 @@ public class WaveManager : NetworkBehaviour
         while (GameTimeline.Instance != null && !GameTimeline.Instance.hasStarted.Value)
             yield return null;
 
-        // รอก่อนเริ่ม wave แรก
-        yield return new WaitForSeconds(startDelay);
+        int applied = 0;
 
         while (!bossPaused)
         {
-            currentWave.Value++;
+            float t = TickRunTime();
+            int   w = WaveAt(t);
 
-            int   w           = currentWave.Value - 1;
-            float healthMult  = 1f + w * healthMultPerWave;
-            float speedMult   = Mathf.Min(1f + w * speedMultPerWave, maxSpeedMultiplier);
-            float expMult     = 1f + w * expMultPerWave;
-            float spawnRate   = Mathf.Max(
-                0.3f,
-                spawner.baseSpawnRate * Mathf.Pow(1f - spawnRateAccel, w)
-            );
+            if (w != applied && w > 0)
+            {
+                applied           = w;
+                currentWave.Value = w;
+                ApplyWave(w, t);
+            }
 
-            CurrentHealthMultiplier = healthMult;   // เก็บไว้ให้ BossManager อ่าน
-            CurrentExpMultiplier    = expMult;
-
-            WaveConfig config = GetConfigForWave(currentWave.Value);
-            spawner.StartSpawning(spawnRate, healthMult, speedMult, expMult, config);
-            Debug.Log($"[WaveManager] Wave {currentWave.Value} — HP×{healthMult:F2} SPD×{speedMult:F2} EXP×{expMult:F2} rate:{spawnRate:F2}s");
-
-            yield return new WaitForSeconds(waveDuration);
-            if (bossPaused) yield break;
-
-            // ไม่หยุด spawn — loop ต่อทันที แค่อัปเดต scaling ใหม่
+            yield return null;
         }
+    }
+
+    /// <summary>
+    /// เวลาของรันตอนนี้ — เรียก **เฟรมละครั้ง** เท่านั้น (มันเดินนาฬิกาสำรองด้วย)
+    /// ซีนที่ไม่มี GameTimeline จึงยังมี wave ได้ แทนที่จะค้างอยู่ที่ wave 0
+    /// </summary>
+    float TickRunTime()
+    {
+        var gt = GameTimeline.Instance;
+        if (gt != null) return gt.GetGameTime();
+
+        _fallbackClock += Time.deltaTime;
+        return _fallbackClock;
+    }
+
+    /// <summary>
+    /// wave ที่ควรอยู่ ณ เวลานี้ — 0 = ยังไม่ถึง wave แรก
+    ///
+    /// กัน waveDuration ที่เป็น 0 หรือติดลบไว้ด้วย · ของเดิมค่านั้นทำให้
+    /// `WaitForSeconds(0)` วน wave ขึ้นทุกเฟรมจนสุดเกม โดยไม่มีอะไรบอกว่าเกิดขึ้น
+    /// </summary>
+    int WaveAt(float t)
+    {
+        if (t < startDelay) return 0;
+        return Mathf.FloorToInt((t - startDelay) / Mathf.Max(0.1f, waveDuration)) + 1;
+    }
+
+    void ApplyWave(int wave, float t)
+    {
+        int   w          = wave - 1;
+        float healthMult = 1f + w * healthMultPerWave;
+        float speedMult  = Mathf.Min(1f + w * speedMultPerWave, maxSpeedMultiplier);
+        float expMult    = 1f + w * expMultPerWave;
+        float spawnRate  = Mathf.Max(
+            0.3f,
+            spawner.baseSpawnRate * Mathf.Pow(1f - spawnRateAccel, w)
+        );
+
+        CurrentHealthMultiplier = healthMult;   // เก็บไว้ให้ BossManager อ่าน
+        CurrentExpMultiplier    = expMult;
+
+        spawner.StartSpawning(spawnRate, healthMult, speedMult, expMult, GetConfigFor(wave, t));
+        Debug.Log($"[WaveManager] Wave {wave} @ {t / 60f:0.0}m — " +
+                  $"HP×{healthMult:F2} SPD×{speedMult:F2} EXP×{expMult:F2} rate:{spawnRate:F2}s");
+    }
+
+    // ── เลือก WaveConfig ─────────────────────────────────────────────────
+    /// <summary>ช่วงตามนาทีที่ใช้จริง — แมพก่อน แล้วค่อยซีน · ว่าง = ใช้แบบแบ่งตาม wave</summary>
+    WavePhase[] ActivePhases()
+    {
+        var sched = RunSetup.Map != null ? RunSetup.Map.GetSchedule(RunSetup.Difficulty) : null;
+        if (sched != null && sched.wavePhases != null && sched.wavePhases.Length > 0)
+            return sched.wavePhases;
+        return wavePhases;
+    }
+
+    /// <summary>
+    /// ช่วงที่เวลาน้อยสุด **ครอบตั้งแต่เริ่มเกมเสมอ** ไม่ว่าจะตั้งนาทีไว้เท่าไร
+    ///
+    /// ถ้าปล่อยให้เวลาก่อนช่วงแรกไม่มี config จะเกิดช่องว่างที่ต้องถอยไปใช้กลไก
+    /// อีกแบบ แล้วรันเดียวกันจะมีสองกติกาทำงานคนละช่วง ซึ่งอธิบายยากกว่ากติกาเดียว
+    /// ที่ขอบเขตชัด
+    /// </summary>
+    WaveConfig GetConfigFor(int wave, float timeSec)
+    {
+        var phases = ActivePhases();
+        if (phases != null && phases.Length > 0)
+        {
+            float minutes = timeSec / 60f;
+
+            WaveConfig current = null, earliest = null;
+            float bestAt = float.NegativeInfinity, earliestAt = float.PositiveInfinity;
+
+            foreach (var p in phases)
+            {
+                if (p.config == null) continue;
+
+                if (p.atMinutes < earliestAt) { earliestAt = p.atMinutes; earliest = p.config; }
+                if (p.atMinutes <= minutes && p.atMinutes >= bestAt) { bestAt = p.atMinutes; current = p.config; }
+            }
+
+            if (current != null) return current;
+            if (earliest != null) return earliest;
+
+            // ทุกช่องว่าง config — บอกออกมา ไม่ใช่คืน null เงียบๆ แล้วศัตรูไม่ออก
+            Debug.LogWarning("[WaveManager] wavePhases มีแต่ช่องที่ยังไม่ใส่ config → ใช้แบบแบ่งตาม wave แทน");
+        }
+
+        return GetConfigForWave(wave);
     }
 
     WaveConfig GetConfigForWave(int wave)

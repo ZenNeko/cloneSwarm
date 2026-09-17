@@ -55,6 +55,28 @@ public class TimelineCue
 }
 
 /// <summary>
+/// ช่วงหนึ่งของรัน — ตั้งแต่นาทีนี้ไป ใช้ WaveConfig ใบนี้
+///
+/// ═══ ทำไมไม่ใช้ "ทุกๆ N wave" แบบเดิม ═══
+///
+/// `wavesPerConfig` ตอบว่า "เปลี่ยน config ทุก 3 wave" ซึ่งคนตั้งค่าต้องแปลงเอง
+/// ในหัวว่าตกลงใบที่สองครอบนาทีไหนถึงนาทีไหน · ค่าในซีนตอนนี้ (wave ละ 30 วิ
+/// เปลี่ยนทุก 3 wave มี 3 ใบ) แปลว่าใบสุดท้ายครอบตั้งแต่นาที 3 ถึงจบ — 80%
+/// ของรันใช้ใบเดียว ซึ่งมองไม่เห็นเลยจากเลข 3 ตัวนั้น
+///
+/// เขียนนาทีตรงๆ แล้วตารางทั้งรันอ่านได้จากลิสต์เดียว เหมือนนัดหมายบนไทม์ไลน์
+/// </summary>
+[Serializable]
+public struct WavePhase
+{
+    [Tooltip("นาทีที่ช่วงนี้เริ่ม · ช่วงที่เวลาน้อยสุดครอบตั้งแต่เริ่มเกมเสมอ")]
+    [Min(0f)] public float atMinutes;
+
+    [Tooltip("WaveConfig ที่ใช้ตั้งแต่นาทีนี้ไป")]
+    public WaveConfig config;
+}
+
+/// <summary>
 /// ตารางเวลาหนึ่งชุด — นัดหมายทั้งหมด + ความยาวรอบ
 ///
 /// ═══ ไม่มีสถานะ "ยิงไปแล้ว" อยู่ในนี้ ═══
@@ -73,6 +95,9 @@ public class TimelineSchedule
 
     [Tooltip("ความยาวรอบ — นาทีที่บอสใหญ่ออก · 0 = ใช้ค่าในซีน ไม่ override")]
     [Min(0f)] public float mainBossMinutes = 0f;
+
+    [Tooltip("ช่วงของ WaveConfig ตามนาที · ว่าง = ใช้ของในซีน")]
+    public WavePhase[] wavePhases = new WavePhase[0];
 
     public bool HasCues => cues != null && cues.Length > 0;
 

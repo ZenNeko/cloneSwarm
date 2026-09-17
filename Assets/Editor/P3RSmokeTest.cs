@@ -819,6 +819,7 @@ namespace CloneSwarm.EditorTools
                 CheckPartyHudWired();
                 CheckAugmentZoneWired();
                 CheckTimelineCues();
+                CheckWaveSchedule();
                 CheckMissingGlyphs();
             }
 
@@ -1317,6 +1318,59 @@ namespace CloneSwarm.EditorTools
 
                 Require(zones > 0, $"ซีนมีนัดหมายโซนเควสต์ ({zones} ครั้งตลอดรัน)");
                 Require(minis > 0, $"ซีนมีนัดหมายมินิบอส ({minis} ครั้งตลอดรัน)");
+            }
+
+            /// <summary>
+            /// ตาราง WaveConfig — ช่วงไหนครอบนาทีไหน
+            ///
+            /// ═══ ทำไมส่วนใหญ่เป็นหมายเหตุ ไม่ใช่ข้อสอบ ═══
+            ///
+            /// "config ใบสุดท้ายครอบ 80% ของรัน" เป็นเรื่องจังหวะเกม ไม่ใช่ความถูกผิด
+            /// เทสต์ไม่มีสิทธิ์ตัดสินแทนคนออกแบบ · แต่มันมองไม่เห็นจากเลข
+            /// `wavesPerConfig: 3` ซึ่งเป็นเหตุผลเดียวที่ทำให้ไม่มีใครรู้
+            /// หน้าที่ของเทสต์ตรงนี้คือทำให้เห็น ไม่ใช่ตัดสิน
+            ///
+            /// ที่เป็นข้อสอบจริงมีสองอย่าง — ช่องที่ลืมใส่ config (ศัตรูไม่ออกเลย
+            /// ในช่วงนั้น) และช่วงที่ตั้งไว้หลังบอสใหญ่ ซึ่งไม่มีวันถึง
+            /// </summary>
+            private void CheckWaveSchedule()
+            {
+                var wm = FindAnyObjectByType<WaveManager>(FindObjectsInactive.Include);
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                if (wm == null) return;
+
+                float runMin = gt != null ? gt.mainBossTimeMin : 15f;
+
+                if (wm.wavePhases != null && wm.wavePhases.Length > 0)
+                {
+                    int empty = wm.wavePhases.Count(ph => ph.config == null);
+                    int late  = wm.wavePhases.Count(ph => ph.atMinutes > runMin);
+
+                    Require(empty == 0, $"ทุกช่วง wave ใส่ config แล้ว ({empty} ช่องยังว่าง)");
+                    Require(late  == 0, $"ไม่มีช่วง wave ที่เริ่มหลังบอสใหญ่ ({late} ช่วง)");
+
+                    foreach (var ph in wm.wavePhases.OrderBy(ph => ph.atMinutes))
+                        lines.Add($"   หมายเหตุ  นาที {ph.atMinutes:0.#} → " +
+                                  (ph.config != null ? ph.config.name : "(ว่าง)"));
+                    return;
+                }
+
+                // แบบแบ่งตามจำนวน wave — แปลงเป็นนาทีให้เห็น
+                if (wm.waveConfigs == null || wm.waveConfigs.Length == 0) return;
+
+                float dur = Mathf.Max(0.1f, wm.waveDuration);
+                int   per = Mathf.Max(1, wm.wavesPerConfig);
+
+                for (int i = 0; i < wm.waveConfigs.Length; i++)
+                {
+                    float startMin = (wm.startDelay + i * per * dur) / 60f;
+                    bool  last     = i == wm.waveConfigs.Length - 1;
+                    float endMin   = last ? runMin : (wm.startDelay + (i + 1) * per * dur) / 60f;
+                    string name    = wm.waveConfigs[i] != null ? wm.waveConfigs[i].name : "(ว่าง)";
+
+                    lines.Add($"   หมายเหตุ  นาที {startMin:0.#}–{endMin:0.#} → {name}" +
+                              (last ? $"  ({(endMin - startMin) / Mathf.Max(0.1f, runMin) * 100f:0}% ของรัน)" : ""));
+                }
             }
 
             private static int CountCueTimes(TimelineCue[] cues, TimelineCueKind kind)
