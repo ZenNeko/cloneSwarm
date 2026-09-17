@@ -16,10 +16,10 @@ MonoBehaviour:
   augmentName: Sharpshooter
   description: "\u0E42\u0E2D\u0E01\u0E32\u0E2A\u0E04\u0E23\u0E34\u0E15\u0E34\u0E04\u0E2D\u0E25 +20% \xB7 \u0E14\u0E32\u0E40\u0E21\u0E08 +10%"
   icon: {fileID: 0}
-  rarity: 0
   weight: 100
   exclusiveCharacter: {fileID: 0}
-  maxStacks: 1
+  availableFromMinutes: 0
+  availableUntilMinutes: 0
   bonuses:
   - type: 2
     value: 0.2

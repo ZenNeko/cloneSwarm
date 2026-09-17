@@ -16,10 +16,10 @@ MonoBehaviour:
   augmentName: Overdrive
   description: "Ability Haste +30 \xB7 \u0E23\u0E30\u0E22\u0E30/\u0E02\u0E19\u0E32\u0E14 AoE +15%"
   icon: {fileID: 0}
-  rarity: 1
   weight: 40
   exclusiveCharacter: {fileID: 0}
-  maxStacks: 1
+  availableFromMinutes: 4
+  availableUntilMinutes: 0
   bonuses:
   - type: 1
     value: 30

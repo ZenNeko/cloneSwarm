@@ -78,6 +78,11 @@ public class UpgradeCardUI : MonoBehaviour
     public Color    statColor    = new Color(0.30f, 0.65f, 0.35f);   // เขียว
     public Color    superColor   = new Color(0.85f, 0.60f, 0.10f);   // ทอง
     public Color    fusionColor  = new Color(0.65f, 0.20f, 0.85f);   // ม่วง
+    // สีการ์ด augment — **สีเดียวทุกใบ**
+    //
+    // augment ไม่มีระดับแล้ว สีจึงบอกแค่ว่า "นี่คือ augment" ไม่ได้บอกว่าแรงแค่ไหน
+    // ความแรงคุมด้วยช่วงเวลาที่ใบนั้นออกได้ ซึ่งผู้เล่นไม่ต้องอ่านจากสี
+    public Color    augmentColor = new Color(0.70f, 0.35f, 0.95f);   // ม่วงสด
 
     private UpgradeCardInfo            currentCard;
     private Action<UpgradeCardInfo>    onPicked;
@@ -152,7 +157,7 @@ public class UpgradeCardUI : MonoBehaviour
             statRowsContainer.gameObject.SetActive(changes.Count > 0);
         }
 
-        // Card color — Augment ใช้สีตาม rarity ของตัวเอง
+        // Card color — augment เป็นสีเดียวทุกใบ (ไม่มีระดับให้ไล่สี)
         Color accent = AccentFor(card);
         if (cardBackground) cardBackground.color = accent;
 
@@ -354,7 +359,7 @@ public class UpgradeCardUI : MonoBehaviour
     /// <summary>สีเน้นของการ์ด — แหล่งความจริงเดียวของทั้งหัวการ์ด กรอบ และพื้นไอคอน</summary>
     Color AccentFor(UpgradeCardInfo card) => card.type switch
     {
-        UpgradeCardType.Augment      => card.augment != null ? card.augment.RarityColor : weaponColor,
+        UpgradeCardType.Augment      => augmentColor,
         UpgradeCardType.WeaponSuper  => superColor,
         UpgradeCardType.WeaponFusion => fusionColor,
         UpgradeCardType.Stat         => statColor,

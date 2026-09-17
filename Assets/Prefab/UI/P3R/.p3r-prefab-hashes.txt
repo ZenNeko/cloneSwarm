@@ -7,5 +7,6 @@ Assets/Prefab/UI/P3R/LevelUpStatRow.prefab|1TmzR9EHDPgq5q4/HbkdDg==
 Assets/Prefab/UI/P3R/LobbyAbilityChip.prefab|C+L3m8ueA+nZNnFt5un7PQ==
 Assets/Prefab/UI/P3R/LobbyPartyRow.prefab|rV7gvQWdU1u/5gTkenS64w==
 Assets/Prefab/UI/P3R/MapCard.prefab|cTL3wcbM7Q4YTLE0fn7dtQ==
+Assets/Prefab/UI/P3R/PartyMemberRow.prefab|IpwXswm9QYUwoFJ0ZzNTtA==
 Assets/Prefab/UI/P3R/ResultPartyRow.prefab|8fcoMbDODziM7i25Iocoow==
 Assets/Prefab/UI/P3R/RewardLine.prefab|8qzwAywHjgUw/v1ao0rexA==

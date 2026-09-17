@@ -16,10 +16,10 @@ MonoBehaviour:
   augmentName: Bloodthirst
   description: "\u0E17\u0E38\u0E01\u0E46 20 \u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E17\u0E35\u0E21\u0E01\u0E33\u0E08\u0E31\u0E14 \u2014 \u0E1F\u0E37\u0E49\u0E19 HP 5%"
   icon: {fileID: 0}
-  rarity: 0
   weight: 100
   exclusiveCharacter: {fileID: 0}
-  maxStacks: 1
+  availableFromMinutes: 0
+  availableUntilMinutes: 0
   trigger: 0
   triggerAmount: 20
   internalCooldown: 0

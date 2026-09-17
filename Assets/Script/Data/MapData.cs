@@ -25,8 +25,24 @@ public class MapData : ScriptableObject
         public BossEncounterConfig mainBossConfig;     // ปล่อย null = ใช้ของบน prefab
         [Tooltip("ปล่อยว่าง = ใช้ของบน prefab")]
         public BossEncounterConfig miniBossConfig;
+
+        // จังหวะของรัน — โซนเควสต์กับมินิบอสออกนาทีไหนบ้าง
+        //
+        // อยู่ระดับ tier เพราะความยากคือ "จังหวะ" ไม่ใช่แค่ตัวเลข HP · แมพเดียวกัน
+        // ระดับยากกว่าควรอัดมินิบอสถี่ขึ้นได้ โดยไม่ต้องทำแมพใหม่ทั้งใบ
+        //
+        // ปล่อยนัดหมายว่าง = ใช้ตารางของซีน · ตั้งแล้วจะ **แทนที่ทั้งชุด** ไม่ผสม
+        [Tooltip("ตารางเวลาของ tier นี้ · นัดหมายว่าง = ใช้ของในซีน")]
+        public TimelineSchedule schedule = new TimelineSchedule();
     }
     public TierContent[] tiers;
+
+    /// <summary>ตารางเวลาของ tier ที่ขอ — null เมื่อแมพไม่ได้กำหนดอะไรไว้</summary>
+    public TimelineSchedule GetSchedule(DifficultyTier tier)
+    {
+        var t = GetTier(tier);
+        return t != null ? t.schedule : null;
+    }
 
     /// <summary>
     /// คืน TierContent ของ tier ที่ขอ — ถ้าไม่มี ให้ fallback ไป Normal, ถ้า Normal ก็ไม่มีคืน null

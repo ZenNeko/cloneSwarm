@@ -4,6 +4,7 @@ using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CloneSwarm.EditorTools
@@ -146,7 +147,101 @@ namespace CloneSwarm.EditorTools
             }
         }
 
-        private static void Capture(string scenePath, string pngPath, string[] hideObjects = null)
+        /// <summary>
+        /// แคป HUD พร้อม **ของจำลอง** ในแถวปาร์ตี้กับช่อง augment
+        ///
+        /// สองแผงนี้สร้างลูกตอนรันเท่านั้น (ต้องมีผู้เล่น spawn + PlayerAugmentManager)
+        /// edit mode จึงเห็นเป็นกล่องเปล่า · ใส่ของจำลองให้ดูว่า **จัดวางพอดีไหม**
+        /// ซึ่งเป็นสิ่งเดียวที่ภาพตอบได้ — ค่าจริงถูกไหมเป็นเรื่องของสโมกเทสต์กับสองเครื่อง
+        ///
+        /// ซีนไม่ถูกเซฟ ของจำลองหายไปพร้อมรอบนี้
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD (party preview)")]
+        public static void CaptureGameplayHudParty()
+        {
+            const string scenePath = "Assets/GameScenes/SampleScene.unity";
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+            string png = Path.Combine(outDir, "SampleScene_HUD_Party.png");
+
+            try
+            {
+                Capture(scenePath, png,
+                        hideObjects: new[] { "P3R_LevelUp", "P3R_Pause", "P3R_WinLose", "P3R_Loading" },
+                        populate: PopulatePartySamples);
+                Debug.Log($"[Shot] {png}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Shot] {scenePath} ล้มเหลว: {e}");
+            }
+        }
+
+        /// <summary>ใส่สองแถว (เป็น / ล้ม) กับสามช่อง augment ตามภาพแบบ</summary>
+        private static void PopulatePartySamples(Scene scene)
+        {
+            var party = FindByName(scene, "PartyPanel")?.GetComponent<CloneSwarm.UI.P3R.PartyMemberHUD>();
+            if (party != null && party.rowTemplate != null)
+            {
+                var parent = party.rowArea != null ? party.rowArea : (RectTransform)party.transform;
+
+                var a = Object.Instantiate(party.rowTemplate, parent);
+                a.name = "Sample_Row0";
+                a.SetIdentity(1, "HUNTER", new Color32(0x3B, 0x6B, 0xFF, 0xFF));
+                a.SetAlive(240f, 240f);
+                ((RectTransform)a.transform).anchoredPosition = new Vector2(0f, party.rowHeight + party.rowGap);
+
+                var b = Object.Instantiate(party.rowTemplate, parent);
+                b.name = "Sample_Row1";
+                b.SetIdentity(2, "GUNNER", new Color32(0xE8, 0x3A, 0x3A, 0xFF));
+                b.SetDowned(6f);
+                ((RectTransform)b.transform).anchoredPosition = Vector2.zero;
+            }
+
+            var strip = FindByName(scene, "AugmentStrip")?.GetComponent<CloneSwarm.UI.P3R.AugmentStripUI>();
+            if (strip != null && strip.slotTemplate != null)
+            {
+                var parent = strip.slotArea != null ? strip.slotArea : (RectTransform)strip.transform;
+                string[] abbrev = { "GLA", "BLO", "" };
+
+                for (int i = 0; i < strip.slotCount; i++)
+                {
+                    var slot = Object.Instantiate(strip.slotTemplate, parent);
+                    slot.name = $"Sample_Aug{i}";
+                    slot.gameObject.SetActive(true);
+
+                    var rt = (RectTransform)slot.transform;
+                    rt.sizeDelta = new Vector2(strip.slotSize, strip.slotSize);
+                    rt.anchoredPosition = new Vector2(i * (strip.slotSize + strip.slotGap), 0f);
+
+                    if (string.IsNullOrEmpty(abbrev[i])) { slot.ShowEmpty(strip.borderColor); continue; }
+
+                    // level = 0 และสีเดียวทุกช่อง — augment ไม่มีระดับและไม่มีเลเวลแล้ว
+                    // ของจำลองต้องสะท้อนกติกาจริง ไม่งั้นภาพจะโชว์สิ่งที่เกมทำไม่ได้
+                    slot.ShowEntry(
+                        new CloneSwarm.UI.P3R.BuildStripUI.Entry { abbrev = abbrev[i], level = 0 },
+                        strip.augmentColor, strip.borderColor, strip.augmentColor);
+                }
+            }
+        }
+
+        private static GameObject FindByName(Scene scene, string name)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == name) return t.gameObject;
+            return null;
+        }
+
+        /// <param name="populate">
+        /// เรียกหลังเปิดซีนแต่ก่อนเรนเดอร์ — ใส่ของจำลองให้แผงที่ตอน edit mode ยังว่าง
+        ///
+        /// **ปลอดภัยเพราะ Capture ไม่เคยเซฟซีน** ของที่ใส่อยู่แค่ในหน่วยความจำรอบนี้
+        /// จำเป็นสำหรับแผงที่สร้างลูกตอนรัน (แถวปาร์ตี้ · ช่อง augment) ซึ่งถ้าไม่ใส่
+        /// ภาพจะออกมาเป็นกล่องเปล่าสองใบ แล้วอ่านไม่ออกว่าจัดวางพอดีไหม
+        /// </param>
+        private static void Capture(string scenePath, string pngPath, string[] hideObjects = null,
+                                    System.Action<Scene> populate = null)
         {
             var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
 
@@ -157,6 +252,8 @@ namespace CloneSwarm.EditorTools
                         if (System.Array.IndexOf(hideObjects, t.name) >= 0)
                             t.gameObject.SetActive(false);
             }
+
+            populate?.Invoke(scene);
 
             // ── เก็บ Canvas ทุกตัวในซีน (รวมที่ปิดอยู่ เผื่อ panel ถูกปิดไว้) ──
             var canvases = new List<Canvas>();

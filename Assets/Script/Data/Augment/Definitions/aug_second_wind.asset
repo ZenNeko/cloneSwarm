@@ -16,10 +16,10 @@ MonoBehaviour:
   augmentName: Second Wind
   description: "\u0E17\u0E38\u0E01 15 \u0E27\u0E34\u0E19\u0E32\u0E17\u0E35 \u2014 \u0E44\u0E14\u0E49\u0E42\u0E25\u0E48 60"
   icon: {fileID: 0}
-  rarity: 1
   weight: 40
   exclusiveCharacter: {fileID: 0}
-  maxStacks: 1
+  availableFromMinutes: 3
+  availableUntilMinutes: 0
   trigger: 3
   triggerAmount: 15
   internalCooldown: 0

@@ -59,7 +59,7 @@ public class BossManager : NetworkBehaviour
             }
         }
 
-        GameTimeline.OnMiniBossTime  += SpawnMiniBoss;
+        GameTimeline.OnMiniBossTime  += SpawnMiniBoss;   // Action<string> — ชื่อ prefab ที่นัดไว้
         GameTimeline.OnMainBossTime  += SpawnMainBoss;
     }
 
@@ -71,17 +71,17 @@ public class BossManager : NetworkBehaviour
 
     // ── Dev API (เรียกจาก DevTools) ───────────────────────────────────────
     /// <summary>Force spawn mini boss (dev tool only — server only)</summary>
-    public void DevSpawnMiniBoss() => SpawnMiniBoss();
+    public void DevSpawnMiniBoss() => SpawnMiniBoss("");
 
     /// <summary>Force spawn main boss (dev tool only — server only)</summary>
     public void DevSpawnMainBoss() => SpawnMainBoss();
 
     // ── Spawn ─────────────────────────────────────────────────────────────
-    void SpawnMiniBoss()
+    void SpawnMiniBoss(string variantId)
     {
         if (!IsServer) return;
 
-        var prefab = PickRandomMiniBoss();
+        var prefab = PickMiniBoss(variantId);
         if (prefab == null)
         {
             Debug.LogWarning("[BossManager] miniBossPrefabs is empty — assign at least one prefab!");
@@ -105,6 +105,29 @@ public class BossManager : NetworkBehaviour
 
         go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
         Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
+    }
+
+    /// <summary>
+    /// เลือก mini boss — ตามชื่อถ้านัดไว้ ไม่งั้นสุ่ม
+    ///
+    /// เทียบด้วย **ชื่อ prefab** เพราะ `miniBossPrefabs` เป็นอาเรย์ของ prefab ล้วน
+    /// ไม่มีช่อง id ให้ตั้ง · ถ้าวันหนึ่งมีบอสเยอะจนชื่อชนกัน ค่อยเปลี่ยนเป็น struct
+    /// ที่มี id เหมือน `ObjectiveManager.ZoneVariant` — ตอนนี้ยังไม่คุ้มค่าโครงสร้าง
+    ///
+    /// หาไม่เจอแล้ว **บ่น** ไม่ใช่เงียบแล้วสุ่มแทน — ชื่อพิมพ์ผิดกับดวงไม่ดีหน้าตาเหมือนกัน
+    /// </summary>
+    GameObject PickMiniBoss(string variantId)
+    {
+        if (!string.IsNullOrEmpty(variantId))
+        {
+            if (miniBossPrefabs != null)
+                foreach (var p in miniBossPrefabs)
+                    if (p != null && p.name == variantId) return p;
+
+            Debug.LogWarning($"[BossManager] นัดหมายขอบอส '{variantId}' " +
+                             "แต่ไม่มีใน miniBossPrefabs → สุ่มแทน");
+        }
+        return PickRandomMiniBoss();
     }
 
     /// <summary>สุ่ม prefab จาก miniBossPrefabs (กรอง null) — null ถ้าไม่มีตัวให้สุ่ม</summary>

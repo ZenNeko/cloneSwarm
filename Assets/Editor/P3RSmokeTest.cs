@@ -816,6 +816,9 @@ namespace CloneSwarm.EditorTools
                 CheckWeaponSlotCap();
                 CheckStatIcons();
                 CheckAugmentOrbWired();
+                CheckPartyHudWired();
+                CheckAugmentZoneWired();
+                CheckTimelineCues();
                 CheckMissingGlyphs();
             }
 
@@ -1225,6 +1228,177 @@ namespace CloneSwarm.EditorTools
             }
 
             /// <summary>
+            /// นัดหมายบนไทม์ไลน์ต้องชี้ของที่มีอยู่จริง และเกิดได้ทัน
+            ///
+            /// ═══ ราคาของการอ้างด้วยสตริง ═══
+            ///
+            /// `TimelineCue.variant` เป็นชื่อ ไม่ใช่ reference — คอมไพเลอร์ตรวจให้ไม่ได้
+            /// พิมพ์ผิดตัวเดียวแล้ว `ObjectiveManager` จะบ่นแล้ว **สุ่มแทน** ซึ่งแปลว่า
+            /// เกมยังเล่นได้ปกติ จังหวะที่ออกแบบไว้แค่หายไปเงียบๆ
+            ///
+            /// เลือกสตริงเพราะ reference ข้าม component ในซีนเปราะกว่า (ย้ายแผงทีเดียวหลุด)
+            /// แต่ต้องจ่ายค่านี้คืนด้วยเทสต์ ไม่ใช่ปล่อยให้คนตั้งตารางไปเจอเอง
+            ///
+            /// เช็คเวลาด้วย — นัดหลังบอสใหญ่คือนัดที่ไม่มีวันถึง
+            /// </summary>
+            private void CheckTimelineCues()
+            {
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                if (gt == null) return;
+
+                var om = FindAnyObjectByType<ObjectiveManager>(FindObjectsInactive.Include);
+                var bm = FindAnyObjectByType<BossManager>(FindObjectsInactive.Include);
+
+                var unknown = new List<string>();
+                var tooLate = new List<string>();
+
+                // ตารางของซีน + ตารางของทุกแมพทุก tier — แมพที่ตั้งชื่อแบบผิดไว้
+                // จะพังเฉพาะตอนเลือกแมพนั้น ซึ่งอาจไม่ใช่แมพที่ใครเปิดทดสอบ
+                var tables = new List<(string where, TimelineCue[] cues, float bossAt)>
+                {
+                    ("ซีน", gt.cues, gt.mainBossTimeMin)
+                };
+
+                var maps = AssetDatabase.FindAssets("t:MapData")
+                                        .Select(AssetDatabase.GUIDToAssetPath)
+                                        .Select(AssetDatabase.LoadAssetAtPath<MapData>);
+                foreach (var map in maps)
+                {
+                    if (map == null || map.tiers == null) continue;
+                    foreach (var tier in map.tiers)
+                    {
+                        if (tier == null || tier.schedule == null || !tier.schedule.HasCues) continue;
+                        float bossAt = tier.schedule.mainBossMinutes > 0f
+                                     ? tier.schedule.mainBossMinutes : gt.mainBossTimeMin;
+                        tables.Add(($"{map.mapId}/{tier.tier}", tier.schedule.cues, bossAt));
+                    }
+                }
+
+                foreach (var (where, cues, bossAt) in tables)
+                {
+                    if (cues == null) continue;
+                    foreach (var cue in cues)
+                    {
+                        if (cue == null) continue;
+                        string name = $"{where} · {cue.DisplayName}";
+
+                        if (cue.atMinutes != null)
+                            foreach (var m in cue.atMinutes)
+                                if (m > bossAt) tooLate.Add($"{name} @ {m:0.#} นาที");
+
+                        if (string.IsNullOrEmpty(cue.variant)) continue;   // สุ่มตามปกติ ไม่ต้องมีชื่อ
+
+                        bool found = cue.kind == TimelineCueKind.ZoneObjective
+                            ? om != null && om.zoneVariants != null &&
+                              om.zoneVariants.Any(v => v.prefab != null && v.id == cue.variant)
+                            : bm != null && bm.miniBossPrefabs != null &&
+                              bm.miniBossPrefabs.Any(p => p != null && p.name == cue.variant);
+
+                        if (!found) unknown.Add($"{name} → '{cue.variant}'");
+                    }
+                }
+
+                Require(unknown.Count == 0,
+                        $"นัดหมายทุกรายการชี้แบบที่มีอยู่จริง ({unknown.Count} รายการหาไม่เจอ)");
+                foreach (var u in unknown.Take(5)) lines.Add($"        └ {u}");
+
+                Require(tooLate.Count == 0,
+                        $"ไม่มีนัดหมายที่เลยเวลาบอสใหญ่ ({tooLate.Count} รายการเลยเวลา)");
+                foreach (var t in tooLate.Take(5)) lines.Add($"        └ {t}");
+
+                // ── ตารางขาดทั้งชนิด = ระบบนั้นตายทั้งรัน ────────────────────
+                //
+                // ของเดิมมีตาราง start+interval เป็นค่าเริ่มต้น สองระบบนี้จึงทำงาน
+                // แน่นอนแม้ไม่มีใครตั้งอะไรเลย · ตอนนี้มาจากนัดหมายล้วน ลิสต์ว่าง
+                // จึงกลายเป็นค่าที่ถูกต้องตามกฎ แต่แปลว่าเกมไม่มีเควสต์กับมินิบอส
+                // และไม่มีอาการอื่นให้เห็นเลยนอกจากเงียบไปตลอด 15 นาที
+                int zones = CountCueTimes(gt.cues, TimelineCueKind.ZoneObjective);
+                int minis = CountCueTimes(gt.cues, TimelineCueKind.MiniBoss);
+
+                Require(zones > 0, $"ซีนมีนัดหมายโซนเควสต์ ({zones} ครั้งตลอดรัน)");
+                Require(minis > 0, $"ซีนมีนัดหมายมินิบอส ({minis} ครั้งตลอดรัน)");
+            }
+
+            private static int CountCueTimes(TimelineCue[] cues, TimelineCueKind kind)
+            {
+                if (cues == null) return 0;
+                int n = 0;
+                foreach (var c in cues)
+                    if (c != null && c.kind == kind) n += c.TimeCount;
+                return n;
+            }
+
+            /// <summary>
+            /// โซนเควสต์ที่ให้ augment ต้องต่อครบทั้งสามทาง
+            ///
+            /// ═══ สามจุดที่ขาดได้ทีละจุด และเงียบทุกจุด ═══
+            ///
+            ///   ไม่อยู่ใน zoneVariants      → โซนแบบนี้ไม่มีวันถูกสุ่มออกมา
+            ///   orbPrefab ไม่ใช่ orb augment → ทำเควสต์เสร็จแล้วได้ของผิด
+            ///   ไม่ได้ลงทะเบียน network prefab → **host เห็นโซน client ไม่เห็น**
+            ///
+            /// ข้อสุดท้ายเจอได้ต่อเมื่อทดสอบสองเครื่อง จึงเช็คที่ลิสต์แทนที่จะรอเจออาการ
+            /// </summary>
+            private void CheckAugmentZoneWired()
+            {
+                const string path = "Assets/Prefab/ZoneObjective_Augment.prefab";
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null) return;      // ยังไม่มีโซนแบบนี้ ไม่ใช่ความผิดของใคร
+
+                var zone = go.GetComponent<ZoneObjective>();
+                Require(zone != null, "โซน augment: มี ZoneObjective");
+
+                var orb = zone != null && zone.orbPrefab != null
+                        ? zone.orbPrefab.GetComponent<ObjectiveOrb>() : null;
+                Require(orb != null && orb.reward == OrbReward.Augment,
+                        $"โซน augment: orbPrefab เป็น orb ที่ให้ augment (ตอนนี้ {(orb == null ? "ไม่มี ObjectiveOrb" : orb.reward.ToString())})");
+
+                var list = AssetDatabase.LoadAssetAtPath<Unity.Netcode.NetworkPrefabsList>(
+                    "Assets/DefaultNetworkPrefabs.asset");
+                Require(list != null && list.PrefabList.Any(p => p != null && p.Prefab == go),
+                        "โซน augment: ลงทะเบียนใน DefaultNetworkPrefabs แล้ว");
+
+                var om = FindAnyObjectByType<ObjectiveManager>(FindObjectsInactive.Include);
+                if (om == null) return;
+
+                bool listed = om.zoneVariants != null &&
+                              om.zoneVariants.Any(v => v.prefab == go && v.weight > 0f);
+                Require(listed, "โซน augment: อยู่ใน ObjectiveManager.zoneVariants ด้วยน้ำหนัก > 0");
+            }
+
+            /// <summary>
+            /// แถวปาร์ตี้กับแถบ augment ต้องต่อไว้ และแม่แบบต้องเป็น **ไฟล์ prefab**
+            ///
+            /// แม่แบบที่ชี้ของในซีนคือ fileID ที่เปลี่ยนทุกครั้งที่ย้าย/สร้างแผงใหม่
+            /// แล้วแม่แบบหายไปพร้อมแผงเก่า — อาการคือแถวไม่ขึ้นเลยสักแถว โดยไม่มี error
+            /// (กับดักเดียวกับ `LevelUpUI.cardTemplate` ซึ่งมีเทสต์คุมอยู่แล้ว)
+            ///
+            /// **ข้อนี้ครอบแค่สาย** — แถวขึ้นครบไหม ชื่อถูกไหม REVIVE นับถอยหลังจริงไหม
+            /// ต้องมีผู้เล่น spawn จริง ซึ่งเทสต์นี้จัดฉากไม่ได้ · เรื่องนั้นต้องสองเครื่อง
+            /// </summary>
+            private void CheckPartyHudWired()
+            {
+                var party = FindAnyObjectByType<PartyMemberHUD>(FindObjectsInactive.Include);
+                if (party == null) lines.Add("   หมายเหตุ  ไม่มี PartyMemberHUD ในซีน");
+                else
+                {
+                    Require(party.rowTemplate != null, "แถวปาร์ตี้: ต่อ rowTemplate ไว้");
+                    Require(party.rowTemplate == null ||
+                            PrefabUtility.GetPrefabAssetType(party.rowTemplate) != PrefabAssetType.NotAPrefab,
+                            "แถวปาร์ตี้: rowTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
+                }
+
+                var strip = FindAnyObjectByType<AugmentStripUI>(FindObjectsInactive.Include);
+                if (strip == null) { lines.Add("   หมายเหตุ  ไม่มี AugmentStripUI ในซีน"); return; }
+
+                Require(strip.slotTemplate != null, "แถบ augment: ต่อ slotTemplate ไว้");
+                Require(strip.slotTemplate == null ||
+                        PrefabUtility.GetPrefabAssetType(strip.slotTemplate) != PrefabAssetType.NotAPrefab,
+                        "แถบ augment: slotTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
+                Require(strip.slotCount == 3, $"แถบ augment: 3 ช่องตามที่ออกแบบ (ตอนนี้ {strip.slotCount})");
+            }
+
+            /// <summary>
             /// orb ที่ให้ augment ต้องต่อครบทั้งสามอย่าง
             ///
             /// ═══ ทำไมต้องมีเทสต์ให้ prefab ใบเดียว ═══
@@ -1341,6 +1515,47 @@ namespace CloneSwarm.EditorTools
 
                 Require(pool > 0,
                         $"ตั้งเลเวลแจก augment ไว้ {levels} เลเวล → pool ต้องมีของ (มี {pool} ใบ)");
+
+                CheckAugmentWindows();
+            }
+
+            /// <summary>
+            /// ช่วงเวลาที่ออกได้ต้องเป็นช่วงที่ **เกิดขึ้นได้จริง**
+            ///
+            /// ═══ สองแบบที่ทำให้ใบนั้นไม่มีวันโผล่ โดยไม่มีอะไรฟ้อง ═══
+            ///
+            ///   until &lt; from            → ช่วงกลับหัว ว่างเปล่าตั้งแต่ต้น
+            ///   from &gt; เวลาบอสใหญ่      → เกมจบก่อนถึงนาทีนั้น
+            ///
+            /// ทั้งคู่หน้าตาเหมือน "ยังไม่เคยสุ่มเจอ" ซึ่งเป็นเรื่องปกติของระบบสุ่ม
+            /// คนจูนจึงไม่มีทางแยกออกว่าใบนั้นดวงไม่ดีหรือใส่เลขผิด
+            ///
+            /// นี่คือราคาของการเปลี่ยนจากป้ายระดับมาเป็นช่วงเวลา — ป้ายพิมพ์ผิดไม่ได้
+            /// แต่ตัวเลขพิมพ์ผิดได้ · เทสต์จึงต้องรับหน้าที่ที่ enum เคยรับไว้เอง
+            /// </summary>
+            private void CheckAugmentWindows()
+            {
+                var all = AssetDatabase.FindAssets("t:AugmentData")
+                                       .Select(AssetDatabase.GUIDToAssetPath)
+                                       .Select(AssetDatabase.LoadAssetAtPath<AugmentData>)
+                                       .Where(a => a != null).ToList();
+                if (all.Count == 0) return;
+
+                var reversed = all.Where(a => a.availableUntilMinutes > 0f &&
+                                              a.availableUntilMinutes < a.availableFromMinutes)
+                                  .Select(a => a.augmentName).ToList();
+                Require(reversed.Count == 0,
+                        $"ไม่มี augment ที่ตั้งช่วงเวลากลับหัว ({reversed.Count} ใบ)");
+                foreach (var n in reversed.Take(5)) lines.Add($"        └ {n}");
+
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                if (gt == null) return;
+
+                var tooLate = all.Where(a => a.availableFromMinutes > gt.mainBossTimeMin)
+                                 .Select(a => $"{a.augmentName} ({a.WindowLabel})").ToList();
+                Require(tooLate.Count == 0,
+                        $"ไม่มี augment ที่เริ่มออกได้หลังเกมจบ (บอสใหญ่ที่ {gt.mainBossTimeMin:0.#} นาที)");
+                foreach (var n in tooLate.Take(5)) lines.Add($"        └ {n}");
             }
 
             /// <summary>

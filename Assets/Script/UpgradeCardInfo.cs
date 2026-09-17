@@ -7,7 +7,7 @@ public enum UpgradeCardType
     WeaponSuper,    // Normal Lv5 → Super  (จาก Objective Orb)
     WeaponFusion,   // Super A + Super B → Fusion  (จาก Objective Orb)
     Stat,           // stat upgrade
-    Augment         // Augment — ได้เฉพาะ level ที่กำหนดใน SharedExperienceManager
+    Augment         // Augment — ได้จากเลเวลที่กำหนด หรือเก็บ orb · คัดด้วยช่วงเวลาที่ออกได้
 }
 
 /// <summary>
@@ -115,8 +115,8 @@ public class UpgradeCardInfo
     /// ป้ายซ้ายบนของการ์ด — **ระบบที่การ์ดใบนี้มาจาก** ไม่ใช่สิ่งที่จะได้
     ///
     /// คู่กับ <see cref="DisplayLevelText"/> ที่อยู่ขวาบนและบอก "ได้อะไร"
-    /// (NEW · Lv 3 / 5 · SUPER · FUSION · SILVER) · แยกกันแบบนี้แล้วไม่มีคำซ้ำ:
-    /// การ์ด Super อ่านว่า WEAPON | SUPER  ·  augment อ่านว่า AUGMENT | GOLD
+    /// (NEW · Lv 3 / 5 · SUPER · FUSION) · แยกกันแบบนี้แล้วไม่มีคำซ้ำ:
+    /// การ์ด Super อ่านว่า WEAPON | SUPER  ·  augment มีแค่ AUGMENT เพราะไม่มีระดับ
     ///
     /// **Augment เป็นการ์ดเหมือนใบอื่นทุกอย่าง** ต่างแค่ทางที่ได้มา (เฉพาะเลเวลที่
     /// กำหนดไว้ใน SharedExperienceManager.augmentLevels) — ระบบที่ทำงานกับการ์ด
@@ -139,7 +139,10 @@ public class UpgradeCardInfo
         UpgradeCardType.WeaponSuper   => "SUPER",
         UpgradeCardType.WeaponFusion  => "FUSION",
         UpgradeCardType.Stat          => currentStatLevel == 0 ? "NEW" : $"Lv {currentStatLevel + 1} / {stat?.MaxLevel}",
-        UpgradeCardType.Augment       => augment?.RarityLabel ?? "AUGMENT",
+        // augment ไม่มีระดับให้บอก — ป้ายซ้ายบอกว่าเป็น AUGMENT อยู่แล้ว
+        // ช่วงเวลาที่ออกได้เป็นเรื่องของ designer ไม่ใช่ของผู้เล่น: ใบที่ยื่นให้เลือก
+        // ก็คือใบที่ออกได้ตอนนี้อยู่แล้ว การโชว์ช่วงเวลาจึงไม่ได้บอกอะไรใหม่
+        UpgradeCardType.Augment       => "",
         _                             => ""
     };
 

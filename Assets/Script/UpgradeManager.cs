@@ -92,7 +92,7 @@ public class UpgradeManager : NetworkBehaviour
                 $"[Upgrade] เลเวล {newLevel} ตั้งไว้ว่าแจก augment แต่ไม่มีใบให้เลือก → ถอยไปใช้การ์ดปกติ · " +
                 (pool == 0
                     ? "MetaDatabase.augments ว่างเปล่า — รัน Tools > Clone Swarm > Meta > Create Sample Augments"
-                    : $"ถือครบ maxStacks ทุกใบใน pool แล้ว ({pool} ใบ)"));
+                    : $"ทุกใบใน pool ({pool}) ถือไปแล้วหรือยังไม่ถึงช่วงเวลาที่ออกได้"));
 
             currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
         }
@@ -127,7 +127,7 @@ public class UpgradeManager : NetworkBehaviour
                 "[Orb] orb ใบนี้ตั้งไว้ว่าให้ augment แต่ไม่มีใบให้เลือก → ถอยไปใช้การ์ดปกติ · " +
                 (pool == 0
                     ? "MetaDatabase.augments ว่างเปล่า — รัน Tools > Clone Swarm > Meta > Create Sample Augments"
-                    : $"ถือครบ maxStacks ทุกใบใน pool แล้ว ({pool} ใบ)"));
+                    : $"ทุกใบใน pool ({pool}) ถือไปแล้วหรือยังไม่ถึงช่วงเวลาที่ออกได้"));
 
             currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
         }
@@ -368,8 +368,18 @@ public class UpgradeManager : NetworkBehaviour
 
     // ── Augment Pool ──────────────────────────────────────────────────────
     /// <summary>
-    /// สุ่ม Augment แบบถ่วงน้ำหนัก — ตัดใบที่ถือครบ maxStacks แล้ว
-    /// และตัดใบที่เป็น exclusive ของตัวละครอื่น
+    /// สุ่ม Augment แบบถ่วงน้ำหนัก — คัดด้วย **ช่วงเวลาที่ออกได้** เป็นหลัก
+    ///
+    /// ═══ ช่วงเวลาคือตัวคุมความแรง ไม่ใช่ป้ายระดับ ═══
+    ///
+    /// augment ในเกมนี้ไม่มี Silver/Gold/Prismatic แบบที่เคยมี · ใบที่แรงมากถูกคุม
+    /// ด้วยการตั้งให้ออกได้เฉพาะช่วงท้าย และใบที่มีความหมายเฉพาะตอนต้นถูกตั้งให้
+    /// ปิดตัวเองเมื่อพ้นช่วงนั้น — ท่าเดียวกับ augment ของ TFT
+    ///
+    /// **นาฬิกาเป็นของ server และอ่านได้ทุกเครื่อง** (`GameTimeline.gameTime` เป็น
+    /// NetworkVariable) การคัดฝั่ง client จึงได้ผลเดียวกับที่ server จะคัด
+    /// ถ้าหานาฬิกาไม่เจอ (ซีนทดสอบ / ยังไม่เริ่มรัน) ถือว่าเป็นนาทีที่ 0
+    /// ซึ่งเปิดเฉพาะใบต้นเกม — ปลอดภัยกว่าเปิดทุกใบ
     /// </summary>
     List<UpgradeCardInfo> PickAugmentCards(int count)
     {
@@ -378,12 +388,15 @@ public class UpgradeManager : NetworkBehaviour
         var db = CloneSwarm.Meta.MetaDatabase.Instance;
         if (db == null || db.augments == null || augmentManager == null) return result;
 
+        float now = GameTimeline.Instance != null ? GameTimeline.Instance.GetGameTime() : 0f;
+
         var pool = new List<AugmentData>();
         foreach (var a in db.augments)
         {
             if (a == null) continue;
             if (a.exclusiveCharacter != null && a.exclusiveCharacter != myCharacter) continue;
-            if (augmentManager.GetStackCount(a) >= a.maxStacks) continue;
+            if (augmentManager.HasAugment(a)) continue;      // ใบละครั้งเดียว
+            if (!a.IsAvailableAt(now)) continue;             // ยังไม่ถึงเวลา หรือเลยเวลาแล้ว
             pool.Add(a);
         }
 

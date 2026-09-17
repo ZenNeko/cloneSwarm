@@ -16,10 +16,10 @@ MonoBehaviour:
   augmentName: Swarm Lord
   description: "\u0E01\u0E23\u0E30\u0E2A\u0E38\u0E19\u0E17\u0E38\u0E01\u0E2D\u0E32\u0E27\u0E38\u0E18 +2 \xB7 \u0E14\u0E32\u0E40\u0E21\u0E08 -10%"
   icon: {fileID: 0}
-  rarity: 2
   weight: 12
   exclusiveCharacter: {fileID: 0}
-  maxStacks: 1
+  availableFromMinutes: 9
+  availableUntilMinutes: 0
   bonuses:
   - type: 4
     value: 2

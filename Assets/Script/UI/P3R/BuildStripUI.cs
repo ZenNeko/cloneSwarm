@@ -14,7 +14,7 @@ namespace CloneSwarm.UI.P3R
     ///
     /// **ที่มาของข้อมูล — สองทาง**
     /// 1. <see cref="RefreshFromLocalPlayer"/> ดึงเองจาก player ที่เป็น owner ในซีน
-    ///    (<c>PlayerWeaponManager.GetEquippedWeapons()</c> + <c>PlayerAugmentManager.GetAcquired()</c>)
+    ///    (<c>PlayerWeaponManager.GetEquippedWeapons()</c> + <c>PlayerStatManager.GetEquippedStats()</c>)
     ///    ทั้งคู่เป็น public API ที่มีอยู่แล้ว จึงไม่ต้องแก้ฝั่ง gameplay เลย
     /// 2. <see cref="SetEntries"/> ป้อนข้อมูลเข้ามาตรงๆ — ไว้ใช้ในซีนต้นแบบ/เทสต์ที่ไม่มี player จริง
     ///
@@ -183,7 +183,7 @@ namespace CloneSwarm.UI.P3R
             // ผลคือแถวนี้ว่างเปล่าทั้งที่ผู้เล่นถือสเตตัสอยู่ห้าตัว — จอ Level Up
             // ซึ่งมีไว้ให้ตัดสินใจ กลับไม่บอกว่าตัวเองถืออะไรอยู่
             //
-            // สเตตัสมาก่อน แล้วต่อด้วย augment ถ้ายังเหลือช่อง
+            // ตอนนี้แถวนี้เป็นสเตตัสล้วน — augment ย้ายไป AugmentStripUI แล้ว
             var passives = new List<Entry>();
 
             var psm = pwm.GetComponent<PlayerStatManager>();
@@ -204,24 +204,12 @@ namespace CloneSwarm.UI.P3R
                 }
             }
 
-            var pam = pwm.GetComponent<PlayerAugmentManager>();
-            if (pam != null)
-            {
-                // GetAcquired คืนใบซ้ำหนึ่งใบต่อหนึ่ง stack — ต้องยุบเอง
-                // ไม่งั้น augment ที่ซ้อนสาม stack จะกินสามช่องด้วยรูปเดียวกัน
-                var seen = new HashSet<AugmentData>();
-                foreach (var a in pam.GetAcquired())
-                {
-                    if (a == null || !seen.Add(a)) continue;
-                    passives.Add(new Entry
-                    {
-                        icon      = a.icon,
-                        abbrev    = Abbrev(a.augmentName),
-                        level     = pam.GetStackCount(a),
-                        highlight = a.rarity >= AugmentRarity.Gold
-                    });
-                }
-            }
+            // ── augment **ไม่อยู่ในแถวนี้แล้ว** ─────────────────────────────
+            //
+            // ย้ายไปแถบของตัวเอง (`AugmentStripUI`) ข้างไอคอนตัวละคร · ปล่อยไว้ทั้งสองที่
+            // แปลว่าใบเดียวโผล่สองแห่ง ซึ่งอ่านแล้วนึกว่าถือสองใบ
+            //
+            // แถว PASSIVES เหลือความหมายเดียว = สเตตัส ตรงกับคำที่ HUD ใช้มาตลอด
 
             SetEntries(weapons, passives);
             return true;

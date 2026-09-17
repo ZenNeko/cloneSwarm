@@ -30,8 +30,8 @@ public class AugmentHUDUI : MonoBehaviour
     [Header("Icons")]
     [Tooltip("Image template สำหรับไอคอน 1 อัน — SetActive = false ไว้")]
     public Image iconTemplate;
-    [Tooltip("แสดงกรอบสีตาม rarity ของ augment")]
-    public bool  tintByRarity = true;
+    [Tooltip("สีพื้นของไอคอน — augment ไม่มีระดับแล้ว จึงเป็นสีเดียวทั้งหมด")]
+    public Color augmentColor = new Color(0.70f, 0.35f, 0.95f);
 
     readonly List<Image> spawned = new();
 
@@ -52,9 +52,9 @@ public class AugmentHUDUI : MonoBehaviour
         img.name    = $"Aug_{a.augmentId}";
         img.sprite  = a.icon;
         img.enabled = true;
-        if (tintByRarity) img.color = a.RarityColor;
+        img.color = augmentColor;
 
-        // ไม่มีไอคอน → ยังเห็นสีประจำ rarity เป็น placeholder
+        // ไม่มีไอคอน → ยังเห็นสีประจำ augment เป็น placeholder
         spawned.Add(img);
     }
 }
