@@ -72,6 +72,11 @@ public class WaveManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
+        // จบรันแล้วต้องหยุดปล่อยศัตรู — สมัครก่อนหา spawner เพื่อให้เข้าคู่กับ
+        // OnNetworkDespawn เสมอ ไม่ว่าจะออกทางไหน
+        GameTimeline.OnGameWon  += OnRunEnded;
+        GameTimeline.OnGameLost += OnRunEnded;
+
         spawner = FindAnyObjectByType<EnemySpawner>();
         if (spawner == null) { Debug.LogError("[WaveManager] ❌ EnemySpawner not found!"); return; }
 
@@ -79,15 +84,45 @@ public class WaveManager : NetworkBehaviour
         waveCoroutine = StartCoroutine(WaveLoop());
     }
 
+    public override void OnNetworkDespawn()
+    {
+        GameTimeline.OnGameWon  -= OnRunEnded;
+        GameTimeline.OnGameLost -= OnRunEnded;
+    }
+
+    /// <summary>
+    /// รันจบแล้ว — ทั้งชนะและแพ้ใช้ทางเดียวกัน
+    ///
+    /// ═══ ขาแพ้เคยไม่มีใครหยุด wave ═══
+    ///
+    /// จุดเดียวที่เคยหยุดคือ `PauseForBoss` ซึ่ง BossManager เรียกตอนบอสใหญ่ออก ·
+    /// ขาชนะจึงปลอดภัยโดยบังเอิญ (wave ถูกหยุดไปตั้งแต่บอสออกแล้ว) แต่ขาแพ้
+    /// `GameTimeline` แค่ตั้ง `gameEnded` แล้วหยุด Update ของตัวเอง ส่วน WaveManager
+    /// ไม่เคยรู้เรื่อง — ศัตรูเกิดเพิ่มเรื่อยๆ หลังจอผลลัพธ์จนกว่าจะมีคนกดออก
+    /// และ `EnemySpawner` ไม่มีเพดานจำนวน
+    ///
+    /// event ยิงบนทุก client ผ่าน ClientRpc · `StopWaves` กัน IsServer ไว้แล้ว
+    /// </summary>
+    void OnRunEnded(float gameTimeSec, int level) => StopWaves("รันจบแล้ว");
+
     // ── Public API ────────────────────────────────────────────────────────
     /// <summary>เรียกจาก BossManager เมื่อ Main Boss phase เริ่ม</summary>
-    public void PauseForBoss()
+    public void PauseForBoss() => StopWaves("บอสใหญ่ออก");
+
+    /// <summary>
+    /// หยุดปล่อยศัตรูสำหรับรันนี้ — เรียกซ้ำได้ ไม่มีทางกลับไปเดินต่อ
+    ///
+    /// ไม่ล้างศัตรูที่เกิดไปแล้ว · ตัวที่อยู่ในสนามยังอยู่ต่อจนกว่าจะเปลี่ยนซีน
+    /// ซึ่งถูกแล้วสำหรับขาชนะ (ยังมีไฟต์บอสใหญ่อยู่) และไม่สำคัญสำหรับขาแพ้
+    /// </summary>
+    public void StopWaves(string reason)
     {
-        if (!IsServer) return;
+        if (!IsServer || bossPaused) return;
+
         bossPaused = true;
         spawner?.StopSpawning();
         if (waveCoroutine != null) { StopCoroutine(waveCoroutine); waveCoroutine = null; }
-        Debug.Log("[WaveManager] ⏸ Paused for Main Boss");
+        Debug.Log($"[WaveManager] ⏸ หยุด wave — {reason}");
     }
 
     // ── Wave Loop (Server-only logic, ไม่มี announcement) ────────────────
