@@ -17,7 +17,99 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: da6474af27ee5e749988b8f697715918, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 3956263923036160
+    m_Localized: PAUSED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263964979200
+    m_Localized: PRESS ESC TO RESUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263964979201
+    m_Localized: RESUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263964979202
+    m_Localized: SETTINGS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173504
+    m_Localized: QUIT TO MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173505
+    m_Localized: CO-OP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173506
+    m_Localized: "You are in a room with others \u2014 the world keeps running and your character can still be hit"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173507
+    m_Localized: AUDIO SETTINGS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173508
+    m_Localized: MASTER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173509
+    m_Localized: MUSIC
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173510
+    m_Localized: SFX
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173511
+    m_Localized: TIME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173512
+    m_Localized: LEVEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173513
+    m_Localized: WAVE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173514
+    m_Localized: PARTY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173515
+    m_Localized: REWARDS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173516
+    m_Localized: TOTAL EARNED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173517
+    m_Localized: GOLD VAULT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173518
+    m_Localized: PLAY AGAIN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173519
+    m_Localized: MAIN MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173520
+    m_Localized: RESET TO DEFAULT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173521
+    m_Localized: BACK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173522
+    m_Localized: Waiting for the host to start a new run
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

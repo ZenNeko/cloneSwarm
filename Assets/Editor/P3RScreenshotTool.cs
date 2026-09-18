@@ -242,6 +242,108 @@ namespace CloneSwarm.EditorTools
         /// </param>
         // ══════════════════════════════════════════════════════════════════
         /// <summary>
+        /// จับภาพจอ Pause กับ WinLose — สองจอที่ตัวจับภาพอื่น **ปิดทิ้งเสมอ**
+        /// เมนู: Tools > Clone Swarm > Capture Pause + WinLose
+        ///
+        /// ═══ ทำไมเพิ่งมีตอนนี้ ═══
+        ///
+        /// ทุกตัวจับภาพที่มีอยู่ใส่สองจอนี้ไว้ใน hideObjects เพราะมันบังจอเกม ·
+        /// ผลคือสองจอนี้ไม่เคยถูกเรนเดอร์ดูเลยสักครั้ง และตอนนี้มันเพิ่งได้คำแปล
+        /// ซึ่งเป็นของที่ YAML บอกไม่ได้ว่าออกมาหน้าตายังไง
+        ///
+        /// ═══ ต้องปลุก P3RLocalizedText เอง ═══
+        ///
+        /// `OnEnable` ไม่วิ่งใน edit mode ป้ายจึงยังถือข้อความที่พิมพ์ไว้ในซีน ·
+        /// ถ้าไม่เรียก `Refresh()` ภาพที่ได้จะเป็นภาพของ **ข้อความเดิม** ไม่ใช่ของที่มา
+        /// จากตาราง แล้วเราจะเข้าใจว่าการต่อสายสำเร็จทั้งที่ยังไม่ได้พิสูจน์อะไรเลย
+        /// (บทเรียนเดียวกับ P3RThaiTracking ที่เงียบเมื่อถูกเรียกก่อน Awake)
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Pause + WinLose")]
+        public static void CapturePauseAndWinLose()
+        {
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+
+            foreach (var panel in new[] { "P3R_Pause", "P3R_WinLose" })
+            {
+                string target = panel;
+                Capture("Assets/GameScenes/SampleScene.unity",
+                        Path.Combine(outDir, target + ".png"),
+                        hideObjects: null,
+                        populate: sc => ShowOnly(sc, target));
+            }
+
+            Debug.Log($"[Shot] จอ Pause + WinLose → {outDir}");
+        }
+
+        /// <summary>เปิดจอที่ต้องการ ปิดจออื่น แล้วให้ป้ายไปดึงคำแปลมาเอง</summary>
+        private static void ShowOnly(Scene scene, string panelName)
+        {
+            var others = new[] { "P3R_Pause", "P3R_WinLose", "P3R_LevelUp", "P3R_Loading" };
+            Transform found = null;
+
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == panelName) { found = t; t.gameObject.SetActive(true); }
+                    else if (System.Array.IndexOf(others, t.name) >= 0) t.gameObject.SetActive(false);
+                }
+
+            if (found == null)
+            {
+                Debug.LogError($"[Shot] ไม่เจอจอ {panelName} ในซีน");
+                return;
+            }
+
+            // เปิดพ่อทุกชั้นด้วย — จอถูกซ่อนไว้ได้หลายระดับ
+            for (var t = found; t != null; t = t.parent) t.gameObject.SetActive(true);
+
+            // ปลุกระบบแปลก่อน — edit mode ไม่ได้เริ่มให้เอง แล้ว GetTableEntry จะคืน null
+            // ทุกครั้ง ภาพที่ได้จะเป็น key ดิบทั้งจอ ซึ่งบอกได้แค่ว่า "ต่อสายไว้ที่ key ไหน"
+            // ไม่ได้บอกว่าคำแปลออกมาหน้าตายังไง ซึ่งคือเหตุผลเดียวที่เรนเดอร์
+            var init = UnityEngine.Localization.Settings.LocalizationSettings.InitializationOperation;
+            if (init.IsValid() && !init.IsDone) init.WaitForCompletion();
+
+            int refreshed = 0;
+            foreach (var loc in found.GetComponentsInChildren<CloneSwarm.UI.P3R.P3RLocalizedText>(true))
+            {
+                loc.Refresh();
+
+                // edit mode ยังไม่มี locale ที่เลือกไว้ `GetTableEntry` จึงคืน null และ
+                // ป้ายตกไปโชว์ key ตามที่ออกแบบ · อ่านจากไฟล์ตารางแทนเพื่อให้ **ภาพ**
+                // ตอบคำถามที่เรนเดอร์มาเพื่อตอบ คือคำแปลวาดออกมาหน้าตายังไง
+                //
+                // ทางนี้เป็นของเครื่องมือเรนเดอร์เท่านั้น ไม่ได้พิสูจน์ว่า lookup ตอนรันจริง
+                // ทำงาน — เรื่องนั้นต้องเปิดตัวเกมดู
+                var tmp = loc.GetComponent<TMPro.TMP_Text>();
+                if (tmp != null && tmp.text == loc.key)
+                {
+                    string v = ReadTableValue(loc.table, loc.key, LocaleForShots);
+                    if (!string.IsNullOrEmpty(v)) tmp.text = v;
+                }
+
+                refreshed++;
+            }
+
+            foreach (var guard in found.GetComponentsInChildren<CloneSwarm.UI.P3R.P3RThaiTracking>(true))
+                guard.Apply();
+
+            // ── บังคับคำนวณ layout ใหม่หลังเปลี่ยนข้อความ ──────────────────
+            //
+            // ContentSizeFitter กับ LayoutGroup คำนวณตอน layout rebuild ซึ่งใน edit mode
+            // ไม่เกิดเองจากการเขียน `.text` · ไม่สั่งเองแล้วกล่องจะยังกว้างยาวตามข้อความ
+            // **เดิม** แล้วข้อความใหม่ที่ยาวกว่าจะล้นออกมา
+            //
+            // อาการนั้นอ่านเหมือนบั๊ก layout ทั้งที่เกมจริงไม่เป็น เพราะตอนรันมี rebuild
+            // ให้เอง — เรนเดอร์ที่โกหกแบบนี้แย่กว่าไม่เรนเดอร์ เพราะมันพาไปแก้ผิดที่
+            foreach (var rt in found.GetComponentsInChildren<RectTransform>(true))
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+
+            Debug.Log($"[Shot] {panelName} — ดึงคำแปลให้ {refreshed} ป้าย");
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        /// <summary>
         /// แผ่นพิสูจน์ประกาศ — เรนเดอร์ข้อความทุกอันด้วย **ป้ายจริง** ทั้งสองภาษา
         /// เมนู: Tools > Clone Swarm > Capture Announcement Proof Sheet
         ///
@@ -351,6 +453,25 @@ namespace CloneSwarm.EditorTools
             // ของป้ายที่ยังถือ characterSpacing ของละติน ซึ่งไม่ใช่สิ่งที่ผู้เล่นเห็น
             var guard = go.GetComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
             if (guard != null) guard.Apply();
+        }
+
+        /// <summary>ภาษาที่ใช้เรนเดอร์จอ — ไทยเพราะเป็นภาษาที่ต้องดูวรรณยุกต์</summary>
+        private const string LocaleForShots = "th-TH";
+
+        /// <summary>อ่านค่าของ key เดียวจากไฟล์ตาราง — ใช้ตอน edit mode ถาม runtime ไม่ได้</summary>
+        private static string ReadTableValue(string tableName, string key, string localeCode)
+        {
+            var collection = UnityEditor.Localization.LocalizationEditorSettings
+                                        .GetStringTableCollection(tableName);
+            if (collection == null) return null;
+
+            foreach (var t in collection.StringTables)
+            {
+                if (t.LocaleIdentifier.Code != localeCode) continue;
+                var e = t.GetEntry(key);
+                return e != null ? e.LocalizedValue : null;
+            }
+            return null;
         }
 
         /// <summary>อ่าน key + ข้อความจากไฟล์ตารางตรงๆ — edit mode ไม่มีระบบ locale ให้ถาม</summary>
