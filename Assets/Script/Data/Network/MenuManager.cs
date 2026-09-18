@@ -251,8 +251,70 @@ public class MenuManager : MonoBehaviour
         if (lobbyUI != null) lobbyUI.SetMode(HubMode.Shop);
     }
 
+    /// <summary>
+    /// ปิดเกม — เก็บกวาดเองตามลำดับก่อน แล้วค่อยสั่งปิด
+    ///
+    /// ═══ อาการที่แก้ ═══
+    ///
+    /// กด QUIT แล้ว Windows ขึ้น "CloneSwarm.exe is not responding" · ไม่ใช่แค่ช้า
+    /// แต่ main thread ค้าง
+    ///
+    /// ของเดิมเรียก `Application.Quit()` ตรงๆ ทั้งที่ยังมี session ของ Relay เปิดอยู่
+    /// และ NGO ยัง listening · Unity จึงไปเก็บกวาดทั้งสองอย่างให้เองตอนโปรเซสกำลังปิด
+    /// ซึ่งเป็นจังหวะที่ SDK ต้องยิงเน็ตออกไปในขณะที่ระบบรอบตัวถูกรื้อไปแล้วครึ่งหนึ่ง
+    ///
+    /// ทางออกอื่นของเกมทุกทางเรียก `LeaveSessionIfActiveAsync` หมด (JoinRoomPanel ·
+    /// LobbyUI · WinLoseUI) — **ทางปิดเกมเป็นทางเดียวที่ไม่เรียก** จึงเป็นทางเดียว
+    /// ที่ทิ้งห้องค้างไว้ให้หมดอายุเอง คนอื่นยังเห็นห้องผีในลิสต์ด้วย
+    ///
+    /// ═══ ทำไมใช้ coroutine ไม่ใช่ async ═══
+    ///
+    /// `async void` บนปุ่มปิดเกมคือการรอบนบริบทที่กำลังจะหายไป · ถ้า await ไม่คืน
+    /// ก็ไม่มีใครมาปลุกต่อ เพราะ synchronization context ถูกรื้อไปแล้ว
+    /// coroutine เดินบนลูปของ Unity ตรงๆ และเราคุมเพดานเวลาได้เอง
+    ///
+    /// ═══ เพดานเวลา ═══
+    ///
+    /// การปิดเกมต้องไม่ขึ้นกับว่าเน็ตตอบไหม · ครบเวลาแล้วปิดเลย ยอมทิ้งห้องค้าง
+    /// ดีกว่าค้างหน้าจอให้ผู้เล่นต้องไปฆ่าโปรเซสเอง
+    /// </summary>
     public void OnQuitClicked()
     {
+        if (_quitting) return;      // กดรัวไม่ทำให้เก็บกวาดซ้อนกัน
+        _quitting = true;
+        StartCoroutine(QuitRoutine());
+    }
+
+    private bool _quitting;
+
+    /// <summary>วินาทีที่ยอมรอให้ออกจากห้องสำเร็จ ก่อนจะปิดทิ้งไปเลย</summary>
+    private const float LeaveTimeout = 2f;
+
+    private IEnumerator QuitRoutine()
+    {
+        // ── 1. ออกจากห้อง ────────────────────────────────────────────────
+        var gsm = GameSessionManager.Instance;
+        if (gsm != null)
+        {
+            var leave = gsm.LeaveSessionIfActiveAsync();
+            float deadline = Time.realtimeSinceStartup + LeaveTimeout;
+
+            while (!leave.IsCompleted && Time.realtimeSinceStartup < deadline)
+                yield return null;
+
+            if (!leave.IsCompleted)
+                Debug.LogWarning($"[Menu] ออกจากห้องไม่ทันใน {LeaveTimeout:0.#}s — ปิดเกมต่อเลย");
+        }
+
+        // ── 2. ปิด NGO เอง ให้เสร็จก่อนโปรเซสเริ่มรื้อตัวเอง ──────────────
+        var nm = NetworkManager.Singleton;
+        if (nm != null && nm.IsListening)
+        {
+            nm.Shutdown();
+            yield return null;      // ให้ Shutdown เดินจบหนึ่งเฟรม
+        }
+
+        // ── 3. ค่อยปิด ───────────────────────────────────────────────────
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
