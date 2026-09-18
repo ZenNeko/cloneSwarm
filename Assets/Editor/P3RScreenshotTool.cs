@@ -240,6 +240,142 @@ namespace CloneSwarm.EditorTools
         /// จำเป็นสำหรับแผงที่สร้างลูกตอนรัน (แถวปาร์ตี้ · ช่อง augment) ซึ่งถ้าไม่ใส่
         /// ภาพจะออกมาเป็นกล่องเปล่าสองใบ แล้วอ่านไม่ออกว่าจัดวางพอดีไหม
         /// </param>
+        // ══════════════════════════════════════════════════════════════════
+        /// <summary>
+        /// แผ่นพิสูจน์ประกาศ — เรนเดอร์ข้อความทุกอันด้วย **ป้ายจริง** ทั้งสองภาษา
+        /// เมนู: Tools > Clone Swarm > Capture Announcement Proof Sheet
+        ///
+        /// ═══ ทำไมต้องดูภาพ ทั้งที่ยืนยันข้อความไปแล้ว ═══
+        ///
+        /// Run Probe ตอบว่า lookup ทำงานและได้ข้อความอะไร · ตอบไม่ได้ว่าฟอนต์
+        /// **วาดออกมาหน้าตายังไง** — วรรณยุกต์ซ้อนกันเป็นก้อน สระลอยหลุดจากพยัญชนะ
+        /// หรือไทยดูบางกว่าอังกฤษข้างๆ ไม่มีอะไรใน log หรือ YAML บอกได้เลย
+        ///
+        /// ═══ โคลนป้ายจริง ไม่ใช่สร้างป้ายใหม่ ═══
+        ///
+        /// ป้ายที่สร้างเองจะพิสูจน์แค่ว่า "ฟอนต์นี้วาดไทยได้" ซึ่งไม่ใช่คำถาม ·
+        /// คำถามคือป้ายประกาศ**ที่ตั้งค่าไว้จริง**วาดได้ไหม — ซึ่งมี characterSpacing 16,
+        /// fontStyle UpperCase และ P3RThaiTracking คอยปรับอยู่ · โคลนมาทั้งก้อนแล้ว
+        /// เรียก Apply() เองจึงได้ภาพที่ตรงกับสิ่งที่ผู้เล่นเห็น
+        ///
+        /// ═══ อ่านข้อความจากไฟล์ตาราง ไม่ใช่ผ่านระบบ localization ═══
+        ///
+        /// เครื่องมือนี้ทำงานใน edit mode ซึ่งระบบเลือกภาษายังไม่ได้เริ่ม · การ
+        /// อ่าน asset ตรงๆ แยกคำถามสองข้อออกจากกันพอดี — "หา key เจอไหม" ตอบไปแล้ว
+        /// ด้วย Run Probe ตอนรันจริง ส่วนแผ่นนี้ตอบเรื่องการวาดอย่างเดียว
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Announcement Proof Sheet")]
+        public static void CaptureAnnouncementProof()
+        {
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+
+            foreach (var locale in new[] { "th-TH", "en" })
+            {
+                string code = locale;
+                Capture("Assets/GameScenes/SampleScene.unity",
+                        Path.Combine(outDir, $"announce_{code}.png"),
+                        hideObjects: null,
+                        populate: sc => BuildAnnouncementSheet(sc, code));
+            }
+
+            Debug.Log($"[Shot] แผ่นพิสูจน์ประกาศ → {outDir}/announce_th-TH.png · announce_en.png");
+        }
+
+        /// <summary>
+        /// ล้างซีนให้เหลือแต่แผ่นพิสูจน์ แล้วเรียงข้อความทุกอันด้วยป้ายที่โคลนมา
+        ///
+        /// ปิด root เดิมทั้งหมดแทนที่จะไล่ซ่อนทีละชิ้น — HUD มีของหลายสิบชิ้นและ
+        /// รายชื่อที่ต้องซ่อนจะล้าสมัยทุกครั้งที่มีคนเพิ่มแผงใหม่
+        /// </summary>
+        private static void BuildAnnouncementSheet(Scene scene, string localeCode)
+        {
+            var hud = Object.FindAnyObjectByType<GameHUD>(FindObjectsInactive.Include);
+            var src = hud != null ? hud.announcementLabel : null;
+            if (src == null)
+            {
+                Debug.LogError("[Shot] หา GameHUD.announcementLabel ไม่เจอ — แผ่นพิสูจน์ต้องใช้ป้ายจริง");
+                return;
+            }
+
+            var rows = ReadAnnouncementRows(localeCode);
+            if (rows.Count == 0)
+            {
+                Debug.LogError($"[Shot] ตาราง Announcements ภาษา {localeCode} ว่าง — " +
+                               "รัน Tools > Clone Swarm > Localization > 3. Build Announcement Table ก่อน");
+                return;
+            }
+
+            // โคลนป้ายเก็บไว้ก่อนปิด root เดิม — Instantiate จาก object ที่ปิดอยู่ได้
+            // แต่ต้องอ่านค่าจากตัวต้นแบบให้เสร็จก่อนมันถูกปิด
+            var sheet = new GameObject("~AnnounceSheet");
+            var canvas = sheet.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            sheet.AddComponent<UnityEngine.UI.CanvasScaler>().uiScaleMode =
+                UnityEngine.UI.CanvasScaler.ScaleMode.ConstantPixelSize;
+
+            var title = Object.Instantiate(src.gameObject, sheet.transform);
+            PlaceRow(title, 505f, $"—— Announcements · {localeCode} · {rows.Count} key ——");
+
+            float y    = 470f;
+            float step = 975f / rows.Count;
+
+            foreach (var (key, text) in rows)
+            {
+                var go = Object.Instantiate(src.gameObject, sheet.transform);
+                PlaceRow(go, y, text);
+                y -= step;
+            }
+
+            foreach (var root in scene.GetRootGameObjects())
+                if (root != sheet) root.SetActive(false);
+        }
+
+        /// <summary>วางป้ายหนึ่งแถว แล้วให้ตัวเฝ้าระยะถ่างตัดสินเองว่าข้อความนี้เป็นไทยไหม</summary>
+        private static void PlaceRow(GameObject go, float y, string text)
+        {
+            go.SetActive(true);
+            go.hideFlags = HideFlags.DontSave;
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot            = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta        = new Vector2(1820f, 40f);
+            rt.anchoredPosition = new Vector2(0f, y);
+            rt.localScale       = Vector3.one;
+
+            var tmp = go.GetComponent<TMPro.TMP_Text>();
+            tmp.text = text;
+
+            // ตัวเฝ้าระยะถ่างไม่วิ่งเองใน edit mode — เรียกมือ ไม่งั้นภาพที่ได้เป็นภาพ
+            // ของป้ายที่ยังถือ characterSpacing ของละติน ซึ่งไม่ใช่สิ่งที่ผู้เล่นเห็น
+            var guard = go.GetComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
+            if (guard != null) guard.Apply();
+        }
+
+        /// <summary>อ่าน key + ข้อความจากไฟล์ตารางตรงๆ — edit mode ไม่มีระบบ locale ให้ถาม</summary>
+        private static List<(string key, string text)> ReadAnnouncementRows(string localeCode)
+        {
+            var rows = new List<(string, string)>();
+
+            var collection = UnityEditor.Localization.LocalizationEditorSettings
+                                        .GetStringTableCollection("Announcements");
+            if (collection == null) return rows;
+
+            foreach (var table in collection.StringTables)
+            {
+                if (table.LocaleIdentifier.Code != localeCode) continue;
+
+                foreach (var e in table.Values)
+                    if (e != null && !string.IsNullOrEmpty(e.LocalizedValue))
+                        rows.Add((e.Key, e.LocalizedValue));
+                break;
+            }
+
+            rows.Sort((a, b) => string.CompareOrdinal(a.Item1, b.Item1));
+            return rows;
+        }
+
         private static void Capture(string scenePath, string pngPath, string[] hideObjects = null,
                                     System.Action<Scene> populate = null)
         {

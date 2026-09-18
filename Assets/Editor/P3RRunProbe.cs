@@ -245,6 +245,12 @@ namespace CloneSwarm.EditorTools
 
                 _keepAlive = true;
 
+                // ── ตรวจตารางแปลก่อนรอนาฬิกา ───────────────────────────────
+                //
+                // ทำตรงนี้เพราะหลักฐานเรื่องคำแปลไม่ควรขึ้นกับว่ารันไปถึงนาทีไหน ·
+                // ถ้ารอให้บอสออกมาประกาศเองแล้วค่อยดู รันที่ตายก่อนจะไม่ได้คำตอบเลย
+                ResolveAnnouncements();
+
                 yield return Until(() => GameTimeline.Instance.hasStarted.Value, 90f, "นาฬิกาเริ่มเดิน");
                 if (_stopped) yield break;
 
@@ -270,6 +276,59 @@ namespace CloneSwarm.EditorTools
 
                 Report(true, $"เดินถึง {reached / 60f:0.0} นาทีเกม");
             }
+
+            /// <summary>
+            /// เรียก GameHUD.ResolveAnnouncement ทุก key ที่โค้ดใช้ แล้วบันทึกผล
+            ///
+            /// ═══ ทำไมไม่รอให้บอสประกาศเอง ═══
+            ///
+            /// ประกาศแต่ละอันผูกกับกลไกคนละตัว — tether ต้องมีบอสเฟสนั้น · floor hazard
+            /// ต้องมีท่านั้นออก · หลายอันไม่มีวันเกิดใน headless ที่ไม่มีคนเล่น
+            /// ถ้ารอดู จะได้หลักฐานแค่ไม่กี่อันแล้วเข้าใจเอาเองว่าที่เหลือก็คงใช้ได้
+            ///
+            /// เรียกตรงๆ ตอบได้ครบทุก key ว่า **lookup ทำงานไหมและได้ข้อความอะไร** ·
+            /// สิ่งที่ยังตอบไม่ได้คือฟอนต์วาดออกมาหน้าตายังไง ซึ่งต้องดูภาพเท่านั้น
+            ///
+            /// locale ปัจจุบันติดมาในรายงานด้วย — ข้อความไทยที่ออกมาถูกต้องแต่ locale
+            /// เป็น en แปลว่าตัวเลือกภาษาไม่ทำงาน ซึ่งเป็นคนละปัญหากับตารางว่าง
+            /// </summary>
+            private void ResolveAnnouncements()
+            {
+                var loc = UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocale;
+                log.Add($"      -> locale ปัจจุบัน: {(loc != null ? loc.Identifier.Code : "(ไม่มี)")}");
+
+                var keys = new List<string>();
+                foreach (var file in System.IO.Directory.GetFiles("Assets/Script", "*.cs",
+                                                                  System.IO.SearchOption.AllDirectories))
+                    foreach (System.Text.RegularExpressions.Match m in
+                             System.Text.RegularExpressions.Regex.Matches(
+                                 System.IO.File.ReadAllText(file), KEYRE))
+                    {
+                        string k = m.Value;
+                        if (!k.EndsWith(".") && !keys.Contains(k)) keys.Add(k);
+                    }
+
+                keys.Sort();
+                int bad = 0;
+
+                foreach (var k in keys)
+                {
+                    string v = GameHUD.ResolveAnnouncement(k, 3);
+                    bool ok = !string.IsNullOrEmpty(v) && v != k;
+                    if (!ok) bad++;
+                    log.Add($"      {(ok ? "  " : "X ")}{k} = {v}");
+                }
+
+                log.Add($"      -> key ทั้งหมด {keys.Count} · หาไม่เจอ {bad}");
+                _announceKeys    = keys.Count;
+                _announceMissing = bad;
+            }
+
+            /// <summary>รูปแบบ key ของประกาศ — จับโดยไม่ต้องมีอัญประกาศล้อม จึงเจอทั้งใน
+            /// โค้ดและในคอมเมนต์ · ตัวที่ลงท้ายด้วยจุดคือ prefix ที่ต่อค่าตอนรัน ข้ามไป</summary>
+            private const string KEYRE = @"announce\.[a-z0-9_.]+";
+
+            private int _announceKeys, _announceMissing = -1;
 
             // ── รายงาน ────────────────────────────────────────────────────
             private void Report(bool reachedEnd, string note)
@@ -298,6 +357,9 @@ namespace CloneSwarm.EditorTools
                 Check(sb, "สเกลมาจากแมพ",   log.Any(l => l.Contains("สเกลศัตรูจากแมพ")));
                 Check(sb, "นัดหมายยิงจริง", log.Any(l => l.Contains("นัดหมาย '")));
                 Check(sb, "wave เลื่อนตามเวลา", log.Count(l => l.Contains("] Wave ")) > 1);
+                if (_announceMissing >= 0)
+                    Check(sb, $"ประกาศทุก key แปลออก ({_announceKeys} key · หาไม่เจอ {_announceMissing})",
+                          _announceMissing == 0);
 
                 sb.AppendLine("╚═══════════════════════════════════════════════════════");
 
