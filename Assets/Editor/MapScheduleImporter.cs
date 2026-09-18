@@ -43,7 +43,7 @@ namespace CloneSwarm.EditorTools
     public static class MapScheduleImporter
     {
         private const string ScenePath   = "Assets/GameScenes/SampleScene.unity";
-        private const string DefaultMap  = "Assets/ScriptableObjects/Map/MapData_Arena01_Normal.asset";
+        private const string DefaultMap  = "Assets/ScriptableObjects/Map/MapData_Arena01.asset";
 
         [MenuItem("Tools/Clone Swarm/Copy Scene Timeline → MapData")]
         public static void CopyToSelection()
