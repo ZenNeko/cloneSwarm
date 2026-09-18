@@ -85,13 +85,8 @@ public class PlayerAugmentManager : NetworkBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     public bool HasAugment(AugmentData a) => a != null && acquired.Contains(a);
 
-    public int GetStackCount(AugmentData a)
-    {
-        if (a == null) return 0;
-        int n = 0;
-        for (int i = 0; i < acquired.Count; i++) if (acquired[i] == a) n++;
-        return n;
-    }
+    // GetStackCount ถูกถอดออก — augment ถือได้ใบละครั้งเดียวแล้ว (ไม่มีเลเวล ไม่มี stack)
+    // ใครอยากรู้ว่าถือไหมให้ใช้ HasAugment ซึ่งอ่านง่ายกว่าและไม่ชวนให้เขียนเลข
 
     /// <summary>คืน augment ทั้งหมดที่ถืออยู่ (สำหรับ HUD)</summary>
     public IReadOnlyList<AugmentData> GetAcquired() => acquired;
@@ -100,7 +95,7 @@ public class PlayerAugmentManager : NetworkBehaviour
     public void Acquire(AugmentData a)
     {
         if (a == null) return;
-        if (GetStackCount(a) >= a.maxStacks) return;
+        if (HasAugment(a)) return;          // ใบละครั้งเดียว
 
         ApplyLocal(a);
 
@@ -119,7 +114,7 @@ public class PlayerAugmentManager : NetworkBehaviour
 
         if (IsOwner) OnAugmentAcquired?.Invoke(a);
 
-        Debug.Log($"[Augment] {(IsServer ? "[Server]" : "[Client]")} ✨ {a.augmentName} ({a.rarity})");
+        Debug.Log($"[Augment] {(IsServer ? "[Server]" : "[Client]")} ✨ {a.augmentName} ({a.WindowLabel})");
     }
 
     [Rpc(SendTo.Server)]
@@ -133,7 +128,7 @@ public class PlayerAugmentManager : NetworkBehaviour
         }
 
         var a = db.augments[augmentIndex];
-        if (a == null || GetStackCount(a) >= a.maxStacks) return;
+        if (a == null || HasAugment(a)) return;
 
         ApplyLocal(a);
     }

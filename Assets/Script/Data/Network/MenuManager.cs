@@ -22,6 +22,8 @@ public class MenuManager : MonoBehaviour
     // PANELS
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Panels ──────────────────────────────")]
+    [Tooltip("จอ Title — ปล่อยว่างได้ ถ้าว่างเกมจะเปิดมาที่ Main เลยเหมือนเดิม")]
+    public GameObject titlePanel;
     public GameObject mainPanel;
     public GameObject settingsPanel;
     public GameObject loadingPanel;
@@ -59,12 +61,24 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     [Header("── Loading ─────────────────────────────")]
     public TextMeshProUGUI loadingText;
-    [Tooltip("ชื่อ Game Scene ใน Build Settings")]
-    public string          gameSceneName = "SampleScene";
+    [Tooltip("จอโหลดสไตล์ P3R บน loadingPanel — ปล่อยว่างได้ จะเหลือแค่ loadingText แบบเดิม\n" +
+             "P3RScreenWirer เติมช่องนี้ให้เองเพราะ LoadingScreenUI อยู่ในรายชื่อตัวคุมจอ")]
+    public CloneSwarm.UI.P3R.LoadingScreenUI loadingScreenUI;
 
     // ═══════════════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════
+    /// <summary>
+    /// true = เข้า MenuScene รอบนี้เพราะเพิ่งเล่นจบ ไม่ใช่เพราะเพิ่งเปิดเกม
+    ///
+    /// static เพราะต้องข้ามซีน — ตัวตั้งค่าคือ `WinLoseUI.ReturnToMenu` ซึ่งอยู่ใน
+    /// SampleScene แล้วตายไปพร้อมซีนก่อนที่ `MenuManager` จะเกิด · จะส่งต่อด้วย
+    /// reference ไม่ได้ และไม่คุ้มที่จะทำ object DontDestroyOnLoad เพิ่มเพื่อ bool ตัวเดียว
+    ///
+    /// `MenuManager.Start` ล้างทิ้งทันทีหลังใช้ — เปิดเกมรอบหน้าต้องเห็นจอไตเติลตามปกติ
+    /// </summary>
+    public static bool ReturningFromRun;
+
     void Awake()
     {
         if (versionText) versionText.text = $"v{Application.version}";
@@ -75,6 +89,7 @@ public class MenuManager : MonoBehaviour
         CloneSwarm.Meta.MetaProgression.OnGoldChanged += HandleGoldChanged;
         SettingsMenuUI.OnBack                         += ShowMain;
         LobbyUI.OnBack                                += ShowMain;
+        LobbyUI.OnRunStarting                          += ShowLoading;
         JoinRoomPanel.OnJoined                         += HandleJoined;
         JoinRoomPanel.OnJoinFailed                     += HandleJoinFailed;
         GameSessionManager.OnSessionJoined             += HandleSessionJoined;
@@ -85,6 +100,7 @@ public class MenuManager : MonoBehaviour
         CloneSwarm.Meta.MetaProgression.OnGoldChanged -= HandleGoldChanged;
         SettingsMenuUI.OnBack                         -= ShowMain;
         LobbyUI.OnBack                                -= ShowMain;
+        LobbyUI.OnRunStarting                          -= ShowLoading;
         JoinRoomPanel.OnJoined                         -= HandleJoined;
         JoinRoomPanel.OnJoinFailed                     -= HandleJoinFailed;
         GameSessionManager.OnSessionJoined             -= HandleSessionJoined;
@@ -100,7 +116,18 @@ public class MenuManager : MonoBehaviour
         if (talentShopButton) talentShopButton.onClick.AddListener(OnTalentShopClicked);
 
         RefreshGold();
-        ShowMain();
+
+        // จอแรกคือ Title ถ้ามี — ไม่มีก็เข้า Main เลย
+        // panel ถูกปล่อยให้เปิดค้างไว้ในซีนเพื่อให้ Awake ของลูกๆ วิ่งตอนโหลด
+        // ShowPanel ตัวแรกนี้คือคนที่ปิดตัวที่ไม่ใช่จอแรกทิ้ง
+        //
+        // **ยกเว้นตอนกลับมาจากเกม** — จอไตเติลเป็นพิธีเปิดของการเปิดเกม ไม่ใช่ของ
+        // การจบรอบ · คนที่เพิ่งเล่นจบแล้วกด "กลับเมนู" ต้องการเมนูหลัก ไม่ใช่ถูกส่งกลับ
+        // ไปกดผ่านจอไตเติลอีกรอบทุกครั้งที่เล่นจบ
+        if (titlePanel != null && !ReturningFromRun) ShowTitle();
+        else                                        ShowMain();
+
+        ReturningFromRun = false;   // ใช้ครั้งเดียวแล้วล้าง — เปิดเกมรอบหน้าต้องเห็นไตเติล
     }
 
     void HandleSessionJoined(ISession _)
@@ -135,14 +162,56 @@ public class MenuManager : MonoBehaviour
     // ═══════════════════════════════════════════════════════════════════════
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════════════════
+    /// <summary>เปิดจอ Title — ทางกลับมาหลังจบรอบก็ใช้ตัวนี้ได้</summary>
+    public void ShowTitle()
+    {
+        ShowPanel(titlePanel);
+    }
+
     /// <summary>กลับหน้าแรก — public เพราะจอ P3R เรียกผ่าน P3RMenuBridge ไม่ได้ผ่านปุ่ม</summary>
     public void ShowMain()
     {
         ShowPanel(mainPanel);
     }
 
+    /// <summary>
+    /// คลุมช่วงรอยต่อระหว่างกด START RUN กับซีนเกมโผล่
+    ///
+    /// **จอนี้เคยถูกสร้าง ย้าย และต่อสายครบ แต่ไม่มีบรรทัดไหนเปิดมันเลย** — `loadingPanel`
+    /// ถูกอ้างถึงสามที่และทั้งสามที่คือการปิด · ผู้เล่นจึงมองล็อบบี้ค้างอยู่ตลอดช่วงโหลด
+    /// ซึ่งแยกไม่ออกจาก "กดแล้วไม่มีอะไรเกิดขึ้น"
+    ///
+    /// `NetworkManager.SceneManager.LoadScene` ใช้ `LoadSceneMode.Single` ทั้ง MenuScene
+    /// จะถูกทิ้งอยู่แล้ว จอนี้จึงไม่ต้องมีใครสั่งปิด — มันหายไปพร้อมซีน
+    /// แถบความคืบหน้าเป็นแบบกวาด เพราะ NGO รายงานเป็นช่วงๆ ไม่มีค่าต่อเนื่องให้ดึง
+    /// (ดูเหตุผลเต็มใน <see cref="CloneSwarm.UI.P3R.LoadingScreenUI"/>)
+    /// </summary>
+    public void ShowLoading(MapData map, DifficultyTier tier)
+    {
+        ShowPanel(loadingPanel);
+
+        if (loadingScreenUI != null)
+        {
+            loadingScreenUI.SetContext(map != null ? map.DisplayName : "", tier.ToString());
+            loadingScreenUI.SetArt(map != null ? map.previewImage : null);
+        }
+
+        // ป้ายเดิมของ MenuManager — ซีนที่ยังไม่ได้ต่อ LoadingScreenUI ยังได้ข้อความบอกสถานะ
+        if (loadingText != null)
+            loadingText.text = map != null ? $"กำลังโหลด {map.DisplayName}…" : "กำลังโหลด…";
+    }
+
+    /// <summary>
+    /// เปิดหนึ่ง ปิดที่เหลือ
+    ///
+    /// **panel ใหม่ทุกตัวต้องมาเข้าแถวนี้** ไม่งั้นจะไม่มีใครปิดมันได้เลย
+    /// `titlePanel` เคยขาดไปและเป็นเหตุที่จอไตเติลคลุมเมนูถาวร — อาการคือจอเปิดค้าง
+    /// โดยไม่มี error สักบรรทัด เพราะ `onAdvanceEvent → ShowMain()` ทำงานถูกทุกอย่าง
+    /// ยกเว้นไม่มีบรรทัดไหนแตะตัวมันเอง
+    /// </summary>
     void ShowPanel(GameObject target)
     {
+        titlePanel?.SetActive(false);
         mainPanel?.SetActive(false);
         settingsPanel?.SetActive(false);
         loadingPanel?.SetActive(false);

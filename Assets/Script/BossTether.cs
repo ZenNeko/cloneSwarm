@@ -219,14 +219,21 @@ public class BossTether : NetworkBehaviour
         // แจ้งเฉพาะ local player ที่ถูกผูก
         ulong myId = NetworkManager.Singleton.LocalClientId;
         if (myId == pA || (!pillar && myId == pB))
-            GameHUD.Instance?.ShowAnnouncement(AnnouncementText(), BaseLineColor());
+            GameHUD.Instance?.ShowAnnouncementKey(AnnouncementKey(), BaseLineColor());
     }
 
-    string AnnouncementText() => mode switch
+    /// <summary>
+    /// key ของประกาศตามโหมด — แตกเป็นสี่ key ไม่ใช่ประกอบประโยคจากชิ้นส่วน
+    /// เพราะ "ใกล้เสา" กับ "ใกล้กัน" ในภาษาอื่นไม่ได้ต่างกันแค่คำนาม
+    ///
+    /// ตัว 🔗 / ⛓ ที่เคยนำหน้าถูกตัดทิ้งตอนย้ายเข้าตาราง — ไม่มีฟอนต์ในโปรเจกต์ที่มี
+    /// code point นี้ มันจึงขึ้นจอเป็นกล่องสี่เหลี่ยมมาตลอด (กติกาข้อ 5 ของ thai-text)
+    /// </summary>
+    string AnnouncementKey() => mode switch
     {
-        TetherMode.Close => pillarAnchor ? "🔗 TETHER! อยู่ใกล้เสาไว้!" : "🔗 TETHER! อยู่ใกล้กันไว้!",
-        TetherMode.Leash => "⛓ LEASH! ห้ามออกนอกวง!",
-        _                => pillarAnchor ? "🔗 TETHER! วิ่งออกจากเสา!" : "🔗 TETHER! วิ่งออกจากกัน!",
+        TetherMode.Close => pillarAnchor ? "announce.tether.close_pillar" : "announce.tether.close",
+        TetherMode.Leash => "announce.tether.leash",
+        _                => pillarAnchor ? "announce.tether.far_pillar"   : "announce.tether.far",
     };
 
     /// <summary>สีสายตามโหมด — ภาษาสีแบบ FF14: ฟ้า = ต้องออก · เขียว = ต้องเข้า · ส้ม = ห้ามออกนอกวง</summary>
@@ -243,13 +250,13 @@ public class BossTether : NetworkBehaviour
     [ClientRpc]
     void TetherSucceededClientRpc()
     {
-        GameHUD.Instance?.ShowAnnouncement("✅ TETHER BROKEN!", Color.green);
+        GameHUD.Instance?.ShowAnnouncementKey("announce.tether.broken", Color.green);
     }
 
     [ClientRpc]
     void TetherFailedClientRpc()
     {
-        GameHUD.Instance?.ShowAnnouncement("💥 TETHER EXPLODED!", Color.red);
+        GameHUD.Instance?.ShowAnnouncementKey("announce.tether.exploded", Color.red);
     }
 
     // ── Server Update ──────────────────────────────────────────────────────

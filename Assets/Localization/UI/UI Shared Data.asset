@@ -14,7 +14,191 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
   m_TableCollectionName: UI
   m_TableCollectionNameGuidString: da6474af27ee5e749988b8f697715918
-  m_Entries: []
+  m_Entries:
+  - m_Id: 3956263923036160
+    m_Key: ui.pause.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263964979200
+    m_Key: ui.pause.hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263964979201
+    m_Key: ui.pause.resume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263964979202
+    m_Key: ui.pause.settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173504
+    m_Key: ui.pause.quit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173505
+    m_Key: ui.pause.coop.tag
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173506
+    m_Key: ui.pause.coop.note
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173507
+    m_Key: ui.settings.audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173508
+    m_Key: ui.settings.master
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173509
+    m_Key: ui.settings.music
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173510
+    m_Key: ui.settings.sfx
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173511
+    m_Key: ui.result.time
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173512
+    m_Key: ui.result.level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173513
+    m_Key: ui.result.wave
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173514
+    m_Key: ui.result.party
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173515
+    m_Key: ui.result.rewards
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173516
+    m_Key: ui.result.total
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173517
+    m_Key: ui.result.vault
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173518
+    m_Key: ui.result.play_again
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173519
+    m_Key: ui.result.menu
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173520
+    m_Key: ui.settings.reset
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173521
+    m_Key: ui.common.back
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956263969173522
+    m_Key: ui.result.waiting_host
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995598397440
+    m_Key: ui.pause.title 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340480
+    m_Key: ui.pause.hint 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340481
+    m_Key: ui.pause.resume 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340482
+    m_Key: ui.pause.settings 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340483
+    m_Key: ui.pause.quit 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340484
+    m_Key: ui.pause.coop.tag 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340485
+    m_Key: ui.pause.coop.note 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340486
+    m_Key: ui.settings.audio 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340487
+    m_Key: ui.settings.master 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340488
+    m_Key: ui.settings.music 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340489
+    m_Key: ui.settings.sfx 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340490
+    m_Key: ui.result.time 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340491
+    m_Key: ui.result.level 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340492
+    m_Key: ui.result.wave 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340493
+    m_Key: ui.result.party 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340494
+    m_Key: ui.result.rewards 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340495
+    m_Key: ui.result.total 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340496
+    m_Key: ui.result.vault 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340497
+    m_Key: ui.result.play_again 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340498
+    m_Key: ui.result.menu 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340499
+    m_Key: ui.result.waiting_host 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340500
+    m_Key: ui.settings.reset 1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3956995640340501
+    m_Key: ui.common.back 1
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -14,7 +14,119 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
   m_TableCollectionName: Announcements
   m_TableCollectionNameGuidString: be34b9a660c4cb74e836695cf9c0fe72
-  m_Entries: []
+  m_Entries:
+  - m_Id: 3853874387296256
+    m_Key: announce.boss.main
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874416656384
+    m_Key: announce.boss.enrage_in
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850688
+    m_Key: announce.tether.close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850689
+    m_Key: announce.tether.close_pillar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850690
+    m_Key: announce.tether.far
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850691
+    m_Key: announce.tether.far_pillar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850692
+    m_Key: announce.tether.leash
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850693
+    m_Key: announce.tether.broken
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850694
+    m_Key: announce.tether.exploded
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850695
+    m_Key: announce.limitcut.start
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850696
+    m_Key: announce.floorhazard.warn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850697
+    m_Key: announce.floorhazard.detonate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850698
+    m_Key: announce.telegraph.targeted
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850699
+    m_Key: announce.telegraph.locked_in
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850700
+    m_Key: announce.telegraph.color_match
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850701
+    m_Key: announce.color.red
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850702
+    m_Key: announce.color.blue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850703
+    m_Key: announce.color.green
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850704
+    m_Key: announce.color.yellow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850705
+    m_Key: announce.objective.activate
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850706
+    m_Key: announce.objective.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850707
+    m_Key: announce.objective.expired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850708
+    m_Key: announce.objective.quest.fetch
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850709
+    m_Key: announce.objective.quest.survive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850710
+    m_Key: announce.objective.quest.destroy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850711
+    m_Key: announce.objective.quest.kill
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850712
+    m_Key: announce.objective.quest.seal
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850713
+    m_Key: announce.objective.quest.default
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

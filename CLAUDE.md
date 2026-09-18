@@ -124,5 +124,7 @@ Project-level skills under `.claude/skills/`:
 | `create-enemy` | "add enemy" / "create mini boss" — scaffolds Enemy/MiniBoss prefab config |
 | `review-ngo` | "review NGO code" / "audit multiplayer" — checks authority, RPCs, NetworkVariables, project conventions |
 | `game-ui` | "add/change a screen or HUD element" / "UI doesn't match the design" / "this button isn't clickable" — the uGUI screen-builder pipeline, the prefab-vs-builder line, and the failure modes it produces |
+| `unity-verify` | after editing any `.cs`, or before claiming a change compiles/works — compile-checking while the Editor holds the lock, batchmode flags that fail silently, and which verification layer covers which bug class |
+| `thai-text` | tone marks stacking, Thai wrapping mid-word, Thai looking lighter than adjacent English, or changing a text field on a ScriptableObject — TMP Thai rendering + the String Table workflow |
 
 Each skill's `SKILL.md` documents its workflow and pitfalls; the skill files themselves are the authoritative reference when scaffolding new content.

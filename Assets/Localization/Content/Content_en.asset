@@ -383,7 +383,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 2627758530565
-    m_Localized: "Dash, then strike all around you in a full 360. Uses a charge gauge instead of a cooldown \u00B7 part of the damage dealt becomes a shield."
+    m_Localized: "Dash, then strike all around you in a full 360. Uses a charge gauge instead of a cooldown \xB7 part of the damage dealt becomes a shield."
     m_Metadata:
       m_Items: []
   - m_Id: 2627758530567
@@ -704,6 +704,50 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 2628484145153
     m_Localized: Automatically revive once per run at 30% HP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729661071360
+    m_Localized: Adrenaline
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014400
+    m_Localized: Bloodthirst
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014402
+    m_Localized: Glass Cannon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014404
+    m_Localized: Juggernaut
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014406
+    m_Localized: Momentum
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729707208704
+    m_Localized: Overdrive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403008
+    m_Localized: Second Wind
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403010
+    m_Localized: Sharpshooter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403012
+    m_Localized: Swarm Lord
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729828843520
+    m_Localized: "PHASE 2 \u2014 ENRAGE"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729828843521
+    m_Localized: "PHASE 3 \u2014 FINAL FORM"
     m_Metadata:
       m_Items: []
   references:

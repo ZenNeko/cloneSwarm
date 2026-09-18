@@ -17,7 +17,119 @@ MonoBehaviour:
   m_SharedData: {fileID: 11400000, guid: be34b9a660c4cb74e836695cf9c0fe72, type: 2}
   m_Metadata:
     m_Items: []
-  m_TableData: []
+  m_TableData:
+  - m_Id: 3853874387296256
+    m_Localized: MAIN BOSS!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874416656384
+    m_Localized: ENRAGE IN {0}s!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850688
+    m_Localized: TETHER! Stay close together!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850689
+    m_Localized: TETHER! Stay close to the pillar!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850690
+    m_Localized: TETHER! Run away from each other!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850691
+    m_Localized: TETHER! Run away from the pillar!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850692
+    m_Localized: LEASH! Do not leave the ring!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850693
+    m_Localized: TETHER BROKEN!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850694
+    m_Localized: TETHER EXPLODED!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850695
+    m_Localized: "LIMIT CUT \u2014 watch your number, step out in order!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850696
+    m_Localized: FLOOR HAZARD! Get into a Safe Zone!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850697
+    m_Localized: FLOOR EXPLODES!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850698
+    m_Localized: "TARGETED \u2014 RUN AWAY!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850699
+    m_Localized: LOCKED IN!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850700
+    m_Localized: Stand in the {0} circle!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850701
+    m_Localized: RED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850702
+    m_Localized: BLUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850703
+    m_Localized: GREEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850704
+    m_Localized: YELLOW
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850705
+    m_Localized: "ZONE OBJECTIVE \u2014 Stand inside to activate!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850706
+    m_Localized: OBJECTIVE COMPLETE!  +EXP  +HEAL  +ORB
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850707
+    m_Localized: OBJECTIVE EXPIRED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850708
+    m_Localized: 'QUEST: Deliver {0} items!'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850709
+    m_Localized: 'QUEST: Survive {0}s in the zone!'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850710
+    m_Localized: 'QUEST: Destroy {0} objects!'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850711
+    m_Localized: 'QUEST: Kill {0} enemies inside the zone!'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850712
+    m_Localized: "QUEST: Seal the rift \u2014 hold the zone {0}s!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3853874420850713
+    m_Localized: QUEST STARTED
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

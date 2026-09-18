@@ -163,6 +163,7 @@ GameObject:
   - component: {fileID: 2822351049308475276}
   - component: {fileID: 3289270836337978442}
   - component: {fileID: 478661113787085576}
+  - component: {fileID: 6621555936895440314}
   m_Layer: 0
   m_Name: State
   m_TagString: Untagged
@@ -289,6 +290,21 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &6621555936895440314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1570254941399551215}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63fe242cff95cd9469b859e9587f00d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.P3RThaiTracking
+  latinSpacing: 0
+  latinFontSize: 0
+  thaiFontScale: 1.08
 --- !u!1 &2419991106462137360
 GameObject:
   m_ObjectHideFlags: 0
@@ -395,6 +411,11 @@ MonoBehaviour:
   accentImage: {fileID: 5707336352608620993}
   accentSelected: {r: 0.09411765, g: 0.14117648, b: 0.84705883, a: 1}
   accentNormal: {r: 1, g: 1, b: 1, a: 0.1}
+  stateText: {fileID: 478661113787085576}
+  stateOwnedLabel: OWNED
+  stateLockedLabel: LOCKED
+  stateOwnedColor: {r: 0.17254902, g: 0.77254903, b: 0.627451, a: 1}
+  stateLockedColor: {r: 0.54901963, g: 0.5254902, b: 0.47058824, a: 1}
   lockOverlay: {fileID: 3749138323947880391}
   lockCostText: {fileID: 8474864294474919171}
 --- !u!1 &2769921667583894385

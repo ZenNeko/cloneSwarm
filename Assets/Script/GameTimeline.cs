@@ -6,29 +6,34 @@ using UnityEngine;
 /// นาฬิกาเกม + จัดตาราง event ทั้งหมด
 ///
 /// Schedule:
-///   ครั้งแรก: objectiveStartMin / miniBossStartMin (วินาทีที่จะ spawn ครั้งแรก)
-///   ต่อๆ ไป: objectiveIntervalMin / miniBossIntervalMin (ทุกๆ N นาที)
-///   ตอน mainBossTimeMin → Main Boss (wave หยุด)
+///   Zone Objective / Mini Boss → นัดหมายใน TimelineSchedule (นาทีที่กำหนดเอง)
+///   ตอน MainBossMinutes → Main Boss (wave หยุด)
 ///   Kill Main Boss → WIN | ผู้เล่นทุกคนตาย → LOSE
+///
+/// ตารางมาจากแมพก่อน (MapData.TierContent.schedule) ถ้าแมพไม่ได้กำหนดจึงใช้ของซีน
 /// </summary>
 public class GameTimeline : NetworkBehaviour
 {
     public static GameTimeline Instance { get; private set; }
 
-    [Header("Zone Objective Schedule (minutes)")]
-    [Tooltip("เวลาที่ objective ตัวแรกจะ spawn (นาทีจากเริ่มเกม)")]
-    public float objectiveStartMin    = 2f;
-    [Tooltip("ระยะห่างระหว่าง objective แต่ละครั้ง (นาที)")]
-    public float objectiveIntervalMin = 2f;
+    // ══════════════════════════════════════════════════════════════════════
+    // ตารางเวลาเป็นนัดหมายล้วน — ไม่มี start+interval แล้ว
+    //
+    // ตารางแบบ "เริ่มนาทีที่ X แล้วทุก Y นาที" ตอบได้แค่จังหวะที่ห่างเท่ากันตลอด
+    // มันบอกไม่ได้ว่า "เอาอันนี้ที่นาที 3, 8 และ 12" ซึ่งเป็นสิ่งที่การออกแบบจังหวะ
+    // เกมต้องการจริง — จุดพีคกับจุดพักไม่ได้ห่างเท่ากันเสมอ
+    //
+    // สองแบบอยู่ด้วยกันได้ แต่แปลว่าจังหวะของรันถูกนิยามสองที่ แล้วคนอ่าน Inspector
+    // ต้องประกอบเองในหัวว่าที่จริงอะไรออกนาทีไหนบ้าง · ตอนนี้เหลือทางเดียว
+    // เวลาทุกช่องที่จะมีอะไรเกิดขึ้น มองเห็นได้หมดในลิสต์เดียว
+    // ══════════════════════════════════════════════════════════════════════
 
-    [Header("Mini Boss Schedule (minutes)")]
-    [Tooltip("เวลาที่ mini boss ตัวแรกจะ spawn (นาทีจากเริ่มเกม)")]
-    public float miniBossStartMin     = 5f;
-    [Tooltip("ระยะห่างระหว่าง mini boss แต่ละครั้ง (นาที)")]
-    public float miniBossIntervalMin  = 5f;
+    [Header("Timeline — ตารางของซีนนี้")]
+    [Tooltip("นัดหมายของซีน · ใช้เมื่อแมพที่เลือกไม่ได้กำหนดตารางมาเอง")]
+    public TimelineCue[] cues = new TimelineCue[0];
 
     [Header("Main Boss")]
-    [Tooltip("เวลาที่ Main Boss spawn (นาที) — wave จะหยุด")]
+    [Tooltip("เวลาที่ Main Boss spawn (นาที) — wave จะหยุด · แมพ override ได้")]
     public float mainBossTimeMin      = 15f;
 
     [Header("Rewards (Zone Objective)")]
@@ -51,10 +56,18 @@ public class GameTimeline : NetworkBehaviour
     public NetworkVariable<bool>  isMainBossPhase = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // ── Static Events ─────────────────────────────────────────────────────
-    /// <summary>ถึงเวลา spawn Zone Objective</summary>
-    public static event Action            OnObjectiveTime;
-    /// <summary>ถึงเวลา spawn Mini Boss</summary>
-    public static event Action            OnMiniBossTime;
+    /// <summary>
+    /// ถึงเวลา spawn Zone Objective — พารามิเตอร์คือ **ชื่อแบบที่ต้องการ**
+    ///
+    /// ว่าง = ให้ ObjectiveManager สุ่มตามน้ำหนักเหมือนเดิม
+    /// มีค่า = นัดหมายเจาะจงว่าต้องเป็นแบบนี้ (เช่น โซนที่ให้ augment)
+    ///
+    /// **ต้องส่งมากับ event** — ถ้าให้ผู้รับไปเดาเอาจากเวลาปัจจุบัน สองฝั่งจะมี
+    /// ตารางคนละชุดที่ต้องตรงกันตลอดไป ซึ่งไม่มีทางอยู่ตรงกันได้นาน
+    /// </summary>
+    public static event Action<string>     OnObjectiveTime;
+    /// <summary>ถึงเวลา spawn Mini Boss — พารามิเตอร์คือชื่อ prefab ที่ต้องการ (ว่าง = สุ่ม)</summary>
+    public static event Action<string>     OnMiniBossTime;
     /// <summary>ถึงเวลา spawn Main Boss — wave จะหยุด</summary>
     public static event Action            OnMainBossTime;
     /// <summary>ชนะ — (gameTimeSec, level)</summary>
@@ -63,9 +76,12 @@ public class GameTimeline : NetworkBehaviour
     public static event Action<float,int> OnGameLost;
 
     // ── Server State ──────────────────────────────────────────────────────
-    private float nextObjectiveAt;
-    private float nextMiniBossAt;
     private bool  mainBossSpawned;
+
+    // ── ตารางที่ใช้จริงในรันนี้ ──────────────────────────────────────────
+    private TimelineCue[] _activeCues;
+    private bool[][]      _fired;          // ยิงไปแล้วหรือยัง — ขนานกับ _activeCues
+    private float         _mainBossMin;
     private bool  gameEnded;
     private float _loseCheckTimer;
     private float _startWaitTimer;
@@ -75,16 +91,86 @@ public class GameTimeline : NetworkBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+
+        // ตั้งค่าซีนไว้ก่อน — ใครถาม MainBossMinutes ระหว่างรอ spawn จะได้ไม่เจอ 0
+        _activeCues  = cues;
+        _mainBossMin = mainBossTimeMin;
+    }
+
+    /// <summary>
+    /// เลือกตารางที่จะใช้ในรันนี้ — แมพก่อน แล้วค่อยซีน
+    ///
+    /// ═══ แมพแทนที่ทั้งชุด ไม่ผสม ═══
+    ///
+    /// ถ้าแมพมีนัดหมาย ลิสต์ของซีนถูกมองข้ามทั้งก้อน · การผสมสองลิสต์แปลว่า
+    /// แมพ **ลบ** นัดหมายของซีนไม่ได้เลย ทำได้แค่เพิ่ม แล้วแมพที่ออกแบบมาให้เงียบ
+    /// ช่วงต้นเกมก็ยังโดนโซนของซีนแทรกอยู่ดี — จังหวะที่ตั้งใจจะไม่มีวันได้ออก
+    ///
+    /// ความยาวรอบแยกเงื่อนไขกัน — แมพตั้งแค่ความยาวโดยไม่แตะนัดหมายก็ได้
+    /// </summary>
+    void ResolveSchedule()
+    {
+        _activeCues  = cues;
+        _mainBossMin = mainBossTimeMin;
+        string source = "ซีน";
+
+        var tier = RunSetup.Map != null ? RunSetup.Map.GetTier(RunSetup.Difficulty) : null;
+        var sched = tier != null ? tier.schedule : null;
+
+        if (sched != null)
+        {
+            if (sched.HasCues)
+            {
+                _activeCues = sched.cues;
+                source = $"แมพ {RunSetup.Map.mapId} / {RunSetup.Difficulty}";
+            }
+            if (sched.mainBossMinutes > 0f) _mainBossMin = sched.mainBossMinutes;
+        }
+
+        _fired = new bool[_activeCues != null ? _activeCues.Length : 0][];
+        for (int i = 0; i < _fired.Length; i++)
+            _fired[i] = new bool[_activeCues[i] != null ? _activeCues[i].TimeCount : 0];
+
+        if (!IsServer) return;
+
+        WarnOnEmptySchedule(source);
+    }
+
+    /// <summary>
+    /// ตารางที่ขาดทั้งชนิด = ระบบนั้นไม่ทำงานทั้งรัน โดยไม่มีอาการอื่นเลย
+    ///
+    /// ของเดิมมีตาราง start+interval เป็นค่าเริ่มต้น ระบบจึง **รับประกันว่าทำงาน**
+    /// แม้ไม่มีใครตั้งอะไร · ตอนนี้ทุกอย่างมาจากนัดหมายล้วน ลิสต์ว่างจึงถูกต้อง
+    /// ตามกฎแต่ไม่ใช่สิ่งที่ใครตั้งใจ — ต้องบ่น ไม่ใช่เงียบ
+    /// </summary>
+    void WarnOnEmptySchedule(string source)
+    {
+        int zones = 0, minis = 0;
+        if (_activeCues != null)
+            foreach (var c in _activeCues)
+            {
+                if (c == null) continue;
+                if (c.kind == TimelineCueKind.ZoneObjective) zones += c.TimeCount;
+                else                                        minis += c.TimeCount;
+            }
+
+        if (zones == 0)
+            Debug.LogWarning("[GameTimeline] ตารางไม่มีนัดหมาย Zone Objective เลย — " +
+                             "จะไม่มีเควสต์โซนออกทั้งรัน");
+        if (minis == 0)
+            Debug.LogWarning("[GameTimeline] ตารางไม่มีนัดหมาย Mini Boss เลย — " +
+                             "จะไม่มีมินิบอสออกทั้งรัน");
+
+        Debug.Log($"[GameTimeline] เริ่ม — ตารางจาก{source} · " +
+                  $"โซน {zones} ครั้ง · มินิบอส {minis} ครั้ง · บอสใหญ่ {_mainBossMin} นาที");
     }
 
     public override void OnNetworkSpawn()
     {
-        if (!IsServer) return;
-
-        nextObjectiveAt = objectiveStartMin * 60f;
-        nextMiniBossAt  = miniBossStartMin  * 60f;
-        Debug.Log($"[GameTimeline] เริ่ม — Objective: first {objectiveStartMin}m every {objectiveIntervalMin}m | " +
-                  $"MiniBoss: first {miniBossStartMin}m every {miniBossIntervalMin}m | MainBoss: {mainBossTimeMin}m");
+        // แก้ตารางให้ทุกฝั่ง ไม่ใช่เฉพาะ server — client อ่าน MainBossMinutes ไปทำ HUD
+        // (BossHUDUI นับถอยหลัง enrage จากค่านี้) ถ้าฝั่ง client ยังถือ 15 อยู่ทั้งที่
+        // แมพตั้ง 12 นาฬิกาบนจอจะเดินคนละเรื่องกับสิ่งที่เกิดจริง
+        ResolveSchedule();
     }
 
     // ── Server Update ─────────────────────────────────────────────────────
@@ -100,24 +186,11 @@ public class GameTimeline : NetworkBehaviour
         gameTime.Value += Time.deltaTime;
         float t = gameTime.Value;
 
-        // Zone Objective
-        if (t >= nextObjectiveAt)
-        {
-            nextObjectiveAt = t + objectiveIntervalMin * 60f;
-            TriggerObjectiveClientRpc();
-            Debug.Log($"[GameTimeline] Zone Objective — t={FormatTime(t)}");
-        }
-
-        // Mini Boss
-        if (t >= nextMiniBossAt)
-        {
-            nextMiniBossAt = t + miniBossIntervalMin * 60f;
-            TriggerMiniBossClientRpc();
-            Debug.Log($"[GameTimeline] Mini Boss — t={FormatTime(t)}");
-        }
+        // Zone Objective / Mini Boss ทั้งหมดเดินทางนี้ทางเดียว
+        TickCues(t);
 
         // Main Boss
-        if (!mainBossSpawned && t >= mainBossTimeMin * 60f)
+        if (!mainBossSpawned && t >= _mainBossMin * 60f)
         {
             mainBossSpawned       = true;
             isMainBossPhase.Value = true;
@@ -240,14 +313,70 @@ public class GameTimeline : NetworkBehaviour
     }
 
     // ── ClientRpc ─────────────────────────────────────────────────────────
-    [ClientRpc] void TriggerObjectiveClientRpc()         => OnObjectiveTime?.Invoke();
-    [ClientRpc] void TriggerMiniBossClientRpc()          => OnMiniBossTime?.Invoke();
+    /// <summary>
+    /// ยิงนัดหมายที่ถึงเวลาแล้ว — แต่ละเวลายิงครั้งเดียวตลอดรัน
+    ///
+    /// ═══ ทำไมต้องจำว่ายิงไปแล้ว ═══
+    ///
+    /// เงื่อนไขคือ `t >= เวลาที่นัด` ซึ่งเป็นจริง **ตลอดไป** หลังผ่านนาทีนั้น
+    /// ไม่จำก็จะยิงทุกเฟรมจนจบเกม — บั๊กเดียวกับที่ `_loseCheckTimer` เคยเป็น
+    /// (ของเดิมเช็ค `FloorToInt(t) % 2 == 0` แล้วรัน 60-120 ครั้งต่อวินาทีคู่)
+    ///
+    /// ธงอยู่ที่ `_fired` ของ component ไม่ใช่บนตัวนัดหมาย เพราะนัดหมายอาจมาจาก
+    /// MapData ซึ่งเป็น asset ที่อยู่ข้ามรัน — เขียนธงลงไปจะติดค้างถึงรันถัดไป
+    ///
+    /// ═══ เลยเวลาแล้วยังยิง ═══
+    ///
+    /// ใช้ &gt;= ไม่ใช่ช่วงแคบๆ รอบนาทีนั้น · เฟรมเดียวที่ตรงเป๊ะไม่มีจริง และถ้า
+    /// เกมกระตุกข้ามนาทีที่นัดไป นัดนั้นต้องยังเกิด ไม่ใช่หายไปเงียบๆ
+    /// </summary>
+    void TickCues(float t)
+    {
+        if (_activeCues == null) return;
+
+        for (int c = 0; c < _activeCues.Length; c++)
+        {
+            var cue = _activeCues[c];
+            if (cue == null || cue.TimeCount == 0) continue;
+
+            // ตารางมาจาก asset ได้ — ธงจึงอยู่ที่นี่ ไม่ใช่บนตัวนัดหมาย
+            if (_fired[c] == null || _fired[c].Length != cue.TimeCount)
+                _fired[c] = new bool[cue.TimeCount];
+
+            for (int i = 0; i < cue.atMinutes.Length; i++)
+            {
+                if (_fired[c][i]) continue;
+                if (t < cue.atMinutes[i] * 60f) continue;
+
+                _fired[c][i] = true;
+                FireCue(cue, t);
+            }
+        }
+    }
+
+    void FireCue(TimelineCue cue, float t)
+    {
+        switch (cue.kind)
+        {
+            case TimelineCueKind.ZoneObjective: TriggerObjectiveClientRpc(cue.variant); break;
+            case TimelineCueKind.MiniBoss:      TriggerMiniBossClientRpc(cue.variant);  break;
+        }
+
+        Debug.Log($"[GameTimeline] นัดหมาย '{cue.DisplayName}' ({cue.kind}" +
+                  (string.IsNullOrEmpty(cue.variant) ? "" : $" · {cue.variant}") +
+                  $") — t={FormatTime(t)}");
+    }
+
+    [ClientRpc] void TriggerObjectiveClientRpc(string variant) => OnObjectiveTime?.Invoke(variant);
+    [ClientRpc] void TriggerMiniBossClientRpc(string variant)  => OnMiniBossTime?.Invoke(variant);
     [ClientRpc] void TriggerMainBossClientRpc()          => OnMainBossTime?.Invoke();
     [ClientRpc] void GameWonClientRpc(float t, int lvl)  => OnGameWon?.Invoke(t, lvl);
     [ClientRpc] void GameLostClientRpc(float t, int lvl) => OnGameLost?.Invoke(t, lvl);
 
     // ── Getters ───────────────────────────────────────────────────────────
     public float GetGameTime()      => gameTime.Value;
+    /// <summary>ความยาวรอบที่ใช้จริง — แมพ override ได้ อย่าอ่าน mainBossTimeMin ตรงๆ</summary>
+    public float MainBossMinutes    => _mainBossMin;
     public bool  IsMainBossPhase()  => isMainBossPhase.Value;
     public string GetFormattedTime() => FormatTime(gameTime.Value);
 }

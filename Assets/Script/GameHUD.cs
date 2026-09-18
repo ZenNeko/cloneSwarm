@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 using TMPro;
 
@@ -20,6 +22,13 @@ using TMPro;
 /// </summary>
 public class GameHUD : MonoBehaviour
 {
+    [Header("── Character ──")]
+    [Tooltip("รูปตัวละครของผู้เล่นเครื่องนี้ — เติมตอนเจอ local player ไม่ได้ฝังไว้ในซีน\n" +
+             "ปล่อยว่างได้ ช่องจะถูกปิดไว้เฉยๆ")]
+    public Image characterIcon;
+    [Tooltip("ใช้ CharacterData.portrait แทน icon — portrait เป็นภาพเต็มตัว icon เป็นหัว")]
+    public bool  useCharacterPortrait;
+
     [Header("HP")]
     public Image           hpFill;
     public TextMeshProUGUI hpText;
@@ -76,6 +85,9 @@ public class GameHUD : MonoBehaviour
 
         /// <summary>warning เรื่อง slotBg ว่าง ต้องดังครั้งเดียว ไม่ใช่ทุกเฟรม</summary>
         [System.NonSerialized] public bool warnedNoBg;
+
+        /// <summary>ข้อความคูลดาวน์ที่เขียนไปล่าสุด — กัน rebuild mesh ซ้ำค่าเดิมทุกเฟรม</summary>
+        [System.NonSerialized] public string lastCooldownText;
     }
 
     // ── Internal ──────────────────────────────────────────────────────────
@@ -83,6 +95,11 @@ public class GameHUD : MonoBehaviour
 
     private playermove   localPlayer;
     private float        localElapsed;
+
+    // ── กันการเขียน .text ซ้ำค่าเดิมทุกเฟรม (ดู SetTextCached) ──────────
+    private int    lastTimerSecond = -1;
+    private string lastTimerText;
+    private string lastChargeText;
 
     // Interface references — ค้นหาจาก player components
     private IHUDAbility    qAbility;
@@ -95,11 +112,37 @@ public class GameHUD : MonoBehaviour
         Instance = this;
     }
 
+    /// <summary>
+    /// ล้าง <see cref="Instance"/> ตอนถูกทำลาย — **จำเป็น ไม่ใช่ความสะอาด**
+    ///
+    /// คนเรียกทั้งสิบจุด (BossController · BossTether · LimitCutAction · TelegraphZone ·
+    /// FloorHazard) เขียน `GameHUD.Instance?.ShowAnnouncement(...)` ซึ่ง **กันไม่ได้** —
+    /// `?.` เทียบ reference ตรงๆ ไม่ผ่าน `==` ที่ Unity override ไว้ object ที่ Destroy แล้ว
+    /// จึงลอดผ่านไปเรียกเมธอด แล้วไปพังข้างในตอนแตะ announcementLabel
+    ///
+    /// ช่วงที่โดนคือระหว่าง HUD เก่าถูกทำลายกับ HUD ใหม่ Awake ซึ่ง Play Again
+    /// วิ่งผ่านทุกครั้ง · ล้างที่นี่แล้ว `?.` ถึงจะกันได้จริงอย่างที่คนเขียนตั้งใจ
+    /// (กติกาเดียวกับ `LobbyState.OnNetworkDespawn`)
+    /// </summary>
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
     void Start()
     {
         if (announcementLabel) announcementLabel.gameObject.SetActive(false);
 
         if (shieldBarRoot) shieldBarRoot.SetActive(false);
+
+        // ซ่อนของที่ยังไม่รู้ว่าจะมีไหม จนกว่าจะหาเจอจริง
+        //
+        // `WaitAndFindAbilities` รอ 0.5 วิแล้วสแกนได้ถึง 12 รอบ = แย่สุด 6.5 วิแรกของทุกรัน
+        // ก่อนหน้านี้ช่วงนั้นโชว์ค่าที่ค้างมาจาก prefab — แถบ CHARGE ขึ้น "0" และช่อง Q/E
+        // ขึ้นไอคอนของตัวละครอื่น ซึ่ง **ดูเหมือนใช้งานได้** ผู้เล่นจึงอ่านผิดโดยไม่รู้ตัว
+        SetPassiveBarVisible(false);
+        SetAbilitySlotVisible(qSlot, false);
+        SetAbilitySlotVisible(eSlot, false);
 
         StartCoroutine(WaitAndSubscribeTimeline());
         StartCoroutine(WaitAndFindLocalPlayer());
@@ -238,7 +281,11 @@ public class GameHUD : MonoBehaviour
     /// ต่างจาก UpdateAbilitySlot ที่ poll ทุกเฟรมเพื่อ cooldown / สี / glow</summary>
     void ApplyAbilitySlots()
     {
-        // slot และ passive bar แสดงตลอด — ตัวละครทุกตัวมีครบ
+        // โชว์เฉพาะช่องที่หา ability เจอจริง — ตัวละครไม่ได้มีครบทุกช่องเสมอไป
+        // และก่อนหาเจอก็ไม่ควรโชว์ของค้างจาก prefab
+        SetAbilitySlotVisible(qSlot, qAbility != null);
+        SetAbilitySlotVisible(eSlot, eAbility != null);
+
         ApplySlotIdentity(qSlot, qAbility);
         ApplySlotIdentity(eSlot, eAbility);
     }
@@ -254,6 +301,10 @@ public class GameHUD : MonoBehaviour
             // สีสถานะย้ายไปอยู่ที่ slotBg แล้ว icon จึงต้องเป็นสีเต็ม
             // (ของเดิมโค้ดย้อม icon ทุกเฟรม ค่าที่ค้างใน scene จึงเชื่อถือไม่ได้)
             if (slot.slotBg != null) slot.iconImage.color = Color.white;
+
+            // ไม่มี sprite = ปิดไปเลย · Image ที่ไม่มี sprite วาดเป็นสี่เหลี่ยมทึบเต็มช่อง
+            // ซึ่งดูเหมือนไอคอนขาวๆ ที่โหลดไม่ขึ้น มากกว่าดูเหมือน "ยังไม่มีสกิล"
+            slot.iconImage.enabled = ab.HUDIcon != null;
 
             if (ab.HUDIcon != null)
             {
@@ -307,9 +358,8 @@ public class GameHUD : MonoBehaviour
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
             ApplySlotColor(slot, abilityActiveColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(true);
-            if (slot.cooldownText  != null)
-                slot.cooldownText.text = ab.ActiveRemaining > 0.5f
-                    ? $"{ab.ActiveRemaining:F1}" : "";
+            SetTextCached(slot.cooldownText, ref slot.lastCooldownText,
+                          ab.ActiveRemaining > 0.5f ? $"{ab.ActiveRemaining:F1}" : "");
         }
         else if (ab.IsOnCooldown && ab.CooldownMax > 0f)
         {
@@ -318,9 +368,10 @@ public class GameHUD : MonoBehaviour
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = norm;
             ApplySlotColor(slot, abilityCooldownColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
-            if (slot.cooldownText  != null)
-                slot.cooldownText.text = ab.CooldownRemaining > 1f
-                    ? $"{Mathf.CeilToInt(ab.CooldownRemaining)}" : $"{ab.CooldownRemaining:F1}";
+            SetTextCached(slot.cooldownText, ref slot.lastCooldownText,
+                          ab.CooldownRemaining > 1f
+                              ? $"{Mathf.CeilToInt(ab.CooldownRemaining)}"
+                              : $"{ab.CooldownRemaining:F1}");
         }
         else
         {
@@ -328,14 +379,17 @@ public class GameHUD : MonoBehaviour
             if (slot.cooldownFill  != null) slot.cooldownFill.fillAmount = 0f;
             ApplySlotColor(slot, abilityReadyColor);
             if (slot.activeGlow    != null) slot.activeGlow.SetActive(false);
-            if (slot.cooldownText  != null) slot.cooldownText.text = "";
+            SetTextCached(slot.cooldownText, ref slot.lastCooldownText, "");
         }
     }
 
     // ── Passive Bar Update (Polling) ──────────────────────────────────────
     void UpdatePassiveBar()
     {
-        if (passiveBar == null) return;
+        // ไม่มี passive bar = ไม่มีอะไรให้โชว์ · ของเดิม return เฉยๆ แล้วปล่อยให้แถบ
+        // ค้างค่าจาก prefab อยู่บนจอตลอดไปถ้าหาไม่เจอ
+        if (passiveBar == null) { SetPassiveBarVisible(false); return; }
+        SetPassiveBarVisible(true);
 
         float norm = passiveBar.NormalizedValue;
         if (chargeBarFill != null)
@@ -344,21 +398,81 @@ public class GameHUD : MonoBehaviour
             chargeBarFill.color      = passiveBar.IsTriggered
                 ? passiveBar.TriggeredColor : passiveBar.BarColor;
         }
-        if (chargeBarText != null)
-            chargeBarText.text = passiveBar.BarText;
+        SetTextCached(chargeBarText, ref lastChargeText, passiveBar.BarText);
+    }
+
+    /// <summary>
+    /// ซ่อน/โชว์แถบ passive ทั้งอัน
+    ///
+    /// `chargeBarRoot` เคยเป็นฟิลด์ที่ **ไม่มีใครอ้างถึงเลยนอกจากบรรทัดประกาศ** และในซีน
+    /// ก็ปล่อยว่างไว้ · ถ้ายังว่างอยู่ให้ถอยไปซ่อนชิ้นส่วนที่ต่อสายไว้แทน จะได้ไม่ต้องรอ
+    /// ให้มีคนไปลากใส่ Inspector ก่อนถึงจะทำงานถูก (กติกาเดียวกับ fallback ของ slotBg)
+    /// </summary>
+    void SetPassiveBarVisible(bool v)
+    {
+        if (chargeBarRoot != null)
+        {
+            if (chargeBarRoot.activeSelf != v) chargeBarRoot.SetActive(v);
+            return;
+        }
+
+        if (chargeBarFill != null && chargeBarFill.enabled != v) chargeBarFill.enabled = v;
+        if (chargeBarText != null && chargeBarText.enabled != v) chargeBarText.enabled = v;
     }
 
     // ── HP ────────────────────────────────────────────────────────────────
     void OnPlayerSpawned(Transform t)
     {
-        localPlayer = t.GetComponent<playermove>();
-        if (localPlayer == null) return;
+        var pm = t.GetComponent<playermove>();
+        if (pm == null) return;
+
+        // มาถึงได้สองทาง — event `playermove.OnLocalPlayerSpawned` กับลูป poll ทุก 0.4 วิ
+        // ใน WaitAndFindLocalPlayer · ถ้า foreach ของ coroutine วิ่งก่อน OnNetworkSpawn
+        // ในเฟรมเดียวกันจะได้ subscribe ซ้ำ แล้ว OnDisable ถอดแค่ครั้งเดียว
+        if (localPlayer == pm) return;
+
+        localPlayer = pm;
         localPlayer.netHealth.OnValueChanged        += OnHealthChanged;
         localPlayer.netMaxHealth.OnValueChanged     += OnHealthChanged;
         localPlayer.isDead.OnValueChanged           += OnDeadChanged;
         localPlayer.respawnCountdown.OnValueChanged += OnCountdownChanged;
         RefreshHP();
+        ApplyCharacterIcon();
         if (respawnPanel) respawnPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// เติมรูปตัวละครลงช่องบน HUD
+    ///
+    /// **ที่มาของรูปมีจริง ไม่ได้แต่งขึ้น** — `PlayerWeaponManager.characterData` คือ
+    /// ตัวที่ `OnNetworkSpawn` ใช้ตั้งอาวุธ/สกิลเริ่มต้น · ถ้าช่องนั้นว่าง (ผู้เล่นเลือก
+    /// จากจอเลือกตัวละครแทนการตั้งใน Inspector) ก็ตกไปที่ `CharacterSelectUI.SelectedCharacter`
+    /// ซึ่งเป็นเส้นทางเดียวกับที่ `PlayerWeaponManager` ใช้เป๊ะ
+    ///
+    /// หารูปไม่เจอ = **ปิดช่องทิ้ง ไม่ใช่ปล่อยว่าง** — `Image` ที่ไม่มี sprite ไม่ได้วาดเปล่า
+    /// มันวาดสี่เหลี่ยมทึบเต็มกรอบ ซึ่งบนจอดูเหมือนกล่องขาวค้างมากกว่าดูเหมือนที่ว่าง
+    /// </summary>
+    void ApplyCharacterIcon()
+    {
+        if (characterIcon == null) return;
+
+        CharacterData cd = null;
+        if (localPlayer != null)
+        {
+            var pwm = localPlayer.GetComponent<PlayerWeaponManager>();
+            if (pwm != null) cd = pwm.characterData;
+        }
+        if (cd == null) cd = CharacterSelectUI.SelectedCharacter;
+
+        // portrait เป็นภาพเต็มตัว icon เป็นรูปหัว — ตัวที่ขอมาก่อน ไม่มีค่อยใช้อีกตัว
+        Sprite spr = cd == null ? null
+                   : useCharacterPortrait ? (cd.portrait != null ? cd.portrait : cd.icon)
+                                          : (cd.icon     != null ? cd.icon     : cd.portrait);
+
+        characterIcon.sprite  = spr;
+        characterIcon.enabled = spr != null;
+        // **สีขาวล้วนเสมอ** — สี Image คูณเข้ากับพิกเซล ย้อมแล้วงานศิลป์ไม่ตรงกับที่วาดมา
+        characterIcon.color   = Color.white;
     }
 
     void OnHealthChanged(float _, float __) => RefreshHP();
@@ -407,13 +521,99 @@ public class GameHUD : MonoBehaviour
     void UpdateTimerLabel(float elapsed)
     {
         if (timerLabel == null) return;
-        int m = Mathf.FloorToInt(elapsed / 60f);
-        int s = Mathf.FloorToInt(elapsed % 60f);
-        timerLabel.text = $"{m:00}:{s:00}";
+
+        // นาฬิกาเดินทุกเฟรมแต่ตัวเลขเปลี่ยนวินาทีละครั้ง — เทียบวินาทีก่อน
+        // ไม่งั้นได้สตริงใหม่ + rebuild mesh ฟรีๆ 60 ครั้งต่อวินาที
+        int total = Mathf.FloorToInt(elapsed);
+        if (total == lastTimerSecond) return;
+        lastTimerSecond = total;
+
+        SetTextCached(timerLabel, ref lastTimerText, $"{total / 60:00}:{total % 60:00}");
     }
 
     // ── Announcement ──────────────────────────────────────────────────────
-    void OnMainBossPhase() => ShowAnnouncement("MAIN BOSS!", Color.red);
+    [Tooltip("สีแบนเนอร์ตอนบอสใหญ่มา — เดิมเป็น Color.red (#FF0000) ซึ่งอยู่นอกชุดสี\n" +
+             "ชุด P3R ใช้ #D82020 · แดงสดกินตาเกินไปบนจอที่มีศัตรูเต็มอยู่แล้ว")]
+    public Color mainBossAnnouncementColor = new Color32(0xD8, 0x20, 0x20, 0xFF);
+
+    /// <summary>ชื่อ String Table ของประกาศกลางจอ — ประกาศไว้ที่นี่ที่เดียว
+    /// คนเรียกทุกจุดส่งแค่ key ไม่ต้องรู้จักชื่อตาราง (AnnouncementTableBuilder อ้างชื่อนี้ด้วย)</summary>
+    public const string AnnouncementTable = "Announcements";
+
+    void OnMainBossPhase() => ShowAnnouncementKey("announce.boss.main", mainBossAnnouncementColor);
+
+    /// <summary>
+    /// โชว์ประกาศจาก key ใน String Table — ทางหลักของข้อความที่ฝังอยู่ในโค้ด
+    ///
+    /// ═══ ทำไมยังมีสองทาง ═══
+    ///
+    /// ทางนี้ใช้กับข้อความที่ **โค้ด** เป็นคนกำหนด · <see cref="ShowAnnouncement"/> ยังอยู่
+    /// สำหรับสองอย่างที่ key แทนไม่ได้ — ข้อความที่มาจาก data (BossPhase.AnnouncementText
+    /// ซึ่งดีไซเนอร์พิมพ์เองใน ScriptableObject) และข้อความที่ถูกแปลเสร็จแล้วจากที่อื่น
+    /// (ZoneObjective.GetQuestAnnouncement ที่ ObjectiveTrackerHUD อ่านตัวเดียวกัน)
+    ///
+    /// ═══ args เป็น string.Format ไม่ใช่การต่อสตริง ═══
+    ///
+    /// ประโยคไทยกับอังกฤษวางตัวเลข/คำคนละตำแหน่ง ("Deliver 3 items" ↔ "ส่งของให้ครบ 3 ชิ้น")
+    /// ถ้าต่อสตริงในโค้ด ลำดับจะถูกล็อกไว้ที่ภาษาอังกฤษแล้วแปลไทยให้อ่านลื่นไม่ได้
+    /// `{0}` ในตารางย้ายที่ได้อิสระต่อ locale — entry ที่เป็น Smart String ก็ใช้ทางเดียวกันนี้
+    /// </summary>
+    public void ShowAnnouncementKey(string key, Color color, params object[] args)
+        => ShowAnnouncement(ResolveAnnouncement(key, args), color);
+
+    /// <summary>
+    /// แปลง key เป็นข้อความตาม locale ปัจจุบัน — static เพราะคนเรียกบางรายไม่ได้โชว์เอง
+    /// (ZoneObjective ส่งต่อให้ทั้ง HUD และ tracker) จึงต้องเรียกได้โดยไม่มี instance
+    ///
+    /// ═══ ทำไมอ่านแบบ sync ═══
+    ///
+    /// ประกาศกลางจอต้องขึ้น **เฟรมเดียวกับ** ClientRpc ที่สั่ง — รอ async แล้วข้อความเตือน
+    /// จะมาถึงหลังกลไกที่มันเตือนถึงระเบิดไปแล้ว ซึ่งแย่กว่าไม่เตือนเลย ·
+    /// ทางเดียวกับ WeaponData.Description ที่ใช้ sync อยู่แล้วทั้งโปรเจกต์
+    ///
+    /// ข้อควรรู้ที่คอมเมนต์เดิมของ WeaponData พูดไม่ครบ: Localization Settings ตั้ง
+    /// m_PreloadBehavior = PreloadSelectedLocale จริง แต่มันโหลดล่วงหน้าเฉพาะ table
+    /// ที่ **ติด label "Preload"** ซึ่งตอนนี้ไม่มี string table ไหนในโปรเจกต์ติดเลย ·
+    /// ที่ใช้ได้อยู่ทุกวันนี้คือ Addressables WaitForCompletion โหลดให้ตอนเรียกครั้งแรก
+    /// ครั้งนั้นครั้งเดียวจึงอาจกระตุก และทางนี้ใช้ไม่ได้บน WebGL
+    /// อยากปิดช่องนี้ให้ติด Preload ให้ collection ที่ Localization Tables window
+    ///
+    /// ═══ ทำไม key ที่หายต้องเตือน ไม่ใช่เงียบ ═══
+    ///
+    /// ตกกลับไปโชว์ตัว key ดิบๆ กลางจอ แล้วเตือนใน Console พร้อมบอกว่าต้องทำอะไร ·
+    /// ถ้าคืนสตริงว่างเฉยๆ ประกาศจะหายไปทั้งบรรทัดโดยไม่มีใครรู้ว่าเคยมี — กลไกบอสที่
+    /// พึ่งประกาศนี้จะกลายเป็น "ตายโดยไม่รู้สาเหตุ" แทนที่จะเป็นบั๊กที่มองเห็น
+    /// (GetLocalizedString ของ Unity คืนข้อความ "No translation found..." ซึ่งอ่านแล้ว
+    /// ไม่รู้ว่าต้องไปแก้ที่ไหน จึงดึง entry มาเช็คเองแทน)
+    /// </summary>
+    public static string ResolveAnnouncement(string key, params object[] args)
+    {
+        if (string.IsNullOrEmpty(key)) return "";
+
+        string reason;
+        try
+        {
+            var entry = LocalizationSettings.StringDatabase
+                            .GetTableEntry(AnnouncementTable, key).Entry;
+
+            if (entry != null)
+            {
+                string text = entry.GetLocalizedString((IList<object>)args);
+                if (!string.IsNullOrEmpty(text)) return text;
+                reason = $"มี key แต่ค่าใน locale '{LocalizationSettings.SelectedLocale?.Identifier.Code}' ว่าง";
+            }
+            else reason = "ไม่มี key นี้ในตาราง";
+        }
+        catch (System.Exception e)
+        {
+            reason = $"อ่านตารางไม่ได้ ({e.GetType().Name}: {e.Message})";
+        }
+
+        Debug.LogWarning($"[Announce] '{key}' — {reason} · จะโชว์ตัว key แทน\n" +
+                         "แก้โดยเพิ่มแถวใน AnnouncementTableBuilder.Rows แล้วรัน " +
+                         "Tools > Clone Swarm > Localization > 3. Build Announcement Table");
+        return key;
+    }
 
     public void ShowAnnouncement(string text, Color color)
     {
@@ -442,5 +642,23 @@ public class GameHUD : MonoBehaviour
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
-    void SetAbilitySlotVisible(AbilitySlotUI slot, bool v) { if (slot?.root) slot.root.SetActive(v); }
+    void SetAbilitySlotVisible(AbilitySlotUI slot, bool v)
+    {
+        if (slot?.root == null) return;
+        if (slot.root.activeSelf != v) slot.root.SetActive(v);
+    }
+
+    /// <summary>
+    /// เขียน `.text` เฉพาะตอนค่าต่างจริง
+    ///
+    /// การเขียน `TMP_Text.text` บังคับสร้าง mesh ใหม่ทุกครั้ง **แม้ค่าจะเท่าเดิม** ·
+    /// จอนี้เขียนนาฬิกากับตัวเลขคูลดาวน์ทุกเฟรมทั้งที่เปลี่ยนวินาทีละครั้ง
+    /// = สร้างสตริงใหม่กับ rebuild mesh ~60 ครั้ง/วินาทีเปล่าๆ บนจอที่ต้องลื่นที่สุด
+    /// </summary>
+    static void SetTextCached(TextMeshProUGUI label, ref string cache, string value)
+    {
+        if (label == null || cache == value) return;
+        cache      = value;
+        label.text = value;
+    }
 }

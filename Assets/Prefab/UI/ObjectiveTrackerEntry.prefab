@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: ZONE OBJECTIVE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
-  m_sharedMaterial: {fileID: -7763824561282550382, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d8026de236b71094fbe62ce463b154d2, type: 2}
+  m_sharedMaterial: {fileID: -8102616276777410533, guid: d8026de236b71094fbe62ce463b154d2, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -279,8 +279,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 00:00
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
-  m_sharedMaterial: {fileID: -7763824561282550382, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 6a0e3523062cb5042b7ed24220fb70fb, type: 2}
+  m_sharedMaterial: {fileID: 1025586282074556806, guid: 6a0e3523062cb5042b7ed24220fb70fb, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -416,8 +416,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 3 / 5
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
-  m_sharedMaterial: {fileID: -7763824561282550382, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 6a0e3523062cb5042b7ed24220fb70fb, type: 2}
+  m_sharedMaterial: {fileID: 1025586282074556806, guid: 6a0e3523062cb5042b7ed24220fb70fb, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -604,7 +604,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.04, g: 0.04, b: 0.06, a: 0.82}
+  m_Color: {r: 0.050980393, g: 0.07058824, b: 0.14901961, a: 0.82}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -688,8 +688,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: taskText
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
-  m_sharedMaterial: {fileID: -7763824561282550382, guid: a13f8cf3bdaf583458a451eea0c5d231, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d8026de236b71094fbe62ce463b154d2, type: 2}
+  m_sharedMaterial: {fileID: -8102616276777410533, guid: d8026de236b71094fbe62ce463b154d2, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

@@ -163,9 +163,10 @@ public class BossController : NetworkBehaviour
         BossPhase phase = config.phases[phaseIndex];
 
         // ประกาศเฟส + VFX — data-driven จาก BossPhase (ย้ายมาจาก MainBoss เดิม)
-        if (!string.IsNullOrEmpty(phase.announcementText))
+        string announce = phase.AnnouncementText;
+        if (!string.IsNullOrEmpty(announce))
         {
-            GameHUD.Instance?.ShowAnnouncement(phase.announcementText, phase.announcementColor);
+            GameHUD.Instance?.ShowAnnouncement(announce, phase.announcementColor);
         }
         if (phase.phaseVfx != null && NetworkedVFXPool.Instance != null && NetworkedVFXPool.Instance.vfxDatabase != null)
         {

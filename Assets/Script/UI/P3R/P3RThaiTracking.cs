@@ -52,15 +52,40 @@ namespace CloneSwarm.UI.P3R
 
         private TMP_Text label;
         private string   lastText;
+        private bool     cached;
 
-        private void Awake()
+        private void Awake() => EnsureCached();
+
+        /// <summary>
+        /// หาป้ายกับเก็บค่าตั้งต้น — เรียกได้ทั้งจาก Awake และจาก Apply
+        ///
+        /// ═══ ทำไมไม่ทำใน Awake อย่างเดียว ═══
+        ///
+        /// `Apply()` เป็น public และเอกสารบอกว่าเรียกเองได้ · ของเดิมขึ้นต้นด้วย
+        /// `if (label == null) return;` ซึ่งแปลว่าใครเรียกก่อน Awake จะได้ **ความเงียบ**
+        /// ไม่ใช่ผลลัพธ์ และไม่มีอะไรบอกว่าไม่ได้ทำอะไรเลย
+        ///
+        /// ตอนรันจริงไม่มีอาการเพราะ Awake วิ่งทันทีที่ Instantiate · ที่เจอคือตอน
+        /// เครื่องมือ edit mode โคลนป้ายไปเรนเดอร์แผ่นพิสูจน์ แล้วได้ภาพของป้ายที่
+        /// ยังถือระยะถ่างของละตินอยู่ — วรรณยุกต์ลอยออกจากพยัญชนะทั้งแผ่น
+        /// ซึ่งดูเหมือนฟอนต์พัง ทั้งที่เกมจริงไม่เป็น
+        ///
+        /// เก็บค่าครั้งเดียวด้วย `cached` — เรียกซ้ำไม่ทับค่าที่ตัวเองเพิ่งเขียนลงไป
+        /// (ถ้าเก็บใหม่ทุกครั้ง latinSpacing จะกลายเป็น 0 ทันทีที่เจอข้อความไทยหนึ่งครั้ง
+        /// แล้วข้อความละตินหลังจากนั้นจะไม่มีระยะถ่างอีกเลย)
+        /// </summary>
+        private void EnsureCached()
         {
+            if (cached) return;
+
             label = GetComponent<TMP_Text>();
+            if (label == null) return;      // ยังไม่มีป้าย — ลองใหม่รอบหน้า
 
             // ค่าที่ builder ใส่ไว้คือค่าที่ตั้งใจ — เก็บไว้ก่อนที่ใครจะมาเขียนทับ
             if (Mathf.Approximately(latinSpacing, 0f))  latinSpacing  = label.characterSpacing;
             if (latinFontSize <= 0f)                    latinFontSize = label.fontSize;
 
+            cached   = true;
             lastText = null;      // บังคับให้คิดรอบแรกเสมอ
         }
 
@@ -80,6 +105,7 @@ namespace CloneSwarm.UI.P3R
         /// <summary>คิดใหม่ทันที — เรียกเองได้เมื่อเปลี่ยนข้อความแล้วอยากเห็นผลในเฟรมเดียวกัน</summary>
         public void Apply()
         {
+            EnsureCached();
             if (label == null) return;
 
             bool thai = P3RText.HasThai(label.text);

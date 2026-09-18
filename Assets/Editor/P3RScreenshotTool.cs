@@ -4,6 +4,7 @@ using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CloneSwarm.EditorTools
@@ -77,9 +78,439 @@ namespace CloneSwarm.EditorTools
             Debug.Log($"[Shot] เสร็จ · ไฟล์อยู่ที่ {outDir}");
         }
 
-        private static void Capture(string scenePath, string pngPath)
+        /// <summary>
+        /// แคป HUD ในซีนเกมจริง — ตัวเดียวที่ไม่ใช่ซีน `Proto_*`
+        ///
+        /// **ครอบแค่สีกับฟอนต์** ซึ่งพอดีกับสิ่งที่ `P3RGameplayHudRestyler` แก้
+        /// ค่าที่เห็นบนแถบ/ตัวเลขเป็นค่าที่ค้างอยู่ในซีน ไม่ใช่ค่าจริงตอนเล่น เพราะ
+        /// เปิดแบบ edit mode — HP จริง · คูลดาวน์ · ไอคอนสกิล ต้องมีผู้เล่น spawn ก่อน
+        /// จอนี้จึงยืนยัน "สีกับฟอนต์ลงถูกไหม" ได้ แต่ยืนยัน **5-second test ไม่ได้**
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD (SampleScene)")]
+        public static void CaptureGameplayHud()
+        {
+            const string scenePath = "Assets/GameScenes/SampleScene.unity";
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+            string png = Path.Combine(outDir, "SampleScene_HUD.png");
+
+            try
+            {
+                // จอที่ถือ singleton **ต้องเปิดค้างไว้ในซีน** ไม่งั้น Awake ไม่วิ่งแล้ว
+                // Instance เป็น null · ตอนเล่นจริงมันซ่อนตัวเองใน Awake/Start แต่ edit mode
+                // ไม่มี Awake ทั้งสามจอจึงซ้อนทับ HUD จนมองไม่เห็นอะไรเลย
+                // ปิดให้เฉพาะตอนแคป — Capture ไม่เซฟซีนอยู่แล้ว สถานะในไฟล์จึงไม่ถูกแตะ
+                // `P3R_Loading` อยู่ในลิสต์ด้วยเหตุผลเดียวกันแต่คนละกลไก — ม่านรอผู้เล่น
+                // ถูกเปิดค้างในซีนแล้วให้ `GameplayLoadingGate` ปิดตอนรัน · edit mode
+                // ไม่มีใครปิดให้ มันจึงทึบเต็มจอจนภาพออกมาเป็นหน้า NOW LOADING ล้วน
+                Capture(scenePath, png,
+                        hideObjects: new[] { "P3R_LevelUp", "P3R_Pause", "P3R_WinLose", "P3R_Loading" });
+                Debug.Log($"[Shot] {png}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Shot] {scenePath} ล้มเหลว: {e}");
+            }
+        }
+
+        /// <summary>
+        /// แคปซีนเกมตอน **จอ Level Up เปิดอยู่** — ไว้พิสูจน์ลำดับการวาด
+        ///
+        /// จอ Level Up ปูแผ่นทึบ 98% เต็มจอ · แถบ `BuildStrip_Shared` ต้องอยู่ **เหนือ**
+        /// แผ่นนั้นเพราะเป็นลูกของ `HUDCanvas` ลำดับหลัง `P3R_LevelUp`
+        /// ถ้าภาพออกมาไม่เห็นแถบ แปลว่าลำดับพี่น้องผิด ไม่ใช่เรื่องสี
+        ///
+        /// ยังต้องปิด `P3R_Pause` · `P3R_WinLose` · `P3R_Loading` — edit mode ไม่มี Awake
+        /// ให้จอพวกนั้นซ่อนตัวเอง มันจึงทับทุกอย่างจนไม่เหลืออะไรให้ดู
+        ///
+        /// **สิ่งที่ภาพนี้ยืนยันไม่ได้**: อะไรก็ตามที่เกิดตอน `Show()` — นาฬิกาที่ซ่อน
+        /// จนกว่าจะมี tick แรกจะยังโผล่อยู่ในภาพ เพราะ edit mode ไม่มีใครเรียก `Show()`
+        /// เรื่องนั้นเป็นของสโมกเทสต์ ไม่ใช่ของภาพ
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD + Level Up")]
+        public static void CaptureGameplayHudWithLevelUp()
+        {
+            const string scenePath = "Assets/GameScenes/SampleScene.unity";
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+            string png = Path.Combine(outDir, "SampleScene_HUD_LevelUp.png");
+
+            try
+            {
+                Capture(scenePath, png,
+                        hideObjects: new[] { "P3R_Pause", "P3R_WinLose", "P3R_Loading" });
+                Debug.Log($"[Shot] {png}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Shot] {scenePath} ล้มเหลว: {e}");
+            }
+        }
+
+        /// <summary>
+        /// แคป HUD พร้อม **ของจำลอง** ในแถวปาร์ตี้กับช่อง augment
+        ///
+        /// สองแผงนี้สร้างลูกตอนรันเท่านั้น (ต้องมีผู้เล่น spawn + PlayerAugmentManager)
+        /// edit mode จึงเห็นเป็นกล่องเปล่า · ใส่ของจำลองให้ดูว่า **จัดวางพอดีไหม**
+        /// ซึ่งเป็นสิ่งเดียวที่ภาพตอบได้ — ค่าจริงถูกไหมเป็นเรื่องของสโมกเทสต์กับสองเครื่อง
+        ///
+        /// ซีนไม่ถูกเซฟ ของจำลองหายไปพร้อมรอบนี้
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Gameplay HUD (party preview)")]
+        public static void CaptureGameplayHudParty()
+        {
+            const string scenePath = "Assets/GameScenes/SampleScene.unity";
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+            string png = Path.Combine(outDir, "SampleScene_HUD_Party.png");
+
+            try
+            {
+                Capture(scenePath, png,
+                        hideObjects: new[] { "P3R_LevelUp", "P3R_Pause", "P3R_WinLose", "P3R_Loading" },
+                        populate: PopulatePartySamples);
+                Debug.Log($"[Shot] {png}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[Shot] {scenePath} ล้มเหลว: {e}");
+            }
+        }
+
+        /// <summary>ใส่สองแถว (เป็น / ล้ม) กับสามช่อง augment ตามภาพแบบ</summary>
+        private static void PopulatePartySamples(Scene scene)
+        {
+            var party = FindByName(scene, "PartyPanel")?.GetComponent<CloneSwarm.UI.P3R.PartyMemberHUD>();
+            if (party != null && party.rowTemplate != null)
+            {
+                var parent = party.rowArea != null ? party.rowArea : (RectTransform)party.transform;
+
+                var a = Object.Instantiate(party.rowTemplate, parent);
+                a.name = "Sample_Row0";
+                a.SetIdentity(1, "HUNTER", new Color32(0x3B, 0x6B, 0xFF, 0xFF));
+                a.SetAlive(240f, 240f);
+                ((RectTransform)a.transform).anchoredPosition = new Vector2(0f, party.rowHeight + party.rowGap);
+
+                var b = Object.Instantiate(party.rowTemplate, parent);
+                b.name = "Sample_Row1";
+                b.SetIdentity(2, "GUNNER", new Color32(0xE8, 0x3A, 0x3A, 0xFF));
+                b.SetDowned(6f);
+                ((RectTransform)b.transform).anchoredPosition = Vector2.zero;
+            }
+
+            var strip = FindByName(scene, "AugmentStrip")?.GetComponent<CloneSwarm.UI.P3R.AugmentStripUI>();
+            if (strip != null && strip.slotTemplate != null)
+            {
+                var parent = strip.slotArea != null ? strip.slotArea : (RectTransform)strip.transform;
+                string[] abbrev = { "GLA", "BLO", "" };
+
+                for (int i = 0; i < strip.slotCount; i++)
+                {
+                    var slot = Object.Instantiate(strip.slotTemplate, parent);
+                    slot.name = $"Sample_Aug{i}";
+                    slot.gameObject.SetActive(true);
+
+                    var rt = (RectTransform)slot.transform;
+                    rt.sizeDelta = new Vector2(strip.slotSize, strip.slotSize);
+                    rt.anchoredPosition = new Vector2(i * (strip.slotSize + strip.slotGap), 0f);
+
+                    if (string.IsNullOrEmpty(abbrev[i])) { slot.ShowEmpty(strip.borderColor); continue; }
+
+                    // level = 0 และสีเดียวทุกช่อง — augment ไม่มีระดับและไม่มีเลเวลแล้ว
+                    // ของจำลองต้องสะท้อนกติกาจริง ไม่งั้นภาพจะโชว์สิ่งที่เกมทำไม่ได้
+                    slot.ShowEntry(
+                        new CloneSwarm.UI.P3R.BuildStripUI.Entry { abbrev = abbrev[i], level = 0 },
+                        strip.augmentColor, strip.borderColor, strip.augmentColor);
+                }
+            }
+        }
+
+        private static GameObject FindByName(Scene scene, string name)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == name) return t.gameObject;
+            return null;
+        }
+
+        /// <param name="populate">
+        /// เรียกหลังเปิดซีนแต่ก่อนเรนเดอร์ — ใส่ของจำลองให้แผงที่ตอน edit mode ยังว่าง
+        ///
+        /// **ปลอดภัยเพราะ Capture ไม่เคยเซฟซีน** ของที่ใส่อยู่แค่ในหน่วยความจำรอบนี้
+        /// จำเป็นสำหรับแผงที่สร้างลูกตอนรัน (แถวปาร์ตี้ · ช่อง augment) ซึ่งถ้าไม่ใส่
+        /// ภาพจะออกมาเป็นกล่องเปล่าสองใบ แล้วอ่านไม่ออกว่าจัดวางพอดีไหม
+        /// </param>
+        // ══════════════════════════════════════════════════════════════════
+        /// <summary>
+        /// จับภาพจอ Pause กับ WinLose — สองจอที่ตัวจับภาพอื่น **ปิดทิ้งเสมอ**
+        /// เมนู: Tools > Clone Swarm > Capture Pause + WinLose
+        ///
+        /// ═══ ทำไมเพิ่งมีตอนนี้ ═══
+        ///
+        /// ทุกตัวจับภาพที่มีอยู่ใส่สองจอนี้ไว้ใน hideObjects เพราะมันบังจอเกม ·
+        /// ผลคือสองจอนี้ไม่เคยถูกเรนเดอร์ดูเลยสักครั้ง และตอนนี้มันเพิ่งได้คำแปล
+        /// ซึ่งเป็นของที่ YAML บอกไม่ได้ว่าออกมาหน้าตายังไง
+        ///
+        /// ═══ ต้องปลุก P3RLocalizedText เอง ═══
+        ///
+        /// `OnEnable` ไม่วิ่งใน edit mode ป้ายจึงยังถือข้อความที่พิมพ์ไว้ในซีน ·
+        /// ถ้าไม่เรียก `Refresh()` ภาพที่ได้จะเป็นภาพของ **ข้อความเดิม** ไม่ใช่ของที่มา
+        /// จากตาราง แล้วเราจะเข้าใจว่าการต่อสายสำเร็จทั้งที่ยังไม่ได้พิสูจน์อะไรเลย
+        /// (บทเรียนเดียวกับ P3RThaiTracking ที่เงียบเมื่อถูกเรียกก่อน Awake)
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Pause + WinLose")]
+        public static void CapturePauseAndWinLose()
+        {
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+
+            foreach (var panel in new[] { "P3R_Pause", "P3R_WinLose" })
+            {
+                string target = panel;
+                Capture("Assets/GameScenes/SampleScene.unity",
+                        Path.Combine(outDir, target + ".png"),
+                        hideObjects: null,
+                        populate: sc => ShowOnly(sc, target));
+            }
+
+            Debug.Log($"[Shot] จอ Pause + WinLose → {outDir}");
+        }
+
+        /// <summary>เปิดจอที่ต้องการ ปิดจออื่น แล้วให้ป้ายไปดึงคำแปลมาเอง</summary>
+        private static void ShowOnly(Scene scene, string panelName)
+        {
+            var others = new[] { "P3R_Pause", "P3R_WinLose", "P3R_LevelUp", "P3R_Loading" };
+            Transform found = null;
+
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == panelName) { found = t; t.gameObject.SetActive(true); }
+                    else if (System.Array.IndexOf(others, t.name) >= 0) t.gameObject.SetActive(false);
+                }
+
+            if (found == null)
+            {
+                Debug.LogError($"[Shot] ไม่เจอจอ {panelName} ในซีน");
+                return;
+            }
+
+            // เปิดพ่อทุกชั้นด้วย — จอถูกซ่อนไว้ได้หลายระดับ
+            for (var t = found; t != null; t = t.parent) t.gameObject.SetActive(true);
+
+            // ปลุกระบบแปลก่อน — edit mode ไม่ได้เริ่มให้เอง แล้ว GetTableEntry จะคืน null
+            // ทุกครั้ง ภาพที่ได้จะเป็น key ดิบทั้งจอ ซึ่งบอกได้แค่ว่า "ต่อสายไว้ที่ key ไหน"
+            // ไม่ได้บอกว่าคำแปลออกมาหน้าตายังไง ซึ่งคือเหตุผลเดียวที่เรนเดอร์
+            var init = UnityEngine.Localization.Settings.LocalizationSettings.InitializationOperation;
+            if (init.IsValid() && !init.IsDone) init.WaitForCompletion();
+
+            int refreshed = 0;
+            foreach (var loc in found.GetComponentsInChildren<CloneSwarm.UI.P3R.P3RLocalizedText>(true))
+            {
+                loc.Refresh();
+
+                // edit mode ยังไม่มี locale ที่เลือกไว้ `GetTableEntry` จึงคืน null และ
+                // ป้ายตกไปโชว์ key ตามที่ออกแบบ · อ่านจากไฟล์ตารางแทนเพื่อให้ **ภาพ**
+                // ตอบคำถามที่เรนเดอร์มาเพื่อตอบ คือคำแปลวาดออกมาหน้าตายังไง
+                //
+                // ทางนี้เป็นของเครื่องมือเรนเดอร์เท่านั้น ไม่ได้พิสูจน์ว่า lookup ตอนรันจริง
+                // ทำงาน — เรื่องนั้นต้องเปิดตัวเกมดู
+                var tmp = loc.GetComponent<TMPro.TMP_Text>();
+                if (tmp != null && tmp.text == loc.key)
+                {
+                    string v = ReadTableValue(loc.table, loc.key, LocaleForShots);
+                    if (!string.IsNullOrEmpty(v)) tmp.text = v;
+                }
+
+                refreshed++;
+            }
+
+            foreach (var guard in found.GetComponentsInChildren<CloneSwarm.UI.P3R.P3RThaiTracking>(true))
+                guard.Apply();
+
+            // ── บังคับคำนวณ layout ใหม่หลังเปลี่ยนข้อความ ──────────────────
+            //
+            // ContentSizeFitter กับ LayoutGroup คำนวณตอน layout rebuild ซึ่งใน edit mode
+            // ไม่เกิดเองจากการเขียน `.text` · ไม่สั่งเองแล้วกล่องจะยังกว้างยาวตามข้อความ
+            // **เดิม** แล้วข้อความใหม่ที่ยาวกว่าจะล้นออกมา
+            //
+            // อาการนั้นอ่านเหมือนบั๊ก layout ทั้งที่เกมจริงไม่เป็น เพราะตอนรันมี rebuild
+            // ให้เอง — เรนเดอร์ที่โกหกแบบนี้แย่กว่าไม่เรนเดอร์ เพราะมันพาไปแก้ผิดที่
+            foreach (var rt in found.GetComponentsInChildren<RectTransform>(true))
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+
+            Debug.Log($"[Shot] {panelName} — ดึงคำแปลให้ {refreshed} ป้าย");
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        /// <summary>
+        /// แผ่นพิสูจน์ประกาศ — เรนเดอร์ข้อความทุกอันด้วย **ป้ายจริง** ทั้งสองภาษา
+        /// เมนู: Tools > Clone Swarm > Capture Announcement Proof Sheet
+        ///
+        /// ═══ ทำไมต้องดูภาพ ทั้งที่ยืนยันข้อความไปแล้ว ═══
+        ///
+        /// Run Probe ตอบว่า lookup ทำงานและได้ข้อความอะไร · ตอบไม่ได้ว่าฟอนต์
+        /// **วาดออกมาหน้าตายังไง** — วรรณยุกต์ซ้อนกันเป็นก้อน สระลอยหลุดจากพยัญชนะ
+        /// หรือไทยดูบางกว่าอังกฤษข้างๆ ไม่มีอะไรใน log หรือ YAML บอกได้เลย
+        ///
+        /// ═══ โคลนป้ายจริง ไม่ใช่สร้างป้ายใหม่ ═══
+        ///
+        /// ป้ายที่สร้างเองจะพิสูจน์แค่ว่า "ฟอนต์นี้วาดไทยได้" ซึ่งไม่ใช่คำถาม ·
+        /// คำถามคือป้ายประกาศ**ที่ตั้งค่าไว้จริง**วาดได้ไหม — ซึ่งมี characterSpacing 16,
+        /// fontStyle UpperCase และ P3RThaiTracking คอยปรับอยู่ · โคลนมาทั้งก้อนแล้ว
+        /// เรียก Apply() เองจึงได้ภาพที่ตรงกับสิ่งที่ผู้เล่นเห็น
+        ///
+        /// ═══ อ่านข้อความจากไฟล์ตาราง ไม่ใช่ผ่านระบบ localization ═══
+        ///
+        /// เครื่องมือนี้ทำงานใน edit mode ซึ่งระบบเลือกภาษายังไม่ได้เริ่ม · การ
+        /// อ่าน asset ตรงๆ แยกคำถามสองข้อออกจากกันพอดี — "หา key เจอไหม" ตอบไปแล้ว
+        /// ด้วย Run Probe ตอนรันจริง ส่วนแผ่นนี้ตอบเรื่องการวาดอย่างเดียว
+        /// </summary>
+        [MenuItem("Tools/Clone Swarm/Capture Announcement Proof Sheet")]
+        public static void CaptureAnnouncementProof()
+        {
+            string outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screenshots"));
+            Directory.CreateDirectory(outDir);
+
+            foreach (var locale in new[] { "th-TH", "en" })
+            {
+                string code = locale;
+                Capture("Assets/GameScenes/SampleScene.unity",
+                        Path.Combine(outDir, $"announce_{code}.png"),
+                        hideObjects: null,
+                        populate: sc => BuildAnnouncementSheet(sc, code));
+            }
+
+            Debug.Log($"[Shot] แผ่นพิสูจน์ประกาศ → {outDir}/announce_th-TH.png · announce_en.png");
+        }
+
+        /// <summary>
+        /// ล้างซีนให้เหลือแต่แผ่นพิสูจน์ แล้วเรียงข้อความทุกอันด้วยป้ายที่โคลนมา
+        ///
+        /// ปิด root เดิมทั้งหมดแทนที่จะไล่ซ่อนทีละชิ้น — HUD มีของหลายสิบชิ้นและ
+        /// รายชื่อที่ต้องซ่อนจะล้าสมัยทุกครั้งที่มีคนเพิ่มแผงใหม่
+        /// </summary>
+        private static void BuildAnnouncementSheet(Scene scene, string localeCode)
+        {
+            var hud = Object.FindAnyObjectByType<GameHUD>(FindObjectsInactive.Include);
+            var src = hud != null ? hud.announcementLabel : null;
+            if (src == null)
+            {
+                Debug.LogError("[Shot] หา GameHUD.announcementLabel ไม่เจอ — แผ่นพิสูจน์ต้องใช้ป้ายจริง");
+                return;
+            }
+
+            var rows = ReadAnnouncementRows(localeCode);
+            if (rows.Count == 0)
+            {
+                Debug.LogError($"[Shot] ตาราง Announcements ภาษา {localeCode} ว่าง — " +
+                               "รัน Tools > Clone Swarm > Localization > 3. Build Announcement Table ก่อน");
+                return;
+            }
+
+            // โคลนป้ายเก็บไว้ก่อนปิด root เดิม — Instantiate จาก object ที่ปิดอยู่ได้
+            // แต่ต้องอ่านค่าจากตัวต้นแบบให้เสร็จก่อนมันถูกปิด
+            var sheet = new GameObject("~AnnounceSheet");
+            var canvas = sheet.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            sheet.AddComponent<UnityEngine.UI.CanvasScaler>().uiScaleMode =
+                UnityEngine.UI.CanvasScaler.ScaleMode.ConstantPixelSize;
+
+            var title = Object.Instantiate(src.gameObject, sheet.transform);
+            PlaceRow(title, 505f, $"—— Announcements · {localeCode} · {rows.Count} key ——");
+
+            float y    = 470f;
+            float step = 975f / rows.Count;
+
+            foreach (var (key, text) in rows)
+            {
+                var go = Object.Instantiate(src.gameObject, sheet.transform);
+                PlaceRow(go, y, text);
+                y -= step;
+            }
+
+            foreach (var root in scene.GetRootGameObjects())
+                if (root != sheet) root.SetActive(false);
+        }
+
+        /// <summary>วางป้ายหนึ่งแถว แล้วให้ตัวเฝ้าระยะถ่างตัดสินเองว่าข้อความนี้เป็นไทยไหม</summary>
+        private static void PlaceRow(GameObject go, float y, string text)
+        {
+            go.SetActive(true);
+            go.hideFlags = HideFlags.DontSave;
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot            = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta        = new Vector2(1820f, 40f);
+            rt.anchoredPosition = new Vector2(0f, y);
+            rt.localScale       = Vector3.one;
+
+            var tmp = go.GetComponent<TMPro.TMP_Text>();
+            tmp.text = text;
+
+            // ตัวเฝ้าระยะถ่างไม่วิ่งเองใน edit mode — เรียกมือ ไม่งั้นภาพที่ได้เป็นภาพ
+            // ของป้ายที่ยังถือ characterSpacing ของละติน ซึ่งไม่ใช่สิ่งที่ผู้เล่นเห็น
+            var guard = go.GetComponent<CloneSwarm.UI.P3R.P3RThaiTracking>();
+            if (guard != null) guard.Apply();
+        }
+
+        /// <summary>ภาษาที่ใช้เรนเดอร์จอ — ไทยเพราะเป็นภาษาที่ต้องดูวรรณยุกต์</summary>
+        private const string LocaleForShots = "th-TH";
+
+        /// <summary>อ่านค่าของ key เดียวจากไฟล์ตาราง — ใช้ตอน edit mode ถาม runtime ไม่ได้</summary>
+        private static string ReadTableValue(string tableName, string key, string localeCode)
+        {
+            var collection = UnityEditor.Localization.LocalizationEditorSettings
+                                        .GetStringTableCollection(tableName);
+            if (collection == null) return null;
+
+            foreach (var t in collection.StringTables)
+            {
+                if (t.LocaleIdentifier.Code != localeCode) continue;
+                var e = t.GetEntry(key);
+                return e != null ? e.LocalizedValue : null;
+            }
+            return null;
+        }
+
+        /// <summary>อ่าน key + ข้อความจากไฟล์ตารางตรงๆ — edit mode ไม่มีระบบ locale ให้ถาม</summary>
+        private static List<(string key, string text)> ReadAnnouncementRows(string localeCode)
+        {
+            var rows = new List<(string, string)>();
+
+            var collection = UnityEditor.Localization.LocalizationEditorSettings
+                                        .GetStringTableCollection("Announcements");
+            if (collection == null) return rows;
+
+            foreach (var table in collection.StringTables)
+            {
+                if (table.LocaleIdentifier.Code != localeCode) continue;
+
+                foreach (var e in table.Values)
+                    if (e != null && !string.IsNullOrEmpty(e.LocalizedValue))
+                        rows.Add((e.Key, e.LocalizedValue));
+                break;
+            }
+
+            rows.Sort((a, b) => string.CompareOrdinal(a.Item1, b.Item1));
+            return rows;
+        }
+
+        private static void Capture(string scenePath, string pngPath, string[] hideObjects = null,
+                                    System.Action<Scene> populate = null)
         {
             var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+
+            if (hideObjects != null)
+            {
+                foreach (var root in scene.GetRootGameObjects())
+                    foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                        if (System.Array.IndexOf(hideObjects, t.name) >= 0)
+                            t.gameObject.SetActive(false);
+            }
+
+            populate?.Invoke(scene);
 
             // ── เก็บ Canvas ทุกตัวในซีน (รวมที่ปิดอยู่ เผื่อ panel ถูกปิดไว้) ──
             var canvases = new List<Canvas>();

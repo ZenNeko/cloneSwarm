@@ -144,14 +144,15 @@ public class BossHUDUI : MonoBehaviour
         if (_miniBars.Count == 0 || enrageWarned) return;
         if (GameTimeline.Instance == null) return;
 
-        float mainBossAt = GameTimeline.Instance.mainBossTimeMin * 60f;
+        float mainBossAt = GameTimeline.Instance.MainBossMinutes * 60f;
         float remaining  = mainBossAt - GameTimeline.Instance.GetGameTime();
 
         if (remaining <= enrageWarningTime && remaining > 0f)
         {
             enrageWarned = true;
             GameHUD.Instance
-                ?.ShowAnnouncement($"⚠ ENRAGE IN {Mathf.CeilToInt(remaining)}s!", new Color(1f, 0.4f, 0f));
+                ?.ShowAnnouncementKey("announce.boss.enrage_in", new Color(1f, 0.4f, 0f),
+                                      Mathf.CeilToInt(remaining));
         }
     }
 }

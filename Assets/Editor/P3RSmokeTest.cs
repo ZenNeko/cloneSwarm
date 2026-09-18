@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using CloneSwarm.Meta;
 using CloneSwarm.UI.P3R;
@@ -68,16 +69,43 @@ namespace CloneSwarm.EditorTools
             SessionState.SetString(StateKey, "");
             Debug.Log(report);
 
-            if (Application.isBatchMode)
+            if (!Application.isBatchMode) { EditorApplication.isPlaying = false; return; }
+
+            // ═══ ต้องรอให้ออกจาก play mode **จริง** ก่อนค่อยปิด Unity ═══
+            //
+            // ของเดิมสั่ง isPlaying = false แล้วต่อ delayCall → Exit ทันที · delayCall
+            // ยิงได้ตั้งแต่ยังสลับโหมดไม่เสร็จ Unity จึงปิดตัวคาอยู่กลางทางแล้ว **เขียน
+            // สถานะตอน play mode ลงไฟล์ซีน**
+            //
+            // ผลคือจอที่ซ่อนตัวเองใน Awake (P3R_HUD · P3R_Pause · P3R_WinLose) ถูก
+            // บันทึกเป็น "ปิด" → รอบถัดไป Awake ไม่วิ่ง singleton ตายทั้งสามตัว
+            // = **เทสต์ทำลายซีนที่มันเพิ่งตรวจผ่าน ทุกรอบ** และอาการไปโผล่รอบหน้า
+            // ซึ่งทำให้ดูเหมือนเป็นความผิดของสิ่งที่รันคั่นกลาง (เคยโทษตัวรีสกิลไปแล้วครั้งหนึ่ง)
+            //
+            // เทสต์นี้ **ไม่มีสิทธิ์แก้ซีน** — ล้างธง dirty ทิ้งก่อนออกเสมอ
+            void OnPlayModeChanged(PlayModeStateChange state)
             {
-                // ออกจาก play mode ก่อน ไม่งั้น Unity บ่นตอนปิด
-                EditorApplication.isPlaying = false;
+                if (state != PlayModeStateChange.EnteredEditMode) return;
+                EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+                DiscardSceneEdits();
                 EditorApplication.delayCall += () => EditorApplication.Exit(ok ? 0 : 1);
             }
-            else
-            {
-                EditorApplication.isPlaying = false;
-            }
+
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            EditorApplication.isPlaying = false;
+        }
+
+        /// <summary>
+        /// ทิ้งความเปลี่ยนแปลงทุกอย่างที่เกิดกับซีนระหว่างเทสต์
+        /// เทสต์มีหน้าที่ **อ่าน** ไม่ใช่เขียน · ซีนที่ถูกแก้โดยไม่มีใครสั่งคือซีนที่ไล่เหตุไม่ได้
+        /// </summary>
+        private static void DiscardSceneEdits()
+        {
+            // เปิดซีนใหม่จากดิสก์ = ทิ้งของในหน่วยความจำทั้งหมด (batchmode ไม่ถามก่อน)
+            // เทสต์จบที่ SampleScene แต่เริ่มที่ MenuScene — เปิดตัวเริ่มกลับมาจึงได้ทั้ง
+            // ทิ้งความเปลี่ยนแปลงและคืน Editor สู่สถานะที่รู้ว่าคืออะไร
+            try { EditorSceneManager.OpenScene(MenuScene, OpenSceneMode.Single); }
+            catch (System.Exception e) { Debug.LogWarning($"[Smoke] คืนซีนไม่สำเร็จ: {e.Message}"); }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -99,11 +127,32 @@ namespace CloneSwarm.EditorTools
 
             private void OnDestroy() => Application.logMessageReceived -= OnLog;
 
+            /// <summary>
+            /// แหล่ง exception ที่ **ไม่ใช่โค้ดของโปรเจกต์** — นับเป็นเสียงรบกวน ไม่ใช่ผลเทสต์ตก
+            ///
+            /// `Unity.Services.Analytics` โยน NullReference ตอน batchmode สั่ง pause และ
+            /// หน้าต่างของ Synty โยนตอนถูกปิดตาม Editor · ทั้งคู่เกิดทุกรอบไม่ว่าโค้ดเราจะเป็นยังไง
+            /// ปล่อยให้มันทำให้เทสต์ตกคือสอนให้คนเลิกอ่านผล ซึ่งอันตรายกว่าไม่มีเทสต์
+            ///
+            /// **ยังพิมพ์ให้เห็นในรายงานอยู่** แค่ไม่นับเป็นข้อตก — ของที่ซ่อนคือของที่ลืม
+            /// </summary>
+            private static readonly string[] ForeignSources =
+            {
+                "Library/PackageCache",
+                "Assets/Synty",
+                "Assets\\Synty",
+            };
+
             private void OnLog(string msg, string stack, LogType type)
             {
-                if (type is LogType.Error or LogType.Exception or LogType.Assert)
-                    errors.Add($"      [{type}] {msg.Split('\n')[0]}");
+                if (type is not (LogType.Error or LogType.Exception or LogType.Assert)) return;
+
+                bool foreign = stack != null && ForeignSources.Any(stack.Contains);
+                if (foreign) foreignErrors.Add($"      [นอกโปรเจกต์ · {type}] {msg.Split('\n')[0]}");
+                else         errors.Add($"      [{type}] {msg.Split('\n')[0]}");
             }
+
+            private readonly List<string> foreignErrors = new();
 
             private void Update()
             {
@@ -119,8 +168,11 @@ namespace CloneSwarm.EditorTools
 
                     void Finish(bool ok)
                     {
-                        onWaitDone?.Invoke(ok);
+                        // ล้าง **ก่อน** เรียก callback — callback มีสิทธิ์ตั้งรอบรอใหม่
+                        // (Press รอ intro จบ แล้วค่อย Expect ต่อ) ถ้าล้างทีหลังรอบใหม่โดนลบทิ้ง
+                        var done = onWaitDone;
                         waitCond = null; onWaitDone = null;
+                        done?.Invoke(ok);
                     }
                     return;
                 }
@@ -134,7 +186,7 @@ namespace CloneSwarm.EditorTools
                         wait = 1.2f;                       // ปล่อยให้อนิเมชันเข้าเมนูวิ่งจบก่อน
                         break;
 
-                    case 1: CheckStartState(); break;
+                    case 1: CheckTitleGate(); CheckStartState(); break;
 
                     case 2: Press("settings", "P3R_Config"); break;
                     case 3: Verify(); ShowMain(); break;
@@ -162,18 +214,53 @@ namespace CloneSwarm.EditorTools
                     case 15: JumpTab("map", "P3R_MapSelect"); break;
                     case 16: Verify(); CheckMapSelect(); break;
 
-                    // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
-                    case 17: GoToGameScene(); break;
-                    case 18: CheckInGameScreens(); break;
+                    // ต้องกลับแท็บ LOBBY ก่อน — ปุ่ม READY/START RUN อยู่ใน P3R_Lobby
+                    // และ LobbyUI ก็อยู่บน panel เดียวกัน · อยู่แท็บอื่น = มันถูกปิด
+                    // แล้ว OnDisable ถอด LobbyState.OnLobbyChanged ออกไปแล้ว
+                    case 17: JumpTab("lobby", "P3R_Lobby"); break;
+                    case 18: Verify(); CheckStartRunGate(); break;
 
-                    case 19: Report(); break;
+                    // เปลี่ยนไปซีนเกม เพื่อตรวจสามจอที่เพิ่งแก้บั๊ก script หาย
+                    case 19: GoToGameScene(); break;
+                    case 20: CheckInGameScreens(); break;
+
+                    case 21: Report(); break;
                 }
             }
 
             // ── ขั้นตอน ─────────────────────────────────────────────────────
+            /// <summary>
+            /// จอไตเติลต้อง **คลุมเมนูตอนเริ่ม แล้วหายไปตอนกด**
+            ///
+            /// เคยพังทั้งสองทาง: `MenuManager.ShowPanel()` ไม่รู้จัก `titlePanel` เลย
+            /// จึงไม่มีใครเปิดมันตอนบูต และไม่มีใครปิดมันหลัง `ShowMain()`
+            /// ทางแก้ชั่วคราวตอนนั้นคือให้ wirer บังคับปิดไว้ในซีน = จอนี้ไม่เคยถูกเห็น
+            ///
+            /// ยิง `onAdvanceEvent` ตรงๆ แทนการอัดปุ่ม เพราะสิ่งที่ต้องพิสูจน์คือ
+            /// **ปลายสายพาไปไหน** ไม่ใช่ว่า `Keyboard.current` อ่านได้ไหม
+            /// </summary>
+            private void CheckTitleGate()
+            {
+                var title = Find("P3R_Title");
+                if (title == null) { Require(false, "หา P3R_Title ในซีนเจอ"); return; }
+
+                Require(title.activeInHierarchy,                      "P3R_Title เปิดอยู่ตอนเริ่ม");
+                Require(Find("P3R_Main")?.activeInHierarchy != true,   "P3R_Main ปิดอยู่ตอนอยู่จอไตเติล");
+
+                var t = title.GetComponentInChildren<TitleScreenUI>(true);
+                Require(t != null,                                     "P3R_Title มี TitleScreenUI");
+                Require(t != null && t.onAdvanceEvent.GetPersistentEventCount() > 0,
+                        "TitleScreenUI.onAdvanceEvent ต่อสายไว้แล้ว");
+                if (t == null) return;
+
+                t.onAdvanceEvent.Invoke();
+                lines.Add("── ยิง TitleScreenUI.onAdvanceEvent");
+                Require(!title.activeInHierarchy,                      "กดแล้ว P3R_Title ปิดลงจริง");
+            }
+
             private void CheckStartState()
             {
-                Require(Find("P3R_Main")?.activeInHierarchy == true,   "P3R_Main เปิดอยู่ตอนเริ่ม");
+                Require(Find("P3R_Main")?.activeInHierarchy == true,   "P3R_Main เปิดหลังผ่านจอไตเติล");
                 Require(Find("P3R_Config")?.activeInHierarchy != true, "P3R_Config ปิดอยู่ตอนเริ่ม");
                 Require(Find("P3R_Hub")?.activeInHierarchy != true,    "P3R_Hub ปิดอยู่ตอนเริ่ม");
 
@@ -183,11 +270,47 @@ namespace CloneSwarm.EditorTools
                         "MenuList มี P3RMenuBridge");
                 Require(list != null && list.items.Count > 0,          "MenuList มีรายการ");
 
+                CheckMenuBarsCoverLabels(list);
+
                 var bar = Find("P3R_Hub")?.GetComponent<TabBar>();
                 Require(bar != null && bar.tabs.Count == 4,            "P3R_Hub มี TabBar ครบสี่แท็บ");
                 Require(bar != null && bar.tabs.All(t => t.panel != null),
                         "ทุกแท็บชี้ panel จริง");
                 wait = 0.2f;
+            }
+
+            /// <summary>
+            /// ไม่มีคำไหนยื่นออกนอกแถบของตัวเอง — เหตุผลทั้งหมดที่เมนูหลักเลือกโหมด "แถบกอดคำ"
+            ///
+            /// `TALENT SHOP` ยาวเกิน `barExtendLeft` ที่ตั้งไว้ 320 · ภาพ PNG จับได้ก็จริง
+            /// แต่ต้องมีคนเปิดดูและสังเกตเอง และมันจะกลับมาใหม่ทุกครั้งที่มีคนเพิ่มรายการยาวๆ
+            /// หรือแปลเป็นภาษาที่คำยาวกว่าเดิม · วัดเป็นตัวเลขไว้ตรงนี้แทน
+            ///
+            /// วัดที่ `sizeDelta` ไม่ใช่ `rect.width` เพราะแถบถูกย่อ `localScale.x` ตอนหุบ
+            /// รายการที่ไม่ได้ถูกเลือกอยู่จึงกว้าง 0 ทั้งที่ขนาดจริงถูกต้อง
+            ///
+            /// ความกว้างที่คลุมคำได้จริงคือ `sizeDelta.x` **ลบส่วนที่ยื่นออกนอกจอ** — แถบเกาะ
+            /// ขอบเดียวกับตัวอักษรแล้วเลื่อนออกไปอีก `barBleedRight` ระยะนั้นอยู่คนละฝั่งกับคำ
+            /// อ่านค่ากลับจาก `anchoredPosition.x` เพราะ theme เป็น private ของ P3RMenuItem
+            /// </summary>
+            private void CheckMenuBarsCoverLabels(P3RMenuList list)
+            {
+                if (list == null) return;
+
+                foreach (var item in list.items)
+                {
+                    if (item == null || !item.barHugsLabel) continue;
+                    if (item.label == null || item.bar == null) continue;
+
+                    float textWidth = item.label.GetPreferredValues(item.label.text).x
+                                    * item.label.rectTransform.localScale.x;
+                    var   barRt     = item.bar.rectTransform;
+                    float covering  = barRt.sizeDelta.x - Mathf.Abs(barRt.anchoredPosition.x);
+
+                    Require(covering >= textWidth,
+                            $"แถบของ '{item.id}' คลุมคำได้หมด " +
+                            $"(แถบส่วนที่อยู่ในจอ {covering:0} · คำ {textWidth:0})");
+                }
             }
 
             /// <summary>กดรายการเมนูจริงผ่าน API เดียวกับที่เมาส์ใช้</summary>
@@ -198,9 +321,30 @@ namespace CloneSwarm.EditorTools
 
                 if (item == null) { Require(false, $"หา รายการ '{id}' เจอ"); wait = 0.2f; return; }
 
-                list.ConfirmItem(item);
-                lines.Add($"── กด '{id}'");
-                Expect($"กด '{id}'", expectActive);
+                // ── รอให้ของบินเข้าจอเสร็จก่อนกด ────────────────────────────
+                // `P3RMenuList.ConfirmItem` ปฏิเสธอินพุตทุกทาง **เงียบๆ** ระหว่าง intro
+                // — ไม่มี log ไม่มีอะไร · กดตอนนั้นคือไม่เกิดอะไรขึ้นเลย
+                //
+                // `CheckTitleGate` ยิง onAdvanceEvent ซึ่งเปิด P3R_Main ขึ้นมา = intro
+                // เริ่มใหม่ตรงนั้น แล้วขั้นถัดไปรอแค่ 0.2s ซึ่งสั้นกว่า intro (~0.5s)
+                // ผลคือเทสต์ไปตกที่ "P3R_Config ไม่เปิด" ซึ่งอ่านเหมือนเมนูพัง
+                // ทั้งที่จอทำงานปกติ — เทสต์ต่างหากที่กดเร็วเกิน
+                //
+                // รอเงื่อนไขจริงแทนรอเวลาตายตัว ตามเหตุผลเดียวกับหัว Update()
+                WaitUntil(() => !list.IntroPlaying, ready =>
+                {
+                    if (!ready)
+                    {
+                        Require(false, $"กด '{id}' ได้ — อนิเมชันเข้าเมนูค้าง ไม่ยอมจบ");
+                        return;
+                    }
+
+                    Require(item.interactable, $"รายการ '{id}' กดได้ (ไม่ได้ถูกปิดไว้)");
+
+                    list.ConfirmItem(item);
+                    lines.Add($"── กด '{id}'");
+                    Expect($"กด '{id}'", expectActive);
+                });
             }
 
             /// <summary>กดแท็บผ่าน TabBar ตัวจริง เหมือนที่ P3RTabJump ทำ</summary>
@@ -268,6 +412,18 @@ namespace CloneSwarm.EditorTools
                         "การ์ดมี CharacterCardUI (กดเลือกได้)");
 
                 CheckCardLayout("ลิสต์ตัวละคร", sel.cardsContainer, sel.characters.Count, vertical: true);
+
+                // ป้ายสถานะต้องตรงกับ overlay กุญแจของใบเดียวกัน — แม่แบบเขียน "OWNED" ไว้
+                // ตายตัวและไม่เคยถูกต่อสาย ใบที่ล็อกอยู่จึงขึ้น OWNED ทับกุญแจของตัวเอง
+                foreach (var card in kids.Select(t => t.GetComponent<CharacterCardUI>())
+                                         .Where(c => c != null && c.stateText != null))
+                {
+                    bool showsLocked = card.stateText.text == card.stateLockedLabel;
+                    bool isLocked    = card.lockOverlay != null && card.lockOverlay.activeSelf;
+                    Require(showsLocked == isLocked,
+                            $"ป้ายสถานะของ '{card.name}' ตรงกับสถานะล็อกจริง " +
+                            $"(ป้าย '{card.stateText.text}' · overlay {(isLocked ? "เปิด" : "ปิด")})");
+                }
 
                 // เข้ามาทางล็อบบี้ — ปุ่มถอยต้องบอกปลายทางจริง ไม่ใช่คำว่า "ถอย" ลอยๆ
                 Require(BackLabel(panel) == "BACK TO LOBBY",
@@ -512,6 +668,104 @@ namespace CloneSwarm.EditorTools
             }
 
             /// <summary>
+            /// ประตูเข้าเกม — จอโหลดต่อสายครบไหม และปุ่ม START RUN เปิดตรงกับสถานะ ready ไหม
+            ///
+            /// จอ LOADING เคยถูกสร้าง ย้าย และต่อสายครบ แต่ **ไม่มีบรรทัดไหนเปิดมันเลย**
+            /// `MenuManager.loadingPanel` ถูกอ้างถึงสามที่และทั้งสามที่คือการปิด
+            /// ไม่มีชั้นไหนจับได้ — ภาพก็ถูก (จอต้นแบบเรนเดอร์สวย) โครงสร้างก็ถูก (สายครบ)
+            /// สิ่งที่ผิดคือ "ไม่มีใครเรียก" ซึ่งเห็นได้ตอนรันเท่านั้น
+            ///
+            /// **ครอบแค่ไหน** — พิสูจน์ว่าจอโหลดเปิดได้จริงและคลุมล็อบบี้ · ไม่ได้พิสูจน์ว่า
+            /// การกด START RUN จริงพาไปถึงมัน เพราะเส้นทางนั้นเรียก
+            /// `NetworkManager.SceneManager.LoadScene` ซึ่งพาออกจากซีนเมนูไปเลย
+            /// เส้นทางเต็มยังต้องเทสต์ด้วยมือ และสองเครื่องยังไม่ถูกครอบอยู่ดี
+            /// </summary>
+            private void CheckStartRunGate()
+            {
+                var mm    = FindAnyObjectByType<MenuManager>(FindObjectsInactive.Include);
+                var lobby = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
+                if (mm == null || lobby == null)
+                {
+                    Require(false, "หา MenuManager กับ LobbyUI เจอ");
+                    return;
+                }
+
+                Require(mm.loadingPanel != null,                 "MenuManager.loadingPanel ต่อไว้แล้ว");
+                Require(mm.loadingPanel == Find("P3R_Loading"),  "loadingPanel ชี้ P3R_Loading ตัวจริง");
+                Require(mm.loadingScreenUI != null,              "MenuManager.loadingScreenUI ต่อไว้แล้ว");
+
+                if (lobby.startRunButton == null || lobby.readyButton == null)
+                {
+                    Require(false, "startRunButton กับ readyButton ต่อไว้");
+                    return;
+                }
+
+                // ปุ่มสองตัวนี้อยู่ใน P3R_Lobby เหมือนกับ LobbyUI เอง · อยู่แท็บอื่นแปลว่า
+                // LobbyUI ถูกปิดและถอด LobbyState.OnLobbyChanged ไปแล้ว กดได้แต่จอไม่อัปเดต
+                // ผู้เล่นจริงเข้าสถานะนี้ไม่ได้ (ปุ่มถูกซ่อนไปด้วย) — ถ้าเช็คนี้ตก แปลว่า
+                // ลำดับขั้นในเทสต์ถูกสลับ ไม่ใช่เกมพัง
+                if (!lobby.isActiveAndEnabled)
+                {
+                    Require(false, "อยู่แท็บ LOBBY ตอนตรวจปุ่ม START RUN (LobbyUI ต้องเปิดอยู่)");
+                    return;
+                }
+
+                bool allReady = LobbyState.Instance != null && LobbyState.Instance.AllReady();
+                Require(lobby.startRunButton.interactable == allReady,
+                        $"START RUN เปิด/ปิดตรงกับสถานะ ready จริง (ปุ่ม " +
+                        $"{(lobby.startRunButton.interactable ? "เปิด" : "ปิด")} · AllReady {allReady})");
+
+                // กด READY จริงผ่านปุ่ม — SetReadyServerRpc ไปกลับใช้เวลา จึงรอเงื่อนไข ไม่รอเวลา
+                lobby.readyButton.onClick.Invoke();
+                WaitUntil(() => lobby.startRunButton.interactable,
+                          ok =>
+                          {
+                              Require(ok, "กด READY แล้ว START RUN กดได้" + (ok ? "" : " — หมดเวลารอ"));
+                              if (!ok) lines.Add($"        └ {DiagnoseReadyGate(lobby)}");
+                              CheckLoadingCoversLobby(mm);
+                          });
+            }
+
+            /// <summary>
+            /// ปุ่มไม่เปิดแล้วต้องรู้ว่าติดข้อไหน — เงื่อนไขมีสามชั้น (host · ready ครบ · ไม่ได้กดไปแล้ว)
+            /// บอกแค่ "หมดเวลารอ" แปลว่าต้องมานั่งเดาทีละชั้นทุกครั้ง
+            /// </summary>
+            private static string DiagnoseReadyGate(LobbyUI lobby)
+            {
+                var ls = LobbyState.Instance;
+                if (ls == null) return "LobbyState.Instance เป็น null — ล็อบบี้ยังไม่ถูก spawn บนเน็ตเวิร์ก";
+
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                var sb = new StringBuilder();
+                sb.Append($"IsHost={lobby.IsHost}");
+                sb.Append($" · NGO IsHost={(nm != null && nm.IsHost)}");
+                sb.Append($" · LocalClientId={(nm != null ? nm.LocalClientId.ToString() : "?")}");
+                sb.Append($" · AllReady={ls.AllReady()}");
+                sb.Append($" · ผู้เล่น {ls.Players.Count} คน [");
+                for (int i = 0; i < ls.Players.Count; i++)
+                {
+                    var e = ls.Players[i];
+                    if (i > 0) sb.Append(", ");
+                    sb.Append($"id={e.clientId} ready={e.ready} ตัวละคร='{e.characterName}'");
+                }
+                sb.Append(']');
+                return sb.ToString();
+            }
+
+            /// <summary>
+            /// จอโหลดต้อง **คลุม** ล็อบบี้ ไม่ใช่แค่เปิดขึ้นมาซ้อน — `ShowPanel` ปิดตัวที่เหลือ
+            /// ให้อยู่แล้ว แต่ panel ที่ไม่ได้อยู่ในกลุ่มนั้นจะรอดมาทับกัน (บั๊กเดียวกับจอไตเติล)
+            /// </summary>
+            private void CheckLoadingCoversLobby(MenuManager mm)
+            {
+                mm.ShowLoading(RunSetup.Map, RunSetup.Difficulty);
+                Require(Find("P3R_Loading")?.activeInHierarchy == true, "ShowLoading() เปิดจอโหลดจริง");
+                Require(Find("P3R_Hub")?.activeInHierarchy != true,     "จอโหลดคลุมล็อบบี้ (P3R_Hub ปิด)");
+
+                mm.ShowMain();   // คืนสถานะ ไม่ให้ขั้นถัดไปเริ่มจากจอโหลดค้าง
+            }
+
+            /// <summary>
             /// ปิด NGO แล้วเปลี่ยนไปซีนเกม
             /// ต้อง Shutdown ก่อน ไม่งั้น NGO จะพยายามซิงค์ซีนให้ แล้วชนกับการโหลดตรงๆ
             /// </summary>
@@ -534,6 +788,7 @@ namespace CloneSwarm.EditorTools
             {
                 Require(LevelUpUI.Instance  != null, "LevelUpUI.Instance ไม่เป็น null");
                 Require(WinLoseUI.Instance  != null, "WinLoseUI.Instance ไม่เป็น null");
+                CheckResultScreenListens();
                 Require(FindAnyObjectByType<PauseMenuUI>(FindObjectsInactive.Include) != null,
                         "หา PauseMenuUI เจอ");
 
@@ -542,6 +797,8 @@ namespace CloneSwarm.EditorTools
                 Require(strip != null, "หา BuildStripUI เจอ");
                 Require(strip != null && strip.slotTemplate != null,
                         "BuildStripUI.slotTemplate ไม่หลุด (คลาสรองข้ามซีนแล้วเคยกลายเป็น null)");
+                CheckTemplatesArePrefabs();
+                CheckOneActiveBuildStrip();
 
                 // component ที่สคริปต์หายจะโผล่เป็น null ใน GetComponents
                 int broken = 0;
@@ -552,7 +809,1244 @@ namespace CloneSwarm.EditorTools
                         if (c == null) broken++;
                 }
                 Require(broken == 0, $"ไม่มี component ที่สคริปต์หายในซีนเกม (เจอ {broken})");
+
+                CheckLevelUpCards();
+                CheckSynergyLines();
+                CheckBuildStripSlots();
+                CheckWeaponSlotCap();
+                CheckStatIcons();
+                CheckAugmentOrbWired();
+                CheckPartyHudWired();
+                CheckAugmentZoneWired();
+                CheckTimelineCues();
+                CheckWaveSchedule();
+                CheckMissingGlyphs();
             }
+
+            /// <summary>
+            /// แถบ build ต้องมีช่องชุดเดียว ไม่ใช่สองชุดซ้อน
+            ///
+            /// builder เรียก `SetEntries` ด้วยข้อมูลจำลองตอนสร้างซีน เพื่อให้ภาพต้นแบบ
+            /// ดูมีของ — ซึ่งทำให้ `EnsureSlots` สร้าง object ช่องจริงลงซีนแล้วถูกเซฟติดไป
+            /// พอเกมรัน `built` เป็น false อีกครั้ง มันสร้างชุดที่สองทับ ชุดเก่ายังอยู่ข้างใต้
+            /// ผู้เล่นจึงเห็นอาวุธ/พาสซีฟที่ตัวเองไม่มี (ARC Lv2 · ORB Lv1 · ATK Lv2 · HST Lv1)
+            ///
+            /// เรียก `SetEntries` ด้วยลิสต์ว่างเพื่อบังคับให้ EnsureSlots ทำงานจริง
+            /// แล้วนับช่อง — เกินจำนวนที่ตั้งไว้เมื่อไร แปลว่าชุดเก่ายังไม่ถูกล้าง
+            /// </summary>
+            private void CheckBuildStripSlots()
+            {
+                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
+                if (strip == null || strip.weaponSlotArea == null) return;
+
+                strip.SetEntries(new List<BuildStripUI.Entry>(), new List<BuildStripUI.Entry>());
+
+                int w = CountSlots(strip.weaponSlotArea, strip);
+                int p = CountSlots(strip.passiveSlotArea, strip);
+
+                Require(w == strip.weaponSlotCount,
+                        $"แถบ build: ช่องอาวุธมีชุดเดียว ({w} ช่อง · ตั้งไว้ {strip.weaponSlotCount})");
+                Require(strip.passiveSlotArea == null || p == strip.passiveSlotCount,
+                        $"แถบ build: ช่องพาสซีฟมีชุดเดียว ({p} ช่อง · ตั้งไว้ {strip.passiveSlotCount})");
+            }
+
+            /// <summary>
+            /// จำนวนช่องที่จอโชว์ ต้องเท่ากับจำนวนที่ผู้เล่นถือได้จริง
+            ///
+            /// `PlayerWeaponManager.MaxWeaponSlots` เป็นแหล่งความจริงเดียว แต่ค่าใน
+            /// **ซีนถูก serialize ไว้แล้ว** — แก้ค่าคงที่ในโค้ดไม่ย้อนไปแตะซีน และ
+            /// `WeaponStatHUD.RefreshWeapons` วนด้วย `weaponSlots.Length` ไม่ใช่ค่าคงที่
+            /// ช่องที่เกินจึงค้างเป็นช่องว่างบนจอ โดยไม่มี error ให้เห็นสักบรรทัด
+            ///
+            /// เทสต์นี้จับกรณีนั้น และจับกรณีกลับกันด้วย — ถ้าวันหนึ่งเพิ่มเพดานเป็น 6
+            /// แล้วลืมเติมช่องบนจอ ช่องที่หกจะไม่มีที่แสดงและอาวุธจะหายเงียบๆ
+            /// </summary>
+            private void CheckWeaponSlotCap()
+            {
+                int maxW = PlayerWeaponManager.MaxWeaponSlots;
+                int maxS = PlayerStatManager.MaxStatSlots;
+
+                // **ของเก่าที่ปลดระวางแล้ว** — ถอดออกจากซีนเกมไปแล้ว บล็อกนี้จึงข้ามไปเอง
+                // ยังเก็บไว้เพราะซีนอื่น (WeaponTestScene · Proto_GameplayHUD2) ยังใช้
+                // ถ้าวันหนึ่งซีนไหนพามันกลับเข้ามา ข้อบังคับเดิมก็กลับมาทำงานพร้อมกัน
+                var hud = FindAnyObjectByType<WeaponStatHUD>(FindObjectsInactive.Include);
+                if (hud != null)
+                {
+                    int n = hud.weaponSlots != null ? hud.weaponSlots.Length : 0;
+                    Require(n == maxW,
+                            $"HUD: ช่องอาวุธเท่าเพดาน ({n} ช่อง · เพดาน {maxW})");
+
+                    int wired = hud.weaponSlots == null ? 0
+                              : hud.weaponSlots.Count(s => s != null && s.bg != null);
+                    Require(wired == n,
+                            $"HUD: ช่องอาวุธต่อสายครบทุกช่อง ({wired}/{n})");
+
+                    // ไม่มีช่อง icon = ต่อให้ดึงรูปจาก SO ถูกก็ไม่มีที่ให้วาด
+                    int icons = hud.weaponSlots == null ? 0
+                              : hud.weaponSlots.Count(s => s != null && s.icon != null);
+                    Require(icons == n,
+                            $"HUD: ช่องอาวุธมีที่วางไอคอนครบ ({icons}/{n})");
+
+                    int statIcons = hud.statSlots == null ? 0
+                                  : hud.statSlots.Count(s => s != null && s.icon != null);
+                    Require(hud.statSlots == null || statIcons == hud.statSlots.Length,
+                            $"HUD: ช่องสเตตัสมีที่วางไอคอนครบ " +
+                            $"({statIcons}/{hud.statSlots?.Length ?? 0})");
+
+                    int sn = hud.statSlots != null ? hud.statSlots.Length : 0;
+                    Require(sn == maxS,
+                            $"HUD: ช่องพาสซีฟเท่าเพดาน ({sn} ช่อง · เพดาน {maxS})");
+                }
+
+                var strip = FindAnyObjectByType<BuildStripUI>(FindObjectsInactive.Include);
+                if (strip != null)
+                {
+                    Require(strip.weaponSlotCount == maxW,
+                            $"แถบ build: ตั้งช่องอาวุธเท่าเพดาน " +
+                            $"({strip.weaponSlotCount} · เพดาน {maxW})");
+                    Require(strip.passiveSlotCount == maxS,
+                            $"แถบ build: ตั้งช่องพาสซีฟเท่าเพดาน " +
+                            $"({strip.passiveSlotCount} · เพดาน {maxS})");
+                }
+            }
+
+            /// <summary>
+            /// สเตตัสทุกตัวต้องหารูปเจอ
+            ///
+            /// `StatData.icon` ของทุกใบในโปรเจกต์ **ว่างอยู่** — รูปจริงเก็บรวมไว้ที่
+            /// `StatIcons.asset` คีย์ด้วย StatType แล้วให้ property `StatData.Icon`
+            /// ไปหยิบให้ · ที่แสดงผลไหนอ่าน field `icon` ตรงๆ จะได้ null ทุกใบ
+            /// แล้วช่องสเตตัสไม่มีรูปสักช่อง โดยไม่มี error ให้เห็น (HUD เคยเป็นแบบนี้)
+            ///
+            /// เทสต์นี้เฝ้าทั้งสองฝั่ง — ทั้งไฟล์ StatIcons ที่อาจหาย และ StatType
+            /// ที่เพิ่มใหม่แล้วลืมใส่รูป
+            /// </summary>
+            private void CheckStatIcons()
+            {
+                var stats = AssetDatabase.FindAssets("t:StatData")
+                                         .Select(AssetDatabase.GUIDToAssetPath)
+                                         .Select(AssetDatabase.LoadAssetAtPath<StatData>)
+                                         .Where(s => s != null)
+                                         .ToList();
+
+                Require(stats.Count > 0, "หา StatData ในโปรเจกต์เจอ");
+
+                var blind = stats.Where(s => s.Icon == null).Select(s => s.statName).ToList();
+                Require(blind.Count == 0,
+                        $"สเตตัสทุกใบหารูปเจอผ่าน StatData.Icon " +
+                        $"({stats.Count - blind.Count}/{stats.Count})");
+                if (blind.Count > 0)
+                    lines.Add($"        └ ไม่มีรูป: {string.Join(" · ", blind)}");
+
+                // อาวุธไม่มีชุดรูปกลางแบบสเตตัส — รูปอยู่ที่ช่อง icon ของแต่ละใบเท่านั้น
+                // ใบที่ยังว่างคือช่องว่างทางคอนเทนต์ ไม่ใช่บั๊ก จึงรายงานเฉยๆ ไม่ตัดสิน
+                var noIcon = AssetDatabase.FindAssets("t:WeaponData")
+                                          .Select(AssetDatabase.GUIDToAssetPath)
+                                          .Select(AssetDatabase.LoadAssetAtPath<WeaponData>)
+                                          .Where(w => w != null && w.icon == null)
+                                          .Select(w => w.weaponName)
+                                          .ToList();
+                if (noIcon.Count > 0)
+                    lines.Add($"   หมายเหตุ  อาวุธที่ยังไม่มีรูป {noIcon.Count} ใบ: " +
+                              string.Join(" · ", noIcon));
+
+                CheckSlotPutsIconOnScreen(stats.FirstOrDefault(s => s.Icon != null));
+            }
+
+            /// <summary>
+            /// ช่องเอารูปขึ้นจอจริง — ไม่ใช่แค่มีรูปให้หยิบ
+            ///
+            /// บั๊กที่เจอไม่ได้อยู่ที่ข้อมูล แต่อยู่ที่ปลายทาง: ตัวสร้างปิด `icon.enabled`
+            /// ไว้ตั้งแต่สร้างช่อง แล้วฝากให้โค้ดเปิดตอนมีของจริง — โค้ดเดิมตั้ง sprite
+            /// กับสีแต่ **ไม่เคยแตะ enabled** ไอคอนจึงไม่เคยโผล่ โดยไม่มี error สักบรรทัด
+            ///
+            /// เรนเดอร์จับไม่ได้เพราะตอนแคปไม่มีผู้เล่นในซีน `Refresh()` จึงไม่เคยวิ่ง
+            /// จึงเรียก setter ตรงๆ กับช่องจำลอง — ช่องจริงในซีนไม่ถูกแตะ
+            ///
+            /// **ย้ายจาก `WeaponStatHUD` มาที่ `BuildStripSlot`** ตอนแถวช่องเก่าปลดระวาง
+            /// บั๊กคลาสนี้ไม่ได้หายไปกับของเก่า มันแค่ย้ายบ้าน — เทสต์ต้องย้ายตาม
+            /// ไม่ใช่ถูกลบทิ้งพร้อมกัน · ตอนนี้เรียกเมธอด public ตรงๆ ไม่ต้องใช้ reflection
+            /// </summary>
+            private void CheckSlotPutsIconOnScreen(StatData sd)
+            {
+                if (sd == null) return;
+
+                var probe = new GameObject("__smoke_slot_probe", typeof(RectTransform))
+                            { hideFlags = HideFlags.HideAndDontSave };
+                var slot = probe.AddComponent<BuildStripSlot>();
+
+                var iconGo = new GameObject("Icon", typeof(RectTransform));
+                iconGo.transform.SetParent(probe.transform, false);
+                var icon = iconGo.AddComponent<Image>();
+                icon.enabled = false;             // สภาพเดียวกับที่ตัวสร้างทิ้งช่องไว้
+                slot.icon = icon;
+
+                slot.ShowEntry(
+                    new BuildStripUI.Entry { icon = sd.Icon, abbrev = "TST", level = 1 },
+                    Color.white, Color.white, Color.white);
+
+                Require(icon.sprite != null,
+                        $"ช่องแถบ build ได้รูปจาก SO จริง ('{sd.statName}')");
+                Require(icon.enabled,
+                        "ช่องแถบ build เปิดไอคอนให้เห็น (ไม่ใช่ตั้ง sprite ทิ้งไว้ทั้งที่ปิดอยู่)");
+
+                UnityEngine.Object.DestroyImmediate(probe);
+            }
+
+            private static int CountSlots(RectTransform area, BuildStripUI strip)
+            {
+                if (area == null) return 0;
+                // นับเฉพาะช่องที่ **เปิดอยู่** — ของที่ถูกสั่งทำลายใน play mode ยังอยู่ในลำดับชั้น
+                // จนจบเฟรม แต่ถูกปิดไปแล้วจึงไม่มีผลกับสิ่งที่ผู้เล่นเห็น
+                return area.GetComponentsInChildren<BuildStripSlot>(true)
+                           .Count(s => s != strip.slotTemplate && s.gameObject.activeSelf);
+            }
+
+            /// <summary>
+            /// ไม่มีข้อความไหนในซีนใช้อักขระที่ฟอนต์ในโปรเจกต์ไม่มี
+            ///
+            /// Sarabun ไม่มี `★ ⚠ ⚡ ✓` และ emoji — TMP วาดเป็นกล่องสี่เหลี่ยม ซึ่ง
+            /// **ดูเหมือนฟอนต์เสีย** มากกว่าดูเหมือนสัญลักษณ์ · จอ Level Up เคยขึ้น
+            /// `□ Lv 4 / 5` บนการ์ด SUPER อยู่พักใหญ่โดยไม่มีใครสังเกต
+            ///
+            /// เช็คทั้งซีนเพราะปัญหานี้ไม่ได้อยู่ที่จอใดจอหนึ่ง — ใครเขียนข้อความใหม่
+            /// ที่ไหนก็เจอได้ · วันที่เพิ่ม Noto Sans Symbols 2 เป็น fallback ค่อยลบเช็คนี้
+            /// </summary>
+            private void CheckMissingGlyphs()
+            {
+                var covered = BakedGlyphs();
+                var hits    = new List<string>();
+
+                foreach (var t in Resources.FindObjectsOfTypeAll<TMPro.TMP_Text>())
+                {
+                    if (!t.gameObject.scene.IsValid()) continue;
+                    string txt = t.text;
+                    if (string.IsNullOrEmpty(txt)) continue;
+
+                    char bad = FirstUncovered(txt, covered);
+                    if (bad != '\0')
+                        hits.Add($"{t.name} = '{(txt.Length > 28 ? txt.Substring(0, 28) + "…" : txt)}' (U+{(int)bad:X4})");
+                }
+
+                CheckGlyphsInCode(covered);
+                CheckGlyphsInTables(covered);
+
+                Require(hits.Count == 0,
+                        $"ไม่มีข้อความในซีนที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                foreach (var h in hits.Take(5)) lines.Add($"        └ {h}");
+            }
+
+            /// <summary>
+            /// ระบบการ์ดเลเวลอัป — **ไม่เคยมีเทสต์ครอบเลยสักข้อ** ก่อนหน้านี้ครอบแค่
+            /// `LevelUpUI.Instance != null` ซึ่งบอกได้แค่ว่า singleton ยังอยู่
+            ///
+            /// เรียก `Show()` ด้วยการ์ดที่ประกอบเอง แทนการรอให้เลเวลอัปจริง เพราะ
+            /// เส้นทางจริงต้องมีผู้เล่น spawn + EXP ครบ ซึ่งจัดฉากในเทสต์นี้ไม่ไหว
+            /// สิ่งที่ต้องพิสูจน์คือ **สัญญาระหว่าง UpgradeManager กับ LevelUpUI**
+            /// ซึ่ง `Show(cards, onPicked, level)` คือหน้าตาของมันทั้งหมด
+            /// </summary>
+            private void CheckLevelUpCards()
+            {
+                var ui = LevelUpUI.Instance;
+                if (ui == null) return;      // ข้อบนรายงานไปแล้ว ไม่ต้องซ้ำ
+
+                var cards = BuildProbeCards();
+                if (cards == null) { Require(false, "ประกอบการ์ดทดสอบได้ (ต้องมี StatData ในโปรเจกต์)"); return; }
+
+                // แม่แบบต้องเป็น **ไฟล์ prefab** ไม่ใช่ของในซีน — ของในซีนเป็น fileID
+                // ที่เปลี่ยนทุกครั้งที่ย้ายจอ แล้วแม่แบบจะหายไปพร้อม panel เก่า
+                Require(ui.cardTemplate != null, "LevelUpUI.cardTemplate ต่อไว้ (แม่แบบการ์ด)");
+                Require(ui.cardTemplate == null ||
+                        PrefabUtility.GetPrefabAssetType(ui.cardTemplate) != PrefabAssetType.NotAPrefab,
+                        "cardTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
+
+                // หัวเรื่องที่จัดไว้ในซีน — จดไว้ก่อน `Show` เพื่อพิสูจน์ว่าไม่ถูกเขียนทับ
+                //
+                // เคยถูกเขียนทับทุกครั้งที่จอเปิด แปลว่าคำที่พิมพ์ไว้ใน Editor หายตอนกด Play
+                // โดยไม่มีอะไรบอก · ตาเปล่าจับไม่ได้เพราะคำเก่ากับคำใหม่ใกล้กันมาก
+                // ("LEVEL UP!" กับ "LEVEL\nUP!") — ต้องเทียบสตริงถึงจะเห็น
+                var  layeredTitle = ui.GetComponentInChildren<P3RLayeredText>(true);
+                var  titleText    = layeredTitle != null ? layeredTitle.source : null;
+                string titleBefore = titleText != null ? titleText.text : null;
+
+                int picked = 0;
+                UpgradeCardInfo pickedCard = null;
+                ui.Show(cards, c => { picked++; pickedCard = c; }, level: 7);
+
+                if (titleText != null)
+                    Require(titleText.text == titleBefore,
+                            $"หัวเรื่องไม่ถูกเขียนทับตอน Show ('{titleBefore}')");
+
+                CheckTimerHiddenUntilItTicks(ui);
+
+                // เลขเลเวลที่เพิ่งได้ — **ป้ายนี้ไม่ต่อก็ได้**
+                //
+                // เดิมข้อนี้บังคับให้ต้องมี ซึ่งกลายเป็นว่าเทสต์ไปกำหนดหน้าตาจอแทนคนจัด:
+                // พอเจ้าของจอลบป้ายทิ้งเพราะไม่เอา เทสต์ก็แดงทั้งที่ไม่มีอะไรพัง
+                //
+                // สิ่งที่ต้องคุ้มคือ **สัญญา**: ถ้าต่อไว้ ต้องโผล่และต้องเป็นเลขที่ถูก
+                // มีป้ายแล้วเลขผิดคือบั๊ก · ไม่มีป้ายคือการตัดสินใจ
+                if (ui.levelValueLabel == null)
+                    lines.Add("   ผ่าน  ไม่ได้ต่อป้ายเลเวล — จอนี้ไม่บอกเลเวล (ตั้งใจ)");
+                else
+                {
+                    Require(ui.levelValueLabel.gameObject.activeSelf,
+                            "ป้ายเลเวลโผล่ตอน Show ที่มีเลเวล");
+                    Require(ui.levelValueLabel.text == "Lv 7",
+                            $"ป้ายเลเวลเป็น 'Lv 7' · ได้ '{ui.levelValueLabel.text}'");
+                }
+
+                var slots = VisibleCards(ui);
+                Require(slots.Count == cards.Count,
+                        $"โชว์การ์ดครบตามที่ส่งไป ({slots.Count} / {cards.Count} ใบ)");
+                if (slots.Count != cards.Count) { ui.Hide(); return; }
+
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    var want = cards[i];
+                    Require(slots[i].nameText != null && slots[i].nameText.text == want.DisplayName,
+                            $"การ์ดใบ {i + 1} ชื่อตรงข้อมูล ('{slots[i].nameText?.text}')");
+                    Require(slots[i].levelText != null && slots[i].levelText.text == want.DisplayLevelText,
+                            $"การ์ดใบ {i + 1} ป้ายเลเวลตรงข้อมูล ('{slots[i].levelText?.text}')");
+                }
+
+                CheckCardAccentFollowsType(slots, cards);
+                CheckCardsLevel(slots);
+                CheckNoRecommendation(slots);
+                CheckCardTypeLabels(slots, cards);
+                CheckEmptyIconsAreHidden(slots, cards);
+                CheckAugmentsReachable();
+
+                // กดจริงผ่านปุ่มของการ์ด — ต้องยิง callback ใบนั้นครั้งเดียว
+                int target = 0;
+                slots[target].selectButton?.onClick.Invoke();
+                Require(picked == 1, $"กดการ์ดแล้ว callback ยิงครั้งเดียว (ยิงไป {picked} ครั้ง)");
+                Require(ReferenceEquals(pickedCard, cards[target]),
+                        "callback ได้การ์ดใบที่กดจริง ไม่ใช่ใบอื่น");
+
+                // **ต้องอยู่หลังการกด** — ข้อนี้เรียก `Show` ซ้ำเพื่อสลับหัวเรื่อง
+                // ซึ่งผูก callback ของการ์ดใหม่ทั้งแถว · วางไว้ก่อนหน้านี้แล้วปุ่มที่กด
+                // จะไปเรียก callback เปล่าของข้อนี้แทน แล้วข้อ "กดแล้วยิงครั้งเดียว" แดง
+                // โดยที่เกมไม่ได้พังอะไรเลย — เทสต์พังกันเอง
+                CheckAugmentTitleSwaps(ui, cards);
+
+                ui.Hide();
+            }
+
+            /// <summary>
+            /// นาฬิกาต้อง **ไม่โผล่จนกว่ามันจะเดินจริง**
+            ///
+            /// `SharedExperienceManager` เริ่มนับต่อเมื่อมีคนเลือกไปแล้วหนึ่งคน **และ**
+            /// มีผู้เล่นมากกว่าหนึ่ง — เล่นคนเดียวจึงไม่มีนาฬิกาเลยสักครั้ง
+            /// ของเดิมล้างแค่ตัวเลขเป็น "" เหลือแถบทองเต็มค้างอยู่ ซึ่งอ่านว่า
+            /// "เวลายังเหลือทั้งหมด" ทั้งที่ไม่มีการนับ
+            ///
+            /// ยิง tick เข้าตรงๆ ผ่าน reflection เพราะ `OnTimerTick` เป็น static event
+            /// ที่ปลุกได้จากในคลาสเจ้าของเท่านั้น · เทสต์ปลุกแทนเซิร์ฟเวอร์ไม่ได้
+            /// </summary>
+            private void CheckTimerHiddenUntilItTicks(LevelUpUI ui)
+            {
+                bool Shown() => ui.timerGroup != null
+                              ? ui.timerGroup.activeSelf
+                              : ui.timerLabel != null && ui.timerLabel.gameObject.activeSelf;
+
+                Require(ui.timerGroup != null,
+                        "ต่อ LevelUpUI.timerGroup ไว้ (ซ่อนนาฬิกาได้ทั้งก้อน)");
+                Require(!Shown(), "นาฬิกายังไม่โผล่ตอน Show — ยังไม่มี tick สักครั้ง");
+
+                var tick = typeof(LevelUpUI).GetMethod(
+                    "UpdateTimer", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (tick == null)
+                {
+                    Require(false, "หา LevelUpUI.UpdateTimer เจอ (เทสต์ยิง tick เองผ่าน reflection)");
+                    return;
+                }
+
+                tick.Invoke(ui, new object[] { 12f });
+                Require(Shown(), "นาฬิกาโผล่ทันทีที่ tick แรกมาถึง");
+                Require(ui.timerLabel != null && ui.timerLabel.text == "12",
+                        $"ตัวเลขนาฬิกาเป็น '12' · ได้ '{ui.timerLabel?.text}'");
+            }
+
+            /// <summary>
+            /// สีเน้นของการ์ดต้องมาจาก **ชนิดของการ์ด** ไม่ใช่จากช่องที่มันไปลง
+            ///
+            /// builder ของจอ P3R อบสีไว้กับ object ตอนสร้าง (ช่อง 1 น้ำเงิน · 2 อำพัน ·
+            /// 3 เขียว) ส่วน `UpgradeCardUI.Populate` ย้อมแค่ Header — กรอบกับพื้นไอคอน
+            /// จึงค้างสีเดิม · การ์ด STAT ตกช่องแรก = หัวเขียวแต่กรอบน้ำเงิน
+            /// </summary>
+            private void CheckCardAccentFollowsType(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    var head = slots[i].cardBackground;
+                    if (head == null) { Require(false, $"การ์ดใบ {i + 1} ต่อ cardBackground ไว้"); continue; }
+
+                    // `AddBorder` สร้างลูกชื่อ Border ที่ **ไม่มี Image** — Image อยู่ที่ขอบ
+                    // สี่ด้านข้างใน (Top/Bottom/Left/Right) · หาผิดชั้นแล้วเช็คจะข้ามไปเงียบๆ
+                    var border = slots[i].transform.Find("Border/Top")?.GetComponent<Image>();
+                    if (border == null)
+                    {
+                        Require(false, $"การ์ดใบ {i + 1} หากรอบ (Border/Top) เจอ");
+                        continue;
+                    }
+
+                    Require(Close(border.color, head.color),
+                            $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
+                            $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
+                }
+            }
+
+            /// <summary>
+            /// หัวเรื่องต้องสลับก้อนตาม **การ์ดที่อยู่บนจอจริง**
+            ///
+            /// จอเดียวใช้แจกสองอย่าง — การ์ดอัปปกติกับ augment · ถ้าหัวเรื่องไม่สลับ
+            /// ผู้เล่นจะเห็น "LEVEL UP!" คู่กับการ์ด AUGMENT ซึ่งอ่านแล้วเข้าใจผิด
+            ///
+            /// เช็คทั้งสองทาง — สลับไปแล้ว **สลับกลับได้ด้วย** · ของที่เปิดแล้วไม่มีใคร
+            /// ปิดคือบั๊กที่โผล่รอบถัดไป ไม่ใช่รอบนี้ จึงหาต้นเหตุยากผิดกับความง่ายของมัน
+            /// </summary>
+            private void CheckAugmentTitleSwaps(LevelUpUI ui, List<UpgradeCardInfo> normalCards)
+            {
+                Require(ui.titleAugment != null,
+                        "ต่อ LevelUpUI.titleAugment ไว้ (หัวเรื่องตอนแจก augment)");
+                if (ui.titleAugment == null || ui.titleDefault == null) return;
+
+                var aug = AssetDatabase.FindAssets("t:AugmentData")
+                                       .Select(AssetDatabase.GUIDToAssetPath)
+                                       .Select(AssetDatabase.LoadAssetAtPath<AugmentData>)
+                                       .FirstOrDefault(a => a != null);
+                if (aug == null) return;      // ไม่มี augment ในโปรเจกต์ ข้อบนรายงานไปแล้ว
+
+                var augOnly = new List<UpgradeCardInfo>
+                {
+                    new UpgradeCardInfo { type = UpgradeCardType.Augment, augment = aug },
+                    new UpgradeCardInfo { type = UpgradeCardType.Augment, augment = aug },
+                };
+
+                ui.Show(augOnly, _ => { }, level: 0);
+                Require(ui.titleAugment.activeSelf && !ui.titleDefault.activeSelf,
+                        "การ์ด augment ล้วน → หัวเรื่อง AUGMENT โผล่ หัวเรื่องปกติหาย");
+
+                ui.Show(normalCards, _ => { }, level: 7);
+                Require(ui.titleDefault.activeSelf && !ui.titleAugment.activeSelf,
+                        "กลับมาการ์ดปกติ → หัวเรื่องปกติกลับมา หัวเรื่อง AUGMENT หาย");
+            }
+
+            /// <summary>
+            /// นัดหมายบนไทม์ไลน์ต้องชี้ของที่มีอยู่จริง และเกิดได้ทัน
+            ///
+            /// ═══ ราคาของการอ้างด้วยสตริง ═══
+            ///
+            /// `TimelineCue.variant` เป็นชื่อ ไม่ใช่ reference — คอมไพเลอร์ตรวจให้ไม่ได้
+            /// พิมพ์ผิดตัวเดียวแล้ว `ObjectiveManager` จะบ่นแล้ว **สุ่มแทน** ซึ่งแปลว่า
+            /// เกมยังเล่นได้ปกติ จังหวะที่ออกแบบไว้แค่หายไปเงียบๆ
+            ///
+            /// เลือกสตริงเพราะ reference ข้าม component ในซีนเปราะกว่า (ย้ายแผงทีเดียวหลุด)
+            /// แต่ต้องจ่ายค่านี้คืนด้วยเทสต์ ไม่ใช่ปล่อยให้คนตั้งตารางไปเจอเอง
+            ///
+            /// เช็คเวลาด้วย — นัดหลังบอสใหญ่คือนัดที่ไม่มีวันถึง
+            /// </summary>
+            private void CheckTimelineCues()
+            {
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                if (gt == null) return;
+
+                var om = FindAnyObjectByType<ObjectiveManager>(FindObjectsInactive.Include);
+                var bm = FindAnyObjectByType<BossManager>(FindObjectsInactive.Include);
+
+                var unknown = new List<string>();
+                var tooLate = new List<string>();
+
+                // ตารางของซีน + ตารางของทุกแมพทุก tier — แมพที่ตั้งชื่อแบบผิดไว้
+                // จะพังเฉพาะตอนเลือกแมพนั้น ซึ่งอาจไม่ใช่แมพที่ใครเปิดทดสอบ
+                var tables = new List<(string where, TimelineCue[] cues, float bossAt)>
+                {
+                    ("ซีน", gt.cues, gt.mainBossTimeMin)
+                };
+
+                var maps = AssetDatabase.FindAssets("t:MapData")
+                                        .Select(AssetDatabase.GUIDToAssetPath)
+                                        .Select(AssetDatabase.LoadAssetAtPath<MapData>);
+                foreach (var map in maps)
+                {
+                    if (map == null || map.tiers == null) continue;
+                    foreach (var tier in map.tiers)
+                    {
+                        if (tier == null || tier.schedule == null || !tier.schedule.HasCues) continue;
+                        float bossAt = tier.schedule.mainBossMinutes > 0f
+                                     ? tier.schedule.mainBossMinutes : gt.mainBossTimeMin;
+                        tables.Add(($"{map.mapId}/{tier.tier}", tier.schedule.cues, bossAt));
+                    }
+                }
+
+                foreach (var (where, cues, bossAt) in tables)
+                {
+                    if (cues == null) continue;
+                    foreach (var cue in cues)
+                    {
+                        if (cue == null) continue;
+                        string name = $"{where} · {cue.DisplayName}";
+
+                        if (cue.atMinutes != null)
+                            foreach (var m in cue.atMinutes)
+                                if (m > bossAt) tooLate.Add($"{name} @ {m:0.#} นาที");
+
+                        if (string.IsNullOrEmpty(cue.variant)) continue;   // สุ่มตามปกติ ไม่ต้องมีชื่อ
+
+                        bool found = cue.kind == TimelineCueKind.ZoneObjective
+                            ? om != null && om.zoneVariants != null &&
+                              om.zoneVariants.Any(v => v.prefab != null && v.id == cue.variant)
+                            : bm != null && bm.miniBossPrefabs != null &&
+                              bm.miniBossPrefabs.Any(p => p != null && p.name == cue.variant);
+
+                        if (!found) unknown.Add($"{name} → '{cue.variant}'");
+                    }
+                }
+
+                Require(unknown.Count == 0,
+                        $"นัดหมายทุกรายการชี้แบบที่มีอยู่จริง ({unknown.Count} รายการหาไม่เจอ)");
+                foreach (var u in unknown.Take(5)) lines.Add($"        └ {u}");
+
+                Require(tooLate.Count == 0,
+                        $"ไม่มีนัดหมายที่เลยเวลาบอสใหญ่ ({tooLate.Count} รายการเลยเวลา)");
+                foreach (var t in tooLate.Take(5)) lines.Add($"        └ {t}");
+
+                // ── ตารางขาดทั้งชนิด = ระบบนั้นตายทั้งรัน ────────────────────
+                //
+                // ของเดิมมีตาราง start+interval เป็นค่าเริ่มต้น สองระบบนี้จึงทำงาน
+                // แน่นอนแม้ไม่มีใครตั้งอะไรเลย · ตอนนี้มาจากนัดหมายล้วน ลิสต์ว่าง
+                // จึงกลายเป็นค่าที่ถูกต้องตามกฎ แต่แปลว่าเกมไม่มีเควสต์กับมินิบอส
+                // และไม่มีอาการอื่นให้เห็นเลยนอกจากเงียบไปตลอด 15 นาที
+                int zones = CountCueTimes(gt.cues, TimelineCueKind.ZoneObjective);
+                int minis = CountCueTimes(gt.cues, TimelineCueKind.MiniBoss);
+
+                Require(zones > 0, $"ซีนมีนัดหมายโซนเควสต์ ({zones} ครั้งตลอดรัน)");
+                Require(minis > 0, $"ซีนมีนัดหมายมินิบอส ({minis} ครั้งตลอดรัน)");
+            }
+
+            /// <summary>
+            /// ตาราง WaveConfig — ช่วงไหนครอบนาทีไหน
+            ///
+            /// ═══ ทำไมส่วนใหญ่เป็นหมายเหตุ ไม่ใช่ข้อสอบ ═══
+            ///
+            /// "config ใบสุดท้ายครอบ 80% ของรัน" เป็นเรื่องจังหวะเกม ไม่ใช่ความถูกผิด
+            /// เทสต์ไม่มีสิทธิ์ตัดสินแทนคนออกแบบ · แต่มันมองไม่เห็นจากเลข
+            /// `wavesPerConfig: 3` ซึ่งเป็นเหตุผลเดียวที่ทำให้ไม่มีใครรู้
+            /// หน้าที่ของเทสต์ตรงนี้คือทำให้เห็น ไม่ใช่ตัดสิน
+            ///
+            /// ที่เป็นข้อสอบจริงมีสองอย่าง — ช่องที่ลืมใส่ config (ศัตรูไม่ออกเลย
+            /// ในช่วงนั้น) และช่วงที่ตั้งไว้หลังบอสใหญ่ ซึ่งไม่มีวันถึง
+            /// </summary>
+            private void CheckWaveSchedule()
+            {
+                CheckEnemyScaling();
+
+                var wm = FindAnyObjectByType<WaveManager>(FindObjectsInactive.Include);
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                if (wm == null) return;
+
+                float runMin = gt != null ? gt.mainBossTimeMin : 15f;
+
+                if (wm.wavePhases != null && wm.wavePhases.Length > 0)
+                {
+                    int empty = wm.wavePhases.Count(ph => ph.config == null);
+                    int late  = wm.wavePhases.Count(ph => ph.atMinutes > runMin);
+
+                    Require(empty == 0, $"ทุกช่วง wave ใส่ config แล้ว ({empty} ช่องยังว่าง)");
+                    Require(late  == 0, $"ไม่มีช่วง wave ที่เริ่มหลังบอสใหญ่ ({late} ช่วง)");
+
+                    foreach (var ph in wm.wavePhases.OrderBy(ph => ph.atMinutes))
+                        lines.Add($"   หมายเหตุ  นาที {ph.atMinutes:0.#} → " +
+                                  (ph.config != null ? ph.config.name : "(ว่าง)"));
+                    return;
+                }
+
+                // แบบแบ่งตามจำนวน wave — แปลงเป็นนาทีให้เห็น
+                if (wm.waveConfigs == null || wm.waveConfigs.Length == 0) return;
+
+                float dur = Mathf.Max(0.1f, wm.waveDuration);
+                int   per = Mathf.Max(1, wm.wavesPerConfig);
+
+                for (int i = 0; i < wm.waveConfigs.Length; i++)
+                {
+                    float startMin = (wm.startDelay + i * per * dur) / 60f;
+                    bool  last     = i == wm.waveConfigs.Length - 1;
+                    float endMin   = last ? runMin : (wm.startDelay + (i + 1) * per * dur) / 60f;
+                    string name    = wm.waveConfigs[i] != null ? wm.waveConfigs[i].name : "(ว่าง)";
+
+                    lines.Add($"   หมายเหตุ  นาที {startMin:0.#}–{endMin:0.#} → {name}" +
+                              (last ? $"  ({(endMin - startMin) / Mathf.Max(0.1f, runMin) * 100f:0}% ของรัน)" : ""));
+                }
+            }
+
+            /// <summary>
+            /// เพดานความเร็วที่ต่ำกว่า 1 ทำให้ศัตรูช้ากว่าปกติตั้งแต่ wave แรก
+            ///
+            /// ═══ ทำไมข้อนี้เป็นข้อสอบ ไม่ใช่หมายเหตุ ═══
+            ///
+            /// สูตรคือ `Min(1 + w × speedPerWave, maxSpeedMultiplier)` ซึ่งเริ่มจาก 1.0
+            /// เสมอที่ wave แรก · ตั้งเพดานไว้ 0.5 จึงไม่ได้แปลว่า "โตช้า" แต่แปลว่า
+            /// **ศัตรูเดินครึ่งความเร็วทั้งเกม** ซึ่งไม่ใช่สิ่งที่ใครตั้งใจเมื่อพิมพ์เลขลง
+            /// ช่องชื่อ Max Speed Multiplier
+            ///
+            /// ต่างจากอัตราสเกลตัวอื่นที่ 0 เป็นค่าที่ออกแบบได้จริง (โหมดฝึกซ้อม) —
+            /// เพดานต่ำกว่า 1 ไม่มีการใช้งานที่สมเหตุผล
+            /// </summary>
+            /// <summary>
+            /// ข้อความที่ **โค้ดเซ็ตตอนรัน** ก็ต้องอยู่ในฟอนต์ด้วย
+            ///
+            /// ═══ ช่องโหว่ที่เช็คนี้เกิดมาปิด ═══
+            ///
+            /// เช็คของซีนไล่ `TMP_Text.text` ซึ่งเห็นเฉพาะข้อความที่พิมพ์ไว้ในเอดิเตอร์ ·
+            /// ประกาศกลางจอทุกอันเป็น literal ในโค้ด มันจึงมองไม่เห็นสักตัว แล้ว
+            /// **รายงานว่าเจอ 0 ทุกรอบ ทั้งที่มีเจ็ดเส้นทางส่งกล่องสี่เหลี่ยมขึ้นจอ**
+            ///
+            /// เทสต์เขียวที่ตรวจไม่ได้เลยอันตรายกว่าไม่มีเทสต์ เพราะมันตอบคำถามว่า
+            /// "เรื่องนี้มีคนดูแลอยู่ไหม" ด้วยคำว่ามี ทั้งที่ไม่มี
+            ///
+            /// ═══ ทำไมอ่านจากฟอนต์ ไม่ใช่รายชื่ออักขระต้องห้าม ═══
+            ///
+            /// ของเดิมเป็นลิสต์ `★☆⚠⚡✓✅💥` ที่เขียนด้วยมือ · `☢` ใน FloorHazard
+            /// ไม่อยู่ในลิสต์ จึงลอดได้แม้เช็คจะสแกนถูกที่ · ลิสต์ที่ต้องอัปเดตด้วยมือ
+            /// จะตามหลังโค้ดเสมอ — ถามฟอนต์ตรงๆ แล้วมันครอบทุกตัวที่ยังไม่รู้จัก
+            ///
+            /// ═══ ครอบแค่ทางที่รู้จัก ═══
+            ///
+            /// ดูเฉพาะ literal ที่ส่งเข้า `ShowAnnouncement(` กับที่เขียนลง `.text` ตรงๆ ·
+            /// ข้อความที่ประกอบจากตัวแปรหรือมาจากตารางแปลอยู่นอกสายตา — และ
+            /// `Debug.Log` ถูกเว้นโดยตั้งใจ เพราะ Console ไม่ได้ใช้ฟอนต์ของเกม
+            /// </summary>
+            private void CheckGlyphsInCode(HashSet<int> covered)
+            {
+                var sinks = new System.Text.RegularExpressions.Regex(
+                    @"(?:ShowAnnouncement\s*\(|\.text\s*=\s*)\$?""((?:[^""\\]|\\.)*)""");
+
+                var hits = new List<string>();
+
+                foreach (var file in System.IO.Directory.GetFiles("Assets/Script", "*.cs",
+                                                                  System.IO.SearchOption.AllDirectories))
+                {
+                    var lines = System.IO.File.ReadAllLines(file);
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        string line = lines[i].TrimStart();
+                        if (line.StartsWith("//")) continue;       // คอมเมนต์ไม่ได้ขึ้นจอ
+
+                        foreach (System.Text.RegularExpressions.Match m in sinks.Matches(lines[i]))
+                        {
+                            char bad = FirstUncovered(m.Groups[1].Value, covered);
+                            if (bad == '\0') continue;
+
+                            string rel = file.Replace('\\', '/');
+                            hits.Add($"{rel}:{i + 1} U+{(int)bad:X4} — {m.Groups[1].Value}");
+                        }
+                    }
+                }
+
+                Require(hits.Count == 0,
+                        $"ไม่มีข้อความในโค้ดที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                foreach (var h in hits.Take(10)) lines.Add($"        └ {h}");
+            }
+
+            /// <summary>
+            /// ข้อความในตารางแปลก็ต้องอยู่ในฟอนต์ด้วย
+            ///
+            /// ═══ ทำไมต้องมีทั้งที่เพิ่งเพิ่มเช็คของโค้ดไป ═══
+            ///
+            /// ประกาศกลางจอเพิ่งย้ายจาก literal ในโค้ดเข้าตาราง `Announcements` ·
+            /// เช็คที่ไล่ literal จึงเหลือครอบแค่ `.text = "…"` ไม่กี่จุด ส่วนข้อความจริง
+            /// ที่ผู้เล่นอ่านย้ายไปอยู่นอกสายตาหมด
+            ///
+            /// นี่คือรูปแบบเดิมซ้ำรอบที่สอง — เช็คยังเขียวเหมือนเดิม แต่ของที่มันเคย
+            /// เฝ้าอยู่ย้ายออกไปแล้ว · **ข้อความย้ายที่ได้ เช็คต้องย้ายตาม**
+            ///
+            /// ไล่ทุกภาษา ไม่ใช่แค่ไทย — ฟอนต์ชุดเดียวกันวาดทั้งสองภาษา และคนเขียน
+            /// คำแปลไม่ได้อยู่ในตำแหน่งที่จะรู้ว่าฟอนต์มี glyph ไหนบ้าง
+            /// </summary>
+            private void CheckGlyphsInTables(HashSet<int> covered)
+            {
+                var hits = new List<string>();
+
+                foreach (var guid in AssetDatabase.FindAssets("t:StringTable"))
+                {
+                    var table = AssetDatabase.LoadAssetAtPath<
+                        UnityEngine.Localization.Tables.StringTable>(AssetDatabase.GUIDToAssetPath(guid));
+                    if (table == null) continue;
+
+                    foreach (var entry in table.Values)
+                    {
+                        if (entry == null || string.IsNullOrEmpty(entry.LocalizedValue)) continue;
+
+                        char bad = FirstUncovered(entry.LocalizedValue, covered);
+                        if (bad == '\0') continue;
+
+                        string v = entry.LocalizedValue;
+                        hits.Add($"{table.TableCollectionName}/{table.LocaleIdentifier.Code} " +
+                                 $"'{entry.Key}' U+{(int)bad:X4} — {(v.Length > 30 ? v.Substring(0, 30) + "…" : v)}");
+                    }
+                }
+
+                Require(hits.Count == 0,
+                        $"ไม่มีข้อความในตารางแปลที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                foreach (var h in hits.Take(10)) lines.Add($"        └ {h}");
+            }
+
+            /// <summary>อักขระที่ฟอนต์ในโปรเจกต์อบไว้จริง รวม fallback ทุกชั้น</summary>
+            private static HashSet<int> BakedGlyphs()
+            {
+                var set = new HashSet<int>();
+
+                foreach (var guid in AssetDatabase.FindAssets("t:TMP_FontAsset"))
+                {
+                    var f = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(
+                        AssetDatabase.GUIDToAssetPath(guid));
+                    if (f == null || f.characterTable == null) continue;
+
+                    foreach (var c in f.characterTable) set.Add((int)c.unicode);
+                }
+
+                return set;
+            }
+
+            /// <summary>
+            /// อักขระตัวแรกที่ไม่มีในฟอนต์ — '\0' = ครบทุกตัว
+            ///
+            /// เว้น whitespace กับ surrogate ไว้ · surrogate เป็นครึ่งหนึ่งของ emoji
+            /// ซึ่งไม่มีฟอนต์ไหนในโปรเจกต์รองรับอยู่แล้ว การรายงานครึ่งตัวจะอ่านไม่รู้เรื่อง
+            /// จึงรายงานที่ตัวนำแทน
+            /// </summary>
+            private static char FirstUncovered(string text, HashSet<int> covered)
+            {
+                foreach (char c in text)
+                {
+                    if (char.IsWhiteSpace(c) || char.IsLowSurrogate(c)) continue;
+                    if (covered.Contains(c)) continue;
+                    return c;
+                }
+                return '\0';
+            }
+
+            private void CheckEnemyScaling()
+            {
+                var wm = FindAnyObjectByType<WaveManager>(FindObjectsInactive.Include);
+                if (wm != null)
+                    Require(wm.maxSpeedMultiplier >= 1f,
+                            $"ซีน: เพดานความเร็วไม่ต่ำกว่า 1 (ตอนนี้ {wm.maxSpeedMultiplier:0.##})");
+
+                var maps = AssetDatabase.FindAssets("t:MapData")
+                                        .Select(AssetDatabase.GUIDToAssetPath)
+                                        .Select(AssetDatabase.LoadAssetAtPath<MapData>);
+
+                foreach (var map in maps)
+                {
+                    if (map == null || map.tiers == null) continue;
+
+                    foreach (var tier in map.tiers)
+                    {
+                        var sc = tier != null ? tier.enemyScaling : null;
+                        if (sc == null || !sc.enabled) continue;
+
+                        Require(sc.maxSpeedMultiplier >= 1f,
+                                $"{map.mapId}/{tier.tier}: เพดานความเร็วไม่ต่ำกว่า 1 " +
+                                $"(ตอนนี้ {sc.maxSpeedMultiplier:0.##})");
+
+                        lines.Add($"   หมายเหตุ  {map.mapId}/{tier.tier} ตั้งสเกลศัตรูเอง — {sc}");
+                    }
+                }
+            }
+
+            private static int CountCueTimes(TimelineCue[] cues, TimelineCueKind kind)
+            {
+                if (cues == null) return 0;
+                int n = 0;
+                foreach (var c in cues)
+                    if (c != null && c.kind == kind) n += c.TimeCount;
+                return n;
+            }
+
+            /// <summary>
+            /// โซนเควสต์ที่ให้ augment ต้องต่อครบทั้งสามทาง
+            ///
+            /// ═══ สามจุดที่ขาดได้ทีละจุด และเงียบทุกจุด ═══
+            ///
+            ///   ไม่อยู่ใน zoneVariants      → โซนแบบนี้ไม่มีวันถูกสุ่มออกมา
+            ///   orbPrefab ไม่ใช่ orb augment → ทำเควสต์เสร็จแล้วได้ของผิด
+            ///   ไม่ได้ลงทะเบียน network prefab → **host เห็นโซน client ไม่เห็น**
+            ///
+            /// ข้อสุดท้ายเจอได้ต่อเมื่อทดสอบสองเครื่อง จึงเช็คที่ลิสต์แทนที่จะรอเจออาการ
+            /// </summary>
+            private void CheckAugmentZoneWired()
+            {
+                const string path = "Assets/Prefab/ZoneObjective_Augment.prefab";
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null) return;      // ยังไม่มีโซนแบบนี้ ไม่ใช่ความผิดของใคร
+
+                var zone = go.GetComponent<ZoneObjective>();
+                Require(zone != null, "โซน augment: มี ZoneObjective");
+
+                var orb = zone != null && zone.orbPrefab != null
+                        ? zone.orbPrefab.GetComponent<ObjectiveOrb>() : null;
+                Require(orb != null && orb.reward == OrbReward.Augment,
+                        $"โซน augment: orbPrefab เป็น orb ที่ให้ augment (ตอนนี้ {(orb == null ? "ไม่มี ObjectiveOrb" : orb.reward.ToString())})");
+
+                var list = AssetDatabase.LoadAssetAtPath<Unity.Netcode.NetworkPrefabsList>(
+                    "Assets/DefaultNetworkPrefabs.asset");
+                Require(list != null && list.PrefabList.Any(p => p != null && p.Prefab == go),
+                        "โซน augment: ลงทะเบียนใน DefaultNetworkPrefabs แล้ว");
+
+                var om = FindAnyObjectByType<ObjectiveManager>(FindObjectsInactive.Include);
+                if (om == null) return;
+
+                bool listed = om.zoneVariants != null &&
+                              om.zoneVariants.Any(v => v.prefab == go && v.weight > 0f);
+                Require(listed, "โซน augment: อยู่ใน ObjectiveManager.zoneVariants ด้วยน้ำหนัก > 0");
+            }
+
+            /// <summary>
+            /// แถวปาร์ตี้กับแถบ augment ต้องต่อไว้ และแม่แบบต้องเป็น **ไฟล์ prefab**
+            ///
+            /// แม่แบบที่ชี้ของในซีนคือ fileID ที่เปลี่ยนทุกครั้งที่ย้าย/สร้างแผงใหม่
+            /// แล้วแม่แบบหายไปพร้อมแผงเก่า — อาการคือแถวไม่ขึ้นเลยสักแถว โดยไม่มี error
+            /// (กับดักเดียวกับ `LevelUpUI.cardTemplate` ซึ่งมีเทสต์คุมอยู่แล้ว)
+            ///
+            /// **ข้อนี้ครอบแค่สาย** — แถวขึ้นครบไหม ชื่อถูกไหม REVIVE นับถอยหลังจริงไหม
+            /// ต้องมีผู้เล่น spawn จริง ซึ่งเทสต์นี้จัดฉากไม่ได้ · เรื่องนั้นต้องสองเครื่อง
+            /// </summary>
+            private void CheckPartyHudWired()
+            {
+                var party = FindAnyObjectByType<PartyMemberHUD>(FindObjectsInactive.Include);
+                if (party == null) lines.Add("   หมายเหตุ  ไม่มี PartyMemberHUD ในซีน");
+                else
+                {
+                    Require(party.rowTemplate != null, "แถวปาร์ตี้: ต่อ rowTemplate ไว้");
+                    Require(party.rowTemplate == null ||
+                            PrefabUtility.GetPrefabAssetType(party.rowTemplate) != PrefabAssetType.NotAPrefab,
+                            "แถวปาร์ตี้: rowTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
+                }
+
+                var strip = FindAnyObjectByType<AugmentStripUI>(FindObjectsInactive.Include);
+                if (strip == null) { lines.Add("   หมายเหตุ  ไม่มี AugmentStripUI ในซีน"); return; }
+
+                Require(strip.slotTemplate != null, "แถบ augment: ต่อ slotTemplate ไว้");
+                Require(strip.slotTemplate == null ||
+                        PrefabUtility.GetPrefabAssetType(strip.slotTemplate) != PrefabAssetType.NotAPrefab,
+                        "แถบ augment: slotTemplate ชี้ไฟล์ prefab ไม่ใช่ของในซีน");
+                Require(strip.slotCount == 3, $"แถบ augment: 3 ช่องตามที่ออกแบบ (ตอนนี้ {strip.slotCount})");
+            }
+
+            /// <summary>
+            /// orb ที่ให้ augment ต้องต่อครบทั้งสามอย่าง
+            ///
+            /// ═══ ทำไมต้องมีเทสต์ให้ prefab ใบเดียว ═══
+            ///
+            /// ทั้งสามอย่างที่เช็คพังแบบ **เงียบ** และคนละอาการกัน:
+            ///   • ไม่มี ObjectiveOrb  → เป็นก้อนหินสวยๆ ที่เดินทะลุ
+            ///   • reward ไม่ใช่ Augment → เก็บได้ แต่ได้การ์ดผิดกอง ดูเผินๆ เหมือนทำงาน
+            ///   • ไม่ได้ลงทะเบียน network prefab → **host เห็นปกติ client ไม่เห็นเลย**
+            ///
+            /// ข้อสุดท้ายร้ายที่สุด เพราะเจอได้ต่อเมื่อทดสอบสองเครื่องเท่านั้น
+            /// ซึ่งเป็นสิ่งที่เทสต์นี้ทำไม่ได้ — จึงเช็คที่ลิสต์แทนการเช็คที่อาการ
+            /// </summary>
+            private void CheckAugmentOrbWired()
+            {
+                const string path = "Assets/Prefab/Exp orb/AugOrb.prefab";
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null) return;      // ยังไม่มี orb ใบนี้ ไม่ใช่ความผิดของใคร
+
+                var orb = go.GetComponent<ObjectiveOrb>();
+                Require(orb != null, "AugOrb: ต่อ ObjectiveOrb ไว้");
+                if (orb != null)
+                    Require(orb.reward == OrbReward.Augment,
+                            $"AugOrb: reward = Augment (ตอนนี้ {orb.reward})");
+
+                Require(go.GetComponent<Unity.Netcode.NetworkObject>() != null,
+                        "AugOrb: มี NetworkObject (ไม่มี = spawn ไม่ได้เลย)");
+
+                var list = AssetDatabase.LoadAssetAtPath<Unity.Netcode.NetworkPrefabsList>(
+                    "Assets/DefaultNetworkPrefabs.asset");
+                bool listed = list != null &&
+                              list.PrefabList.Any(p => p != null && p.Prefab == go);
+                Require(listed, "AugOrb: ลงทะเบียนใน DefaultNetworkPrefabs แล้ว " +
+                                "(ไม่ลง = client ไม่เห็น orb ทั้งที่ host เห็น)");
+            }
+
+            /// <summary>
+            /// ป้ายชนิดการ์ดต้องมาจากการ์ด ไม่ใช่จากที่อบไว้ใน prefab
+            ///
+            /// `Header/TypeLabel` ถูกสร้างพร้อมการ์ดมาตั้งแต่แรกและตัวสร้างอบข้อความ
+            /// ตัวอย่างใส่ (WEAPON / SUPER / STAT) ภาพเรนเดอร์จึงดูถูกต้องมาตลอด
+            /// แต่ `UpgradeCardUI` ไม่เคยมีช่องให้มัน — ตอนรันจริงว่างเปล่าทุกใบ
+            ///
+            /// **ภาพ edit mode แยก "ของที่อบไว้" กับ "ของที่โค้ดเขียน" ไม่ออก** —
+            /// ต้องเรียก Populate จริงแล้วอ่านค่ากลับถึงจะเห็น
+            /// </summary>
+            private void CheckCardTypeLabels(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                int wired = slots.Count(s => s.typeLabel != null);
+                if (wired == 0)
+                {
+                    Require(false, "ต่อ UpgradeCardUI.typeLabel ไว้ (ป้ายชนิดการ์ดซ้ายบน)");
+                    return;
+                }
+
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    if (slots[i].typeLabel == null) continue;
+                    Require(slots[i].typeLabel.text == cards[i].TypeLabel,
+                            $"การ์ดใบ {i + 1} ป้ายชนิดเป็น '{cards[i].TypeLabel}' " +
+                            $"· ได้ '{slots[i].typeLabel.text}'");
+                }
+            }
+
+            /// <summary>
+            /// การ์ดที่ไม่มีไอคอนต้อง **ปิด Image** ไม่ใช่ปล่อยให้เป็นกล่องขาว
+            ///
+            /// `Image` ที่ไม่มี sprite วาดเป็นสี่เหลี่ยมทึบเต็มกรอบ ไม่ใช่ว่างเปล่า
+            /// augment ทั้ง 9 ใบที่สร้างจากตัวอย่างยังไม่มีไอคอน — ถ้าไม่ปิด
+            /// ผู้เล่นจะเห็นกล่องขาวกลางการ์ดทุกใบแล้วนึกว่ารูปโหลดไม่ขึ้น
+            ///
+            /// บั๊กคลาสเดียวกับที่ `WeaponStatHUD` เคยเป็น — ตั้ง sprite แล้วลืม enabled
+            /// </summary>
+            private void CheckEmptyIconsAreHidden(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
+            {
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    var img = slots[i].iconImage;
+                    if (img == null) continue;
+
+                    bool hasIcon = cards[i].DisplayIcon != null;
+                    Require(img.enabled == hasIcon,
+                            $"การ์ดใบ {i + 1} ({cards[i].type}) " +
+                            (hasIcon ? "มีไอคอน → Image เปิด" : "ไม่มีไอคอน → Image ปิด") +
+                            $" · enabled = {img.enabled}");
+                }
+            }
+
+            /// <summary>
+            /// augment ต้องมีทางออกมาได้จริงอย่างน้อยหนึ่งทาง
+            ///
+            /// ═══ บั๊กที่เทสต์นี้เกิดมาเพื่อดัก ═══
+            ///
+            /// `MetaDatabase.augments` ว่างเปล่ามาตลอด และ `UpgradeManager` **ถอยกลับ
+            /// ไปแจกการ์ดปกติเงียบๆ** ไม่มี log ไม่มี warning · ผลคือฟีเจอร์ทั้งก้อน
+            /// — 715 บรรทัด + netcode + HUD — ไม่เคยทำงานสักครั้งโดยไม่มีใครรู้
+            ///
+            /// ═══ ทำไมเทสต์นี้สำคัญขึ้นหลังตัดทางเลเวลอัปทิ้ง ═══
+            ///
+            /// เดิม augment มีสองทาง — เลเวลที่กำหนด กับ orb · ทางเลเวลเป็นของที่
+            /// **รับประกันว่าเกิด** เพราะขึ้นกับ EXP ที่ยังไงก็ได้ ตอนนี้เหลือทางเดียว
+            /// และทางนั้นขึ้นกับการตั้งค่าในซีนหลายจุดที่ขาดได้ทีละจุด:
+            ///
+            ///   ไม่มีโซนแบบที่ orb ให้ augment  → ไม่มีทางได้เลย
+            ///   มีโซน แต่ไม่มีนัดหมายและน้ำหนัก 0 → โซนนั้นไม่มีวันถูกเลือก
+            ///   pool ว่าง                        → เก็บ orb แล้วได้การ์ดปกติแทน
+            ///
+            /// ทั้งสามแบบจบลงเหมือนกันคือ **ผู้เล่นไม่เคยเห็น augment ทั้งรัน** และ
+            /// ไม่มีอาการอื่นให้สังเกต — เกมยังเล่นได้ปกติทุกอย่าง
+            /// </summary>
+            private void CheckAugmentsReachable()
+            {
+                var om = FindAnyObjectByType<ObjectiveManager>(FindObjectsInactive.Include);
+                if (om == null) return;      // ไม่ใช่ซีนเกม ข้ามไป
+
+                var augZones = (om.zoneVariants ?? new ObjectiveManager.ZoneVariant[0])
+                    .Where(v => v.prefab != null && GivesAugment(v.prefab))
+                    .ToList();
+
+                Require(augZones.Count > 0, "มีโซนเควสต์แบบที่ orb ให้ augment");
+                if (augZones.Count == 0) return;
+
+                bool byWeight = augZones.Any(v => v.weight > 0f);
+
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                bool byCue = gt != null && gt.cues != null && gt.cues.Any(c =>
+                    c != null && c.kind == TimelineCueKind.ZoneObjective && c.TimeCount > 0 &&
+                    augZones.Any(v => !string.IsNullOrEmpty(v.id) && v.id == c.variant));
+
+                Require(byWeight || byCue,
+                        "augment มีทางออกมาได้จริง — " +
+                        $"นัดหมาย {(byCue ? "มี" : "ไม่มี")} · น้ำหนักสุ่ม {(byWeight ? "มี" : "0")}");
+
+                var db = CloneSwarm.Meta.MetaDatabase.Instance;
+                int pool = db?.augments?.Count(a => a != null) ?? 0;
+                Require(pool > 0, $"pool augment ต้องมีของ (มี {pool} ใบ)");
+
+                CheckAugmentWindows();
+            }
+
+            /// <summary>prefab โซนใบนี้ให้ orb ที่เป็น augment ไหม</summary>
+            private static bool GivesAugment(GameObject zonePrefab)
+            {
+                var zone = zonePrefab.GetComponent<ZoneObjective>();
+                if (zone == null || zone.orbPrefab == null) return false;
+
+                var orb = zone.orbPrefab.GetComponent<ObjectiveOrb>();
+                return orb != null && orb.reward == OrbReward.Augment;
+            }
+
+            /// <summary>
+            /// ช่วงเวลาที่ออกได้ต้องเป็นช่วงที่ **เกิดขึ้นได้จริง**
+            ///
+            /// ═══ สองแบบที่ทำให้ใบนั้นไม่มีวันโผล่ โดยไม่มีอะไรฟ้อง ═══
+            ///
+            ///   until &lt; from            → ช่วงกลับหัว ว่างเปล่าตั้งแต่ต้น
+            ///   from &gt; เวลาบอสใหญ่      → เกมจบก่อนถึงนาทีนั้น
+            ///
+            /// ทั้งคู่หน้าตาเหมือน "ยังไม่เคยสุ่มเจอ" ซึ่งเป็นเรื่องปกติของระบบสุ่ม
+            /// คนจูนจึงไม่มีทางแยกออกว่าใบนั้นดวงไม่ดีหรือใส่เลขผิด
+            ///
+            /// นี่คือราคาของการเปลี่ยนจากป้ายระดับมาเป็นช่วงเวลา — ป้ายพิมพ์ผิดไม่ได้
+            /// แต่ตัวเลขพิมพ์ผิดได้ · เทสต์จึงต้องรับหน้าที่ที่ enum เคยรับไว้เอง
+            /// </summary>
+            private void CheckAugmentWindows()
+            {
+                var all = AssetDatabase.FindAssets("t:AugmentData")
+                                       .Select(AssetDatabase.GUIDToAssetPath)
+                                       .Select(AssetDatabase.LoadAssetAtPath<AugmentData>)
+                                       .Where(a => a != null).ToList();
+                if (all.Count == 0) return;
+
+                var reversed = all.Where(a => a.availableUntilMinutes > 0f &&
+                                              a.availableUntilMinutes < a.availableFromMinutes)
+                                  .Select(a => a.augmentName).ToList();
+                Require(reversed.Count == 0,
+                        $"ไม่มี augment ที่ตั้งช่วงเวลากลับหัว ({reversed.Count} ใบ)");
+                foreach (var n in reversed.Take(5)) lines.Add($"        └ {n}");
+
+                var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
+                if (gt == null) return;
+
+                var tooLate = all.Where(a => a.availableFromMinutes > gt.mainBossTimeMin)
+                                 .Select(a => $"{a.augmentName} ({a.WindowLabel})").ToList();
+                Require(tooLate.Count == 0,
+                        $"ไม่มี augment ที่เริ่มออกได้หลังเกมจบ (บอสใหญ่ที่ {gt.mainBossTimeMin:0.#} นาที)");
+                foreach (var n in tooLate.Take(5)) lines.Add($"        └ {n}");
+            }
+
+            /// <summary>
+            /// แถบ build ต้องเปิดอยู่ **ตัวเดียว** ทั้งซีน
+            ///
+            /// ทุกครั้งที่ migrate จอ Level Up ใหม่ builder จะพาแถบของตัวเองกลับเข้ามา
+            /// แล้วมันไปทับตัวร่วมบน HUDCanvas — ผู้เล่นเห็น WEAPONS/PASSIVES
+            /// ซ้อนกันสองชุด ตัวเลขคนละค่า ไม่รู้ว่าอันไหนจริง
+            ///
+            /// เทสต์เดิมเช็คแค่ "แถบที่ FindAnyObjectByType หยิบมาได้" ซึ่งผ่านเสมอ
+            /// แม้จะมีสองอัน — ต้องนับหัว ไม่ใช่ดูตัวแทน
+            /// </summary>
+            private void CheckOneActiveBuildStrip()
+            {
+                var active = FindObjectsByType<BuildStripUI>(
+                                 FindObjectsInactive.Include, FindObjectsSortMode.None)
+                             .Where(s => s.gameObject.activeInHierarchy)
+                             .ToList();
+
+                Require(active.Count == 1,
+                        $"แถบ build เปิดอยู่ตัวเดียว (เจอ {active.Count})");
+
+                if (active.Count > 1)
+                    foreach (var s in active) lines.Add($"        └ {PathOf(s.transform)}");
+            }
+
+            private static string PathOf(Transform t)
+            {
+                var sb = new StringBuilder(t.name);
+                for (var p = t.parent; p != null; p = p.parent) sb.Insert(0, p.name + "/");
+                return sb.ToString();
+            }
+
+            /// <summary>
+            /// จอผลลัพธ์ต้อง **ฟัง** event จบเกมอยู่จริง ไม่ใช่แค่มี Instance
+            ///
+            /// ═══ บั๊กที่เทสต์นี้เกิดมาเพื่อดัก ═══
+            ///
+            /// `WinLoseUI.panelRoot` ชี้ที่ GameObject ตัวเดียวกับที่ component เกาะอยู่
+            /// `Awake` สั่ง `SetActive(false)` ซ่อนตัวเอง → **Unity ไม่เรียก `OnEnable`** →
+            /// `GameTimeline.OnGameWon/OnGameLost` ไม่เคยถูก subscribe
+            /// บอสตาย/ผู้เล่นตาย จอผลลัพธ์ไม่ขึ้นเลยทั้งสองทาง ไม่มี error สักบรรทัด
+            ///
+            /// `Instance != null` **ผ่านตลอด** เพราะ `Awake` วิ่งก่อนจะปิดตัวเอง —
+            /// เทสต์เดิมจึงเขียวทั้งที่ฟีเจอร์ตายสนิท · ต้องเช็คที่ subscription จริง
+            ///
+            /// อ่าน invocation list ของ static event ผ่าน reflection — ชื่อ event เป็น
+            /// API สาธารณะอยู่แล้ว การผูกกับมันจึงไม่เปราะไปกว่าการเรียกใช้ตรงๆ
+            /// </summary>
+            private void CheckResultScreenListens()
+            {
+                var win = WinLoseUI.Instance;
+                if (win == null) return;
+
+                Require(win.gameObject.activeInHierarchy,
+                        "แผงผลลัพธ์ยังเปิดอยู่หลัง Awake (ปิดตัวเอง = OnEnable ไม่วิ่ง)");
+
+                foreach (var ev in new[] { "OnGameWon", "OnGameLost" })
+                {
+                    var f = typeof(GameTimeline).GetField(
+                        ev, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+
+                    if (f == null) { Require(false, $"หา event {ev} ใน GameTimeline เจอ"); continue; }
+
+                    var d = f.GetValue(null) as System.Delegate;
+                    bool listening = d != null && d.GetInvocationList()
+                                                   .Any(x => x.Target is WinLoseUI);
+
+                    Require(listening, $"WinLoseUI subscribe {ev} แล้ว (ไม่งั้นจอจบเกมไม่ขึ้น)");
+                }
+            }
+
+            /// <summary>
+            /// แม่แบบของที่ถูกสร้างซ้ำต้องเป็น **prefab asset** ไม่ใช่ object ในซีน
+            ///
+            /// object ในซีนถูกอ้างด้วย `fileID` ซึ่งเปลี่ยนทุกครั้งที่ panel ถูกย้าย
+            /// หรือสร้างใหม่ · `P3RScreenMigrator` ลบ panel เดิมทั้งอัน แม่แบบตายไปด้วย
+            /// แล้วช่องหายทั้งแถบ **ตอนกลางเกม** โดยไม่มี error สักบรรทัด
+            /// prefab asset อ้างด้วย guid — ย้ายซีนกี่รอบก็ไม่หลุด
+            ///
+            /// `gameObject.scene.IsValid()` เป็น false เฉพาะกับ asset — เช็คได้ทั้งสองฝั่ง
+            /// </summary>
+            private void CheckTemplatesArePrefabs()
+            {
+                foreach (var s in FindObjectsByType<BuildStripUI>(
+                             FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (s.slotTemplate == null) continue;
+                    Require(!s.slotTemplate.gameObject.scene.IsValid(),
+                            $"'{s.name}' slotTemplate ชี้ prefab asset ไม่ใช่ object ในซีน");
+                }
+
+                foreach (var ui in FindObjectsByType<LevelUpUI>(
+                             FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (ui.cardTemplate == null) continue;
+                    Require(!ui.cardTemplate.gameObject.scene.IsValid(),
+                            $"'{ui.name}' cardTemplate ชี้ prefab asset ไม่ใช่ object ในซีน");
+                }
+            }
+
+            /// <summary>การ์ดทุกใบอยู่ระดับ Y เดียวกัน — การยกใบแนะนำหายไปพร้อมระบบแนะนำ</summary>
+            private void CheckCardsLevel(List<UpgradeCardUI> slots)
+            {
+                if (slots.Count < 2) return;
+                float y0 = ((RectTransform)slots[0].transform).anchoredPosition.y;
+
+                for (int i = 1; i < slots.Count; i++)
+                {
+                    float y = ((RectTransform)slots[i].transform).anchoredPosition.y;
+                    Require(Mathf.Abs(y - y0) < 0.5f,
+                            $"การ์ดใบ {i + 1} อยู่ระดับ Y เดียวกับใบแรก ({y:0} vs {y0:0})");
+                }
+            }
+
+            /// <summary>
+            /// ไม่มีอะไรบนจอชี้นำว่าควรกดใบไหน — ADR-009 ถอดระบบแนะนำออก
+            ///
+            /// เจ้าของตัดสินใจว่าเกมไม่ควรชักจูงผู้เล่น · เทสต์นี้เฝ้าการตัดสินใจนั้น
+            /// ไม่ใช่เฝ้าโค้ด — ถ้าวันหนึ่งมีคนเปิดป้ายกลับมาโดยไม่ได้ตั้งใจ (เช่น
+            /// สร้าง prefab ใหม่แล้วป้ายกลับมา active) ตรงนี้จะดักได้ทันที
+            ///
+            /// **ไม่ได้ห้ามวงเรืองแสง** — มันเป็นของ hover ซึ่งบอกว่า "เมาส์อยู่ตรงนี้"
+            /// ไม่ได้บอกว่าควรกด · ที่เช็คคือตอนตั้งต้นต้องไม่มีใบไหนเรืองอยู่เอง
+            /// </summary>
+            private void CheckNoRecommendation(List<UpgradeCardUI> slots)
+            {
+                int ribbons = slots.Count(c => c.recommendedRibbon != null &&
+                                               c.recommendedRibbon.activeSelf);
+                Require(ribbons == 0, $"ไม่มีป้ายแนะนำโผล่บนการ์ดใบไหน (เจอ {ribbons})");
+
+                int glows = slots.Count(c => c.recommendedGlowOutline != null &&
+                                             c.recommendedGlowOutline.activeSelf);
+                Require(glows == 0, $"ไม่มีใบไหนเรืองแสงเองตอนยังไม่ได้ชี้ (เจอ {glows})");
+            }
+
+            /// <summary>
+            /// แถบ Evolution Synergy โชว์ได้ครบตามจำนวนบรรทัดที่ได้รับ
+            ///
+            /// ของเดิมมีช่องไอคอนฝังไว้ 2 ช่องขณะที่ฝั่งข้อมูลส่งมาได้ถึง 3 —
+            /// บรรทัดที่สามหายเงียบทุกครั้ง ไม่มี error ไม่มีคำเตือน
+            /// ตอนนี้แถบเป็นช่องทางเดียวที่เกมใช้บอกทาง การหายเงียบจึงแพงกว่าเดิมมาก
+            /// </summary>
+            private void CheckSynergyLines()
+            {
+                var card = FindAnyObjectByType<UpgradeCardUI>(FindObjectsInactive.Include);
+                if (card == null) return;
+
+                bool hasTemplate = card.synergyLineTemplate != null;
+                Require(hasTemplate || card.synergyIconImages.Count > 0,
+                        "การ์ดมีที่วางบรรทัด synergy (template หรือช่องไอคอนอย่างน้อยหนึ่ง)");
+
+                if (!hasTemplate)
+                {
+                    lines.Add($"   หมายเหตุ  การ์ดยังไม่มี SynergyLine template — " +
+                              $"โชว์ได้แค่รูป {card.synergyIconImages.Count} ช่อง ไม่มีข้อความ " +
+                              "· สร้างการ์ดใหม่จาก builder เพื่อให้ได้ของครบ");
+                    return;
+                }
+
+                Require(!card.synergyLineTemplate.gameObject.activeSelf,
+                        "SynergyLine template ถูกปิดไว้ (ไม่งั้นจะโผล่เป็นบรรทัดเปล่า)");
+                Require(card.synergyLineTemplate.transform.parent != null,
+                        "SynergyLine template มีพ่อให้ clone ลงไป");
+            }
+
+            // ── helpers ของเทสต์การ์ด ──────────────────────────────────────
+            private static List<UpgradeCardInfo> BuildProbeCards()
+            {
+                // **ขอ 5 ใบโดยตั้งใจ** — จอ P3R เคยมีช่องตายตัวสามช่อง การ์ดเกินจากนั้น
+                // ถูกทิ้งเงียบๆ · จอเดิมก่อน P3R มีห้าช่องและสร้างจาก prefab
+                // ขอเกินสามจึงเป็นวิธีเดียวที่พิสูจน์ว่าข้อจำกัดหายจริง
+                const int Want = 5;
+                var stats = AssetDatabase.FindAssets("t:StatData")
+                                         .Select(AssetDatabase.GUIDToAssetPath)
+                                         .Select(AssetDatabase.LoadAssetAtPath<StatData>)
+                                         .Where(s => s != null).Take(Want).ToList();
+                if (stats.Count < Want) return null;
+
+                var list = new List<UpgradeCardInfo>();
+                for (int i = 0; i < Want; i++)
+                    list.Add(new UpgradeCardInfo
+                    {
+                        type             = UpgradeCardType.Stat,
+                        stat             = stats[i],
+                        currentStatLevel = i % 3,
+                    });
+
+                // ใบสุดท้ายเป็น **augment** — augment ไม่ใช่ระบบแยก มันคือการ์ดใบหนึ่ง
+                // ที่ได้จากทางเฉพาะ · ถ้าไม่เอามาเดินเส้นทางเดียวกับการ์ดอื่นในเทสต์
+                // ความพังของมันจะโผล่เฉพาะตอนเลเวล 3/7/12/18 ในเกมจริงเท่านั้น
+                var aug = AssetDatabase.FindAssets("t:AugmentData")
+                                       .Select(AssetDatabase.GUIDToAssetPath)
+                                       .Select(AssetDatabase.LoadAssetAtPath<AugmentData>)
+                                       .FirstOrDefault(a => a != null);
+                if (aug != null)
+                    list[Want - 1] = new UpgradeCardInfo
+                    {
+                        type    = UpgradeCardType.Augment,
+                        augment = aug,
+                    };
+
+                return list;
+            }
+
+            private static List<UpgradeCardUI> VisibleCards(LevelUpUI ui)
+            {
+                var root = ui.cardsContainer != null ? ui.cardsContainer.transform : ui.transform;
+                return root.GetComponentsInChildren<UpgradeCardUI>(true)
+                           .Where(c => c.gameObject.activeSelf)
+                           .ToList();
+            }
+
+            private static Image FindChildImage(Transform root, string name)
+                => root.GetComponentsInChildren<Transform>(true)
+                       .Where(t => t.name == name)
+                       .Select(t => t.GetComponent<Image>())
+                       .FirstOrDefault(img => img != null);
+
+            private static bool Close(Color a, Color b)
+                => Mathf.Abs(a.r - b.r) < 0.02f && Mathf.Abs(a.g - b.g) < 0.02f
+                && Mathf.Abs(a.b - b.b) < 0.02f;
+
+            private static string Hex(Color c)
+                => $"#{Mathf.RoundToInt(c.r * 255):X2}{Mathf.RoundToInt(c.g * 255):X2}{Mathf.RoundToInt(c.b * 255):X2}";
 
             private void ShowMain()
             {
@@ -634,6 +2128,14 @@ namespace CloneSwarm.EditorTools
                     failed = true;
                 }
                 else sb.AppendLine(NL + "   ไม่มี error ระหว่างรัน");
+
+                if (foreignErrors.Count > 0)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine($"   error จากแพ็กเกจ/asset ภายนอก {foreignErrors.Count} รายการ " +
+                                  "— ไม่นับเป็นข้อตก แต่ไม่ซ่อน:");
+                    foreach (var e in foreignErrors.Distinct().Take(5)) sb.AppendLine(e);
+                }
 
                 sb.AppendLine();
                 sb.AppendLine(failed ? "   ผล: ไม่ผ่าน" : "   ผล: ผ่าน");
