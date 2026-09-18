@@ -39,10 +39,10 @@ public class WinLoseUI : MonoBehaviour
     public Color winDiagonalColor  = new Color32(0x18, 0x24, 0xD8, 0xFF);
     public Color loseDiagonalColor = new Color32(0x5A, 0x0E, 0x0E, 0xFF);
 
-    [Tooltip("ป้ายรองเหนือคำผล — ปล่อยว่างได้ (ซีนเก่าไม่มี)")]
+    // ข้อความย้ายเข้าตาราง UI แล้ว — ไม่เหลือช่อง string ไว้ เพราะช่องที่ยังอยู่
+    // จะกลายเป็นนิยามที่สองที่แก้แล้วไม่มีผล ซึ่งเป็นกับดักเดียวกับลิสต์นัดหมายในซีน
+    [Tooltip("ป้ายรองเหนือคำผล — ปล่อยว่างได้ (ซีนเก่าไม่มี) · ข้อความมาจากตาราง UI")]
     public TextMeshProUGUI subtitleLabel;
-    public string winSubtitle  = "ARENA 01 · เคลียร์แล้ว";
-    public string loseSubtitle = "ARENA 01 · ปาร์ตี้ล้มทั้งทีม";
 
     [Header("Stats (ฟิลด์เดิม — โค้ดยัด prefix ให้เอง)")]
     public TextMeshProUGUI timeLabel;      // "Time    15:32"
@@ -313,7 +313,9 @@ public class WinLoseUI : MonoBehaviour
             resultLabel.text  = isWin ? "VICTORY!" : "DEFEAT";
             resultLabel.color = isWin ? winColor : loseColor;
         }
-        if (subtitleLabel)  subtitleLabel.text  = isWin ? winSubtitle : loseSubtitle;
+        if (subtitleLabel)
+            subtitleLabel.text = CloneSwarm.UI.P3R.P3RStrings.Ui(
+                isWin ? "ui.result.subtitle.win" : "ui.result.subtitle.lose");
         if (diagonalPanel)  diagonalPanel.color = isWin ? winDiagonalColor : loseDiagonalColor;
 
         // ฟิลด์เดิม (ป้าย+ค่ารวมกัน) กับฟิลด์ใหม่ (ค่าล้วน) เขียนทั้งคู่

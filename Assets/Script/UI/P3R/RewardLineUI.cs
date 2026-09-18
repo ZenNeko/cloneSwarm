@@ -65,20 +65,32 @@ namespace CloneSwarm.UI.P3R
 
         // ═══════════════════════════════════════════════════════════════════
         /// <summary>
-        /// คำไทยของแต่ละเหตุผล · <paramref name="count"/> คือจำนวนที่เกี่ยวข้อง
+        /// คำอธิบายของแต่ละเหตุผล · <paramref name="count"/> คือจำนวนที่เกี่ยวข้อง
         /// (นาทีที่รอด / จำนวนศัตรู) — เหตุผลที่ไม่มีจำนวนส่งอะไรมาก็ได้
         ///
-        /// ยังไม่ผ่าน Unity Localization เพราะ String Table ของจอนี้ยังไม่ถูกวาง
-        /// — เมื่อวางแล้วให้เปลี่ยนแค่เมธอดนี้เมธอดเดียว จุดเรียกไม่ต้องแก้
+        /// ═══ มีสอง key ต่อเหตุผลที่นับได้ ═══
+        ///
+        /// "ศัตรูที่กำจัด" กับ "ศัตรูที่กำจัด 21 ตัว" เป็นคนละประโยคในภาษาที่ลำดับคำ
+        /// ต่างจากไทย · ถ้าใช้ key เดียวแล้วต่อเลขเอง ภาษาที่ต้องวางเลขไว้ท้ายหรือ
+        /// ต้องผันคำตามจำนวนจะแปลให้ถูกไม่ได้เลย — แยก key ให้คนแปลคุมทั้งประโยค
+        ///
+        /// จัดรูปเลขด้วย N0 **ก่อน** ส่งเข้าตาราง เพื่อให้ตารางเขียนแค่ {0}
+        /// คนแปลจึงไม่ต้องรู้จักรูปแบบตัวเลขของ .NET
         /// </summary>
         public static string DefaultLabel(RewardReason reason, int count) => reason switch
         {
-            RewardReason.TimeSurvived  => count > 0 ? $"รอดถึงนาที {count}" : "เวลาที่รอด",
-            RewardReason.EnemyKills    => count > 0 ? $"ศัตรูที่กำจัด {count:N0} ตัว" : "ศัตรูที่กำจัด",
-            RewardReason.ObjectiveGold => "ทองพิเศษระหว่างรอบ",
-            RewardReason.WinBonus      => "ล้ม Main Boss สำเร็จ",
-            RewardReason.GoldFind      => "โบนัสนักล่าสมบัติ",
-            _                          => "อื่นๆ",
+            RewardReason.TimeSurvived  => count > 0
+                ? P3RStrings.Ui("ui.reward.time_survived_n", count)
+                : P3RStrings.Ui("ui.reward.time_survived"),
+
+            RewardReason.EnemyKills    => count > 0
+                ? P3RStrings.Ui("ui.reward.enemy_kills_n", count.ToString("N0"))
+                : P3RStrings.Ui("ui.reward.enemy_kills"),
+
+            RewardReason.ObjectiveGold => P3RStrings.Ui("ui.reward.objective_gold"),
+            RewardReason.WinBonus      => P3RStrings.Ui("ui.reward.win_bonus"),
+            RewardReason.GoldFind      => P3RStrings.Ui("ui.reward.gold_find"),
+            _                          => P3RStrings.Ui("ui.reward.other"),
         };
     }
 }

@@ -59086,8 +59086,6 @@ MonoBehaviour:
   winDiagonalColor: {r: 0.09411765, g: 0.14117648, b: 0.84705883, a: 1}
   loseDiagonalColor: {r: 0.3529412, g: 0.05490196, b: 0.05490196, a: 1}
   subtitleLabel: {fileID: 1101552732}
-  winSubtitle: "ARENA 01 \xB7 \u0E40\u0E04\u0E25\u0E35\u0E22\u0E23\u0E4C\u0E41\u0E25\u0E49\u0E27"
-  loseSubtitle: "ARENA 01 \xB7 \u0E1B\u0E32\u0E23\u0E4C\u0E15\u0E35\u0E49\u0E25\u0E49\u0E21\u0E17\u0E31\u0E49\u0E07\u0E17\u0E35\u0E21"
   timeLabel: {fileID: 0}
   levelLabel: {fileID: 0}
   waveLabel: {fileID: 0}

@@ -59,19 +59,7 @@ namespace CloneSwarm.UI.P3R
             if (label == null) label = GetComponent<TMP_Text>();
             if (label == null || string.IsNullOrEmpty(key)) return;
 
-            var db = LocalizationSettings.StringDatabase;
-            if (db == null) { label.text = key; return; }
-
-            var entry = db.GetTableEntry(table, key).Entry;
-            if (entry == null)
-            {
-                Debug.LogWarning($"[แปล] ไม่มี key '{key}' ในตาราง '{table}' — " +
-                                 "รัน Tools > Clone Swarm > Localization > 4. Build UI Table");
-                label.text = key;
-                return;
-            }
-
-            label.text = entry.GetLocalizedString();
+            label.text = P3RStrings.Resolve(table, key, P3RStrings.UiFixHint);
         }
     }
 }

@@ -304,16 +304,28 @@ namespace CloneSwarm.EditorTools
                              System.Text.RegularExpressions.Regex.Matches(
                                  System.IO.File.ReadAllText(file), KEYRE))
                     {
-                        string k = m.Value;
+                        string k = m.Groups[1].Value;
                         if (!k.EndsWith(".") && !keys.Contains(k)) keys.Add(k);
                     }
+
+                // key ที่ต่อไว้กับป้ายในซีน — ไม่ได้โผล่เป็น literal ในโค้ด เพราะอยู่ใน
+                // ตัว builder ฝั่ง editor · แต่มันคือข้อความที่ผู้เล่นเห็นจริงบนจอ
+                // ถ้าไม่ไล่ตรงนี้ จะเหลือแต่ของที่โค้ดเรียก แล้วเข้าใจว่าครอบหมดแล้ว
+                foreach (var label in Object.FindObjectsByType<CloneSwarm.UI.P3R.P3RLocalizedText>(
+                             FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (!string.IsNullOrEmpty(label.key) && !keys.Contains(label.key))
+                        keys.Add(label.key);
 
                 keys.Sort();
                 int bad = 0;
 
                 foreach (var k in keys)
                 {
-                    string v = GameHUD.ResolveAnnouncement(k, 3);
+                    // เลือกตารางตามคำนำหน้า — key ของจอกับของประกาศอยู่คนละตาราง
+                    // ส่งผิดตารางจะได้ "ไม่มี key" ทั้งที่มี ซึ่งชี้ไปแก้ผิดที่
+                    string v = k.StartsWith("ui.")
+                             ? CloneSwarm.UI.P3R.P3RStrings.Ui(k, 3)
+                             : GameHUD.ResolveAnnouncement(k, 3);
                     bool ok = !string.IsNullOrEmpty(v) && v != k;
                     if (!ok) bad++;
                     log.Add($"      {(ok ? "  " : "X ")}{k} = {v}");
@@ -324,9 +336,18 @@ namespace CloneSwarm.EditorTools
                 _announceMissing = bad;
             }
 
-            /// <summary>รูปแบบ key ของประกาศ — จับโดยไม่ต้องมีอัญประกาศล้อม จึงเจอทั้งใน
-            /// โค้ดและในคอมเมนต์ · ตัวที่ลงท้ายด้วยจุดคือ prefix ที่ต่อค่าตอนรัน ข้ามไป</summary>
-            private const string KEYRE = @"announce\.[a-z0-9_.]+";
+            /// <summary>
+            /// รูปแบบ key — **ต้องอยู่ในอัญประกาศ**
+            ///
+            /// รอบแรกจับแบบไม่มีอัญประกาศ แล้วได้ของปลอมสองตัว: `ui.panel` ที่ตัดมาจาก
+            /// `ui.panelRoot` ในคอมเมนต์ และ `ui.pause.title` ที่เป็นตัวอย่างใน Tooltip
+            /// — รายงานว่า "หาไม่เจอ 1" ทั้งที่ทุก key จริงแปลออกครบ
+            ///
+            /// เทสต์ที่แดงด้วยเรื่องที่ไม่ใช่ปัญหา ทำให้คนเลิกอ่านผลเร็วพอๆ กับเทสต์ที่เขียวเสมอ
+            ///
+            /// ตัวที่ลงท้ายด้วยจุดคือ prefix ที่ต่อค่าตอนรัน ข้ามไป
+            /// </summary>
+            private const string KEYRE = "\"((?:announce|ui)\\.[a-z0-9_.]+)\"";
 
             private int _announceKeys, _announceMissing = -1;
 

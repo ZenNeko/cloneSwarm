@@ -110,6 +110,46 @@ MonoBehaviour:
     m_Localized: Waiting for the host to start a new run
     m_Metadata:
       m_Items: []
+  - m_Id: 3964109028929558
+    m_Localized: "ARENA 01 \xB7 CLEARED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929559
+    m_Localized: "ARENA 01 \xB7 PARTY WIPED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929560
+    m_Localized: Time survived
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929561
+    m_Localized: Survived to minute {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929562
+    m_Localized: Enemies defeated
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929563
+    m_Localized: '{0} enemies defeated'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929564
+    m_Localized: Bonus gold during the run
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929565
+    m_Localized: Main Boss defeated
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929566
+    m_Localized: Treasure hunter bonus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929567
+    m_Localized: Other
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

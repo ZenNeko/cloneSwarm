@@ -93,6 +93,30 @@ namespace CloneSwarm.EditorTools
         };
 
 
+        /// <summary>
+        /// key ที่ **โค้ดเรียกเอง** ไม่มีป้ายในซีนให้ต่อสาย
+        ///
+        /// ข้อความพวกนี้ประกอบตอนรัน (ใส่ตัวเลข / เลือกตามผลแพ้ชนะ) จึงไม่มีป้ายนิ่งๆ
+        /// ให้แปะคอมโพเนนต์ · แต่ยังต้องอยู่ในตารางเดียวกัน ไม่งั้นจะมีข้อความบนจอ
+        /// เดียวกันที่แปลได้กับแปลไม่ได้ปนกัน ซึ่งคือสิ่งที่เจอในภาพจากตัวเกมจริง
+        ///
+        /// เหตุผลที่นับจำนวนได้มีสอง key — ดูคำอธิบายใน RewardLineUI.DefaultLabel
+        /// </summary>
+        private static readonly (string key, string en, string th)[] CodeRows =
+        {
+            ("ui.result.subtitle.win",  "ARENA 01 · CLEARED",     "ARENA 01 · เคลียร์แล้ว"),
+            ("ui.result.subtitle.lose", "ARENA 01 · PARTY WIPED", "ARENA 01 · ปาร์ตี้ล้มทั้งทีม"),
+
+            ("ui.reward.time_survived",    "Time survived",            "เวลาที่รอด"),
+            ("ui.reward.time_survived_n",  "Survived to minute {0}",   "รอดถึงนาที {0}"),
+            ("ui.reward.enemy_kills",      "Enemies defeated",         "ศัตรูที่กำจัด"),
+            ("ui.reward.enemy_kills_n",    "{0} enemies defeated",     "ศัตรูที่กำจัด {0} ตัว"),
+            ("ui.reward.objective_gold",   "Bonus gold during the run","ทองพิเศษระหว่างรอบ"),
+            ("ui.reward.win_bonus",        "Main Boss defeated",       "ล้ม Main Boss สำเร็จ"),
+            ("ui.reward.gold_find",        "Treasure hunter bonus",    "โบนัสนักล่าสมบัติ"),
+            ("ui.reward.other",            "Other",                    "อื่นๆ"),
+        };
+
         [MenuItem("Tools/Clone Swarm/Localization/4. Build UI Table")]
         public static void Build() => Run(overwriteExisting: false);
 
@@ -135,7 +159,9 @@ namespace CloneSwarm.EditorTools
                 return -1;
             }
 
-            var all = Rows.Select(r => (r.Key, r.En, r.Th)).ToArray();
+            var all = Rows.Select(r => (r.Key, r.En, r.Th))
+                          .Concat(CodeRows.Select(c => (c.key, c.en, c.th)))
+                          .ToArray();
 
             int wrote = 0, skipped = 0;
             foreach (var (key, e, t) in all)

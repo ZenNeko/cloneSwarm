@@ -199,6 +199,138 @@ MonoBehaviour:
     m_Key: ui.common.back 1
     m_Metadata:
       m_Items: []
+  - m_Id: 3964108991180800
+    m_Key: ui.pause.title 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929536
+    m_Key: ui.pause.hint 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929537
+    m_Key: ui.pause.resume 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929538
+    m_Key: ui.pause.settings 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929539
+    m_Key: ui.pause.quit 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929540
+    m_Key: ui.pause.coop.tag 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929541
+    m_Key: ui.pause.coop.note 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929542
+    m_Key: ui.settings.audio 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929543
+    m_Key: ui.settings.master 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929544
+    m_Key: ui.settings.music 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929545
+    m_Key: ui.settings.sfx 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929546
+    m_Key: ui.result.time 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929547
+    m_Key: ui.result.level 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929548
+    m_Key: ui.result.wave 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929549
+    m_Key: ui.result.party 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929550
+    m_Key: ui.result.rewards 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929551
+    m_Key: ui.result.total 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929552
+    m_Key: ui.result.vault 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929553
+    m_Key: ui.result.play_again 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929554
+    m_Key: ui.result.menu 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929555
+    m_Key: ui.result.waiting_host 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929556
+    m_Key: ui.settings.reset 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929557
+    m_Key: ui.common.back 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929558
+    m_Key: ui.result.subtitle.win
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929559
+    m_Key: ui.result.subtitle.lose
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929560
+    m_Key: ui.reward.time_survived
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929561
+    m_Key: ui.reward.time_survived_n
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929562
+    m_Key: ui.reward.enemy_kills
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929563
+    m_Key: ui.reward.enemy_kills_n
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929564
+    m_Key: ui.reward.objective_gold
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929565
+    m_Key: ui.reward.win_bonus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929566
+    m_Key: ui.reward.gold_find
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3964109028929567
+    m_Key: ui.reward.other
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -587,33 +587,11 @@ public class GameHUD : MonoBehaviour
     /// ไม่รู้ว่าต้องไปแก้ที่ไหน จึงดึง entry มาเช็คเองแทน)
     /// </summary>
     public static string ResolveAnnouncement(string key, params object[] args)
-    {
-        if (string.IsNullOrEmpty(key)) return "";
-
-        string reason;
-        try
-        {
-            var entry = LocalizationSettings.StringDatabase
-                            .GetTableEntry(AnnouncementTable, key).Entry;
-
-            if (entry != null)
-            {
-                string text = entry.GetLocalizedString((IList<object>)args);
-                if (!string.IsNullOrEmpty(text)) return text;
-                reason = $"มี key แต่ค่าใน locale '{LocalizationSettings.SelectedLocale?.Identifier.Code}' ว่าง";
-            }
-            else reason = "ไม่มี key นี้ในตาราง";
-        }
-        catch (System.Exception e)
-        {
-            reason = $"อ่านตารางไม่ได้ ({e.GetType().Name}: {e.Message})";
-        }
-
-        Debug.LogWarning($"[Announce] '{key}' — {reason} · จะโชว์ตัว key แทน\n" +
-                         "แก้โดยเพิ่มแถวใน AnnouncementTableBuilder.Rows แล้วรัน " +
-                         "Tools > Clone Swarm > Localization > 3. Build Announcement Table");
-        return key;
-    }
+        => CloneSwarm.UI.P3R.P3RStrings.Resolve(
+            AnnouncementTable, key,
+            "แก้โดยเพิ่มแถวใน AnnouncementTableBuilder.Rows แล้วรัน " +
+            "Tools > Clone Swarm > Localization > 3. Build Announcement Table",
+            args);
 
     public void ShowAnnouncement(string text, Color color)
     {
