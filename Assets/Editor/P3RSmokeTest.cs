@@ -1335,6 +1335,8 @@ namespace CloneSwarm.EditorTools
             /// </summary>
             private void CheckWaveSchedule()
             {
+                CheckEnemyScaling();
+
                 var wm = FindAnyObjectByType<WaveManager>(FindObjectsInactive.Include);
                 var gt = FindAnyObjectByType<GameTimeline>(FindObjectsInactive.Include);
                 if (wm == null) return;
@@ -1370,6 +1372,48 @@ namespace CloneSwarm.EditorTools
 
                     lines.Add($"   หมายเหตุ  นาที {startMin:0.#}–{endMin:0.#} → {name}" +
                               (last ? $"  ({(endMin - startMin) / Mathf.Max(0.1f, runMin) * 100f:0}% ของรัน)" : ""));
+                }
+            }
+
+            /// <summary>
+            /// เพดานความเร็วที่ต่ำกว่า 1 ทำให้ศัตรูช้ากว่าปกติตั้งแต่ wave แรก
+            ///
+            /// ═══ ทำไมข้อนี้เป็นข้อสอบ ไม่ใช่หมายเหตุ ═══
+            ///
+            /// สูตรคือ `Min(1 + w × speedPerWave, maxSpeedMultiplier)` ซึ่งเริ่มจาก 1.0
+            /// เสมอที่ wave แรก · ตั้งเพดานไว้ 0.5 จึงไม่ได้แปลว่า "โตช้า" แต่แปลว่า
+            /// **ศัตรูเดินครึ่งความเร็วทั้งเกม** ซึ่งไม่ใช่สิ่งที่ใครตั้งใจเมื่อพิมพ์เลขลง
+            /// ช่องชื่อ Max Speed Multiplier
+            ///
+            /// ต่างจากอัตราสเกลตัวอื่นที่ 0 เป็นค่าที่ออกแบบได้จริง (โหมดฝึกซ้อม) —
+            /// เพดานต่ำกว่า 1 ไม่มีการใช้งานที่สมเหตุผล
+            /// </summary>
+            private void CheckEnemyScaling()
+            {
+                var wm = FindAnyObjectByType<WaveManager>(FindObjectsInactive.Include);
+                if (wm != null)
+                    Require(wm.maxSpeedMultiplier >= 1f,
+                            $"ซีน: เพดานความเร็วไม่ต่ำกว่า 1 (ตอนนี้ {wm.maxSpeedMultiplier:0.##})");
+
+                var maps = AssetDatabase.FindAssets("t:MapData")
+                                        .Select(AssetDatabase.GUIDToAssetPath)
+                                        .Select(AssetDatabase.LoadAssetAtPath<MapData>);
+
+                foreach (var map in maps)
+                {
+                    if (map == null || map.tiers == null) continue;
+
+                    foreach (var tier in map.tiers)
+                    {
+                        var sc = tier != null ? tier.enemyScaling : null;
+                        if (sc == null || !sc.enabled) continue;
+
+                        Require(sc.maxSpeedMultiplier >= 1f,
+                                $"{map.mapId}/{tier.tier}: เพดานความเร็วไม่ต่ำกว่า 1 " +
+                                $"(ตอนนี้ {sc.maxSpeedMultiplier:0.##})");
+
+                        lines.Add($"   หมายเหตุ  {map.mapId}/{tier.tier} ตั้งสเกลศัตรูเอง — {sc}");
+                    }
                 }
             }
 

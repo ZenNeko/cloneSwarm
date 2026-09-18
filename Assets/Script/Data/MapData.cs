@@ -34,8 +34,23 @@ public class MapData : ScriptableObject
         // ปล่อยนัดหมายว่าง = ใช้ตารางของซีน · ตั้งแล้วจะ **แทนที่ทั้งชุด** ไม่ผสม
         [Tooltip("ตารางเวลาของ tier นี้ · นัดหมายว่าง = ใช้ของในซีน")]
         public TimelineSchedule schedule = new TimelineSchedule();
+
+        // ศัตรูแรงขึ้นเร็วแค่ไหน — ปิดไว้ = ใช้ค่าในซีน
+        //
+        // อยู่ระดับ tier เพราะนี่คือสิ่งที่ทำให้ Hard ต่างจาก Normal จริงๆ
+        // แมพเดียวกัน ตารางเวลาเดียวกัน แต่ศัตรูโตคนละอัตรา
+        [Tooltip("สเกลศัตรูต่อ wave ของ tier นี้ · ปิด = ใช้ค่าในซีน")]
+        public EnemyScaling enemyScaling = new EnemyScaling();
     }
     public TierContent[] tiers;
+
+    /// <summary>สเกลศัตรูของ tier ที่ขอ — null เมื่อ tier นั้นไม่ได้เปิดสวิตช์ไว้</summary>
+    public EnemyScaling GetEnemyScaling(DifficultyTier tier)
+    {
+        var t = GetTier(tier);
+        return t != null && t.enemyScaling != null && t.enemyScaling.enabled
+             ? t.enemyScaling : null;
+    }
 
     /// <summary>ตารางเวลาของ tier ที่ขอ — null เมื่อแมพไม่ได้กำหนดอะไรไว้</summary>
     public TimelineSchedule GetSchedule(DifficultyTier tier)

@@ -21,7 +21,8 @@ public class WaveManager : NetworkBehaviour
              "60 = wave ละ 1 นาที | 90 = ช้าหน่อย")]
     public float waveDuration = 60f;
 
-    [Header("Enemy Scaling per Wave")]
+    // ── สเกลศัตรู — แมพ override ได้ที่ MapData.TierContent.enemyScaling ──
+    [Header("Enemy Scaling per Wave (แมพ override ได้)")]
     [Tooltip("HP ของศัตรูเพิ่มขึ้นกี่ % ต่อ wave (เป็นทศนิยม)\n" +
              "0.20 = +20% ต่อ wave | wave 5 → HP × 1.80")]
     public float healthMultPerWave    = 0.20f;
@@ -66,6 +67,9 @@ public class WaveManager : NetworkBehaviour
     // เดินเฉพาะเมื่อไม่มีนาฬิกาจริงให้อ่าน — ไม่ใช่เรือนที่สองที่เดินคู่กันไป
     private float _fallbackClock;
 
+    // สเกลที่ใช้จริงในรันนี้ — จากแมพถ้าเปิดสวิตช์ไว้ ไม่งั้นจากช่องในซีนข้างบน
+    private EnemyScaling _scaling;
+
     /// <summary>Health multiplier ณ wave ปัจจุบัน — BossManager ใช้ scale mini boss HP</summary>
     public float CurrentHealthMultiplier { get; private set; } = 1f;
     /// <summary>EXP multiplier ณ wave ปัจจุบัน</summary>
@@ -76,6 +80,45 @@ public class WaveManager : NetworkBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+
+        // ตั้งค่าซีนไว้ก่อน เผื่อมีใครถามก่อน OnNetworkSpawn
+        _scaling = SceneScaling();
+    }
+
+    /// <summary>ค่าในช่อง Inspector ของ component นี้ ห่อเป็น EnemyScaling</summary>
+    EnemyScaling SceneScaling() => new EnemyScaling
+    {
+        enabled            = true,
+        healthMultPerWave  = healthMultPerWave,
+        speedMultPerWave   = speedMultPerWave,
+        expMultPerWave     = expMultPerWave,
+        maxSpeedMultiplier = maxSpeedMultiplier,
+        spawnRateAccel     = spawnRateAccel,
+    };
+
+    /// <summary>
+    /// เลือกสเกลที่จะใช้ — แมพก่อน แล้วค่อยซีน
+    ///
+    /// ═══ ทำไมต้อง log ทุกครั้ง ═══
+    ///
+    /// ความยากที่ผิดไปจากที่ตั้งใจไม่มีอาการให้เห็นเลยนอกจาก "รู้สึกว่ายากไป" ·
+    /// ถ้าไม่บอกว่าค่ามาจากไหน คนจูนจะไปแก้ช่องในซีนแล้วงงว่าทำไมไม่มีอะไรเปลี่ยน
+    /// (หรือกลับกัน) — กับดักเดียวกับตารางเวลา
+    /// </summary>
+    void ResolveScaling()
+    {
+        var fromMap = RunSetup.Map != null
+                    ? RunSetup.Map.GetEnemyScaling(RunSetup.Difficulty) : null;
+
+        if (fromMap != null)
+        {
+            _scaling = fromMap;
+            Debug.Log($"[WaveManager] สเกลศัตรูจากแมพ {RunSetup.Map.mapId} / {RunSetup.Difficulty} — {_scaling}");
+            return;
+        }
+
+        _scaling = SceneScaling();
+        Debug.Log($"[WaveManager] สเกลศัตรูจากซีน — {_scaling}");
     }
 
     public override void OnNetworkSpawn()
@@ -91,6 +134,7 @@ public class WaveManager : NetworkBehaviour
         if (spawner == null) { Debug.LogError("[WaveManager] ❌ EnemySpawner not found!"); return; }
 
         spawner.StopSpawning();
+        ResolveScaling();
 
         var phases = ActivePhases();
         Debug.Log(phases != null && phases.Length > 0
@@ -207,13 +251,15 @@ public class WaveManager : NetworkBehaviour
 
     void ApplyWave(int wave, float t)
     {
+        var sc = _scaling ?? SceneScaling();
+
         int   w          = wave - 1;
-        float healthMult = 1f + w * healthMultPerWave;
-        float speedMult  = Mathf.Min(1f + w * speedMultPerWave, maxSpeedMultiplier);
-        float expMult    = 1f + w * expMultPerWave;
+        float healthMult = 1f + w * sc.healthMultPerWave;
+        float speedMult  = Mathf.Min(1f + w * sc.speedMultPerWave, sc.maxSpeedMultiplier);
+        float expMult    = 1f + w * sc.expMultPerWave;
         float spawnRate  = Mathf.Max(
             0.3f,
-            spawner.baseSpawnRate * Mathf.Pow(1f - spawnRateAccel, w)
+            spawner.baseSpawnRate * Mathf.Pow(1f - sc.spawnRateAccel, w)
         );
 
         CurrentHealthMultiplier = healthMult;   // เก็บไว้ให้ BossManager อ่าน
