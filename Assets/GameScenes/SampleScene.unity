@@ -21710,6 +21710,7 @@ MonoBehaviour:
   expMultPerWave: 0.1
   maxSpeedMultiplier: 2
   spawnRateAccel: 0.15
+  wavePhases: []
   waveConfigs:
   - {fileID: 11400000, guid: ec6298b476731a4418e4d117a803e70a, type: 2}
   - {fileID: 11400000, guid: 7f18718bf2c4e8e46a4fefb8cbc4d19e, type: 2}
@@ -30350,7 +30351,6 @@ MonoBehaviour:
   baseExpToLevel: 100
   expGrowthRate: 1.15
   upgradePickSeconds: 30
-  augmentLevels: 03000000070000000c00000012000000i
   sharedExp:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -66323,7 +66323,7 @@ MonoBehaviour:
     - 5
     - 8
     - 13
-    variant: 
+    variant: normal
   - label: Miniboss
     kind: 1
     atMinutes:
