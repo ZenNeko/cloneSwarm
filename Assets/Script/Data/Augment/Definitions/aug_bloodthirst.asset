@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TriggerAugment
   augmentId: aug_bloodthirst
   augmentName: Bloodthirst
-  description: "\u0E17\u0E38\u0E01\u0E46 20 \u0E28\u0E31\u0E15\u0E23\u0E39\u0E17\u0E35\u0E48\u0E17\u0E35\u0E21\u0E01\u0E33\u0E08\u0E31\u0E14 \u2014 \u0E1F\u0E37\u0E49\u0E19 HP 5%"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_bloodthirst.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_bloodthirst.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 0}
@@ -27,3 +44,6 @@ MonoBehaviour:
   magnitude: 0.05
   duration: 0
   vfxOnTrigger: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

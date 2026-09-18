@@ -73,7 +73,7 @@ public class LimitCutAction : SpawnAoEActionBase
         // แจกเลข
         for (int i = 0; i < players.Count; i++) players[i].limitCutNumber.Value = i + 1;
 
-        GameHUD.Instance?.ShowAnnouncement("LIMIT CUT — ดูเลขแล้วออกตามลำดับ!", new Color(1f, 0.9f, 0.3f));
+        GameHUD.Instance?.ShowAnnouncementKey("announce.limitcut.start", new Color(1f, 0.9f, 0.3f));
 
         if (readTime > 0f) yield return new WaitForSeconds(readTime);
 

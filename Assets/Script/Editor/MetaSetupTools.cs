@@ -357,7 +357,7 @@ public static class MetaSetupTools
         var a = ScriptableObject.CreateInstance<StatAugment>();
         a.augmentId   = id;
         a.augmentName = name;
-        a.description = desc;
+        // a.description = desc;   // ← ย้ายไป String Table แล้ว (ท่าเดียวกับ TalentData)
         a.availableFromMinutes  = fromMin;
         a.availableUntilMinutes = untilMin;
         a.weight      = weight;
@@ -382,7 +382,7 @@ public static class MetaSetupTools
         var a = ScriptableObject.CreateInstance<TriggerAugment>();
         a.augmentId        = id;
         a.augmentName      = name;
-        a.description      = desc;
+        // a.description   = desc;   // ← ย้ายไป String Table แล้ว
         a.availableFromMinutes  = fromMin;
         a.availableUntilMinutes = untilMin;
         a.weight           = weight;

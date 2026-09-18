@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TriggerAugment
   augmentId: aug_second_wind
   augmentName: Second Wind
-  description: "\u0E17\u0E38\u0E01 15 \u0E27\u0E34\u0E19\u0E32\u0E17\u0E35 \u2014 \u0E44\u0E14\u0E49\u0E42\u0E25\u0E48 60"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_second_wind.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_second_wind.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 40
   exclusiveCharacter: {fileID: 0}
@@ -27,3 +44,6 @@ MonoBehaviour:
   magnitude: 60
   duration: 0
   vfxOnTrigger: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

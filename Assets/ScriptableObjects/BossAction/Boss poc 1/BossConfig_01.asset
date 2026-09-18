@@ -103,7 +103,15 @@ MonoBehaviour:
     invincibilityDuration: 1.5
     attackInterval: 3
     cameraShakeMagnitude: 0.4
-    announcementText: 
+    announcement:
+      m_TableReference:
+        m_TableCollectionName: 
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
     announcementColor: {r: 1, g: 1, b: 1, a: 1}
     phaseVfx: {fileID: 0}
     actions:
@@ -114,7 +122,15 @@ MonoBehaviour:
     invincibilityDuration: 1.5
     attackInterval: 2
     cameraShakeMagnitude: 0.4
-    announcementText: "PHASE 2 \u2014 ENRAGE"
+    announcement:
+      m_TableReference:
+        m_TableCollectionName: Content
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: boss.BossConfig_01.phase2.announce
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
     announcementColor: {r: 1, g: 0.5, b: 0, a: 1}
     phaseVfx: {fileID: 11400000, guid: 90621e3d7c328d143b7e915b9932e7e4, type: 2}
     actions:
@@ -125,7 +141,15 @@ MonoBehaviour:
     invincibilityDuration: 1.5
     attackInterval: 1
     cameraShakeMagnitude: 0.4
-    announcementText: "PHASE 3 \u2014 FINAL FORM"
+    announcement:
+      m_TableReference:
+        m_TableCollectionName: Content
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: boss.BossConfig_01.phase3.announce
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
     announcementColor: {r: 1, g: 0, b: 0, a: 1}
     phaseVfx: {fileID: 11400000, guid: 90621e3d7c328d143b7e915b9932e7e4, type: 2}
     actions:
@@ -138,6 +162,9 @@ MonoBehaviour:
   extraExpPerOrb: 5
   dropScatterRadius: 2
   bonusDrops: []
+  references:
+    version: 2
+    RefIds: []
 --- !u!114 &3106902516592259519
 MonoBehaviour:
   m_ObjectHideFlags: 0

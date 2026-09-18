@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Localization;
 using UnityEngine;
@@ -66,6 +67,26 @@ public static class LocalizationRelinker
         LinkAll<CloneSwarm.Meta.TalentData>("talent", a => Slug(a.talentId, a.name), a => new[]
         {
             ("name", a.displayName), ("desc", a.description),
+        }, shared, stats);
+
+        LinkAll<AugmentData>("augment", a => Slug(a.augmentId, a.name), a => new[]
+        {
+            ("name", a.displayName), ("desc", a.description),
+        }, shared, stats);
+
+        // ประกาศเฟสบอส — หลายช่องจาก asset เดียว จำนวนไม่คงที่ตามจำนวนเฟส
+        //
+        // LocalizedString เป็น class · ตัวที่คืนไปคือ **ตัวเดียวกับที่อยู่ใน asset**
+        // การ SetReference จึงแก้ถึง asset จริง ไม่ใช่แก้สำเนาที่หลุดมือ
+        LinkAll<BossEncounterConfig>("boss", c => Slug(c.name, c.name), c =>
+        {
+            if (c.phases == null) return new (string, LocalizedString)[0];
+
+            var list = new List<(string, LocalizedString)>();
+            for (int i = 0; i < c.phases.Count; i++)
+                if (c.phases[i] != null)
+                    list.Add(($"phase{i + 1}.announce", c.phases[i].announcement));
+            return list.ToArray();
         }, shared, stats);
 
         AssetDatabase.SaveAssets();

@@ -211,7 +211,7 @@ public class ZoneObjective : NetworkBehaviour
         phaseInt.OnValueChanged       += OnPhaseChangedClient;
 
         OnObjectiveSpawned?.Invoke(this);
-        AnnounceHUD("ZONE OBJECTIVE — Stand to activate!", COL_ACTIVATING);
+        AnnounceKey("announce.objective.activate", COL_ACTIVATING);
         SetDiscColor(COL_ACTIVATING);
     }
 
@@ -790,8 +790,9 @@ public class ZoneObjective : NetworkBehaviour
         SetDiscColor(COL_COMPLETE);
         if (discMat != null) discMat.SetFloat(ID_Progress, 1f);
         VFXFactory.Play("None", transform.position);
-        // ห้ามใส่สัญลักษณ์นอก ASCII — ฟอนต์ในโปรเจกต์ไม่มี STAR/WARN/BOLT glyph
-        AnnounceHUD("OBJECTIVE COMPLETE!  +EXP  +HEAL  +ORB", Color.green);
+        // ข้อความย้ายไปอยู่ใน String Table แล้ว — กติกา "ห้ามใส่สัญลักษณ์นอก ASCII
+        // เพราะฟอนต์ในโปรเจกต์ไม่มี STAR/WARN/BOLT glyph" ยังคงเดิม แต่ไปบังคับที่ค่าในตาราง
+        AnnounceKey("announce.objective.complete", Color.green);
         NotifyRemoved(completed: true);
     }
 
@@ -800,7 +801,7 @@ public class ZoneObjective : NetworkBehaviour
     {
         SetDiscColor(COL_EXPIRED);
         VFXFactory.Play("EnemyDeath", transform.position);
-        AnnounceHUD("OBJECTIVE EXPIRED", new Color(1f, 0.40f, 0.05f));
+        AnnounceKey("announce.objective.expired", new Color(1f, 0.40f, 0.05f));
         NotifyRemoved(completed: false);
     }
 
@@ -824,18 +825,26 @@ public class ZoneObjective : NetworkBehaviour
         }
     }
 
-    /// <summary>ข้อความ "ต้องทำอะไร" ของ quest ปัจจุบัน — public เพราะ ObjectiveTrackerHUD
-    /// อ่านตัวเดียวกันนี้ ไม่ต้องมีข้อความสองชุดที่ต้องจำอัปเดตพร้อมกัน</summary>
+    /// <summary>
+    /// ข้อความ "ต้องทำอะไร" ของ quest ปัจจุบัน — public เพราะ ObjectiveTrackerHUD
+    /// อ่านตัวเดียวกันนี้ ไม่ต้องมีข้อความสองชุดที่ต้องจำอัปเดตพร้อมกัน
+    ///
+    /// คืน **ข้อความที่แปลแล้ว** ไม่ใช่ key เพราะปลายทางมีสองที่และอีกที่เป็นแถบ tracker
+    /// ที่เขียนลง `.text` ตรงๆ ไม่ได้ผ่าน ShowAnnouncementKey — ถ้าคืน key ที่นั่นจะโชว์ key ดิบ
+    ///
+    /// เวลาถูกปัดเป็น int ก่อนส่งเข้า `{0}` ไม่ใช่ปล่อยให้ตารางเขียน `{0:F0}` เอง —
+    /// คนแปลไม่ควรต้องรู้จัก format specifier และวันที่เขาพิมพ์ `{0}` เฉยๆ จะได้ "30.0 วินาที"
+    /// </summary>
     public string GetQuestAnnouncement()
     {
         return ActiveQuestType switch
         {
-            QuestType.FetchAndDeliver => $"QUEST: Deliver {requiredCount.Value} items!",
-            QuestType.Survive         => $"QUEST: Survive {surviveTime:F0}s in the zone!",
-            QuestType.DestroyObjects  => $"QUEST: Destroy {requiredCount.Value} objects!",
-            QuestType.KillInZone      => $"QUEST: Kill {requiredCount.Value} enemies inside the zone!",
-            QuestType.SealTheRift     => $"QUEST: Seal the rift — hold the zone {sealTime:F0}s!",
-            _                         => "QUEST STARTED",
+            QuestType.FetchAndDeliver => GameHUD.ResolveAnnouncement("announce.objective.quest.fetch",   requiredCount.Value),
+            QuestType.Survive         => GameHUD.ResolveAnnouncement("announce.objective.quest.survive", Mathf.RoundToInt(surviveTime)),
+            QuestType.DestroyObjects  => GameHUD.ResolveAnnouncement("announce.objective.quest.destroy", requiredCount.Value),
+            QuestType.KillInZone      => GameHUD.ResolveAnnouncement("announce.objective.quest.kill",    requiredCount.Value),
+            QuestType.SealTheRift     => GameHUD.ResolveAnnouncement("announce.objective.quest.seal",    Mathf.RoundToInt(sealTime)),
+            _                         => GameHUD.ResolveAnnouncement("announce.objective.quest.default"),
         };
     }
 
@@ -908,6 +917,14 @@ public class ZoneObjective : NetworkBehaviour
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+    /// <summary>ประกาศจาก key ใน String Table — ทางปกติของข้อความที่ฝังในโค้ด</summary>
+    static void AnnounceKey(string key, Color color, params object[] args)
+    {
+        GameHUD.Instance?.ShowAnnouncementKey(key, color, args);
+    }
+
+    /// <summary>ประกาศจากข้อความที่แปลเสร็จแล้ว — เหลือไว้ให้ GetQuestAnnouncement ซึ่ง
+    /// ต้องคืนข้อความ (ไม่ใช่ key) อยู่แล้วเพราะ ObjectiveTrackerHUD ใช้ร่วมกัน</summary>
     static void AnnounceHUD(string text, Color color)
     {
         GameHUD.Instance?.ShowAnnouncement(text, color);

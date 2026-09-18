@@ -151,7 +151,8 @@ public class BossHUDUI : MonoBehaviour
         {
             enrageWarned = true;
             GameHUD.Instance
-                ?.ShowAnnouncement($"⚠ ENRAGE IN {Mathf.CeilToInt(remaining)}s!", new Color(1f, 0.4f, 0f));
+                ?.ShowAnnouncementKey("announce.boss.enrage_in", new Color(1f, 0.4f, 0f),
+                                      Mathf.CeilToInt(remaining));
         }
     }
 }

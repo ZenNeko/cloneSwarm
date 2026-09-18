@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TriggerAugment
   augmentId: aug_adrenaline
   augmentName: Adrenaline
-  description: "\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E42\u0E14\u0E19\u0E42\u0E08\u0E21\u0E15\u0E35 \u2014 \u0E04\u0E27\u0E32\u0E21\u0E40\u0E23\u0E47\u0E27 +35% \u0E19\u0E32\u0E19 2 \u0E27\u0E34 (\u0E04\u0E39\u0E25\u0E14\u0E32\u0E27\u0E19\u0E4C 5 \u0E27\u0E34)"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_adrenaline.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_adrenaline.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 0}
@@ -27,3 +44,6 @@ MonoBehaviour:
   magnitude: 0.35
   duration: 2
   vfxOnTrigger: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

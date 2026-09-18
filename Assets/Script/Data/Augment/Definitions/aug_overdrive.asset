@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatAugment
   augmentId: aug_overdrive
   augmentName: Overdrive
-  description: "Ability Haste +30 \xB7 \u0E23\u0E30\u0E22\u0E30/\u0E02\u0E19\u0E32\u0E14 AoE +15%"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_overdrive.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_overdrive.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 40
   exclusiveCharacter: {fileID: 0}
@@ -25,3 +42,6 @@ MonoBehaviour:
     value: 30
   - type: 3
     value: 0.15
+  references:
+    version: 2
+    RefIds: []

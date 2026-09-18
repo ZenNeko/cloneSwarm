@@ -703,6 +703,86 @@ MonoBehaviour:
     m_Key: talent.talent_revive.desc
     m_Metadata:
       m_Items: []
+  - m_Id: 3852729661071360
+    m_Key: augment.aug_adrenaline.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729698820096
+    m_Key: augment.aug_adrenaline.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014400
+    m_Key: augment.aug_bloodthirst.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014401
+    m_Key: augment.aug_bloodthirst.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014402
+    m_Key: augment.aug_glass_cannon.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014403
+    m_Key: augment.aug_glass_cannon.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014404
+    m_Key: augment.aug_juggernaut.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014405
+    m_Key: augment.aug_juggernaut.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014406
+    m_Key: augment.aug_momentum.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729703014407
+    m_Key: augment.aug_momentum.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729707208704
+    m_Key: augment.aug_overdrive.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729707208705
+    m_Key: augment.aug_overdrive.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403008
+    m_Key: augment.aug_second_wind.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403009
+    m_Key: augment.aug_second_wind.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403010
+    m_Key: augment.aug_sharpshooter.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403011
+    m_Key: augment.aug_sharpshooter.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403012
+    m_Key: augment.aug_swarm_lord.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729711403013
+    m_Key: augment.aug_swarm_lord.desc
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729828843520
+    m_Key: boss.BossConfig_01.phase2.announce
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3852729828843521
+    m_Key: boss.BossConfig_01.phase3.announce
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

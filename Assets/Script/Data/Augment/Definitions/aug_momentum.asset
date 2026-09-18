@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TriggerAugment
   augmentId: aug_momentum
   augmentName: Momentum
-  description: "\u0E17\u0E38\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E40\u0E25\u0E40\u0E27\u0E25\u0E2D\u0E31\u0E1B \u2014 \u0E14\u0E32\u0E40\u0E21\u0E08 +60% \u0E19\u0E32\u0E19 12 \u0E27\u0E34"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_momentum.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_momentum.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 12
   exclusiveCharacter: {fileID: 0}
@@ -27,3 +44,6 @@ MonoBehaviour:
   magnitude: 0.6
   duration: 12
   vfxOnTrigger: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Localization;
 
 /// <summary>
 /// Augment — พลังพิเศษที่เลือกได้เป็นการ์ดใบหนึ่ง แต่ได้จากทางเฉพาะ
@@ -31,9 +32,23 @@ public abstract class AugmentData : ScriptableObject
     [Header("Identity")]
     [Tooltip("คีย์ถาวร — ใช้อ้างอิงข้ามเครื่อง อย่าเปลี่ยนหลังปล่อยเกม")]
     public string augmentId = "aug_new";
+    [Tooltip("ชื่อบนสาย/ใน log — ไม่ใช่ชื่อที่โชว์ · ชื่อที่โชว์อยู่ที่ displayName")]
     public string augmentName = "New Augment";
-    [TextArea(2, 4)]
-    public string description;
+
+    // ── ข้อความที่ผู้เล่นเห็น — อยู่ใน String Table 'Content' ────────────
+    //
+    // augmentName ยังอยู่เพราะมันทำหน้าที่เป็นชื่อบนสายกับใน log ซึ่งต้องคงที่
+    // ข้ามภาษา · displayName ว่างได้ แล้วจะตกกลับไปใช้ augmentName เอง
+    // (ท่าเดียวกับ WeaponData.weaponName / displayName)
+    //
+    // description **ไม่มีช่อง string เหลือไว้** — มันเป็นข้อความล้วน ไม่มีหน้าที่
+    // อื่นให้ทำ · เก็บสองที่เมื่อไหร่ก็มีวันที่สองที่ไม่ตรงกัน
+    public LocalizedString displayName;
+    public LocalizedString description;
+
+    /// <summary>ชื่อที่โชว์ตาม locale ปัจจุบัน — ว่างเมื่อยังไม่ผูก entry จึงตกไปใช้ augmentName</summary>
+    public string DisplayName => displayName.IsEmpty ? augmentName : displayName.GetLocalizedString();
+    public string Description => description.IsEmpty ? "" : description.GetLocalizedString();
     public Sprite icon;
 
     [Header("Pool")]

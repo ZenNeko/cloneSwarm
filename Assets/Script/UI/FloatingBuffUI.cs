@@ -60,7 +60,7 @@ public class FloatingBuffUI : MonoBehaviour
         var bgImage = panelGo.AddComponent<Image>();
         bgImage.color = new Color(0f, 0f, 0f, 0.65f); // พื้นหลังกึ่งโปร่งใส
 
-        // 3. สร้างข้อความบอกเวลาบัฟและอิโมจิเบ่งกล้าม
+        // 3. ข้อความบอกเวลาบัฟ — ไม่มีอิโมจิ ฟอนต์ไม่มี glyph นั้น ได้กล่องสี่เหลี่ยมแทน
         GameObject textGo = new GameObject("BuffText");
         textGo.transform.SetParent(panelGo.transform, false);
         var textRect = textGo.AddComponent<RectTransform>();
@@ -71,7 +71,7 @@ public class FloatingBuffUI : MonoBehaviour
         durationText.fontSize = 0.22f;
         durationText.alignment = TextAlignmentOptions.Center;
         durationText.color = new Color(1f, 0.85f, 0.0f, 1f); // สีเหลืองทอง
-        durationText.text = $"💪 {remainingDuration:F1}s";
+        durationText.text = $"{remainingDuration:F1}s";
     }
 
     public void Refresh(float duration)
@@ -100,7 +100,7 @@ public class FloatingBuffUI : MonoBehaviour
         // อัปเดตเวลาถอยหลัง
         if (durationText != null)
         {
-            durationText.text = $"💪 {remainingDuration:F1}s";
+            durationText.text = $"{remainingDuration:F1}s";
         }
     }
 }

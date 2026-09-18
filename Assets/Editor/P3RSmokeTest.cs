@@ -1014,20 +1014,25 @@ namespace CloneSwarm.EditorTools
             /// </summary>
             private void CheckMissingGlyphs()
             {
-                const string missing = "★☆⚠⚡✓✅💥";
-                var hits = new List<string>();
+                var covered = BakedGlyphs();
+                var hits    = new List<string>();
 
                 foreach (var t in Resources.FindObjectsOfTypeAll<TMPro.TMP_Text>())
                 {
                     if (!t.gameObject.scene.IsValid()) continue;
                     string txt = t.text;
                     if (string.IsNullOrEmpty(txt)) continue;
-                    foreach (char c in missing)
-                        if (txt.IndexOf(c) >= 0) { hits.Add($"{t.name} = '{(txt.Length > 28 ? txt.Substring(0, 28) + "…" : txt)}'"); break; }
+
+                    char bad = FirstUncovered(txt, covered);
+                    if (bad != '\0')
+                        hits.Add($"{t.name} = '{(txt.Length > 28 ? txt.Substring(0, 28) + "…" : txt)}' (U+{(int)bad:X4})");
                 }
 
+                CheckGlyphsInCode(covered);
+                CheckGlyphsInTables(covered);
+
                 Require(hits.Count == 0,
-                        $"ไม่มีข้อความที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                        $"ไม่มีข้อความในซีนที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
                 foreach (var h in hits.Take(5)) lines.Add($"        └ {h}");
             }
 
@@ -1388,6 +1393,140 @@ namespace CloneSwarm.EditorTools
             /// ต่างจากอัตราสเกลตัวอื่นที่ 0 เป็นค่าที่ออกแบบได้จริง (โหมดฝึกซ้อม) —
             /// เพดานต่ำกว่า 1 ไม่มีการใช้งานที่สมเหตุผล
             /// </summary>
+            /// <summary>
+            /// ข้อความที่ **โค้ดเซ็ตตอนรัน** ก็ต้องอยู่ในฟอนต์ด้วย
+            ///
+            /// ═══ ช่องโหว่ที่เช็คนี้เกิดมาปิด ═══
+            ///
+            /// เช็คของซีนไล่ `TMP_Text.text` ซึ่งเห็นเฉพาะข้อความที่พิมพ์ไว้ในเอดิเตอร์ ·
+            /// ประกาศกลางจอทุกอันเป็น literal ในโค้ด มันจึงมองไม่เห็นสักตัว แล้ว
+            /// **รายงานว่าเจอ 0 ทุกรอบ ทั้งที่มีเจ็ดเส้นทางส่งกล่องสี่เหลี่ยมขึ้นจอ**
+            ///
+            /// เทสต์เขียวที่ตรวจไม่ได้เลยอันตรายกว่าไม่มีเทสต์ เพราะมันตอบคำถามว่า
+            /// "เรื่องนี้มีคนดูแลอยู่ไหม" ด้วยคำว่ามี ทั้งที่ไม่มี
+            ///
+            /// ═══ ทำไมอ่านจากฟอนต์ ไม่ใช่รายชื่ออักขระต้องห้าม ═══
+            ///
+            /// ของเดิมเป็นลิสต์ `★☆⚠⚡✓✅💥` ที่เขียนด้วยมือ · `☢` ใน FloorHazard
+            /// ไม่อยู่ในลิสต์ จึงลอดได้แม้เช็คจะสแกนถูกที่ · ลิสต์ที่ต้องอัปเดตด้วยมือ
+            /// จะตามหลังโค้ดเสมอ — ถามฟอนต์ตรงๆ แล้วมันครอบทุกตัวที่ยังไม่รู้จัก
+            ///
+            /// ═══ ครอบแค่ทางที่รู้จัก ═══
+            ///
+            /// ดูเฉพาะ literal ที่ส่งเข้า `ShowAnnouncement(` กับที่เขียนลง `.text` ตรงๆ ·
+            /// ข้อความที่ประกอบจากตัวแปรหรือมาจากตารางแปลอยู่นอกสายตา — และ
+            /// `Debug.Log` ถูกเว้นโดยตั้งใจ เพราะ Console ไม่ได้ใช้ฟอนต์ของเกม
+            /// </summary>
+            private void CheckGlyphsInCode(HashSet<int> covered)
+            {
+                var sinks = new System.Text.RegularExpressions.Regex(
+                    @"(?:ShowAnnouncement\s*\(|\.text\s*=\s*)\$?""((?:[^""\\]|\\.)*)""");
+
+                var hits = new List<string>();
+
+                foreach (var file in System.IO.Directory.GetFiles("Assets/Script", "*.cs",
+                                                                  System.IO.SearchOption.AllDirectories))
+                {
+                    var lines = System.IO.File.ReadAllLines(file);
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        string line = lines[i].TrimStart();
+                        if (line.StartsWith("//")) continue;       // คอมเมนต์ไม่ได้ขึ้นจอ
+
+                        foreach (System.Text.RegularExpressions.Match m in sinks.Matches(lines[i]))
+                        {
+                            char bad = FirstUncovered(m.Groups[1].Value, covered);
+                            if (bad == '\0') continue;
+
+                            string rel = file.Replace('\\', '/');
+                            hits.Add($"{rel}:{i + 1} U+{(int)bad:X4} — {m.Groups[1].Value}");
+                        }
+                    }
+                }
+
+                Require(hits.Count == 0,
+                        $"ไม่มีข้อความในโค้ดที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                foreach (var h in hits.Take(10)) lines.Add($"        └ {h}");
+            }
+
+            /// <summary>
+            /// ข้อความในตารางแปลก็ต้องอยู่ในฟอนต์ด้วย
+            ///
+            /// ═══ ทำไมต้องมีทั้งที่เพิ่งเพิ่มเช็คของโค้ดไป ═══
+            ///
+            /// ประกาศกลางจอเพิ่งย้ายจาก literal ในโค้ดเข้าตาราง `Announcements` ·
+            /// เช็คที่ไล่ literal จึงเหลือครอบแค่ `.text = "…"` ไม่กี่จุด ส่วนข้อความจริง
+            /// ที่ผู้เล่นอ่านย้ายไปอยู่นอกสายตาหมด
+            ///
+            /// นี่คือรูปแบบเดิมซ้ำรอบที่สอง — เช็คยังเขียวเหมือนเดิม แต่ของที่มันเคย
+            /// เฝ้าอยู่ย้ายออกไปแล้ว · **ข้อความย้ายที่ได้ เช็คต้องย้ายตาม**
+            ///
+            /// ไล่ทุกภาษา ไม่ใช่แค่ไทย — ฟอนต์ชุดเดียวกันวาดทั้งสองภาษา และคนเขียน
+            /// คำแปลไม่ได้อยู่ในตำแหน่งที่จะรู้ว่าฟอนต์มี glyph ไหนบ้าง
+            /// </summary>
+            private void CheckGlyphsInTables(HashSet<int> covered)
+            {
+                var hits = new List<string>();
+
+                foreach (var guid in AssetDatabase.FindAssets("t:StringTable"))
+                {
+                    var table = AssetDatabase.LoadAssetAtPath<
+                        UnityEngine.Localization.Tables.StringTable>(AssetDatabase.GUIDToAssetPath(guid));
+                    if (table == null) continue;
+
+                    foreach (var entry in table.Values)
+                    {
+                        if (entry == null || string.IsNullOrEmpty(entry.LocalizedValue)) continue;
+
+                        char bad = FirstUncovered(entry.LocalizedValue, covered);
+                        if (bad == '\0') continue;
+
+                        string v = entry.LocalizedValue;
+                        hits.Add($"{table.TableCollectionName}/{table.LocaleIdentifier.Code} " +
+                                 $"'{entry.Key}' U+{(int)bad:X4} — {(v.Length > 30 ? v.Substring(0, 30) + "…" : v)}");
+                    }
+                }
+
+                Require(hits.Count == 0,
+                        $"ไม่มีข้อความในตารางแปลที่ใช้อักขระซึ่งฟอนต์ไม่มี (เจอ {hits.Count})");
+                foreach (var h in hits.Take(10)) lines.Add($"        └ {h}");
+            }
+
+            /// <summary>อักขระที่ฟอนต์ในโปรเจกต์อบไว้จริง รวม fallback ทุกชั้น</summary>
+            private static HashSet<int> BakedGlyphs()
+            {
+                var set = new HashSet<int>();
+
+                foreach (var guid in AssetDatabase.FindAssets("t:TMP_FontAsset"))
+                {
+                    var f = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(
+                        AssetDatabase.GUIDToAssetPath(guid));
+                    if (f == null || f.characterTable == null) continue;
+
+                    foreach (var c in f.characterTable) set.Add((int)c.unicode);
+                }
+
+                return set;
+            }
+
+            /// <summary>
+            /// อักขระตัวแรกที่ไม่มีในฟอนต์ — '\0' = ครบทุกตัว
+            ///
+            /// เว้น whitespace กับ surrogate ไว้ · surrogate เป็นครึ่งหนึ่งของ emoji
+            /// ซึ่งไม่มีฟอนต์ไหนในโปรเจกต์รองรับอยู่แล้ว การรายงานครึ่งตัวจะอ่านไม่รู้เรื่อง
+            /// จึงรายงานที่ตัวนำแทน
+            /// </summary>
+            private static char FirstUncovered(string text, HashSet<int> covered)
+            {
+                foreach (char c in text)
+                {
+                    if (char.IsWhiteSpace(c) || char.IsLowSurrogate(c)) continue;
+                    if (covered.Contains(c)) continue;
+                    return c;
+                }
+                return '\0';
+            }
+
             private void CheckEnemyScaling()
             {
                 var wm = FindAnyObjectByType<WaveManager>(FindObjectsInactive.Include);

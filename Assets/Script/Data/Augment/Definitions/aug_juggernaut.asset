@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatAugment
   augmentId: aug_juggernaut
   augmentName: Juggernaut
-  description: "HP \u0E2A\u0E39\u0E07\u0E2A\u0E38\u0E14 +150 \xB7 \u0E40\u0E01\u0E23\u0E32\u0E30 +10 \xB7 \u0E04\u0E27\u0E32\u0E21\u0E40\u0E23\u0E47\u0E27 -5%"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_juggernaut.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_juggernaut.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 0}
@@ -27,3 +44,6 @@ MonoBehaviour:
     value: 10
   - type: 9
     value: -0.05
+  references:
+    version: 2
+    RefIds: []

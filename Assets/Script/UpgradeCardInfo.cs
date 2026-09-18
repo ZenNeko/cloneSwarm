@@ -68,7 +68,7 @@ public class UpgradeCardInfo
     // ── Display helpers ───────────────────────────────────────────────────
     public string DisplayName => type switch
     {
-        UpgradeCardType.Augment => augment?.augmentName ?? "???",
+        UpgradeCardType.Augment => augment?.DisplayName ?? "???",
         UpgradeCardType.Stat    => stat?.statName       ?? "???",
         _                       => weapon?.DisplayName   ?? "???",   // ชื่อบนการ์ด ไม่ใช่ ID
     };
@@ -85,7 +85,7 @@ public class UpgradeCardInfo
         get
         {
             if (type == UpgradeCardType.Augment)
-                return augment?.description ?? "";
+                return augment?.Description ?? "";
 
             if (type == UpgradeCardType.Stat)
                 return stat != null ? stat.Description : "";

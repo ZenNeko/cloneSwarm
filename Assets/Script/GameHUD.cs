@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 using TMPro;
 
@@ -534,7 +536,84 @@ public class GameHUD : MonoBehaviour
              "ชุด P3R ใช้ #D82020 · แดงสดกินตาเกินไปบนจอที่มีศัตรูเต็มอยู่แล้ว")]
     public Color mainBossAnnouncementColor = new Color32(0xD8, 0x20, 0x20, 0xFF);
 
-    void OnMainBossPhase() => ShowAnnouncement("MAIN BOSS!", mainBossAnnouncementColor);
+    /// <summary>ชื่อ String Table ของประกาศกลางจอ — ประกาศไว้ที่นี่ที่เดียว
+    /// คนเรียกทุกจุดส่งแค่ key ไม่ต้องรู้จักชื่อตาราง (AnnouncementTableBuilder อ้างชื่อนี้ด้วย)</summary>
+    public const string AnnouncementTable = "Announcements";
+
+    void OnMainBossPhase() => ShowAnnouncementKey("announce.boss.main", mainBossAnnouncementColor);
+
+    /// <summary>
+    /// โชว์ประกาศจาก key ใน String Table — ทางหลักของข้อความที่ฝังอยู่ในโค้ด
+    ///
+    /// ═══ ทำไมยังมีสองทาง ═══
+    ///
+    /// ทางนี้ใช้กับข้อความที่ **โค้ด** เป็นคนกำหนด · <see cref="ShowAnnouncement"/> ยังอยู่
+    /// สำหรับสองอย่างที่ key แทนไม่ได้ — ข้อความที่มาจาก data (BossPhase.AnnouncementText
+    /// ซึ่งดีไซเนอร์พิมพ์เองใน ScriptableObject) และข้อความที่ถูกแปลเสร็จแล้วจากที่อื่น
+    /// (ZoneObjective.GetQuestAnnouncement ที่ ObjectiveTrackerHUD อ่านตัวเดียวกัน)
+    ///
+    /// ═══ args เป็น string.Format ไม่ใช่การต่อสตริง ═══
+    ///
+    /// ประโยคไทยกับอังกฤษวางตัวเลข/คำคนละตำแหน่ง ("Deliver 3 items" ↔ "ส่งของให้ครบ 3 ชิ้น")
+    /// ถ้าต่อสตริงในโค้ด ลำดับจะถูกล็อกไว้ที่ภาษาอังกฤษแล้วแปลไทยให้อ่านลื่นไม่ได้
+    /// `{0}` ในตารางย้ายที่ได้อิสระต่อ locale — entry ที่เป็น Smart String ก็ใช้ทางเดียวกันนี้
+    /// </summary>
+    public void ShowAnnouncementKey(string key, Color color, params object[] args)
+        => ShowAnnouncement(ResolveAnnouncement(key, args), color);
+
+    /// <summary>
+    /// แปลง key เป็นข้อความตาม locale ปัจจุบัน — static เพราะคนเรียกบางรายไม่ได้โชว์เอง
+    /// (ZoneObjective ส่งต่อให้ทั้ง HUD และ tracker) จึงต้องเรียกได้โดยไม่มี instance
+    ///
+    /// ═══ ทำไมอ่านแบบ sync ═══
+    ///
+    /// ประกาศกลางจอต้องขึ้น **เฟรมเดียวกับ** ClientRpc ที่สั่ง — รอ async แล้วข้อความเตือน
+    /// จะมาถึงหลังกลไกที่มันเตือนถึงระเบิดไปแล้ว ซึ่งแย่กว่าไม่เตือนเลย ·
+    /// ทางเดียวกับ WeaponData.Description ที่ใช้ sync อยู่แล้วทั้งโปรเจกต์
+    ///
+    /// ข้อควรรู้ที่คอมเมนต์เดิมของ WeaponData พูดไม่ครบ: Localization Settings ตั้ง
+    /// m_PreloadBehavior = PreloadSelectedLocale จริง แต่มันโหลดล่วงหน้าเฉพาะ table
+    /// ที่ **ติด label "Preload"** ซึ่งตอนนี้ไม่มี string table ไหนในโปรเจกต์ติดเลย ·
+    /// ที่ใช้ได้อยู่ทุกวันนี้คือ Addressables WaitForCompletion โหลดให้ตอนเรียกครั้งแรก
+    /// ครั้งนั้นครั้งเดียวจึงอาจกระตุก และทางนี้ใช้ไม่ได้บน WebGL
+    /// อยากปิดช่องนี้ให้ติด Preload ให้ collection ที่ Localization Tables window
+    ///
+    /// ═══ ทำไม key ที่หายต้องเตือน ไม่ใช่เงียบ ═══
+    ///
+    /// ตกกลับไปโชว์ตัว key ดิบๆ กลางจอ แล้วเตือนใน Console พร้อมบอกว่าต้องทำอะไร ·
+    /// ถ้าคืนสตริงว่างเฉยๆ ประกาศจะหายไปทั้งบรรทัดโดยไม่มีใครรู้ว่าเคยมี — กลไกบอสที่
+    /// พึ่งประกาศนี้จะกลายเป็น "ตายโดยไม่รู้สาเหตุ" แทนที่จะเป็นบั๊กที่มองเห็น
+    /// (GetLocalizedString ของ Unity คืนข้อความ "No translation found..." ซึ่งอ่านแล้ว
+    /// ไม่รู้ว่าต้องไปแก้ที่ไหน จึงดึง entry มาเช็คเองแทน)
+    /// </summary>
+    public static string ResolveAnnouncement(string key, params object[] args)
+    {
+        if (string.IsNullOrEmpty(key)) return "";
+
+        string reason;
+        try
+        {
+            var entry = LocalizationSettings.StringDatabase
+                            .GetTableEntry(AnnouncementTable, key).Entry;
+
+            if (entry != null)
+            {
+                string text = entry.GetLocalizedString((IList<object>)args);
+                if (!string.IsNullOrEmpty(text)) return text;
+                reason = $"มี key แต่ค่าใน locale '{LocalizationSettings.SelectedLocale?.Identifier.Code}' ว่าง";
+            }
+            else reason = "ไม่มี key นี้ในตาราง";
+        }
+        catch (System.Exception e)
+        {
+            reason = $"อ่านตารางไม่ได้ ({e.GetType().Name}: {e.Message})";
+        }
+
+        Debug.LogWarning($"[Announce] '{key}' — {reason} · จะโชว์ตัว key แทน\n" +
+                         "แก้โดยเพิ่มแถวใน AnnouncementTableBuilder.Rows แล้วรัน " +
+                         "Tools > Clone Swarm > Localization > 3. Build Announcement Table");
+        return key;
+    }
 
     public void ShowAnnouncement(string text, Color color)
     {

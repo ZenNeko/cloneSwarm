@@ -14,7 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatAugment
   augmentId: aug_sharpshooter
   augmentName: Sharpshooter
-  description: "\u0E42\u0E2D\u0E01\u0E32\u0E2A\u0E04\u0E23\u0E34\u0E15\u0E34\u0E04\u0E2D\u0E25 +20% \xB7 \u0E14\u0E32\u0E40\u0E21\u0E08 +10%"
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_sharpshooter.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_sharpshooter.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   icon: {fileID: 0}
   weight: 100
   exclusiveCharacter: {fileID: 0}
@@ -25,3 +42,6 @@ MonoBehaviour:
     value: 0.2
   - type: 0
     value: 0.1
+  references:
+    version: 2
+    RefIds: []

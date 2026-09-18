@@ -156,6 +156,35 @@ public static class LocalizationHarvester
         {
             new("name", t.talentName),
         })) yield return r;
+
+        // augment — ชนิดใหม่ล่าสุด ยังเป็น string ล้วนทั้งชื่อและคำอธิบาย
+        //
+        // คำอธิบายเป็นภาษาไทยอยู่แล้วทั้ง 9 ใบ · เก็บเกี่ยวก่อนแปลงชนิด ไม่งั้น
+        // Unity ทิ้งค่าทิ้งทันทีที่ฟิลด์เปลี่ยนเป็น LocalizedString แล้วไม่มีที่ไหนเหลือ
+        foreach (var r in Collect<AugmentData>("augment", a => Slug(a.augmentId, a.name), a => new List<Field>
+        {
+            new("name", a.augmentName),
+            // desc ถูกย้ายเป็น LocalizedString แล้ว — อ่านกลับเป็น string ไม่ได้
+            // และไม่ต้องอ่าน ค่าอยู่ใน table เรียบร้อยตั้งแต่รอบที่เก็บเกี่ยวไปแล้ว
+        })) yield return r;
+
+        // ประกาศเฟสบอส — อยู่ใน BossPhase ซึ่งเป็นคลาสซ้อนใน BossEncounterConfig
+        //
+        // ไม่ต้องมีกลไกใหม่: keyPrefix ผูกกับ **asset** ส่วน suffix เป็นอะไรก็ได้
+        // จึงยิงหลายช่องจาก asset เดียวได้ด้วยการวนเฟส — `phase1.announce` ไปเรื่อยๆ
+        //
+        // เลขเฟสนับจาก 1 ตามที่คนอ่าน Inspector เห็น ไม่ใช่ index ของอาเรย์
+        foreach (var r in Collect<BossEncounterConfig>("boss", c => Slug(c.name, c.name), c =>
+        {
+            var fields = new List<Field>();
+            if (c.phases == null) return fields;
+
+            for (int i = 0; i < c.phases.Count; i++)
+                if (c.phases[i] != null)
+                    fields.Add(new Field($"phase{i + 1}.announce", ""));   // ย้ายเป็น LocalizedString แล้ว
+
+            return fields;
+        })) yield return r;
     }
 
     static IEnumerable<(string, string, List<Field>)> Collect<T>(

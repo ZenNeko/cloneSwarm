@@ -97,7 +97,7 @@ namespace CloneSwarm.UI.P3R
                     new BuildStripUI.Entry
                     {
                         icon      = a.icon,
-                        abbrev    = Abbrev(a.augmentName),
+                        abbrev    = Abbrev(a.DisplayName),
                         level     = 0,
                         highlight = false,
                     },

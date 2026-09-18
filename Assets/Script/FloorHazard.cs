@@ -92,14 +92,14 @@ public class FloorHazard : NetworkBehaviour
         clientReady = true;
 
         GameHUD.Instance
-            ?.ShowAnnouncement("☢ FLOOR HAZARD! วิ่งเข้า Safe Zone!", new Color(1f, 0.5f, 0f));
+            ?.ShowAnnouncementKey("announce.floorhazard.warn", new Color(1f, 0.5f, 0f));
     }
 
     [ClientRpc]
     void FloorDetonateClientRpc()
     {
         GameHUD.Instance
-            ?.ShowAnnouncement("💥 FLOOR EXPLODES!", Color.red);
+            ?.ShowAnnouncementKey("announce.floorhazard.detonate", Color.red);
         DestroyVisuals();
     }
 
