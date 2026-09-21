@@ -49,6 +49,12 @@ public class BossDesignerWindow : EditorWindow
     VisualElement timelinePane;
     VisualElement inspectorPane;
 
+    /// <summary>แผนผังสนามที่ playhead — แกนที่เส้นเวลาบอกไม่ได้ว่าท่าลงตรงไหน</summary>
+    CloneSwarm.EditorTools.ArenaPreview arenaPreview;
+
+    /// <summary>seed ของ roll ในพรีวิว — กดปุ่มเพื่อดูแพตเทิร์นแบบอื่นของ roll เดียวกัน</summary>
+    [SerializeField] int previewRollSeed = 1;
+
     static readonly Color NodeBg       = new Color(0.22f, 0.22f, 0.22f);
     static readonly Color NodeSelected = new Color(0.95f, 0.55f, 0.25f);
     static readonly Color LaneBg       = new Color(0.16f, 0.16f, 0.16f);
@@ -147,15 +153,35 @@ public class BossDesignerWindow : EditorWindow
         timelinePane.style.minWidth = 0;   // ยอมให้หดได้ ไม่งั้นมันดันแผงขวาจนแบน
         bodyRow.Add(timelinePane);
 
+        // พรีวิวอยู่นอก inspectorPane เพราะ BuildInspectorPane Clear() ทุกครั้งที่เลือกคลิป
+        // ถ้าอยู่ข้างในจะถูกสร้างใหม่ทั้งตัวทุกคลิก เสียสถานะและกะพริบ
+        var rightCol = new VisualElement();
+        rightCol.style.width = 330;
+        rightCol.style.minWidth = 260;
+        rightCol.style.flexShrink = 0;
+        rightCol.style.borderLeftWidth = 1;
+        rightCol.style.borderLeftColor = GridLine;
+        rightCol.style.paddingLeft = 4;
+        rightCol.style.paddingRight = 4;
+
+        arenaPreview = new CloneSwarm.EditorTools.ArenaPreview { RollSeed = previewRollSeed };
+        rightCol.Add(arenaPreview);
+
+        var reroll = new Button(() =>
+        {
+            previewRollSeed++;
+            arenaPreview.RollSeed = previewRollSeed;
+            RefreshPreview();
+        })
+        { text = "🎲 roll ใหม่" };
+        reroll.tooltip = "สุ่มค่า roll ชุดใหม่ในพรีวิว — ดูว่าแพตเทิร์นเดียวกันออกมาได้กี่หน้าตา";
+        reroll.style.marginBottom = 4;
+        rightCol.Add(reroll);
+
         inspectorPane = new VisualElement();
-        inspectorPane.style.width = 330;
-        inspectorPane.style.minWidth = 260;
-        inspectorPane.style.flexShrink = 0;   // ห้ามหด — ตัวที่ทำให้แผงเหลือ 30px
-        inspectorPane.style.borderLeftWidth = 1;
-        inspectorPane.style.borderLeftColor = GridLine;
-        inspectorPane.style.paddingLeft = 4;
-        inspectorPane.style.paddingRight = 4;
-        bodyRow.Add(inspectorPane);
+        inspectorPane.style.flexGrow = 1;
+        rightCol.Add(inspectorPane);
+        bodyRow.Add(rightCol);
 
         root.Add(bodyRow);
 
@@ -169,7 +195,12 @@ public class BossDesignerWindow : EditorWindow
         BuildGraphPane();
         BuildTimelinePane();
         BuildInspectorPane();
+        RefreshPreview();
     }
+
+    /// <summary>ป้อน context ปัจจุบันให้แผนผังสนาม — เรียกทุกครั้งที่เฟส/playhead/คลิปเปลี่ยน</summary>
+    void RefreshPreview()
+        => arenaPreview?.SetContext(config, timeline, playhead, selectedClip);
 
     // ══════════════════════════════════════════════════════════════════════
     // Inspector ของคลิปที่เลือก (แผงขวา)
@@ -259,7 +290,12 @@ public class BossDesignerWindow : EditorWindow
 
         var scroll = new ScrollView();
         scroll.style.flexGrow = 1;
-        scroll.Add(new InspectorElement(action));
+
+        // แก้ radius / targetingMode / arenaDistanceScale แล้วเห็นผลในสนามทันที
+        // — วงป้อนกลับที่สั้นที่สุดคือเหตุผลทั้งหมดที่พรีวิวอยู่ติดกับช่องแก้ค่า
+        var inspector = new InspectorElement(action);
+        inspector.TrackSerializedObjectValue(new SerializedObject(action), _ => RefreshPreview());
+        scroll.Add(inspector);
         inspectorPane.Add(scroll);
     }
 
@@ -840,6 +876,9 @@ public class BossDesignerWindow : EditorWindow
         if (line != null) line.style.left = playhead * pxPerSec;
         var lbl = timelinePane.Q<Label>("playhead-label");
         if (lbl != null) lbl.text = $"t = {playhead:0.0}s";
+
+        // ลากไม้บรรทัดคือทางหลักที่คนใช้ดูว่า "ตอนนี้มีอะไรอยู่ในสนาม" — ต้องตามทันที
+        RefreshPreview();
     }
 
     VisualElement BuildLane(int trackIdx, float contentSec)
@@ -979,6 +1018,7 @@ public class BossDesignerWindow : EditorWindow
             selectedClipEl = el;
             ApplyClipSelectionStyle(el, baseCol, true);
             BuildInspectorPane();
+            RefreshPreview();
 
             Undo.RecordObject(timeline, "Move Timeline Clip");
             dragStartT = clip.startTime;
@@ -1316,6 +1356,9 @@ public class BossDesignerWindow : EditorWindow
 
     // ── Helpers ───────────────────────────────────────────────────────────
     static float Snap(float t, bool fine) => Mathf.Round(t / (fine ? 0.01f : SnapStep)) * (fine ? 0.01f : SnapStep);
+
+    /// <summary>สีเดียวกับคลิปบนเส้นเวลา — ArenaPreview ใช้ให้รูปในสนามกับคลิปตรงกัน</summary>
+    internal static Color ClipColorOf(BossAction action) => ClipColor(action);
 
     static Color ClipColor(BossAction action) => action switch
     {

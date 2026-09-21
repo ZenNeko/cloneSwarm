@@ -17,8 +17,9 @@ public abstract class BossAction : ScriptableObject
     [Tooltip("วินาทีที่ cast bar วิ่ง — 0 = ไม่โชว์")]
     public float castTime = 0f;
     [Header("Roll")]
-    [Tooltip("ชื่อ roll ที่ action นี้อ่าน — ว่าง = ไม่ใช้ roll")]
-    public string rollName = "";
+    [Tooltip("ชื่อ roll ที่ action นี้อ่าน — ว่าง = ไม่ใช้ roll\n" +
+             "ชื่อมาจาก Roll Definitions ใน BossEncounterConfig")]
+    [RollId] public string rollName = "";
     [Tooltip("วินาทีที่เป็น Cooldown ล็อคการกระทำถัดไปหลังทำท่านี้เสร็จ")]
     public float cooldownAfter = 0f;
 
@@ -74,24 +75,8 @@ public abstract class BossAction : ScriptableObject
     /// </summary>
     public virtual float GetEditorDuration() => actionDelay + castTime + 1f;
 
-    // Helper: ค้นหาผู้เล่นที่อยู่ใกล้ที่สุด
-    protected Transform FindNearestPlayer(Vector3 origin)
-    {
-        if (NetworkManager.Singleton == null) return null;
-        Transform nearest = null;
-        float minDist = float.MaxValue;
-        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            var obj = c.PlayerObject;
-            if (obj == null) continue;
-            var pm = obj.GetComponent<playermove>();
-            if (pm != null && pm.isDead.Value) continue; // ข้ามคนตาย
-
-            float d = Vector3.Distance(origin, obj.transform.position);
-            if (d < minDist) { minDist = d; nearest = obj.transform; }
-        }
-        return nearest;
-    }
+    // หาผู้เล่นใกล้สุดย้ายไปอยู่ที่ AoEWorld.TryNearestPlayer แล้ว — เก็บไว้ที่นี่ด้วย
+    // จะกลายเป็นนิยามที่สองที่ editor เรียกไม่ได้ และเพี้ยนจากกันได้เมื่อมีคนแก้ข้างเดียว
 
     /// <summary>
     /// อ่านค่า roll ที่ resolve แล้วของ fight นี้ — คืน -1 ถ้าไม่มี roll หรือหาไม่เจอ
@@ -112,32 +97,31 @@ public abstract class BossAction : ScriptableObject
     /// ไม่มี arena ให้ถอยไปใช้ตำแหน่งบอสพร้อม warning — ปล่อยเงียบไม่ได้ เพราะแพตเทิร์นจะเพี้ยน
     /// แบบหาสาเหตุยาก (เหตุผลเดียวกับ ColorMatchAoEAction.ResolveSharedCenter)
     /// </summary>
-    protected Vector3 ResolveArenaPivot(NetworkBehaviour runner)
+    protected Vector3 ResolveArenaPivot(in AoEWorld world)
     {
-        ArenaDefinition arena = (runner as BossController)?.config?.arena;
-        if (arena != null) return arena.center;
+        if (world.arena != null) return world.arena.center;
 
         Debug.LogWarning($"[{GetType().Name}] {name}: ใช้ roll เชิงพื้นที่แต่ BossEncounterConfig.arena ว่าง — ใช้ตำแหน่งบอสเป็นจุดหมุนแทน");
-        return runner != null ? runner.transform.position : Vector3.zero;
+        return world.bossPos;
     }
 
     /// <summary>
     /// แปลงค่า roll ที่ resolve แล้วเป็นการพลิก/หมุนพิกัด · คืน Identity ถ้าไม่ใช่ roll เชิงพื้นที่
     /// `Anchor` ไม่อยู่ในนี้เพราะมันคือการ **เลือกจุดเกิด** ไม่ใช่การแปลง — จัดการที่ targeting
     /// </summary>
-    protected RollTransform GetRollTransform(NetworkBehaviour runner)
+    protected RollTransform GetRollTransform(in AoEWorld world)
     {
-        var boss = runner as BossController;
-        if (boss?.Rolls == null || string.IsNullOrEmpty(rollName)) return RollTransform.Identity;
+        var rolls = world.rolls;
+        if (rolls == null || string.IsNullOrEmpty(rollName)) return RollTransform.Identity;
 
-        int value = boss.Rolls.Peek(rollName);
+        int value = rolls.Peek(rollName);
         if (value < 0) return RollTransform.Identity;
 
         var t = RollTransform.Identity;
-        switch (boss.Rolls.GetKind(rollName))
+        switch (rolls.GetKind(rollName))
         {
             case RollKind.SnapAngle:
-                t.angleDeg = 360f / Mathf.Max(1, boss.Rolls.GetOptionCount(rollName)) * value;
+                t.angleDeg = 360f / Mathf.Max(1, rolls.GetOptionCount(rollName)) * value;
                 break;
             case RollKind.MirrorX:
                 t.mirrorX = value != 0;
@@ -149,7 +133,7 @@ public abstract class BossAction : ScriptableObject
                 return RollTransform.Identity;   // Variant / Target / Anchor / Order — ไม่ใช่การแปลงพิกัด
         }
 
-        t.pivot = ResolveArenaPivot(runner);
+        t.pivot = ResolveArenaPivot(world);
         return t;
     }
 

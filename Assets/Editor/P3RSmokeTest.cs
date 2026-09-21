@@ -819,6 +819,7 @@ namespace CloneSwarm.EditorTools
                 CheckPartyHudWired();
                 CheckAugmentZoneWired();
                 CheckTimelineCues();
+                CheckBossConfigs();
                 CheckWaveSchedule();
                 CheckMissingGlyphs();
             }
@@ -1338,6 +1339,27 @@ namespace CloneSwarm.EditorTools
             /// ที่เป็นข้อสอบจริงมีสองอย่าง — ช่องที่ลืมใส่ config (ศัตรูไม่ออกเลย
             /// ในช่วงนั้น) และช่วงที่ตั้งไว้หลังบอสใหญ่ ซึ่งไม่มีวันถึง
             /// </summary>
+            /// <summary>
+            /// ผลตรวจ BossEncounterConfig — ตัวตรวจจริงอยู่ที่ BossConfigAudit
+            ///
+            /// แยกไว้ที่นั่นเพราะอ่านจาก asset ล้วน รันได้โดยไม่ต้อง Play
+            /// (Tools > Clone Swarm > Audit Boss Configs) · ตรงนี้แค่ดึงผลมาเข้าแถวเดียวกัน
+            /// เพื่อให้ประตูเดียวครอบทุกอย่าง ไม่ใช่มีเทสต์ที่ต้องจำว่าต้องรันแยก
+            /// </summary>
+            private void CheckBossConfigs()
+            {
+                var problems = CloneSwarm.EditorTools.BossConfigAudit.Collect(out string summary);
+                var blocking = problems.Where(x => x.blocking).ToList();
+
+                Require(blocking.Count == 0, $"config บอสไม่มีจุดที่จะพังเงียบ ({summary})");
+                foreach (var b in blocking.Take(5)) lines.Add($"        └ {b}");
+
+                // roll ที่นิยามไว้แต่ไม่มีใครใช้ไม่ใช่ความผิด — แต่ต้องเห็น ไม่งั้นจะนึกว่า
+                // แพตเทิร์นสุ่มอยู่ทั้งที่มันออกหน้าตาเดิมทุกรอบ
+                foreach (var n in problems.Where(x => !x.blocking).Take(5))
+                    lines.Add($"        · {n}");
+            }
+
             private void CheckWaveSchedule()
             {
                 CheckEnemyScaling();
