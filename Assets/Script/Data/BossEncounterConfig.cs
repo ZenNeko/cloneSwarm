@@ -44,9 +44,11 @@ public class BossEncounterConfig : ScriptableObject
     public List<BossPhase> phases = new List<BossPhase>();
 
     [Header("Attack Timing (Default)")]
-    [Tooltip("ความถี่ในการเริ่มใช้ Action ถัดไป (วินาที) (ใช้ถ้า BossAction.cooldownAfter = 0)")]
+    [Tooltip("เว้นกี่วินาทีหลังท่าก่อนหน้า 'จบแล้ว' ก่อนขึ้นท่าถัดไป (ใช้ถ้า BossAction.cooldownAfter = 0)\n" +
+             "นับจากตอนกลไกจบ ไม่ใช่ตอนเริ่ม — ท่าที่ยาว 3 วินาทีกับ interval 2 = ครบรอบ 5 วินาที")]
     public float attackInterval = 5f;
-    [Tooltip("หน่วงเวลาก่อนเริ่ม Action แรกเมื่อบอสเกิด")]
+    [Tooltip("หน่วงเวลาก่อนเริ่ม Action แรกเมื่อบอสเกิด — จ่ายครั้งเดียวตอนเกิด\n" +
+             "ช่องว่างของการเปลี่ยนเฟสใช้ BossPhase.invincibilityDuration ไม่ใช่ค่านี้")]
     public float firstAttackDelay = 4f;
 
     // ── Death Drops ───────────────────────────────────────────────────────

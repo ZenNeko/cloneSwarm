@@ -34,6 +34,28 @@ public class BossController : NetworkBehaviour
     public RollContext Rolls { get; private set; }
 
     protected Enemy enemy;
+
+    // ── รอบการรัน (run generation) ────────────────────────────────────────
+    //
+    // ท่าบอสยิง coroutine ลูกออกไปแบบไม่มีใครถือ handle (BossTimelineAction ยิงทีละคลิป,
+    // ComboAction/RandomAttackAction ยิงทีละท่าลูก) · StopCoroutine(attackLoopCoroutine)
+    // หยุดได้แค่ตัวลูปเอง ลูกที่ปล่อยไปแล้วไม่มีอะไรตามไปหยุด
+    //
+    // ผลคือเปลี่ยนเฟสตอนกลาง timeline แล้วคลิปที่เหลือของเฟสเก่ายังยิงต่อ ไปทับเฟสใหม่
+    // ผู้เล่นเจอลวดลายที่ไม่มีอยู่ใน timeline ไหนเลย และคนออกแบบเปิด Boss Designer มาดู
+    // ก็ไม่เห็นว่ามาจากไหน
+    //
+    // แทนที่จะไล่เก็บ handle ทุกเส้น (ซึ่งต้องแก้ทุก action ที่เพิ่มใหม่ในอนาคตด้วย)
+    // ใช้เลขรอบแทน: ทุกท่าจดเลขรอบตอนเริ่ม แล้วเช็คก่อนลงมือทุกครั้ง
+    // รอบเปลี่ยน = ทิ้งตัวเอง · ท่าที่เขียนใหม่ไม่ต้องรู้จักกลไกนี้ก็ไม่พัง แค่ไม่ได้ประโยชน์
+    int _runGen;
+
+    /// <summary>เลขรอบปัจจุบัน — ท่าจดไว้ตอนเริ่มแล้วส่งกลับมาถามผ่าน <see cref="IsRunCurrent"/></summary>
+    public int RunGeneration => _runGen;
+
+    /// <summary>true ถ้ารอบที่เริ่มด้วย gen นี้ยังเป็นรอบปัจจุบัน — false เมื่อเปลี่ยนเฟสหรือบอสตาย</summary>
+    public bool IsRunCurrent(int gen) => _runGen == gen && !deathHandled;
+
     protected int currentPhaseIndex = 0;
     protected int mechanicIndex = 0;
     protected bool deathHandled = false;
@@ -79,7 +101,7 @@ public class BossController : NetworkBehaviour
             currentPhaseIndex = 0;
             mechanicIndex = 0;
             currentPhaseStartTime = Time.time;
-            attackLoopCoroutine = StartCoroutine(AttackLoop());
+            attackLoopCoroutine = StartCoroutine(AttackLoop(config.firstAttackDelay));
         }
     }
 
@@ -123,6 +145,7 @@ public class BossController : NetworkBehaviour
             {
                 currentPhaseIndex++;
                 mechanicIndex = 0; // รีเซ็ตการวนโจมตีสำหรับ Phase ใหม่
+                _runGen++;         // ท่าของเฟสเก่าที่ยังค้างอยู่จะทิ้งตัวเองเมื่อเห็นเลขนี้เปลี่ยน
 
                 if (phaseTransitionCoroutine != null) StopCoroutine(phaseTransitionCoroutine);
                 phaseTransitionCoroutine = StartCoroutine(PhaseTransitionInvincibility(config.phases[currentPhaseIndex]));
@@ -137,6 +160,10 @@ public class BossController : NetworkBehaviour
     {
         if (attackLoopCoroutine != null) StopCoroutine(attackLoopCoroutine);
 
+        // telegraph ที่ค้างจากเฟสเก่าต้องหายไปด้วย ไม่งั้นวงที่กำลังนับถอยหลังอยู่จะระเบิด
+        // ใส่ผู้เล่นตอนที่บอสอมตะและเฟสใหม่เริ่มแล้ว — เลขรอบกันได้แค่ท่าที่ยังไม่ลงมือ
+        CleanupMechanics();
+
         if (enemy != null && newPhaseInfo.invincibilityDuration > 0)
         {
             enemy.serverInvincible = true;
@@ -146,7 +173,12 @@ public class BossController : NetworkBehaviour
 
         phaseTransitionCoroutine = null;
         currentPhaseStartTime = Time.time;
-        attackLoopCoroutine = StartCoroutine(AttackLoop());
+
+        // ไม่จ่าย firstAttackDelay ซ้ำ — ช่องว่างของการเปลี่ยนเฟสคือ invincibilityDuration
+        // ซึ่งเพิ่งรอไปข้างบนแล้ว · ของเดิม restart ลูปทั้งเส้นเลยรอซ้ำอีกรอบ ทำให้ทุกการ
+        // เปลี่ยนเฟสมีช่องว่าง invincibilityDuration + firstAttackDelay และคลิปที่คนออกแบบ
+        // วางไว้ที่ t=0 ใน Boss Designer ไม่ได้ยิงที่ 0 จริง
+        attackLoopCoroutine = StartCoroutine(AttackLoop(0f));
     }
 
     [ClientRpc]
@@ -181,9 +213,11 @@ public class BossController : NetworkBehaviour
     }
 
     // ── Attack Loop (Server Only) ─────────────────────────────────────────
-    protected IEnumerator AttackLoop()
+    /// <param name="startDelay">หน่วงก่อนท่าแรกของรอบนี้ · ตอนบอสเกิดใช้
+    /// <see cref="BossEncounterConfig.firstAttackDelay"/> · ตอนเปลี่ยนเฟสใช้ 0</param>
+    protected IEnumerator AttackLoop(float startDelay)
     {
-        yield return new WaitForSeconds(config.firstAttackDelay);
+        if (startDelay > 0f) yield return new WaitForSeconds(startDelay);
 
         while (true)
         {
@@ -266,6 +300,7 @@ public class BossController : NetworkBehaviour
     {
         if (!IsServer || deathHandled) return;
         deathHandled = true;
+        _runGen++;   // ท่าที่ยังค้างอยู่ทิ้งตัวเอง — ไม่รอให้ GameObject ถูกทำลายอย่างเดียว
 
         CastEndClientRpc();
 

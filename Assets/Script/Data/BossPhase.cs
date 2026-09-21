@@ -15,7 +15,7 @@ public class BossPhase
     [Tooltip("ระยะเวลาอมตะเมื่อเปลี่ยนเข้าสู่ Phase นี้ (วินาที)")]
     public float invincibilityDuration = 1.5f;
 
-    [Tooltip("ช่วงเวลาระหว่างการโจมตีเริ่มต้นของเฟสนี้ (หากเป็น 0 หรือน้อยกว่า จะอิงตาม Config หลัก)")]
+    [Tooltip("เว้นกี่วินาทีหลังท่าก่อนหน้าจบ ก่อนขึ้นท่าถัดไปในเฟสนี้ (0 หรือน้อยกว่า = อิงตาม Config หลัก)")]
     public float attackInterval = -1f;
 
     [Tooltip("ความแรงของการสั่นกล้องเมื่อเข้าสู่ Phase นี้")]

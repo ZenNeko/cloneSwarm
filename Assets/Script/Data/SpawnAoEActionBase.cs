@@ -126,6 +126,7 @@ public abstract class SpawnAoEActionBase : BossAction
     protected abstract void ConfigureTelegraphZone(TelegraphZone zone);
 
     // warning + ช่วง resolve สั้นๆ หลัง telegraph ระเบิด × จำนวนครั้งที่ยิงซ้ำ
+    // ตรงกับที่ ExecuteCoroutine รอจริง (TelegraphZone ระเบิดที่ warningDuration แล้ว despawn อีก 0.1s)
     public override float GetEditorDuration()
         => actionDelay + Mathf.Max(0, repeatCount - 1) * repeatInterval + warningDuration + 0.5f;
 
@@ -154,6 +155,13 @@ public abstract class SpawnAoEActionBase : BossAction
             if (shot < shots - 1 && repeatInterval > 0f)
                 yield return new WaitForSeconds(repeatInterval);
         }
+
+        // รอให้ระลอกสุดท้ายระเบิดก่อนคืนค่า — ดูสัญญาใน BossAction.ExecuteCoroutine
+        //
+        // ของเดิมคืนทันทีที่ spawn เสร็จ ซึ่งไม่เป็นไรตอนที่ timeline รอด้วยนาฬิกา
+        // แต่พอ timeline มารอ coroutine จริง ท่าที่คืนเร็วจะทำให้บอสขึ้นรอบใหม่
+        // ตอนที่วงยังนับถอยหลังอยู่ · LimitCutAction ทำแบบนี้อยู่แล้วตั้งแต่แรก
+        if (warningDuration > 0f) yield return new WaitForSeconds(warningDuration);
     }
 
     private void SpawnOneWave(NetworkBehaviour runner, GameObject telegraphPrefab)

@@ -56,9 +56,12 @@ public class RandomAttackAction : BossAction
         }
 
         // Execute each chosen action
+        int gen = RunGenerationOf(runner);
         for (int i = 0; i < chosen.Count; i++)
         {
-            if (chosen[i] != null && runner != null && runner.NetworkObject.IsSpawned)
+            // delayBetweenPicks ทำให้ตัวท้ายๆ ยิงหลังตัวแรกหลายวินาที — พอเปลี่ยนเฟสคั่นกลาง
+            // ที่เหลือจะไปโผล่ในเฟสใหม่ ถ้าไม่เช็ครอบตรงนี้
+            if (chosen[i] != null && RunStillValid(runner, gen))
             {
                 runner.StartCoroutine(chosen[i].ExecuteCoroutine(runner, telegraphPrefab));
                 if (delayBetweenPicks > 0f && i < chosen.Count - 1)

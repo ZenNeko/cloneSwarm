@@ -70,6 +70,9 @@ public class ColorMatchAoEAction : SpawnAoEActionBase
 
             SpawnColoredZone(spawnPos, telegraphPrefab, p.id, runner);
         }
+
+        // รอให้วงระเบิดก่อนคืนค่า — สัญญาเดียวกับ SpawnAoEActionBase
+        if (warningDuration > 0f) yield return new WaitForSeconds(warningDuration);
     }
 
     private Vector3 ResolveSharedCenter(NetworkBehaviour runner)

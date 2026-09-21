@@ -24,10 +24,39 @@ public abstract class BossAction : ScriptableObject
 
     /// <summary>
     /// ทำการรัน Action แบบ Coroutine บน Server
+    ///
+    /// ═══ สัญญา: คืนค่าเมื่อ "กลไกจบ" ไม่ใช่เมื่อ "ยิงออกไปแล้ว" ═══
+    ///
+    /// AoE ต้องคืนหลังวงระเบิด · tether ต้องคืนหลังสายหมดอายุ — ไม่ใช่คืนทันทีที่ spawn
+    ///
+    /// เพราะ <see cref="BossTimelineAction"/> ใช้ "คลิปทุกตัวจบแล้วหรือยัง" เป็นตัวตัดสินว่า
+    /// timeline จบเมื่อไหร่ ซึ่งเป็นตัวกำหนดจังหวะวนรอบของทั้งเฟส · ท่าที่คืนเร็วกว่ากลไกจริง
+    /// จะทำให้บอสขึ้นรอบใหม่ทับท่าที่ยังค้างอยู่
+    ///
+    /// ของเดิมใช้ <see cref="GetEditorDuration"/> มารอแทน ซึ่งเป็นค่าประมาณสำหรับวาดภาพ
+    /// (ค่าฐานคือ +1f ที่เดาเอา) — จังหวะจริงของบอสจึงขึ้นกับตัวเลขที่ไม่มีใครตั้งใจให้แม่น
     /// </summary>
     /// <param name="runner">ตัวเรียกใช้งาน (BossController บน prefab บอส)</param>
     /// <param name="telegraphPrefab">TelegraphZone prefab</param>
     public abstract IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab);
+
+    // ── รอบการรัน ─────────────────────────────────────────────────────────
+    /// <summary>เลขรอบปัจจุบันของบอส — จดไว้ตอนท่าเริ่ม แล้วส่งให้ <see cref="RunStillValid"/></summary>
+    protected static int RunGenerationOf(NetworkBehaviour runner)
+        => (runner as BossController)?.RunGeneration ?? 0;
+
+    /// <summary>
+    /// รอบที่จดไว้ยังเป็นรอบปัจจุบันอยู่ไหม — false เมื่อบอสเปลี่ยนเฟส ตาย หรือ despawn
+    ///
+    /// ท่าที่ปล่อย coroutine ลูกแบบ fire-and-forget ต้องเช็คตรงนี้ก่อนลงมือทุกครั้ง
+    /// ไม่งั้นท่าของเฟสเก่าจะไปโผล่กลางเฟสใหม่ (ดูคำอธิบายเต็มใน BossController._runGen)
+    /// </summary>
+    protected static bool RunStillValid(NetworkBehaviour runner, int gen)
+    {
+        if (runner == null || !runner.NetworkObject.IsSpawned) return false;
+        var boss = runner as BossController;
+        return boss == null || boss.IsRunCurrent(gen);
+    }
 
     // ── Editor Support (Boss Designer) ────────────────────────────────────
     /// <summary>กันการเรียกซ้อนไม่รู้จบ กรณี action อ้างอิงกันเป็นวงกลม (Combo/Timeline ซ้อนตัวเอง)</summary>
@@ -35,7 +64,13 @@ public abstract class BossAction : ScriptableObject
 
     /// <summary>
     /// ประมาณความยาวรวมของท่านี้เป็นวินาที (รวม actionDelay และ castTime) — ใช้วาดความยาวคลิปใน Boss Designer
-    /// ไม่มีผลต่อ gameplay
+    ///
+    /// **ไม่มีผลต่อ gameplay** — ประโยคนี้เคยไม่จริง: BossTimelineAction เอาค่านี้ไปรอเป็นจังหวะ
+    /// ของเฟส ทำให้ตัวเลขที่ตั้งใจให้ "พอเห็นภาพ" กลายเป็นตัวกำหนดความเร็วบอสจริงๆ
+    /// ตอนนี้ timeline รอ coroutine ของคลิปจบเอง ค่านี้จึงกลับมาเป็นค่าวาดภาพล้วนตามที่เขียนไว้
+    ///
+    /// หน้าที่ที่เหลืออยู่จึงคือ **วาดให้ตรงกับของจริง** — คลิปที่วาดสั้นกว่ากลไกจริง
+    /// ทำให้คนออกแบบวางท่าถัดไปทับของเดิมโดยไม่รู้ตัว
     /// </summary>
     public virtual float GetEditorDuration() => actionDelay + castTime + 1f;
 

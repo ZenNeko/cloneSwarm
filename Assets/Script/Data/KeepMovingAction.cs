@@ -17,6 +17,11 @@ public class KeepMovingAction : SpawnAoEActionBase
     // warningDuration / damage / detonateVfx ใช้ตัวที่สืบทอดมาจาก SpawnAoEActionBase แล้ว
     // (เดิม field ซ้ำอยู่ที่นี่ — ย้ายไปรวมจุดเดียวตาม ADR-005 debt #3)
 
+    // กลไกนี้กินเวลา mechanicDuration (10s default) แต่ของที่สืบทอดมาคำนวณจาก warningDuration
+    // (≈1.5s) — Boss Designer เลยวาดคลิปสั้นกว่าของจริงเกือบเจ็ดเท่า คนออกแบบวางท่าถัดไป
+    // ทับช่วงที่กลไกนี้ยังทำงานอยู่โดยไม่รู้ตัว
+    public override float GetEditorDuration() => actionDelay + mechanicDuration;
+
     protected override AoEType GetAoEType() => AoEType.Circle;
 
     protected override void ConfigureTelegraphZone(TelegraphZone zone)

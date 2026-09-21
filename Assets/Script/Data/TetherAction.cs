@@ -52,6 +52,10 @@ public class TetherAction : BossAction
 
         if (mode == TetherMode.Leash) SpawnLeash(bossController, alive);
         else                          SpawnPairOrPillar(bossController, alive);
+
+        // กินเวลาของช่องท่าไปเต็ม tetherDuration — บอสไม่ควรขึ้นท่าถัดไปตอนสายยังอยู่
+        // (สายอาจขาดก่อนถ้าผู้เล่นทำสำเร็จ แต่ "ช่อง" ของกลไกนี้ยาวเท่าที่ตั้งไว้)
+        if (tetherDuration > 0f) yield return new WaitForSeconds(tetherDuration);
     }
 
     // ── Far / Close / (Transferable → BossTether จะ fallback เป็น Far) ─────
