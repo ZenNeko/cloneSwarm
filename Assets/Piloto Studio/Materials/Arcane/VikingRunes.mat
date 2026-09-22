@@ -150,6 +150,7 @@ Material:
     - _ReceivesSSRTransparent: 0
     - _RenderQueueType: 4
     - _RequireSplitLighting: 0
+    - _ScreenSpaceReflectionsContributeTransparent: 1
     - _SmoothnessTextureChannel: 0
     - _SoftFadeFactor: 0.1
     - _SourceBlendRGB: 1
@@ -188,6 +189,7 @@ Material:
     - _UseShadowThreshold: 0
     - _UseSoftAlpha: 1
     - _UseUVOffset: 1
+    - _WritesColor: 1
     - _ZTest: 4
     - _ZTestDepthEqualForOpaque: 4
     - _ZTestGBuffer: 4
@@ -236,7 +238,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 10
+  version: 11
 --- !u!114 &7052594858916141340
 MonoBehaviour:
   m_ObjectHideFlags: 11

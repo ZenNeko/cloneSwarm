@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 10
+  version: 11
 --- !u!21 &2100000
 Material:
   serializedVersion: 8
@@ -28,7 +28,7 @@ Material:
   m_InvalidKeywords:
   - _DISTORTMAINTEXTURE_ON
   - _EMISSION
-  m_LightmapFlags: 3
+  m_LightmapFlags: 11
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
@@ -131,6 +131,7 @@ Material:
     - Vector1_D1034171: 0
     - _BumpScale: 1
     - _ColorMultiplier: 2.5
+    - _Cull: 0
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DistortMainTexture: 1
@@ -158,11 +159,13 @@ Material:
     - _Parallax: 0.02
     - _QueueControl: 0
     - _QueueOffset: 0
+    - _ScreenSpaceReflectionsContributeTransparent: 1
     - _SmoothnessTextureChannel: 0
     - _Softness: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _WritesColor: 1
     - _ZWrite: 1
     m_Colors:
     - Color_34BEEA07: {r: 1, g: 1, b: 1, a: 1}

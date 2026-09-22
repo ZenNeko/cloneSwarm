@@ -15,11 +15,12 @@ MonoBehaviour:
   m_DefaultGroup: 23ef3b63beac816419d96438a4e8a377
   m_currentHash:
     serializedVersion: 2
-    Hash: db14c72de16edcd41eec5a79c9dfbdd7
+    Hash: 00000000000000000000000000000000
   m_ExtractTypeTreeData: 0
   m_DisableWriteTypeTree: 0
   m_OptimizeCatalogSize: 0
   m_BuildRemoteCatalog: 0
+  m_BundleLocalCatalog: 0
   m_CatalogRequestsTimeout: 0
   m_DisableCatalogUpdateOnStart: 0
   m_InternalIdNamingMode: 0
@@ -31,12 +32,21 @@ MonoBehaviour:
   m_AssetBundleProviderType:
     m_AssemblyName: Unity.ResourceManager, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     m_ClassName: UnityEngine.ResourceManagement.ResourceProviders.AssetBundleProvider
+  m_GroupAssetEntryProviderType:
+    m_AssemblyName: Unity.Addressables
+    m_ClassName: UnityEngine.AddressableAssets.ResourceProviders.NativeContentAssetEntryProvider
+  m_ArchiveContentDirectories: 1
+  m_TargetArchiveSizeInMB: 2000
   m_IgnoreUnsupportedFilesInBuild: 0
   m_UniqueBundleIds: 0
   m_EnableJsonCatalog: 0
+  m_CatalogProviderType:
+    m_AssemblyName: Unity.Addressables
+    m_ClassName: UnityEngine.AddressableAssets.ResourceProviders.BinaryCatalogProvider
   m_NonRecursiveBuilding: 1
   m_AllowNestedBundleFolders: 0
   m_CCDEnabled: 0
+  m_ContentDirectoryGroupTemplateCreated: 1
   m_maxConcurrentWebRequests: 3
   m_UseUWRForLocalBundles: 0
   m_BundleTimeout: 0
@@ -46,7 +56,7 @@ MonoBehaviour:
   m_SharedBundleSettingsCustomGroupIndex: 0
   m_simulatedLoadDelay: 0.1
   m_ContiguousBundles: 1
-  m_StripUnityVersionFromBundleBuild: 0
+  mStripUnityVersion: 0
   m_DisableVisibleSubAssetRepresentations: 0
   m_BuiltInBundleNaming: 0
   mBuiltInBundleCustomNaming: 
@@ -114,13 +124,18 @@ MonoBehaviour:
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: e3c74a9d8880419499882366c3369705, type: 2}
+  - {fileID: 11400000, guid: c7840ccb3e780544fbd3339a6f2edce7, type: 2}
   m_InitializationObjects: []
   m_CertificateHandlerType:
     m_AssemblyName: 
     m_ClassName: 
-  m_ActivePlayerDataBuilderIndex: 2
+  m_ActivePlayerDataBuilderIndex: 3
   m_DataBuilders:
   - {fileID: 11400000, guid: e20659a83d3a23046868d855e1ac96bc, type: 2}
   - {fileID: 11400000, guid: 0aef5eae7b0bfbf4b948fd3e8512e7ca, type: 2}
   - {fileID: 11400000, guid: 6e149d1017e4def4b8b9264dfadcf12f, type: 2}
+  - {fileID: 11400000, guid: 750ab59ba69eff94586c5e5a5c262f6c, type: 2}
   m_ActiveProfileId: 4bd6394da1437f84db49112f268160bf
+  m_ContentDirectoryCatalogNameMigrated: 1
+  m_CatalogFormatMigrated: 1
+  m_CrcCachedBundleFlagMigrated: 1
