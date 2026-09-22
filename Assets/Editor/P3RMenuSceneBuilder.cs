@@ -252,6 +252,11 @@ namespace CloneSwarm.EditorTools
             item.id           = data.id;
             item.labelText    = data.label;
             item.interactable = data.enabled;
+            // แบบเสนอไว้สองทาง: แถบกอดคำ (A) หรือแถบกว้างคงที่ปล่อยคำล้น (B)
+            // เมนูหลักเอา A — `TALENT SHOP` ยาวเกิน barExtendLeft (320) จนยื่นออกนอกแถบตัวเอง
+            // และความยาวคำเปลี่ยนทุกครั้งที่สลับภาษา ค่าคงที่จึงจูนให้ถูกทุกภาษาไม่ได้
+            // จอ pause ยังเป็น B — แถบที่นั่นเป็นสแลบขนาดตายตัวที่มีเลขลำดับอยู่ข้างใน
+            item.barHugsLabel = true;
             item.label        = label;
             item.bar          = bar;
             item.group        = group;

@@ -147,6 +147,7 @@ Material:
     - _ReceiveShadows: 1
     - _Rotation: 497.3
     - _Scale: 0
+    - _ScreenSpaceReflectionsContributeTransparent: 1
     - _ScrollX: 0
     - _ScrollY: 0
     - _Smoothness: 0.5
@@ -163,6 +164,7 @@ Material:
     - _Surface: 1
     - _TexPower: 0.001
     - _WorkflowMode: 1
+    - _WritesColor: 1
     - _ZTest: 4
     - _ZWrite: 0
     - _ZWriteControl: 0
@@ -199,4 +201,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 10
+  version: 11

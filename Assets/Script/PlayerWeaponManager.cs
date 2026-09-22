@@ -15,7 +15,10 @@ public class PlayerWeaponManager : NetworkBehaviour
     [HideInInspector] public playermove         playerMove;
     [HideInInspector] public PlayerStatManager  statManager;
 
-    public const int MaxWeaponSlots = 6;
+    /// <summary>เพดานช่องอาวุธตามที่ออกแบบไว้ — 5 ช่อง
+    /// (passive weapon ของตัวละครไม่นับ · ability อยู่ที่ PlayerAbilityManager ไม่นับ)
+    /// ทุกที่ที่นับช่องต้องอ่านค่านี้ ห้าม hardcode — HUD กับแถบ build ก็อ่านจากตรงนี้</summary>
+    public const int MaxWeaponSlots = 5;
 
     /// <summary>ชื่อ scene ของ Menu/Lobby — ใช้ block weapon firing นอก gameplay</summary>
     public const string MenuSceneName = "MenuScene";

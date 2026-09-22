@@ -464,7 +464,7 @@ public class TelegraphZone : NetworkBehaviour
         if (isChasing && NetworkManager.Singleton != null
             && NetworkManager.Singleton.LocalClientId == chaseTargetClientId)
         {
-            GameHUD.Instance?.ShowAnnouncement("⚡ TARGETED — RUN AWAY!", Color.magenta);
+            GameHUD.Instance?.ShowAnnouncementKey("announce.telegraph.targeted", Color.magenta);
         }
 
         WarnIfMultipleColorCategories();
@@ -572,12 +572,26 @@ public class TelegraphZone : NetworkBehaviour
         return true;
     }
 
+    /// <summary>
+    /// บอก player ว่าต้องไปยืนวงสีไหน
+    ///
+    /// ═══ ทำไมชื่อสีต้องแปลอีกชั้น ═══
+    ///
+    /// `colorName` ที่วิ่งมากับ RPC เป็นคำอังกฤษล้วน ("RED") · ถ้ายัดลง `{0}` ตรงๆ
+    /// ผู้เล่นไทยจะได้ประโยคไทยที่มีคำว่า RED โผล่กลาง ซึ่งอ่านสะดุดกว่าไม่แปลทั้งประโยค
+    /// จึงเอาชื่อสีไปหา key ของมันเองก่อน แล้วค่อยส่งคำที่แปลแล้วเข้า format
+    ///
+    /// ยังส่งเป็น string ข้ามสายอยู่ (ไม่ใช่ slot index) เพราะ ColorMatchAoEAction เป็นคน
+    /// ตัดสินว่าสีไหนคือของใคร — เปลี่ยนสัญญาบนสายเป็นงานคนละก้อนกับการย้ายข้อความ
+    /// </summary>
     [ClientRpc]
     public void NotifyColorClientRpc(ulong targetClientId, string colorName, Color uiColor)
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.LocalClientId == targetClientId)
         {
-            GameHUD.Instance?.ShowAnnouncement($"Stand in the {colorName} circle!", uiColor);
+            string localizedColor = GameHUD.ResolveAnnouncement(
+                "announce.color." + (colorName ?? "").ToLowerInvariant());
+            GameHUD.Instance?.ShowAnnouncementKey("announce.telegraph.color_match", uiColor, localizedColor);
         }
     }
 
@@ -917,7 +931,7 @@ public class TelegraphZone : NetworkBehaviour
         if (NetworkManager.Singleton != null
             && NetworkManager.Singleton.LocalClientId == chaseTargetClientId)
         {
-            GameHUD.Instance?.ShowAnnouncement("⚠ LOCKED IN!", new Color(1f, 0.3f, 0.2f));
+            GameHUD.Instance?.ShowAnnouncementKey("announce.telegraph.locked_in", new Color(1f, 0.3f, 0.2f));
         }
     }
 

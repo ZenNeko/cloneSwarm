@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class RollContext
 {
     private readonly System.Random _rng;
     private readonly Dictionary<string, RollDefinition> _defs = new();
     private readonly Dictionary<string, int> _lastValues = new();
+
+    /// <summary>ชื่อที่บ่นไปแล้ว — บ่นครั้งเดียวต่อ fight ไม่ใช่ทุกครั้งที่ยิงท่า</summary>
+    private readonly HashSet<string> _warnedUnknown = new();
 
     public int Seed { get; }
 
@@ -34,6 +38,18 @@ public class RollContext
         if (string.IsNullOrEmpty(rollName)) return 0;
 
         _defs.TryGetValue(rollName, out var def);
+
+        // ชื่อที่ไม่มีนิยามยัง roll ได้ (Variant optionCount 2) ซึ่งเป็นค่าที่ valid
+        // ระบบจึงไม่มีทางรู้ว่าพิมพ์ผิด — ต้องบ่นเอง พร้อมบอกว่าไปเพิ่มที่ไหน
+        // ไม่งั้นท่าที่ควรหมุน/พลิก จะแค่หยุดทำงานโดยไม่มีอาการอื่น
+        if (def == null && _warnedUnknown.Add(rollName))
+        {
+            Debug.LogWarning(
+                $"[Roll] '{rollName}' ไม่มีใน BossEncounterConfig.rolls — " +
+                $"จะถูกมองเป็น Variant 2 ตัวเลือก และ roll เชิงพื้นที่ (SnapAngle/Mirror/Anchor) จะไม่ทำงาน\n" +
+                $"       แก้โดยเพิ่มแถวใน Roll Definitions ของ config หรือเลือกชื่อที่มีอยู่จากช่อง Roll ของท่านี้");
+        }
+
         int count = def != null ? Math.Max(1, def.optionCount) : 2;
         bool excludePrev = def != null && def.excludePrevious;
 

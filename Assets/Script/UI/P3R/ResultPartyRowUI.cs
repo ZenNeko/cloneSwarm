@@ -12,6 +12,8 @@ namespace CloneSwarm.UI.P3R
         public string displayName;
         public int    slotIndex;    // 0..3 · ใช้เขียน P1..P4 และเลือกสี
         public bool   isHost;
+        /// <summary>ภาพตัวละคร — null ได้ แถวจะซ่อนกล่องภาพให้เอง</summary>
+        public Sprite portrait;
     }
 
     /// <summary>
@@ -41,7 +43,8 @@ namespace CloneSwarm.UI.P3R
         [Tooltip("เส้นเน้นซ้าย 6px — ลายเซ็นของการ์ดทุกใบในระบบ")]
         public Image accentBar;
 
-        [Tooltip("กล่องพอร์เทรต 470×58 — ยังไม่มีภาพจริง (Char_*.portrait ยังขาด)")]
+        [Tooltip("กล่องพอร์เทรต 470×58 — เติมจาก CharacterData.portrait ตอน Bind · " +
+                 "ปิด enabled ไว้ตอนสร้าง เพราะ Image ที่ไม่มี sprite วาดสี่เหลี่ยมทึบ ไม่ได้วาดเปล่า")]
         public Image portrait;
 
         [Tooltip("ชื่อ — handoff: 28px หนา 800")]
@@ -57,10 +60,13 @@ namespace CloneSwarm.UI.P3R
         // ═══════════════════════════════════════════════════════════════════
         // Bind
         // ═══════════════════════════════════════════════════════════════════
-        public void Bind(PartyMemberInfo info) => Bind(info.displayName, info.slotIndex, info.isHost);
+        public void Bind(PartyMemberInfo info)
+            => Bind(info.displayName, info.slotIndex, info.isHost, info.portrait);
 
-        public void Bind(string displayName, int slotIndex, bool isHost)
+        public void Bind(string displayName, int slotIndex, bool isHost, Sprite portraitSprite = null)
         {
+            SetPortrait(portraitSprite);
+
             if (nameLabel != null)
                 nameLabel.text = string.IsNullOrEmpty(displayName) ? "ผู้เล่น" : displayName;
 
@@ -72,6 +78,26 @@ namespace CloneSwarm.UI.P3R
             }
 
             if (accentBar != null) accentBar.color = isHost ? hostAccent : otherAccent;
+        }
+
+        /// <summary>
+        /// ใส่ภาพตัวละครลงกล่องพอร์เทรต
+        ///
+        /// **ต้องสลับ `enabled` ด้วย ไม่ใช่แค่ตั้ง sprite** — `P3RBuilderKit.PortraitWithName`
+        /// สร้างช่องนี้มาแบบ `enabled = false` แล้วฝากให้ที่แสดงผลเปิดเองตอนมีภาพจริง
+        /// ซึ่ง `Bind` **ไม่เคยทำเลย** ภาพจึงไม่เคยขึ้นสักครั้ง
+        /// (ปิดไว้เพราะ `Image` ที่ไม่มี sprite วาดสี่เหลี่ยมทึบ ไม่ได้วาดเปล่า)
+        ///
+        /// **สีขาวล้วนเสมอ ห้ามย้อม** — สี Image คูณเข้ากับพิกเซล ย้อมแล้วงานศิลป์
+        /// ไม่ตรงกับที่วาดมา และคนวาดจะไล่หาไม่เจอว่าสีเพี้ยนมาจากไหน
+        /// </summary>
+        void SetPortrait(Sprite sprite)
+        {
+            if (portrait == null) return;
+            portrait.sprite        = sprite;
+            portrait.enabled       = sprite != null;
+            portrait.color         = Color.white;
+            portrait.preserveAspect = true;
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -97,14 +123,15 @@ namespace CloneSwarm.UI.P3R
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return result;
 
-            // clientId → ชื่อที่จะโชว์ (เดินลิสต์ที่ spawn ครั้งเดียว แทนที่จะค้นซ้ำทุก slot)
-            var names = new Dictionary<ulong, string>();
+            // clientId → ตัวละคร (เดินลิสต์ที่ spawn ครั้งเดียว แทนที่จะค้นซ้ำทุก slot)
+            // เก็บ CharacterData ทั้งก้อน ไม่ใช่แค่ชื่อ — ภาพพอร์เทรตก็มาจากใบเดียวกัน
+            var chars = new Dictionary<ulong, CharacterData>();
             if (nm.SpawnManager != null)
             {
                 foreach (var no in nm.SpawnManager.SpawnedObjectsList)
                 {
                     if (no == null || !no.IsPlayerObject) continue;
-                    names[no.OwnerClientId] = ResolveDisplayName(no);
+                    chars[no.OwnerClientId] = ResolveCharacter(no);
                 }
             }
 
@@ -116,11 +143,16 @@ namespace CloneSwarm.UI.P3R
                     ulong id = registry.Slots[slot];
                     if (id == ulong.MaxValue) continue;   // ช่องว่าง
 
+                    chars.TryGetValue(id, out var cd);
                     result.Add(new PartyMemberInfo
                     {
-                        displayName = names.TryGetValue(id, out var n) ? n : $"ผู้เล่น {slot + 1}",
+                        displayName = cd != null ? cd.DisplayName : $"ผู้เล่น {slot + 1}",
                         slotIndex   = slot,
                         isHost      = id == NetworkManager.ServerClientId,
+                        // portrait เป็นภาพแนวนอน ตรงกับกล่อง 470×58 · icon เป็นรูปหัว
+                        // ใช้ portrait ก่อน ไม่มีค่อยตกไป icon ดีกว่าปล่อยกล่องว่าง
+                        portrait    = cd == null ? null
+                                    : (cd.portrait != null ? cd.portrait : cd.icon),
                     });
                 }
                 return result;
@@ -128,31 +160,41 @@ namespace CloneSwarm.UI.P3R
 
             // registry ยังไม่ spawn (โซโล/ทดสอบ) — ยังดีกว่าโชว์จอเปล่า
             int fallbackSlot = 0;
-            foreach (var kv in names)
+            foreach (var kv in chars)
             {
+                var cd = kv.Value;
                 result.Add(new PartyMemberInfo
                 {
-                    displayName = kv.Value,
+                    displayName = cd != null ? cd.DisplayName : $"ผู้เล่น {fallbackSlot + 1}",
                     slotIndex   = fallbackSlot++,
                     isHost      = kv.Key == NetworkManager.ServerClientId,
+                    portrait    = cd == null ? null
+                                : (cd.portrait != null ? cd.portrait : cd.icon),
                 });
             }
             return result;
         }
 
-        static string ResolveDisplayName(NetworkObject playerObject)
+        /// <summary>
+        /// หาใบตัวละครของผู้เล่นคนหนึ่ง — คืนทั้งใบ ไม่ใช่แค่ชื่อ
+        ///
+        /// ชื่อกับภาพมาจากใบเดียวกัน คืนแยกกันสองรอบแปลว่าต้องเดินหาสองรอบ
+        ///
+        /// `PlayerVisual.CharacterIndex` เป็น NetworkVariable จึงเชื่อถือได้ทั้ง host และ client
+        /// ส่วน `PlayerWeaponManager.characterData` เป็นช่อง Inspector ที่มีค่าเฉพาะฝั่ง owner
+        /// จึงเป็นทางสำรอง ไม่ใช่ทางหลัก
+        /// </summary>
+        static CharacterData ResolveCharacter(NetworkObject playerObject)
         {
             var visual = playerObject.GetComponent<PlayerVisual>();
             if (visual != null)
             {
                 var cd = visual.GetCharacterData(visual.CharacterIndex);
-                if (cd != null) return cd.DisplayName;   // DisplayName ไม่ใช่ characterName ที่เป็น ID
+                if (cd != null) return cd;
             }
 
             var pwm = playerObject.GetComponent<PlayerWeaponManager>();
-            if (pwm != null && pwm.characterData != null) return pwm.characterData.DisplayName;
-
-            return null;
+            return pwm != null ? pwm.characterData : null;
         }
     }
 }

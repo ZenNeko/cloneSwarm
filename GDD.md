@@ -65,6 +65,9 @@
 
 ## 3. Weapon System
 
+ถืออาวุธได้พร้อมกัน **5 ช่อง** (`PlayerWeaponManager.MaxWeaponSlots`) — passive weapon ของตัวละครและ ability (Q/E/R) ไม่นับ
+Fusion กิน Super สองช่องคืนมาหนึ่ง จึงคืนช่องว่างให้หนึ่งช่อง
+
 ### 3.1 Weapon Tiers
 
 | Tier | Max Level | ได้จาก | หมายเหตุ |
@@ -199,7 +202,7 @@ Normal weapon ต้องถึง Lv5 + เงื่อนไขเพิ่�
 
 ## 5. Stat System
 
-### 5.1 Player Stats (max 6 slots, Lv1-5 each)
+### 5.1 Player Stats (max 5 slots, Lv1-5 each)
 
 #### Combat Stats
 | Stat | Per Level | Effect |
@@ -418,7 +421,7 @@ Level Up → pause (timeScale=0) → ทุก player เห็น 3 Upgrade Car
 ### 11.1 In-Game HUD
 - **Game Clock** — นับจาก 0:00 → 15:00
 - **EXP Bar** — shared EXP + level
-- **Weapon Slots** — แสดง weapon ที่ equipped + cooldown
+- **Weapon Slots** — แสดง weapon ที่ equipped + cooldown (5 ช่อง)
 - **Ability HUD** — Q/E ability + cooldown/active timer
 - **Passive Bar** — Charge bar (Riven) / Kill counter (Gunner) / Hit counter (Hunter)
 - **HP Bar** — player health

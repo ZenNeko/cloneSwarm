@@ -1,16 +1,24 @@
 using UnityEngine;
-
-/// <summary>ระดับความแรงของ Augment — คุมสีการ์ดและน้ำหนักการสุ่ม</summary>
-public enum AugmentRarity
-{
-    Silver,      // พื้นฐาน มีทุกรอบ
-    Gold,        // แรงขึ้น เปลี่ยนสไตล์การเล่นเล็กน้อย
-    Prismatic,   // build-defining
-}
+using UnityEngine.Localization;
 
 /// <summary>
-/// Augment — พลังพิเศษที่เลือกได้ตอนถึงเลเวลที่กำหนด (สไตล์ LoL Swarm)
-/// ต่างจาก Stat card ตรงที่ **ไม่กิน stat slot** และผลแรงกว่ามาก
+/// Augment — พลังพิเศษที่เลือกได้เป็นการ์ดใบหนึ่ง แต่ได้จากทางเฉพาะ
+/// (เก็บ orb ที่ตั้ง reward = Augment เท่านั้น — เลเวลอัปไม่แจก augment)
+///
+/// ═══ ไม่มีระดับ ไม่มีเลเวล — มี "ช่วงเวลาที่ออกได้" แทน ═══
+///
+/// แบบ TFT: augment ไม่ได้แบ่งเป็น Silver/Gold/Prismatic ในเกมนี้ และถือได้ใบละครั้งเดียว
+/// สิ่งที่กำหนดว่าใบไหนจะโผล่คือ **นาทีที่มันออกได้** — Expedition กับ Silver Spoon
+/// มีความหมายเฉพาะตอนต้นเกม ส่วนของแรงๆ อย่าง Call to Chaos ต้องรอให้เกมเดินไปก่อน
+///
+/// ระดับความแรงจึงถูกคุมด้วย **ตำแหน่งในเวลา** ไม่ใช่ป้ายที่แปะไว้:
+/// ใบที่แรงมากตั้งให้ออกได้เฉพาะช่วงท้าย ไม่ต้องมีคำว่า Prismatic มาบอก
+///
+/// ═══ ทำไมถึงดีกว่าป้ายระดับ ═══
+///
+/// ป้ายระดับบอก **ราคา** แต่ไม่บอก **จังหวะ** · augment ที่ให้ของตอนต้นเกมแรงมาก
+/// แต่ได้ตอนนาทีที่ 14 คือใบเปล่า ซึ่งป้าย "Gold" ไม่ได้กันเรื่องนั้นเลย
+/// ช่วงเวลากันได้ตรงๆ และเป็นค่าที่ designer จูนได้โดยไม่ต้องแตะโค้ด
 ///
 /// นี่คือ base class — ใช้ subclass ที่มีอยู่:
 ///   • StatAugment        → โบนัสสเตตัสก้อนใหญ่
@@ -24,38 +32,69 @@ public abstract class AugmentData : ScriptableObject
     [Header("Identity")]
     [Tooltip("คีย์ถาวร — ใช้อ้างอิงข้ามเครื่อง อย่าเปลี่ยนหลังปล่อยเกม")]
     public string augmentId = "aug_new";
+    [Tooltip("ชื่อบนสาย/ใน log — ไม่ใช่ชื่อที่โชว์ · ชื่อที่โชว์อยู่ที่ displayName")]
     public string augmentName = "New Augment";
-    [TextArea(2, 4)]
-    public string description;
+
+    // ── ข้อความที่ผู้เล่นเห็น — อยู่ใน String Table 'Content' ────────────
+    //
+    // augmentName ยังอยู่เพราะมันทำหน้าที่เป็นชื่อบนสายกับใน log ซึ่งต้องคงที่
+    // ข้ามภาษา · displayName ว่างได้ แล้วจะตกกลับไปใช้ augmentName เอง
+    // (ท่าเดียวกับ WeaponData.weaponName / displayName)
+    //
+    // description **ไม่มีช่อง string เหลือไว้** — มันเป็นข้อความล้วน ไม่มีหน้าที่
+    // อื่นให้ทำ · เก็บสองที่เมื่อไหร่ก็มีวันที่สองที่ไม่ตรงกัน
+    public LocalizedString displayName;
+    public LocalizedString description;
+
+    /// <summary>ชื่อที่โชว์ตาม locale ปัจจุบัน — ว่างเมื่อยังไม่ผูก entry จึงตกไปใช้ augmentName</summary>
+    public string DisplayName => displayName.IsEmpty ? augmentName : displayName.GetLocalizedString();
+    public string Description => description.IsEmpty ? "" : description.GetLocalizedString();
     public Sprite icon;
 
     [Header("Pool")]
-    public AugmentRarity rarity = AugmentRarity.Silver;
-    [Tooltip("น้ำหนักการสุ่ม — Silver≈100  Gold≈40  Prismatic≈12")]
+    [Tooltip("น้ำหนักการสุ่มภายในใบที่ออกได้ในช่วงเวลานั้น\n\n" +
+             "**ไม่ใช่ระดับความแรง** — ความแรงคุมด้วยช่วงเวลาข้างล่าง\n" +
+             "ตัวนี้บอกแค่ว่า 'เจอบ่อยแค่ไหน' เทียบกับใบอื่นที่ออกได้พร้อมกัน")]
     public float weight = 100f;
     [Tooltip("ว่าง = ทุกตัวละครสุ่มได้ / ใส่ = เฉพาะตัวละครนี้")]
     public CharacterData exclusiveCharacter;
-    [Tooltip("จำนวนครั้งสูงสุดที่ผู้เล่นคนเดียวถือ augment นี้ได้ใน 1 run")]
-    [Min(1)]
-    public int maxStacks = 1;
+
+    [Header("Availability — นาทีของเกม")]
+    [Tooltip("นาทีที่เริ่มออกได้ · 0 = ตั้งแต่เริ่มเกม\n\n" +
+             "รันหนึ่งรอบยาว 15 นาที (บอสใหญ่ที่ GameTimeline.mainBossTimeMin)\n" +
+             "0–5 = ต้นเกม · 5–10 = กลางเกม · 10–15 = ท้ายเกม")]
+    [Min(0f)]
+    public float availableFromMinutes = 0f;
+
+    [Tooltip("นาทีสุดท้ายที่ยังออกได้ · **0 = ไม่มีกำหนดปิด** (ออกได้จนจบเกม)\n\n" +
+             "ใช้กับใบที่มีความหมายเฉพาะตอนต้น — ได้ตอนท้ายแล้วเป็นใบเปล่า\n" +
+             "เช่นใบที่ให้ผลสะสมตามเวลาที่เหลือ")]
+    [Min(0f)]
+    public float availableUntilMinutes = 0f;
+
+    /// <summary>
+    /// ใบนี้ออกได้ที่นาทีนี้ไหม
+    /// </summary>
+    /// <param name="gameSeconds">
+    /// เวลาของเกมเป็น **วินาที** — ค่าที่ <c>GameTimeline.GetGameTime()</c> คืนมา
+    /// รับเป็นวินาทีเพราะผู้เรียกทุกคนมีค่านั้นอยู่แล้ว การให้แต่ละที่หารเองคือ
+    /// การเปิดช่องให้ลืมหารสักที่หนึ่ง แล้วใบนั้นจะออกเร็วกว่าที่ตั้งไว้ 60 เท่าโดยเงียบ
+    /// </param>
+    public bool IsAvailableAt(float gameSeconds)
+    {
+        float minutes = gameSeconds / 60f;
+
+        if (minutes < availableFromMinutes) return false;
+        if (availableUntilMinutes > 0f && minutes > availableUntilMinutes) return false;
+        return true;
+    }
+
+    /// <summary>ข้อความช่วงเวลาสำหรับเครื่องมือฝั่ง Editor — ไม่ได้โชว์ให้ผู้เล่นเห็น</summary>
+    public string WindowLabel =>
+        availableUntilMinutes > 0f
+            ? $"{availableFromMinutes:0.#}–{availableUntilMinutes:0.#} นาที"
+            : $"{availableFromMinutes:0.#} นาทีขึ้นไป";
 
     /// <summary>ทำงานตอนผู้เล่นเลือกการ์ดใบนี้ — รันบน owner client (และ server ผ่าน mirror RPC)</summary>
     public abstract void OnAcquire(PlayerAugmentManager ctx);
-
-    /// <summary>ข้อความ rarity สำหรับโชว์บนการ์ด</summary>
-    public string RarityLabel => rarity switch
-    {
-        AugmentRarity.Silver    => "SILVER",
-        AugmentRarity.Gold      => "GOLD ★",
-        AugmentRarity.Prismatic => "PRISMATIC ★★★",
-        _                       => "",
-    };
-
-    public Color RarityColor => rarity switch
-    {
-        AugmentRarity.Silver    => new Color(0.62f, 0.66f, 0.72f),
-        AugmentRarity.Gold      => new Color(0.90f, 0.72f, 0.20f),
-        AugmentRarity.Prismatic => new Color(0.70f, 0.35f, 0.95f),
-        _                       => Color.white,
-    };
 }

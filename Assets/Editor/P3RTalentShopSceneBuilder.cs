@@ -327,17 +327,26 @@ namespace CloneSwarm.EditorTools
             TopLeft(level.rectTransform, 32f, 262f, 200f, 32f);
             ui.detailLevelText = level;
 
+            // ขีดบอกเลเวล — **ห้ามฝังว่าเต็มกี่ขีด** · `TalentShopUI.ShowDetail` ย้อมให้
+            // ตามเลเวลจริงทุกครั้งที่เลือกช่องใหม่
+            //
+            // ของเดิมเขียน `i < 3 ? Teal : ...` ไว้ตรงนี้ แล้วไม่มีใครขับมันต่อ —
+            // แผงขวาจึงขึ้นเต็มสามขีดตลอดกาล ขัดกับป้าย "Lv 5 / 5" ที่อยู่ข้างๆ กันเอง
+            // และขัดกับขีดบนช่องฝั่งซ้ายของ talent ใบเดียวกัน
+            //
+            // ใส่เผื่อไว้ 6 ขีดเท่าฝั่ง tile — ที่เกิน maxLevel ถูกซ่อนตอนรัน
             var pips = NewRect("Pips", prt);
-            TopLeft(pips, 220f, 272f, 260f, 16f);
-            for (int i = 0; i < 5; i++)
+            TopLeft(pips, 220f, 272f, 300f, 16f);
+            for (int i = 0; i < 6; i++)
             {
-                var pip = NewImage($"Pip{i}", pips, i < 3 ? Teal : Lift(PanelBg, 0.10f));
+                var pip = NewImage($"Pip{i}", pips, Lift(PanelBg, 0.10f));
                 var pr = pip.rectTransform;
                 pr.anchorMin = pr.anchorMax = new Vector2(0f, 0.5f);
                 pr.pivot     = new Vector2(0f, 0.5f);
                 pr.sizeDelta = new Vector2(34f, 6f);
                 pr.anchoredPosition = new Vector2(i * 42f, 0f);
             }
+            ui.detailPips = pips;
 
             // ── NOW › NEXT ──────────────────────────────────────────────────
             //

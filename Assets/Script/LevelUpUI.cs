@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CloneSwarm.UI.P3R;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -22,22 +23,58 @@ public class LevelUpUI : MonoBehaviour
     [Tooltip("Root GameObject ของ Panel ทั้งหมด — ตั้งค่า Inactive ไว้เริ่มต้น")]
     public GameObject panelRoot;
 
+    [Header("Title")]
+    [Tooltip("หัวเรื่องปกติ — ก้อน 'LEVEL UP!' ที่จัดไว้ในซีน")]
+    public GameObject titleDefault;
+    [Tooltip("หัวเรื่องตอนแจก augment — ก้อน 'AUGMENT' แยกอีกใบ\n\n" +
+             "**สลับก้อน ไม่ใช่เขียนทับข้อความ** — หัวเรื่องเป็นตัวซ้อนหลายชั้นที่จัดทรง\n" +
+             "มาในซีน เปลี่ยนคำอย่างเดียวแล้วทรงพัง (ความยาวคำไม่เท่ากัน ชั้นเงาเหลื่อมผิด)\n" +
+             "แยกเป็นสองก้อนแล้วแต่ละก้อนจัดทรงของตัวเองได้อิสระ\n\n" +
+             "ปล่อยว่าง = ใช้หัวเรื่องเดิมทุกกรณี (พฤติกรรมเดิม ไม่พัง)")]
+    public GameObject titleAugment;
+
     [Header("Cards Section")]
-    [Tooltip("GameObject ที่ครอบ levelLabel + cardSlots ทั้งหมด — ซ่อนหลังเลือกแล้ว แต่ panelRoot ยังเปิดอยู่")]
+    [Tooltip("GameObject ที่ครอบหัวเรื่อง + cardSlots ทั้งหมด — ซ่อนหลังเลือกแล้ว แต่ panelRoot ยังเปิดอยู่")]
     public GameObject cardsSection;
     [Tooltip("Parent ของ card ทั้งหมด (Panel) — ถ้าไม่ assign จะหาจาก cardsSection อัตโนมัติ")]
     public GameObject cardsContainer;
-    public TextMeshProUGUI levelLabel;      // "LEVEL UP!  →  Level 5"
-    [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่")]
+    [Tooltip("ลาก UpgradeCardUI ทั้ง 3 ใบมาใส่ที่นี่ — ใช้เฉพาะตอนไม่มี cardTemplate")]
     public List<UpgradeCardUI> cardSlots = new();
 
-    [Tooltip("รูปแบบหัวเรื่องเมื่อรู้เลเวลใหม่ · {0} = เลเวล · ใส่ \\n ขึ้นบรรทัดได้\n" +
-             "ซีน P3R ตั้งเป็น 'LEVEL\\nUP!' สองบรรทัดตามแบบ (เลเวลไม่อยู่ในหัวเรื่องแล้ว)")]
-    public string titleFormat        = "LEVEL UP!   Level {0}";
-    [Tooltip("รูปแบบหัวเรื่องเมื่อไม่รู้เลเวล (Orb phase)")]
-    public string titleFormatNoLevel = "LEVEL UP!";
+    [Tooltip("**prefab** ของการ์ด — ต่อช่องนี้แล้วจอจะสร้างการ์ดตามจำนวนที่ได้รับจริง\n\n" +
+             "ต้องชี้ไฟล์ prefab ไม่ใช่ของในซีน · ของในซีนเป็น fileID ที่เปลี่ยนทุกครั้ง\n" +
+             "ที่ย้ายจอ แล้วแม่แบบจะหายไปพร้อม panel เก่า\n\n" +
+             "ปล่อยว่าง = พฤติกรรมเดิม (ใช้การ์ดที่มีอยู่แล้วใต้ cardsContainer)")]
+    public UpgradeCardUI cardTemplate;
+
+    [Tooltip("ระยะห่างระหว่างการ์ด (px) — ใช้ตอนสร้างจาก cardTemplate")]
+    public float cardGap = 30f;
+
+    // ── หัวเรื่อง "LEVEL UP!" ไม่ได้อยู่ที่นี่แล้ว ────────────────────────
+    //
+    // เคยมี `levelLabel` + `titleFormat` + `titleFormatNoLevel` ให้โค้ดเขียนหัวเรื่อง
+    // ตอน `Show()` · ถอดออกแล้วเพราะ **หัวเรื่องเป็นงานจัดวาง ไม่ใช่ข้อมูล**
+    //
+    // มันเป็นข้อความคงที่ที่ถูกจัดทรงมาในซีน (ตัวซ้อนหลายชั้น · ขนาด · การตัดบรรทัด)
+    // การเขียนทับตอนรันแปลว่าสิ่งที่เห็นใน Editor ไม่ใช่สิ่งที่เห็นในเกม — แก้ในซีน
+    // แล้วหายทุกครั้งที่กด Play โดยไม่มีอะไรบอก
+    //
+    // เลเวลที่เพิ่งได้เป็น **ข้อมูล** จึงยังเขียนอยู่ — แต่ลง `levelValueLabel` ซึ่ง
+    // เป็นป้ายของมันเอง ไม่ไปยุ่งกับทรงของหัวเรื่อง
+
+    [Tooltip("ป้ายเลเวลใหม่แยกจากหัวเรื่อง — ปล่อยว่างได้ (ไม่ต่อ = ไม่บอกเลเวล)\n\n" +
+             "หัวเรื่องเป็นข้อความคงที่ที่จัดทรงไว้ในซีน โค้ดไม่แตะ · เลเวลที่เพิ่งได้\n" +
+             "เป็นข้อมูลที่เปลี่ยนทุกครั้ง จึงต้องมีป้ายของตัวเองแยกออกมา")]
+    public TextMeshProUGUI levelValueLabel;
+    [Tooltip("รูปแบบของป้ายเลเวลแยก · {0} = เลเวลใหม่")]
+    public string levelValueFormat = "Lv {0}";
 
     [Header("Timer")]
+    [Tooltip("**ทั้งก้อนของนาฬิกา** (ตัวเลข + แถบ + คำว่า SECONDS) — ซ่อนทั้งก้อนตอนไม่มีการนับ\n\n" +
+             "นาฬิกาไม่ได้เดินทุกครั้งที่จอเปิด · เซิร์ฟเวอร์เริ่มนับต่อเมื่อ **มีคนเลือกไปแล้ว\n" +
+             "หนึ่งคน และมีผู้เล่นมากกว่าหนึ่ง** — เล่นคนเดียวจึงไม่มีนาฬิกาเลย\n" +
+             "ไม่ต่อช่องนี้ = ถอยไปซ่อนเฉพาะตัวเลขกับแถบ คำว่า SECONDS จะค้างอยู่")]
+    public GameObject timerGroup;
     [Tooltip("แสดง countdown  เช่น '28'  — ซ่อนได้ถ้าไม่ต้องการ")]
     public TextMeshProUGUI timerLabel;
     [Tooltip("แถบเติมเวลา 180×6 ใต้ตัวเลข — ต้องเป็น Image type = Filled, Horizontal, Origin Left")]
@@ -126,16 +163,34 @@ public class LevelUpUI : MonoBehaviour
         if (cardsContainer) cardsContainer.SetActive(true);
         if (waitingStrip)   waitingStrip.SetActive(false);
 
-        // 2. Header
-        if (levelLabel)
-            levelLabel.text = level > 0
-                ? string.Format(titleFormat, level)
-                : titleFormatNoLevel;
+        // 2. Header — **สลับก้อนหัวเรื่อง ไม่แตะข้อความ** ข้อความเป็นของซีน
+        //
+        // อ่านชนิดจาก **การ์ดที่กำลังจะโชว์จริง** ไม่ใช่จากพารามิเตอร์ที่ผู้เรียกส่งมา
+        // หัวเรื่องจึงไม่มีทางไม่ตรงกับของที่อยู่บนจอ · ถ้ารับเป็น flag แยก
+        // วันหนึ่งจะมีเส้นทางที่ลืมส่ง แล้วได้หัวเรื่อง "LEVEL UP!" คู่กับการ์ด augment
+        //
+        // ไม่ต่อ titleAugment = ไม่แตะอะไรเลย หัวเรื่องเดิมอยู่ครบ (ไม่ใช่จอไม่มีหัวเรื่อง)
+        if (titleAugment != null)
+        {
+            bool allAugment = cards.Count > 0
+                           && cards.TrueForAll(c => c != null && c.type == UpgradeCardType.Augment);
 
-        // 3. หา card slots จาก cardsContainer โดยตรง
-        UpgradeCardUI[] slots = cardsContainer
-            ? cardsContainer.GetComponentsInChildren<UpgradeCardUI>(true)
-            : cardSlots.ToArray();
+            titleAugment.SetActive(allAugment);
+            if (titleDefault != null) titleDefault.SetActive(!allAugment);
+        }
+
+        //
+        // เลเวลใหม่แยกป้าย — ซ่อนตอน Orb phase ที่ไม่มีเลเวลให้บอก
+        // (ดีกว่าโชว์ "Lv 0" ซึ่งอ่านแล้วเข้าใจผิดว่าเลเวลตก)
+        if (levelValueLabel)
+        {
+            bool hasLevel = level > 0;
+            levelValueLabel.gameObject.SetActive(hasLevel);
+            if (hasLevel) levelValueLabel.text = string.Format(levelValueFormat, level);
+        }
+
+        // 3. เตรียมช่องการ์ดให้พอดีกับจำนวนที่ได้รับ
+        UpgradeCardUI[] slots = EnsureCardSlots(cards.Count);
 
         visibleSlots.Clear();
         for (int i = 0; i < slots.Length; i++)
@@ -155,6 +210,16 @@ public class LevelUpUI : MonoBehaviour
         cardsInteractable = visibleSlots.Count > 0;
 
         // 4. Reset timer / waiting
+        //
+        // **ซ่อนนาฬิกาทั้งก้อนจนกว่าจะมี tick แรกจริง** — ไม่ใช่แค่ล้างตัวเลขเป็น ""
+        //
+        // เดิมล้างแต่ตัวเลข เหลือแถบทองเต็มกับคำว่า SECONDS ค้างอยู่ ซึ่ง **โกหก**:
+        // แถบเต็มอ่านว่า "เวลายังเหลือทั้งหมด" ทั้งที่ความจริงคือไม่มีการนับเลย
+        // และนั่นคือกรณีปกติ ไม่ใช่กรณีขอบ — เซิร์ฟเวอร์เริ่มนับต่อเมื่อมีคนเลือกไปแล้ว
+        // หนึ่งคน **และ** มีผู้เล่นมากกว่าหนึ่ง เล่นคนเดียวจึงเห็นแถบเต็มค้างตลอดทุกครั้ง
+        //
+        // นาฬิกาโผล่เองใน UpdateTimer ตอน tick แรก — จังหวะที่มันเริ่มมีความหมายพอดี
+        SetTimerVisible(false);
         ResetTimerTotal();
         if (timerLabel)  { timerLabel.color = timerNormalColor; timerLabel.text = ""; }
         if (timerFillBar) { timerFillBar.color = timerFillColor; timerFillBar.fillAmount = 1f; }
@@ -172,6 +237,69 @@ public class LevelUpUI : MonoBehaviour
         //    ล้มเหลวเงียบๆ ได้ ถ้ายังไม่มี player ในซีน แถบจะคงค่าเดิมไว้
         if (buildStrip) buildStrip.RefreshFromLocalPlayer();
     }
+
+    /// <summary>
+    /// คืนช่องการ์ดให้พอดีกับจำนวนที่ได้รับ
+    ///
+    /// ═══ ทำไมต้องสร้างจาก prefab ไม่ใช่ใช้ลูกที่มีอยู่ ═══
+    ///
+    /// ของเดิมวนตามลูกที่ builder สร้างไว้ **สามใบตายตัว** · `UpgradeManager.cardsPerLevel`
+    /// เป็น 3 พอดีเลยไม่มีใครเห็นปัญหา แต่วันที่ใครตั้งเป็น 4–5 การ์ดส่วนเกินจะถูกทิ้ง
+    /// เงียบๆ โดยไม่มี error — จอเดิมก่อน P3R มีห้าช่องและสร้างจาก prefab จริง
+    ///
+    /// ใช้ซ้ำของเดิมแทนการสร้างใหม่ทุกรอบ — การ์ดจำ y ตั้งต้นไว้สำหรับการยกใบแนะนำ
+    /// และการทิ้ง/สร้างใหม่ทุกเลเวลคือขยะที่เก็บฟรีๆ กลางเกม
+    ///
+    /// `cardTemplate` ว่าง = ถอยไปใช้พฤติกรรมเดิม ซีนที่ยังไม่ได้ต่อจึงไม่พังทันที
+    /// </summary>
+    private UpgradeCardUI[] EnsureCardSlots(int count)
+    {
+        if (cardTemplate == null || cardsContainer == null)
+            return cardsContainer
+                ? cardsContainer.GetComponentsInChildren<UpgradeCardUI>(true)
+                : cardSlots.ToArray();
+
+        var parent = (RectTransform)cardsContainer.transform;
+
+        // ปิดการ์ดที่ไม่ได้เกิดจากแม่แบบ (ตัวอย่างที่ builder วางไว้ให้ดูภาพต้นแบบ)
+        // ปล่อยไว้จะได้การ์ดสองชุดซ้อนกัน ซึ่งเป็นอาการที่ไล่ต้นเหตุยาก
+        if (!samplesCleared)
+        {
+            samplesCleared = true;
+            foreach (var stray in parent.GetComponentsInChildren<UpgradeCardUI>(true))
+                if (!spawned.Contains(stray)) stray.gameObject.SetActive(false);
+        }
+
+        var tmpl = (RectTransform)cardTemplate.transform;
+        float w = tmpl.sizeDelta.x, h = tmpl.sizeDelta.y;
+
+        while (spawned.Count < count)
+        {
+            var c = Instantiate(cardTemplate, parent);
+            c.name = $"Card_{spawned.Count}";
+            spawned.Add(c);
+        }
+
+        parent.sizeDelta = new Vector2(count * w + Mathf.Max(0, count - 1) * cardGap, h);
+
+        for (int i = 0; i < spawned.Count; i++)
+        {
+            bool used = i < count;
+            spawned[i].gameObject.SetActive(used);
+            if (!used) continue;
+
+            var rt = (RectTransform)spawned[i].transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot     = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(w, h);
+            rt.anchoredPosition = new Vector2(i * (w + cardGap), 0f);
+        }
+
+        return spawned.Take(count).ToArray();
+    }
+
+    private readonly List<UpgradeCardUI> spawned = new();
+    private bool samplesCleared;
 
     /// <summary>
     /// เรียกหลัง player เลือก card แล้ว —
@@ -267,8 +395,27 @@ public class LevelUpUI : MonoBehaviour
         timerTotal = configured > 0f ? configured : 0f;
     }
 
+    /// <summary>
+    /// ซ่อน/โชว์นาฬิกาทั้งก้อน
+    ///
+    /// ไม่ต่อ <c>timerGroup</c> ก็ยังดีกว่าเดิม — ซ่อนตัวเลขกับแถบให้เท่าที่รู้จัก
+    /// แต่คำว่า SECONDS ที่เป็นลูกของก้อนเดียวกันจะค้างอยู่ เพราะโค้ดไม่รู้จักมัน
+    /// **ไม่เดาจาก parent ของตัวเลข** — วันที่มีใครย้ายตัวเลขไปอยู่ใต้ของอื่น
+    /// มันจะซ่อนของผิดชิ้นโดยไม่มีใครรู้ · ต่อช่องให้ชัดถูกกว่าเดาให้ฉลาด
+    /// </summary>
+    void SetTimerVisible(bool on)
+    {
+        if (timerGroup != null) { timerGroup.SetActive(on); return; }
+
+        if (timerLabel   != null) timerLabel.gameObject.SetActive(on);
+        if (timerFillBar != null) timerFillBar.gameObject.SetActive(on);
+    }
+
     void UpdateTimer(float remaining)
     {
+        // tick แรกคือสัญญาณเดียวที่บอกว่า "นาฬิกาเดินจริง" — ไม่มีธงอื่นให้ดู
+        SetTimerVisible(true);
+
         if (timerTotal <= 0f) timerTotal = Mathf.Max(remaining, 0.0001f);
 
         if (timerLabel != null)

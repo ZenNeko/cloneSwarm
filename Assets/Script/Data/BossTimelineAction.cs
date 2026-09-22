@@ -39,7 +39,12 @@ public class BossTimelineAction : BossAction
     [Tooltip("เวลาหางเพิ่มท้าย timeline (วินาที) — เผื่อให้ท่าสุดท้าย resolve จบก่อนวนรอบใหม่")]
     [Min(0f)] public float extraTailTime = 0f;
 
-    /// <summary>ความยาว timeline = จุดจบของคลิปที่จบช้าสุด + extraTailTime</summary>
+    /// <summary>
+    /// ความยาว timeline = จุดจบของคลิปที่จบช้าสุด + extraTailTime
+    ///
+    /// **ใช้วาดไม้บรรทัดใน Boss Designer เท่านั้น** — ของเดิมเอาค่านี้ไป WaitForSeconds
+    /// เป็นจังหวะของเฟสจริงๆ ซึ่งแปลว่าความเร็วบอสขึ้นกับค่าประมาณที่ตั้งใจให้แค่พอเห็นภาพ
+    /// </summary>
     public float GetTimelineDuration()
     {
         if (s_editorDurationDepth > 8) return 0f;
@@ -63,6 +68,14 @@ public class BossTimelineAction : BossAction
 
     public override float GetEditorDuration() => actionDelay + GetTimelineDuration();
 
+    /// <summary>
+    /// ตัวนับคลิปที่ยังไม่จบ ของ **การเรียกครั้งนี้ครั้งเดียว**
+    ///
+    /// BossAction เป็น ScriptableObject ที่ใช้ร่วมกันทั้งเกม — บอสสองตัวรัน timeline เดียวกัน
+    /// พร้อมกันได้ ถ้าเก็บตัวนับเป็นฟิลด์ของ asset ตัวเลขจะปนกันจนไม่มีใครรอจบเลย
+    /// </summary>
+    private class ClipTally { public int Running; }
+
     public override IEnumerator ExecuteCoroutine(NetworkBehaviour runner, GameObject telegraphPrefab)
     {
         if (actionDelay > 0f) yield return new WaitForSeconds(actionDelay);
@@ -72,21 +85,31 @@ public class BossTimelineAction : BossAction
         // roll ครั้งเดียวต่อ rollName เพื่อให้ทุกคลิปในชุดเดียวกันได้ค่าตรงกัน
         RollForSubActions(runner, EnumerateClipActions());
 
-        float duration = GetTimelineDuration();
+        int gen = RunGenerationOf(runner);
+        var tally = new ClipTally();
+
         foreach (var track in tracks)
         {
             if (track?.clips == null) continue;
             foreach (var clip in track.clips)
             {
                 if (clip?.action == null || clip.action == this) continue;
-                runner.StartCoroutine(RunClipDelayed(runner, telegraphPrefab, clip.action, clip.startTime));
+                tally.Running++;
+                runner.StartCoroutine(RunClipDelayed(runner, telegraphPrefab, clip.action, clip.startTime, gen, tally));
             }
         }
 
-        if (waitForTimelineEnd && duration > 0f)
+        if (!waitForTimelineEnd) yield break;
+
+        // รอ "คลิปจบจริง" ไม่ใช่รอนาฬิกาตามค่าประมาณ — ท่าที่ยาวกว่าที่วาดไว้จะไม่ถูกตัดกลางคัน
+        // และท่าที่สั้นกว่าจะไม่ทิ้งช่องว่างเปล่าไว้ท้ายเฟส
+        while (tally.Running > 0)
         {
-            yield return new WaitForSeconds(duration);
+            if (!RunStillValid(runner, gen)) yield break;   // เปลี่ยนเฟส/ตาย — เลิกรอ
+            yield return null;
         }
+
+        if (extraTailTime > 0f) yield return new WaitForSeconds(extraTailTime);
     }
 
     private IEnumerable<BossAction> EnumerateClipActions()
@@ -100,13 +123,22 @@ public class BossTimelineAction : BossAction
         }
     }
 
-    private IEnumerator RunClipDelayed(NetworkBehaviour runner, GameObject telegraphPrefab, BossAction action, float delay)
+    private IEnumerator RunClipDelayed(NetworkBehaviour runner, GameObject telegraphPrefab,
+                                       BossAction action, float delay, int gen, ClipTally tally)
     {
-        if (delay > 0f) yield return new WaitForSeconds(delay);
-
-        if (runner != null && runner.NetworkObject.IsSpawned)
+        // finally ต้องลดตัวนับทุกทาง ไม่งั้นคลิปที่ยกเลิกกลางคันจะทำให้ timeline รอค้างตลอดไป
+        try
         {
+            if (delay > 0f) yield return new WaitForSeconds(delay);
+
+            // เช็คหลังหน่วงเสร็จ — คลิปที่ยังไม่ถึงคิวตอนเปลี่ยนเฟส ต้องไม่ยิงเข้าไปในเฟสใหม่
+            if (!RunStillValid(runner, gen)) yield break;
+
             yield return runner.StartCoroutine(action.ExecuteCoroutine(runner, telegraphPrefab));
+        }
+        finally
+        {
+            tally.Running--;
         }
     }
 }

@@ -14,7 +14,7 @@ namespace CloneSwarm.UI.P3R
     ///
     /// **ที่มาของข้อมูล — สองทาง**
     /// 1. <see cref="RefreshFromLocalPlayer"/> ดึงเองจาก player ที่เป็น owner ในซีน
-    ///    (<c>PlayerWeaponManager.GetEquippedWeapons()</c> + <c>PlayerAugmentManager.GetAcquired()</c>)
+    ///    (<c>PlayerWeaponManager.GetEquippedWeapons()</c> + <c>PlayerStatManager.GetEquippedStats()</c>)
     ///    ทั้งคู่เป็น public API ที่มีอยู่แล้ว จึงไม่ต้องแก้ฝั่ง gameplay เลย
     /// 2. <see cref="SetEntries"/> ป้อนข้อมูลเข้ามาตรงๆ — ไว้ใช้ในซีนต้นแบบ/เทสต์ที่ไม่มี player จริง
     ///
@@ -58,9 +58,10 @@ namespace CloneSwarm.UI.P3R
 
         [Header("── Layout ─────────────────────────────")]
         [Tooltip("จำนวนช่องที่โชว์เสมอ — ช่องเกินของที่มีจะเป็นกรอบเส้นประ\n" +
-                 "6 = PlayerWeaponManager.MaxWeaponSlots")]
-        public int weaponSlotCount  = 6;
-        public int passiveSlotCount = 6;
+                 "ต้องเท่า MaxWeaponSlots / MaxStatSlots — สโมกเทสต์เช็คให้\n" +
+                 "ตั้งไม่ตรง = ช่องที่โชว์ไม่ตรงกับจำนวนที่ถือได้จริง")]
+        public int weaponSlotCount  = PlayerWeaponManager.MaxWeaponSlots;
+        public int passiveSlotCount = PlayerStatManager.MaxStatSlots;
 
         [Tooltip("ขนาดช่อง (px ที่กรอบ 1920) — design handoff ระบุ 62")]
         public float slotSize = 62f;
@@ -80,6 +81,12 @@ namespace CloneSwarm.UI.P3R
         [Tooltip("เลข Lv ของช่องเด่น (Super/Fusion) — Amber ตาม design token")]
         public Color levelHighlight = new Color32(0xD9, 0x9A, 0x1A, 0xFF);
 
+        [Header("── Auto refresh ───────────────────────")]
+        [Tooltip("วินาทีต่อการดึงของจากผู้เล่นเอง · 0 = ไม่ดึงเอง\n" +
+                 "จอ Level Up ใช้ 0 เพราะ LevelUpUI.Show() สั่ง refresh ให้ตอนเปิด\n" +
+                 "HUD ตอนเล่นต้องมากกว่า 0 เพราะไม่มีใครสั่ง และของเปลี่ยนระหว่างเล่น")]
+        public float autoRefreshInterval = 0f;
+
         // ── runtime ────────────────────────────────────────────────────────
         private readonly List<BuildStripSlot> weaponSlots  = new();
         private readonly List<BuildStripSlot> passiveSlots = new();
@@ -87,9 +94,51 @@ namespace CloneSwarm.UI.P3R
 
         private void Awake()
         {
-            if (slotTemplate != null) slotTemplate.gameObject.SetActive(false);
+            HideSceneTemplate();
             EnsureSlots();
         }
+
+        /// <summary>
+        /// ปิดแม่แบบ **เฉพาะตอนที่มันเป็น object ในซีน**
+        ///
+        /// `slotTemplate` ควรเป็น prefab asset (builder เซฟไว้ที่
+        /// <c>Assets/Prefab/UI/P3R/BuildStripSlot.prefab</c>) ซึ่งปิดมาในตัวอยู่แล้ว
+        /// **สั่ง SetActive ใส่ prefab asset = ไปแก้ไฟล์ต้นฉบับ** ทุกซีนที่ใช้แม่แบบนี้
+        /// โดนไปด้วย และใน Editor มันทำให้ไฟล์ dirty ทั้งที่ไม่มีใครตั้งใจแก้
+        ///
+        /// `gameObject.scene.IsValid()` เป็น false สำหรับ asset — เช็คนี้ใช้ได้ทั้งใน
+        /// เอดิเตอร์และในบิลด์ ไม่ต้องพึ่ง UnityEditor API
+        ///
+        /// ที่ยังต้องปิดให้กรณีซีน เพราะซีนที่ยังไม่ถูกสร้างใหม่จาก builder ยังชี้
+        /// แม่แบบที่เป็นลูกของแถบอยู่ — ถ้าไม่ปิดมันจะโผล่เป็นช่องเปล่าค้างในแถว
+        /// </summary>
+        private void HideSceneTemplate()
+        {
+            if (slotTemplate == null) return;
+            var go = slotTemplate.gameObject;
+            if (!go.scene.IsValid()) return;      // prefab asset — ห้ามแตะ
+            if (go.activeSelf) go.SetActive(false);
+        }
+
+        /// <summary>
+        /// ดึงเองเป็นจังหวะเมื่อ <see cref="autoRefreshInterval"/> มากกว่า 0
+        ///
+        /// เดินจังหวะแทนการ subscribe event เพราะ `PlayerWeaponManager` กับ
+        /// `PlayerStatManager` ไม่มี event แจ้ง "ของเปลี่ยน" — ตัวที่มีคือ HUD เดิม
+        /// (`WeaponStatHUD`) ซึ่งก็เดินจังหวะ 0.4s เหมือนกัน ไม่ใช่ท่าใหม่
+        ///
+        /// `RefreshFromLocalPlayer` คืน false ตอนยังไม่มีผู้เล่นในซีน (ต้นเกม / กำลังโหลด)
+        /// รอบถัดไปจะเจอเอง จึงไม่ต้องมีสถานะ "รอผู้เล่น" แยกต่างหาก
+        /// </summary>
+        private void OnEnable()
+        {
+            if (autoRefreshInterval <= 0f) return;
+            InvokeRepeating(nameof(RefreshTick), 0f, autoRefreshInterval);
+        }
+
+        private void OnDisable() => CancelInvoke(nameof(RefreshTick));
+
+        private void RefreshTick() => RefreshFromLocalPlayer();
 
         // ═══════════════════════════════════════════════════════════════════
         // PUBLIC API
@@ -126,24 +175,41 @@ namespace CloneSwarm.UI.P3R
                 });
             }
 
-            // "PASSIVES" ในแบบ = augment ที่เก็บได้ใน run นี้
-            // (passive weapon ของตัวละครไม่ถูกนับใน PlayerWeaponManager.slots จึงดึงไม่ได้จากที่นี่ — ดูรายงาน)
+            // ── แถว PASSIVES = สเตตัส ตามที่ HUD ตอนเล่นเรียก ────────────────
+            //
+            // เดิมแถวนี้ดึงจาก `PlayerAugmentManager` อย่างเดียว ซึ่ง **ไม่ใช่ของเดียวกับ
+            // ที่ HUD เรียกว่า PASSIVES** — HUD โชว์สเตตัส (DAMAGE · MAXHEALTH · …)
+            // ส่วน augment ได้เฉพาะเลเวลที่กำหนดไว้เท่านั้น การเล่นปกติจึงไม่มีสักใบ
+            // ผลคือแถวนี้ว่างเปล่าทั้งที่ผู้เล่นถือสเตตัสอยู่ห้าตัว — จอ Level Up
+            // ซึ่งมีไว้ให้ตัดสินใจ กลับไม่บอกว่าตัวเองถืออะไรอยู่
+            //
+            // ตอนนี้แถวนี้เป็นสเตตัสล้วน — augment ย้ายไป AugmentStripUI แล้ว
             var passives = new List<Entry>();
-            var pam = pwm.GetComponent<PlayerAugmentManager>();
-            if (pam != null)
+
+            var psm = pwm.GetComponent<PlayerStatManager>();
+            if (psm != null)
             {
-                foreach (var a in pam.GetAcquired())
+                foreach (var (sd, lv) in psm.GetEquippedStats())
                 {
-                    if (a == null) continue;
+                    if (sd == null) continue;
                     passives.Add(new Entry
                     {
-                        icon      = a.icon,
-                        abbrev    = Abbrev(a.augmentName),
-                        level     = pam.GetStackCount(a),
-                        highlight = a.rarity >= AugmentRarity.Gold
+                        // `sd.Icon` ไม่ใช่ `sd.icon` — รูปจริงอยู่ที่ StatIcons.asset
+                        // ช่อง icon ของ StatData ทุกใบในโปรเจกต์ว่างอยู่ (ดู StatData.Icon)
+                        icon      = sd.Icon,
+                        abbrev    = Abbrev(sd.statName),
+                        level     = lv,
+                        highlight = false
                     });
                 }
             }
+
+            // ── augment **ไม่อยู่ในแถวนี้แล้ว** ─────────────────────────────
+            //
+            // ย้ายไปแถบของตัวเอง (`AugmentStripUI`) ข้างไอคอนตัวละคร · ปล่อยไว้ทั้งสองที่
+            // แปลว่าใบเดียวโผล่สองแห่ง ซึ่งอ่านแล้วนึกว่าถือสองใบ
+            //
+            // แถว PASSIVES เหลือความหมายเดียว = สเตตัส ตรงกับคำที่ HUD ใช้มาตลอด
 
             SetEntries(weapons, passives);
             return true;
@@ -159,7 +225,7 @@ namespace CloneSwarm.UI.P3R
             if (built || slotTemplate == null) return;
             built = true;
 
-            slotTemplate.gameObject.SetActive(false);
+            HideSceneTemplate();
             SpawnRow(weaponSlotArea,  weaponSlotCount,  weaponSlots,  "W");
             SpawnRow(passiveSlotArea, passiveSlotCount, passiveSlots, "P");
         }
@@ -167,6 +233,28 @@ namespace CloneSwarm.UI.P3R
         private void SpawnRow(RectTransform area, int count, List<BuildStripSlot> into, string tag)
         {
             if (area == null) return;
+
+            // ── ล้างช่องที่ค้างมาจากตอนสร้างซีนก่อน ────────────────────────────
+            //
+            // builder เรียก SetEntries ด้วยข้อมูลจำลองตอน build เพื่อให้ภาพต้นแบบดูมีของ
+            // ซึ่งทำให้ EnsureSlots สร้าง object ช่องจริงลงซีนแล้วถูกเซฟติดไปด้วย
+            // พอเกมรัน `built` เป็น false อีกครั้ง มันจึงสร้าง **ชุดที่สองซ้อนทับ**
+            // ชุดเก่ายังอยู่ข้างใต้ ค่าจำลอง (ARC Lv2 · ORB Lv1 · ATK Lv2 · HST Lv1)
+            // จึงโผล่ออกมาตามช่องที่ชุดใหม่เป็นช่องว่าง — ผู้เล่นเห็นของที่ตัวเองไม่มี
+            //
+            // ล้างที่นี่แทนการไปห้าม builder ใส่ตัวอย่าง เพราะกันได้ทุกที่มา
+            // ไม่ใช่แค่กรณีที่นึกออกตอนนี้
+            foreach (var stale in area.GetComponentsInChildren<BuildStripSlot>(true))
+            {
+                if (stale == slotTemplate) continue;
+
+                // **ปิดก่อนแล้วค่อยสั่งทำลาย** — `Destroy` ใน play mode เลื่อนไปปลายเฟรม
+                // ของเก่าจึงยังวาดอยู่และยังถูกนับเจอตลอดเฟรมนั้น · การปิดมีผลทันที
+                stale.gameObject.SetActive(false);
+                if (Application.isPlaying) Destroy(stale.gameObject);
+                else                       DestroyImmediate(stale.gameObject);
+            }
+
             for (int i = 0; i < count; i++)
             {
                 var slot = Instantiate(slotTemplate, area);

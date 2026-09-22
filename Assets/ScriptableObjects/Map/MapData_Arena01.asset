@@ -38,6 +38,41 @@ MonoBehaviour:
     wavesByPhase: []
     mainBossConfig: {fileID: 0}
     miniBossConfig: {fileID: 0}
+    schedule:
+      cues:
+      - label: Obj augment
+        kind: 0
+        atMinutes:
+        - 3
+        - 8
+        - 12
+        variant: augment
+      - label: 'Obj '
+        kind: 0
+        atMinutes:
+        - 1
+        - 5
+        - 8
+        - 13
+        variant: normal
+      - label: Miniboss
+        kind: 1
+        atMinutes:
+        - 2
+        - 4
+        - 9
+        - 11
+        - 14
+        variant: 
+      mainBossMinutes: 15
+      wavePhases: []
+    enemyScaling:
+      enabled: 1
+      healthMultPerWave: 0.1
+      speedMultPerWave: 0.05
+      expMultPerWave: 0.1
+      maxSpeedMultiplier: 2
+      spawnRateAccel: 0.15
   references:
     version: 2
     RefIds: []

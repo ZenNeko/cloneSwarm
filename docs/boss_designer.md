@@ -50,6 +50,11 @@
 - ห้ามลาก timeline ใส่ตัวเอง (ระบบกันไว้แล้วทั้งใน editor และ runtime แต่ timeline A ↔ B ซ้อนกันเป็นวงยังเป็นไปได้ — มี depth guard กันค้างที่ 8 ชั้น)
 - `waitForTimelineEnd` (ค่า default = เปิด) ทำให้ AttackLoop รอจนจบ timeline ก่อนวนรอบ — ถ้าปิด
   พฤติกรรมจะเหมือน ComboAction (ยิงแล้วคืน control ทันที)
-- ตัวเลขความยาวคลิปเป็น **ค่าประมาณ** จาก warning/duration — ท่า runtime จริงอาจต่างเล็กน้อย
-- MiniBoss ที่ยังใช้ `MiniBossAI` (ระบบ Mechanic เดิม) ยังไม่ผ่านระบบนี้ — ใช้ได้เฉพาะบอสที่ขับด้วย
-  `BossController` + `BossEncounterConfig`
+- ตัวเลขความยาวคลิปเป็น **ค่าประมาณ** สำหรับวาดภาพ — timeline รอ "คลิปจบจริง" ไม่ได้รอตามตัวเลขนี้
+  (เดิมรอตามตัวเลข จังหวะของบอสจึงขึ้นกับค่าที่ตั้งใจให้แค่พอเห็นภาพ)
+  ถ้าเขียน `BossAction` ใหม่ **ต้องคืนค่าเมื่อกลไกจบ ไม่ใช่เมื่อยิงออกไปแล้ว** — ดูสัญญาใน
+  `BossAction.ExecuteCoroutine` · และ override `GetEditorDuration()` ให้คลิปที่วาดยาวเท่ากลไกจริง
+- เปลี่ยนเฟสจะ **ล้างกระดาน**: telegraph/tether ที่ค้างถูก despawn และคลิปของเฟสเก่าที่ยังไม่ถึงคิว
+  จะทิ้งตัวเอง (run generation ใน `BossController`) ช่องว่างของการเปลี่ยนเฟส = `invincibilityDuration`
+  อย่างเดียว ไม่จ่าย `firstAttackDelay` ซ้ำ
+- ทุกบอสในเกมขับด้วย `BossController` + `BossEncounterConfig` แล้ว (`MiniBossAI` ถูกลบไปตั้งแต่ 2026-07)

@@ -168,7 +168,7 @@ public class PauseMenuUI : MonoBehaviour
         // Multiplayer: โลกยังเดินตอนเมนู pause เปิด → overlay priority สูงกว่าเด้งทับได้
         // ปิดเมนูให้เองแทนที่จะปล่อยให้ซ้อนกัน
         SharedExperienceManager.OnUpgradePhaseStart += HandleUpgradePhaseStart;
-        SharedExperienceManager.OnOrbPhaseStart     += ForceResume;
+        SharedExperienceManager.OnOrbPhaseStart     += HandleOrbPhaseStart;
         WinLoseUI.OnAnyResultTriggered              += ForceResume;
     }
 
@@ -186,7 +186,7 @@ public class PauseMenuUI : MonoBehaviour
         if (menuList != null) menuList.OnConfirm -= OnMenuConfirm;
 
         SharedExperienceManager.OnUpgradePhaseStart -= HandleUpgradePhaseStart;
-        SharedExperienceManager.OnOrbPhaseStart     -= ForceResume;
+        SharedExperienceManager.OnOrbPhaseStart     -= HandleOrbPhaseStart;
         WinLoseUI.OnAnyResultTriggered              -= ForceResume;
 
         // กัน scene unload ทิ้ง pause state → restore
@@ -316,6 +316,9 @@ public class PauseMenuUI : MonoBehaviour
     void ForceResume() => Resume();
 
     void HandleUpgradePhaseStart(int _) => ForceResume();
+
+    // orb ให้อะไรไม่เกี่ยวกับเมนูหยุดเกม — รู้แค่ว่ามีเฟสเลือกการ์ดเปิดขึ้นก็พอ
+    void HandleOrbPhaseStart(OrbReward _) => ForceResume();
 
     void OnQuitClicked()
     {

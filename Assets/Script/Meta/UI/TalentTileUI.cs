@@ -116,19 +116,34 @@ namespace CloneSwarm.Meta
         }
 
         void RefreshPips(int level, int maxLv)
-        {
-            if (pipsContainer == null) return;
+            => ApplyPips(pipsContainer, level, maxLv, pipFilledColor, pipEmptyColor);
 
-            int n = pipsContainer.childCount;
+        /// <summary>
+        /// ย้อมขีดบอกเลเวลตามเลเวลจริง — **ที่เดียวของทั้งร้าน**
+        ///
+        /// เปิดเป็น static เพราะ <see cref="TalentShopUI"/> ก็มีขีดชุดเดียวกันบนแผงขวา
+        /// และ **มันเคยไม่ถูกขับเลย** — builder ฝังสีไว้ว่าเต็มสามขีดตอนสร้างซีน
+        /// แล้วไม่มีใครแตะอีก แผงขวาจึงขึ้น 3/5 ตลอดแม้ป้ายข้างๆ จะเขียน "Lv 5 / 5"
+        /// ผู้เล่นเห็นสองอย่างขัดกันเองบนจอเดียว
+        ///
+        /// มีที่เดียวแล้วอีกฝั่งลืมเรียกก็ยังพังได้ — แต่ก๊อปตรรกะไปสองที่คือรับประกัน
+        /// ว่าวันหนึ่งมันจะเพี้ยนกันแน่นอน
+        /// </summary>
+        public static void ApplyPips(Transform container, int level, int maxLv,
+                                     Color filled, Color empty)
+        {
+            if (container == null) return;
+
+            int n = container.childCount;
             for (int i = 0; i < n; i++)
             {
-                var child = pipsContainer.GetChild(i);
+                var child = container.GetChild(i);
                 bool used = i < maxLv;
                 child.gameObject.SetActive(used);        // ขีดส่วนเกิน maxLevel → ซ่อน
                 if (!used) continue;
 
                 var img = child.GetComponent<Image>();
-                if (img != null) img.color = i < level ? pipFilledColor : pipEmptyColor;
+                if (img != null) img.color = i < level ? filled : empty;
             }
         }
 

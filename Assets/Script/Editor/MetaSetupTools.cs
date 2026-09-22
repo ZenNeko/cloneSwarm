@@ -136,41 +136,54 @@ public static class MetaSetupTools
     {
         EnsureDir(AugmentDir);
 
+        // ── ช่วงเวลาที่ออกได้ (นาที) — ตัวคุมความแรงแทนป้ายระดับ ──────────
+        //
+        // รันหนึ่งรอบยาว 15 นาที · until = 0 แปลว่าออกได้จนจบเกม
+        //
+        //   Juggernaut · Sharpshooter · Bloodthirst · Adrenaline   0 → จบ  พื้นฐาน มีทุกช่วง
+        //   Second Wind                                           3 → จบ  ต้องมีศัตรูพอให้โดนตีก่อน
+        //   Overdrive · Glass Cannon                              4/5 → จบ  ของแรง รอให้ build ตั้งตัว
+        //   Swarm Lord                                            9 → จบ  พลิกเกมช่วงท้าย
+        //   Momentum                                              0 → 8   **ปิดตัวเองตอนท้าย**
+        //
+        // Momentum ให้ดาเมจตอนเลเวลอัป — ได้ตอนนาทีที่ 13 ที่แทบไม่เหลือเลเวลให้ขึ้น
+        // คือใบเปล่า · ป้าย "Prismatic" ไม่เคยกันเรื่องนี้ได้ แต่ช่วงเวลากันได้ตรงๆ
+
         // ── Stat augments ────────────────────────────────────────────────
-        MakeStatAugment("aug_glass_cannon", "Glass Cannon", AugmentRarity.Gold, 40f,
+        MakeStatAugment("aug_glass_cannon", "Glass Cannon", 5f, 0f, 40f,
             "ดาเมจ +45% แต่ HP สูงสุด -60",
             new (StatType, float)[] { (StatType.Damage, 0.45f), (StatType.MaxHealth, -60f) });
 
-        MakeStatAugment("aug_juggernaut", "Juggernaut", AugmentRarity.Silver, 100f,
+        MakeStatAugment("aug_juggernaut", "Juggernaut", 0f, 0f, 100f,
             "HP สูงสุด +150 · เกราะ +10 · ความเร็ว -5%",
             new (StatType, float)[] { (StatType.MaxHealth, 150f), (StatType.Armor, 10f), (StatType.MoveSpeed, -0.05f) });
 
-        MakeStatAugment("aug_overdrive", "Overdrive", AugmentRarity.Gold, 40f,
+        MakeStatAugment("aug_overdrive", "Overdrive", 4f, 0f, 40f,
             "Ability Haste +30 · ระยะ/ขนาด AoE +15%",
             new (StatType, float)[] { (StatType.AbilityHaste, 30f), (StatType.AreaSize, 0.15f) });
 
-        MakeStatAugment("aug_sharpshooter", "Sharpshooter", AugmentRarity.Silver, 100f,
+        MakeStatAugment("aug_sharpshooter", "Sharpshooter", 0f, 0f, 100f,
             "โอกาสคริติคอล +20% · ดาเมจ +10%",
             new (StatType, float)[] { (StatType.CriticalChance, 0.20f), (StatType.Damage, 0.10f) });
 
-        MakeStatAugment("aug_swarm_lord", "Swarm Lord", AugmentRarity.Prismatic, 12f,
+        MakeStatAugment("aug_swarm_lord", "Swarm Lord", 9f, 0f, 12f,
             "กระสุนทุกอาวุธ +2 · ดาเมจ -10%",
             new (StatType, float)[] { (StatType.ProjectileCount, 2f), (StatType.Damage, -0.10f) });
 
         // ── Trigger augments ─────────────────────────────────────────────
-        MakeTriggerAugment("aug_bloodthirst", "Bloodthirst", AugmentRarity.Silver, 100f,
+        MakeTriggerAugment("aug_bloodthirst", "Bloodthirst", 0f, 0f, 100f,
             "ทุกๆ 20 ศัตรูที่ทีมกำจัด — ฟื้น HP 5%",
             AugmentTrigger.EveryNKills, 20f, AugmentEffect.HealPercent, 0.05f, 0f);
 
-        MakeTriggerAugment("aug_adrenaline", "Adrenaline", AugmentRarity.Silver, 100f,
+        MakeTriggerAugment("aug_adrenaline", "Adrenaline", 0f, 0f, 100f,
             "เมื่อโดนโจมตี — ความเร็ว +35% นาน 2 วิ (คูลดาวน์ 5 วิ)",
             AugmentTrigger.OnTakeDamage, 1f, AugmentEffect.TempMoveSpeed, 0.35f, 2f, cooldown: 5f);
 
-        MakeTriggerAugment("aug_second_wind", "Second Wind", AugmentRarity.Gold, 40f,
+        MakeTriggerAugment("aug_second_wind", "Second Wind", 3f, 0f, 40f,
             "ทุก 15 วินาที — ได้โล่ 60",
             AugmentTrigger.Periodic, 15f, AugmentEffect.Shield, 60f, 0f);
 
-        MakeTriggerAugment("aug_momentum", "Momentum", AugmentRarity.Prismatic, 12f,
+        MakeTriggerAugment("aug_momentum", "Momentum", 0f, 8f, 12f,
             "ทุกครั้งที่เลเวลอัป — ดาเมจ +60% นาน 12 วิ",
             AugmentTrigger.OnLevelUp, 1f, AugmentEffect.TempDamage, 0.60f, 12f);
 
@@ -329,17 +342,24 @@ public static class MetaSetupTools
     static Color ParseHex(string hex)
         => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.white;
 
-    static void MakeStatAugment(string id, string name, AugmentRarity rarity, float weight,
+    static void MakeStatAugment(string id, string name, float fromMin, float untilMin, float weight,
                                 string desc, (StatType type, float value)[] bonuses)
     {
         string path = $"{AugmentDir}/{id}.asset";
-        if (AssetDatabase.LoadAssetAtPath<StatAugment>(path) != null) return;
+
+        // มีอยู่แล้ว → **ไม่ทับค่าที่จูนไว้** แต่เติมช่วงเวลาให้ถ้ายังไม่เคยตั้ง
+        //
+        // ช่อง availableFrom/Until เพิ่งมีทีหลัง ใบเก่าทุกใบจึงเป็น 0/0 = ออกได้ตลอด
+        // ซึ่งทิ้งเจตนาการออกแบบทั้งหมด · เติมเฉพาะใบที่ยังไม่ถูกแตะ
+        var existing = AssetDatabase.LoadAssetAtPath<StatAugment>(path);
+        if (existing != null) { StampWindow(existing, fromMin, untilMin); return; }
 
         var a = ScriptableObject.CreateInstance<StatAugment>();
         a.augmentId   = id;
         a.augmentName = name;
-        a.description = desc;
-        a.rarity      = rarity;
+        // a.description = desc;   // ← ย้ายไป String Table แล้ว (ท่าเดียวกับ TalentData)
+        a.availableFromMinutes  = fromMin;
+        a.availableUntilMinutes = untilMin;
         a.weight      = weight;
 
         a.bonuses = new StatAugment.StatBonus[bonuses.Length];
@@ -349,19 +369,22 @@ public static class MetaSetupTools
         AssetDatabase.CreateAsset(a, path);
     }
 
-    static void MakeTriggerAugment(string id, string name, AugmentRarity rarity, float weight,
+    static void MakeTriggerAugment(string id, string name, float fromMin, float untilMin, float weight,
                                    string desc, AugmentTrigger trigger, float amount,
                                    AugmentEffect effect, float magnitude, float duration,
                                    float cooldown = 0f)
     {
         string path = $"{AugmentDir}/{id}.asset";
-        if (AssetDatabase.LoadAssetAtPath<TriggerAugment>(path) != null) return;
+
+        var existing = AssetDatabase.LoadAssetAtPath<TriggerAugment>(path);
+        if (existing != null) { StampWindow(existing, fromMin, untilMin); return; }
 
         var a = ScriptableObject.CreateInstance<TriggerAugment>();
         a.augmentId        = id;
         a.augmentName      = name;
-        a.description      = desc;
-        a.rarity           = rarity;
+        // a.description   = desc;   // ← ย้ายไป String Table แล้ว
+        a.availableFromMinutes  = fromMin;
+        a.availableUntilMinutes = untilMin;
         a.weight           = weight;
         a.trigger          = trigger;
         a.triggerAmount    = amount;
@@ -371,6 +394,21 @@ public static class MetaSetupTools
         a.internalCooldown = cooldown;
 
         AssetDatabase.CreateAsset(a, path);
+    }
+
+    /// <summary>
+    /// เติมช่วงเวลาให้ใบเก่าที่ยังไม่เคยตั้ง — 0/0 แปลว่า "ยังไม่ถูกแตะ"
+    /// ใบที่ designer ตั้งเองแล้วจะไม่ถูกเขียนทับ
+    /// </summary>
+    static void StampWindow(AugmentData a, float fromMin, float untilMin)
+    {
+        if (a == null) return;
+        if (a.availableFromMinutes != 0f || a.availableUntilMinutes != 0f) return;
+
+        a.availableFromMinutes  = fromMin;
+        a.availableUntilMinutes = untilMin;
+        EditorUtility.SetDirty(a);
+        Debug.Log($"[MetaSetup] เติมช่วงเวลาให้ {a.augmentName} → {a.WindowLabel}");
     }
 }
 #endif

@@ -18,6 +18,12 @@ public class UpgradeManager : NetworkBehaviour
     [Tooltip("ลาก WeaponFusionRecipe ทั้งหมดมาใส่ที่นี่")]
     public List<WeaponFusionRecipe>  allRecipes = new();
     public int cardsPerLevel = 3;
+    [Tooltip("จำนวนการ์ด augment ต่อครั้งที่เก็บ orb ที่ให้ augment\n\n" +
+             "แยกจาก cardsPerLevel เพราะ augment เป็นของที่ได้นานๆ ครั้งและเปลี่ยนสไตล์การเล่น\n" +
+             "จำนวนตัวเลือกจึงเป็นเรื่องบาลานซ์คนละเรื่องกับการ์ดอัปปกติ\n\n" +
+             "ได้ไม่เกินจำนวนใบที่ยังเหลือใน pool — ตั้ง 5 แต่เหลือ 2 ใบก็ได้ 2")]
+    [Min(1)]
+    public int augmentCardCount = 3;
 
     // ── References ────────────────────────────────────────────────────────
     private PlayerWeaponManager  weaponManager;
@@ -47,7 +53,7 @@ public class UpgradeManager : NetworkBehaviour
         SharedExperienceManager.OnUpgradePhaseStart += OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   += OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     += OnForceAutoPick;
-        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;   // Action<ulong>
+        SharedExperienceManager.OnOrbPhaseStart     += OnOrbPhaseStart;   // Action<OrbReward>
     }
 
     public override void OnNetworkDespawn()
@@ -56,38 +62,69 @@ public class UpgradeManager : NetworkBehaviour
         SharedExperienceManager.OnUpgradePhaseStart -= OnLevelUpPhaseStart;
         SharedExperienceManager.OnUpgradePhaseEnd   -= OnUpgradePhaseEnd;
         SharedExperienceManager.OnForceAutoPick     -= OnForceAutoPick;
-        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;   // Action<ulong>
+        SharedExperienceManager.OnOrbPhaseStart     -= OnOrbPhaseStart;   // Action<OrbReward>
     }
 
     // ── Level Up (3 cards) ────────────────────────────────────────────────
+    /// <summary>
+    /// เลเวลอัปแจกการ์ดอาวุธ/สเตตัสเสมอ — **ไม่มีเลเวลไหนแจก augment แล้ว**
+    ///
+    /// ═══ ทำไมสองระบบนี้ต้องไม่เกี่ยวกัน ═══
+    ///
+    /// ของเดิมเลเวล 3/7/12/18 จะ **แทนที่** การ์ดปกติด้วย augment · เลเวลเริ่มที่ 1
+    /// เลเวล 3 จึงคือการเลเวลอัปครั้งที่สอง ผู้เล่นเสียการ์ดอัปอาวุธไปหนึ่งครั้ง
+    /// ตั้งแต่ยังไม่ทันได้ตั้งตัว และไม่มีอะไรบอกว่าทำไม
+    ///
+    /// ที่แย่กว่าคือมันผูกจังหวะสองอย่างที่ควรจูนแยกกันไว้ด้วยกัน — ความเร็วเลเวล
+    /// เป็นเรื่องของ EXP ที่ผู้เล่นหาได้ ส่วนจังหวะที่ควรได้ augment เป็นเรื่องของ
+    /// การออกแบบรัน · จูน EXP ทีเดียวแล้วตาราง augment เลื่อนตามไปด้วยโดยไม่ตั้งใจ
+    ///
+    /// ตอนนี้ augment มาจากทางเดียว: เก็บ orb ที่ตั้ง reward = Augment ซึ่งมาจาก
+    /// โซนเควสต์แบบ augment ที่นัดไว้บนไทม์ไลน์ — เห็นนาทีชัดๆ และจูนได้ตรงจุด
+    /// </summary>
     void OnLevelUpPhaseStart(int newLevel)
     {
         _isOrbPhase    = false;
         hasPicked      = false;
 
-        // เลเวลที่กำหนดไว้ → ให้เลือก Augment แทน card ปกติ
-        bool isAugmentLevel = SharedExperienceManager.Instance?.IsAugmentLevel(newLevel) ?? false;
-        currentOptions = isAugmentLevel
-            ? PickAugmentCards(cardsPerLevel)
-            : PickCards(cardsPerLevel, isOrbReward: false);
-
-        // ถ้า augment pool หมด (เลือกครบทุกใบแล้ว) → ตกกลับเป็น card ปกติ
-        if (isAugmentLevel && currentOptions.Count == 0)
-            currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
+        currentOptions = PickCards(cardsPerLevel, isOrbReward: false);
 
         if (currentOptions.Count == 0) { NotifyLevelUpPicked(); return; }
-        RecommendCards(currentOptions);
         LevelUpUI.Instance?.Show(currentOptions, ApplyCard, newLevel);
     }
 
-    // ── Orb Reward — ทุกคนได้ 1 card จาก weapon/stat ที่ตัวเองมีอยู่แล้ว ──
-    void OnOrbPhaseStart()
+    // ── Orb Reward — ทุกคนได้การ์ดเมื่อมีคนเก็บ orb ───────────────────────
+    //
+    // orb ปกติให้ใบเดียว (อัปของที่ถืออยู่ — ไม่ต้องคิดมาก)
+    // orb augment ให้ `augmentCardCount` ใบ เพราะ augment เปลี่ยนสไตล์การเล่น
+    // ให้ตัวเลือกเดียวคือบังคับ ไม่ใช่ให้เลือก
+    //
+    // กองที่สุ่มขึ้นกับชนิดของ orb · ที่เหลือเหมือนกันทุกอย่าง — จอเดียวกัน
+    // callback เดียวกัน (`ApplyOrbCard`) การนับคนเลือกครบเหมือนกัน
+    void OnOrbPhaseStart(OrbReward reward)
     {
         _isOrbPhase    = true;
         hasPicked      = false;
-        currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
+
+        currentOptions = reward == OrbReward.Augment
+                       ? PickAugmentCards(augmentCardCount)
+                       : PickCards(1, isOrbReward: true, ownedOnly: true);
+
+        // orb ที่ให้ augment แต่ไม่มี augment ให้หยิบ — ถอยไปใช้กองปกติ **พร้อมบอก**
+        // เหตุผลเดียวกับตอนเลเวลอัป: การถอยเงียบๆ คือสิ่งที่ทำให้ระบบตายโดยไม่มีใครรู้
+        if (reward == OrbReward.Augment && currentOptions.Count == 0)
+        {
+            int pool = CloneSwarm.Meta.MetaDatabase.Instance?.augments?.Count ?? 0;
+            Debug.LogWarning(
+                "[Orb] orb ใบนี้ตั้งไว้ว่าให้ augment แต่ไม่มีใบให้เลือก → ถอยไปใช้การ์ดปกติ · " +
+                (pool == 0
+                    ? "MetaDatabase.augments ว่างเปล่า — รัน Tools > Clone Swarm > Meta > Create Sample Augments"
+                    : $"ทุกใบใน pool ({pool}) ถือไปแล้วหรือยังไม่ถึงช่วงเวลาที่ออกได้"));
+
+            currentOptions = PickCards(1, isOrbReward: true, ownedOnly: true);
+        }
+
         if (currentOptions.Count == 0) { NotifyOrbPicked(); return; }
-        RecommendCards(currentOptions);
         LevelUpUI.Instance?.Show(currentOptions, ApplyOrbCard, 0);
     }
 
@@ -108,262 +145,175 @@ public class UpgradeManager : NetworkBehaviour
         }
     }
 
-    // ── Synergy Card Recommendation ───────────────────────────────────────
-    void RecommendCards(List<UpgradeCardInfo> options)
-    {
-        if (options == null || options.Count == 0) return;
-
-        // Reset
-        foreach (var opt in options) opt.isRecommended = false;
-
-        var equippedWeapons = weaponManager.GetEquippedWeapons();
-        float[] scores = new float[options.Count];
-
-        for (int i = 0; i < options.Count; i++)
-        {
-            var card = options[i];
-            float score = 0f;
-
-            if (card.type == UpgradeCardType.WeaponSuper || card.type == UpgradeCardType.WeaponFusion)
-            {
-                score = 20f; // แนะนำทันที
-            }
-            else if (card.weapon != null)
-            {
-                if (card.type == UpgradeCardType.WeaponLevelUp)
-                {
-                    score = 10f; // แนะนำให้อัปอาวุธที่ถืออยู่ให้ตัน
-                    
-                    if (card.weapon.tier == WeaponTier.Normal && card.targetLevel == card.weapon.MaxLevel)
-                    {
-                        score += 5f; // ใกล้ขึ้น Super
-                    }
-                }
-                else if (card.type == UpgradeCardType.WeaponNew)
-                {
-                    // เช็คคู่ฟิวชัน
-                    foreach (var recipe in allRecipes)
-                    {
-                        if (recipe == null || recipe.fusionResult == null) continue;
-                        
-                        bool isPartA = card.weapon.superVersion != null && card.weapon.superVersion == recipe.superWeaponA;
-                        bool isPartB = card.weapon.superVersion != null && card.weapon.superVersion == recipe.superWeaponB;
-
-                        if (isPartA || isPartB)
-                        {
-                            var partnerSuper = isPartA ? recipe.superWeaponB : recipe.superWeaponA;
-                            if (partnerSuper != null)
-                            {
-                                WeaponData partnerNormal = null;
-                                foreach (var wAll in allWeapons)
-                                {
-                                    if (wAll != null && wAll.superVersion == partnerSuper)
-                                    {
-                                        partnerNormal = wAll;
-                                        break;
-                                    }
-                                }
-
-                                bool hasPartner = false;
-                                foreach (var owned in equippedWeapons)
-                                {
-                                    if (owned == null) continue;
-                                    if (owned == partnerSuper || owned == partnerNormal)
-                                    {
-                                        hasPartner = true;
-                                        break;
-                                    }
-                                }
-
-                                if (hasPartner)
-                                {
-                                    score += 15f; // แนะนำอย่างยิ่ง
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            else if (card.type == UpgradeCardType.Stat && card.stat != null)
-            {
-                // ตรวจสอบเงื่อนไข Super
-                foreach (var w in equippedWeapons)
-                {
-                    if (w == null || w.tier != WeaponTier.Normal || w.superVersion == null) continue;
-                    if (weaponManager.HasWeapon(w.superVersion)) continue; 
-
-                    if (w.superConditions != null)
-                    {
-                        foreach (var cond in w.superConditions)
-                        {
-                            if (cond.conditionType == SuperConditionType.StatAtLevel &&
-                                cond.requiredStatType == card.stat.statType)
-                            {
-                                int currentLv = statManager.GetStatLevel(cond.requiredStatType);
-                                if (currentLv < cond.requiredLevel)
-                                {
-                                    score += 12f; // แนะนำเพื่อปลดล็อค Super
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // แนะนำ Core Stat ตามประเภทตัวละคร (Synergy) ตามที่ GDD กำหนด
-                if (myCharacter != null)
-                {
-                    string charName = myCharacter.characterName.ToLower();
-                    if (charName.Contains("hunter") || charName.Contains("gunner"))
-                    {
-                        if (card.stat.statType == StatType.AbilityHaste || 
-                            card.stat.statType == StatType.ProjectileCount || 
-                            card.stat.statType == StatType.Damage)
-                        {
-                            score += 6f; // แนะนำความเร่ง/จำนวนกระสุน/พลังโจมตีสำหรับสายยิง
-                        }
-                    }
-                    else if (charName.Contains("riven") || charName.Contains("melee") || charName.Contains("warrior"))
-                    {
-                        if (card.stat.statType == StatType.MoveSpeed || 
-                            card.stat.statType == StatType.AreaSize || 
-                            card.stat.statType == StatType.Armor)
-                        {
-                            score += 6f; // แนะนำความเร็ว/ระยะฟัน/เกราะสำหรับสายฟันประชิด
-                        }
-                    }
-                }
-
-                if (score < 0.1f)
-                {
-                    score = 2f; 
-                }
-            }
-
-            scores[i] = score;
-        }
-
-        // หาคะแนนสูงสุด
-        float maxScore = 0f;
-        for (int i = 0; i < scores.Length; i++)
-        {
-            if (scores[i] > maxScore) maxScore = scores[i];
-        }
-
-        // ปักป้ายการ์ดแนะนำ (คะแนนสูงสุดและผ่านเกณฑ์ขั้นต่ำ)
-        if (maxScore > 0.1f)
-        {
-            for (int i = 0; i < scores.Length; i++)
-            {
-                if (Mathf.Abs(scores[i] - maxScore) < 0.01f)
-                {
-                    options[i].isRecommended = true;
-                }
-            }
-        }
-    }
-
-    // ── Synergy Icon Resolution Helper ────────────────────────────────────
-    public Sprite GetStatIcon(StatType type)
-    {
-        if (allStats != null)
-        {
-            foreach (var s in allStats)
-            {
-                if (s != null && s.statType == type) return s.icon;
-            }
-        }
-        return null;
-    }
-
+    // ══════════════════════════════════════════════════════════════════════
+    // EVOLUTION SYNERGY — ช่องทางเดียวที่เกมใช้บอกทางผู้เล่น
+    //
+    // ระบบ "แนะนำ" ถูกถอดออกตาม ADR-009 เพราะชักจูงเกินไป — เกมไม่ควรบอกว่า
+    // ควรกดใบไหน · สิ่งที่บอกได้คือ **อะไรเชื่อมกับอะไร และห่างอีกเท่าไร**
+    // แล้วปล่อยให้ผู้เล่นตัดสินเอง
+    //
+    // เส้นแบ่งที่ต้องรักษา: ทุกข้อความในนี้เป็น **สภาพปัจจุบัน** ห้ามมีคำว่า
+    // ควร/แนะนำ/คุ้ม/ดีที่สุด · "Lv5 · ขาด Armor อีก 2" คือข้อเท็จจริง
+    // "ควรเอา Armor" คือคำแนะนำ — อันหลังคือสิ่งที่เพิ่งถอดทิ้งไป
+    // ══════════════════════════════════════════════════════════════════════
     private void PopulateSynergyInfo(UpgradeCardInfo card)
     {
         if (card == null) return;
-        card.synergyIcons.Clear();
+        card.synergyLines.Clear();
         card.showSynergy = false;
 
-        if (card.weapon != null)
+        if (card.weapon != null && card.weapon.tier == WeaponTier.Normal
+                                && card.weapon.superVersion != null)
         {
-            // Weapon Card: Show the stat(s) required to evolve this normal weapon to Super
-            if (card.weapon.tier == WeaponTier.Normal && card.weapon.superVersion != null)
-            {
-                bool hasWeapon = weaponManager != null && weaponManager.HasWeapon(card.weapon);
-                bool hasStat = false;
-
-                if (card.weapon.superConditions != null && statManager != null)
-                {
-                    foreach (var cond in card.weapon.superConditions)
-                    {
-                        if (cond.conditionType == SuperConditionType.StatAtLevel)
-                        {
-                            if (statManager.GetStatLevel(cond.requiredStatType) > 0)
-                            {
-                                hasStat = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                // Show synergy badge only if player owns the weapon OR already owns the synergistic stat
-                if (hasWeapon || hasStat)
-                {
-                    if (card.weapon.superConditions != null)
-                    {
-                        foreach (var cond in card.weapon.superConditions)
-                        {
-                            if (cond.conditionType == SuperConditionType.StatAtLevel)
-                            {
-                                Sprite icon = GetStatIcon(cond.requiredStatType);
-                                if (icon != null && !card.synergyIcons.Contains(icon))
-                                {
-                                    card.synergyIcons.Add(icon);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            AddWeaponCardLines(card);
         }
         else if (card.type == UpgradeCardType.Stat && card.stat != null)
         {
-            // Stat Card: Show the weapon(s) in player's inventory that evolve with this stat
-            if (weaponManager != null)
-            {
-                var equipped = weaponManager.GetEquippedWeapons();
-                if (equipped != null)
-                {
-                    foreach (var w in equipped)
-                    {
-                        if (w == null || w.tier != WeaponTier.Normal || w.superVersion == null) continue;
-                        if (weaponManager.HasWeapon(w.superVersion) || HasProgressedPast(w)) continue;
+            AddStatCardLines(card);
+        }
 
-                        if (w.superConditions != null)
-                        {
-                            foreach (var cond in w.superConditions)
-                            {
-                                if (cond.conditionType == SuperConditionType.StatAtLevel &&
-                                    cond.requiredStatType == card.stat.statType)
-                                {
-                                    if (w.icon != null && !card.synergyIcons.Contains(w.icon))
-                                    {
-                                        card.synergyIcons.Add(w.icon);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        // ใกล้ครบที่สุดขึ้นก่อน — บรรทัดแรกคือบรรทัดที่มีโอกาสถูกอ่านจริงที่สุด
+        card.synergyLines.Sort((a, b) => a.met == b.met ? 0 : (a.met ? -1 : 1));
+        card.showSynergy = card.synergyLines.Count > 0;
+    }
+
+    /// <summary>
+    /// การ์ดอาวุธ → บอกว่า **สเตตัสอะไรที่อาวุธใบนี้รออยู่** และตอนนี้มีเท่าไร
+    ///
+    /// โชว์ก็ต่อเมื่อผู้เล่นมีของอย่างน้อยครึ่งหนึ่งของสมการแล้ว (ถืออาวุธ หรือมีสเตตัสนั้นบ้าง)
+    /// ไม่งั้นจะกลายเป็นการสอนของที่ยังไกลเกินไปจนกลายเป็นเสียงรบกวน
+    /// </summary>
+    private void AddWeaponCardLines(UpgradeCardInfo card)
+    {
+        var conds = card.weapon.superConditions;
+        if (conds == null || conds.Length == 0) return;
+
+        bool hasWeapon = weaponManager != null && weaponManager.HasWeapon(card.weapon);
+        bool hasAnyStat = false;
+        if (statManager != null)
+            foreach (var c in conds)
+                if (c.conditionType == SuperConditionType.StatAtLevel &&
+                    statManager.GetStatLevel(c.requiredStatType) > 0)
+                { hasAnyStat = true; break; }
+
+        if (!hasWeapon && !hasAnyStat) return;
+
+        foreach (var c in conds)
+        {
+            var line = DescribeCondition(c);
+            if (line.icon != null || !string.IsNullOrEmpty(line.label))
+                card.synergyLines.Add(line);
+        }
+    }
+
+    /// <summary>
+    /// การ์ดสเตตัส → บอกว่า **อาวุธที่ถืออยู่ตัวไหนรอสเตตัสใบนี้** และห่างอีกเท่าไร
+    ///
+    /// ตรงนี้คือจุดที่มีค่าที่สุดของทั้งระบบ — ผู้เล่นมองการ์ด "Armor" แล้วไม่มีทางรู้เลย
+    /// ว่ามันไปต่อกับ Laser ที่ถืออยู่ ถ้าไม่มีบรรทัดนี้
+    /// </summary>
+    private void AddStatCardLines(UpgradeCardInfo card)
+    {
+        if (weaponManager == null || statManager == null) return;
+
+        int have = statManager.GetStatLevel(card.stat.statType);
+
+        foreach (var w in weaponManager.GetEquippedWeapons())
+        {
+            if (w == null || w.tier != WeaponTier.Normal || w.superVersion == null) continue;
+            if (HasProgressedPast(w)) continue;
+            if (w.superConditions == null) continue;
+
+            foreach (var c in w.superConditions)
+            {
+                if (c.conditionType != SuperConditionType.StatAtLevel) continue;
+                if (c.requiredStatType != card.stat.statType) continue;
+
+                // เลเวลอาวุธนับ 0 ทั้งโค้ดเบส — ที่ตาเห็นต้อง +1 เสมอ
+                int wLv    = weaponManager.GetWeaponLevel(w) + 1;
+                int wMax   = w.MaxLevel;
+                int missing = Mathf.Max(0, c.requiredLevel - have);
+
+                string detail = wLv < wMax
+                    ? $"Lv{wLv}/{wMax} · ต้อง {card.stat.statName} Lv{c.requiredLevel}"
+                    : missing > 0
+                        ? $"Lv{wMax} · ขาด {card.stat.statName} อีก {missing}"
+                        : $"Lv{wMax} · พร้อมวิวัฒน์";
+
+                card.synergyLines.Add(new SynergyLine
+                {
+                    icon   = w.icon,
+                    label  = w.DisplayName,
+                    detail = detail,
+                    met    = wLv >= wMax && missing == 0,
+                });
+                break;   // อาวุธหนึ่งตัวขึ้นบรรทัดเดียวพอ
             }
         }
+    }
 
-        // Limit to 3 icons maximum
-        if (card.synergyIcons.Count > 3)
+    /// <summary>
+    /// แปลงเงื่อนไข Super หนึ่งข้อเป็นบรรทัดที่อ่านออก
+    ///
+    /// รองรับ **ครบทั้งสามชนิด** ไม่ใช่แค่ `StatAtLevel` เหมือนโค้ดเดิม —
+    /// ตอนนี้คอนเทนต์ยังใช้แต่ `StatAtLevel` แต่ `CheckSuperConditions` รองรับครบ
+    /// อยู่แล้ว การที่ป้ายรองรับไม่ครบแปลว่าวันที่ดีไซเนอร์ใส่ชนิดใหม่ใบแรก
+    /// ป้ายจะเงียบไปเฉยๆ โดยไม่มีอะไรฟ้อง
+    /// </summary>
+    private SynergyLine DescribeCondition(SuperCondition c)
+    {
+        switch (c.conditionType)
         {
-            card.synergyIcons.RemoveRange(3, card.synergyIcons.Count - 3);
-        }
+            case SuperConditionType.StatAtLevel:
+            {
+                int have = statManager != null ? statManager.GetStatLevel(c.requiredStatType) : 0;
+                var sd   = FindStat(c.requiredStatType);
+                string nm = sd != null ? sd.statName : c.requiredStatType.ToString();
+                return new SynergyLine
+                {
+                    icon   = sd != null ? sd.Icon : StatIconSet.For(c.requiredStatType),
+                    label  = nm,
+                    detail = have >= c.requiredLevel
+                           ? $"Lv{have}/{c.requiredLevel} · ครบแล้ว"
+                           : $"Lv{have}/{c.requiredLevel}",
+                    met    = have >= c.requiredLevel,
+                };
+            }
 
-        card.showSynergy = card.synergyIcons.Count > 0;
+            case SuperConditionType.WeaponAtLevel:
+            {
+                if (c.requiredWeapon == null) return default;
+                int have = weaponManager != null
+                         ? weaponManager.GetWeaponLevel(c.requiredWeapon) + 1 : 0;
+                return new SynergyLine
+                {
+                    icon   = c.requiredWeapon.icon,
+                    label  = c.requiredWeapon.DisplayName,
+                    detail = $"Lv{have}/{c.requiredLevel}",
+                    met    = have >= c.requiredLevel,
+                };
+            }
+
+            case SuperConditionType.PlayerLevel:
+            {
+                int have = SharedExperienceManager.Instance?.GetCurrentLevel() ?? 0;
+                return new SynergyLine
+                {
+                    icon   = null,
+                    label  = "เลเวลผู้เล่น",
+                    detail = $"Lv{have}/{c.requiredLevel}",
+                    met    = have >= c.requiredLevel,
+                };
+            }
+        }
+        return default;
+    }
+
+    private StatData FindStat(StatType t)
+    {
+        if (allStats == null) return null;
+        foreach (var s in allStats) if (s != null && s.statType == t) return s;
+        return null;
     }
 
     // ── Card Pool ─────────────────────────────────────────────────────────
@@ -410,8 +360,18 @@ public class UpgradeManager : NetworkBehaviour
 
     // ── Augment Pool ──────────────────────────────────────────────────────
     /// <summary>
-    /// สุ่ม Augment แบบถ่วงน้ำหนัก — ตัดใบที่ถือครบ maxStacks แล้ว
-    /// และตัดใบที่เป็น exclusive ของตัวละครอื่น
+    /// สุ่ม Augment แบบถ่วงน้ำหนัก — คัดด้วย **ช่วงเวลาที่ออกได้** เป็นหลัก
+    ///
+    /// ═══ ช่วงเวลาคือตัวคุมความแรง ไม่ใช่ป้ายระดับ ═══
+    ///
+    /// augment ในเกมนี้ไม่มี Silver/Gold/Prismatic แบบที่เคยมี · ใบที่แรงมากถูกคุม
+    /// ด้วยการตั้งให้ออกได้เฉพาะช่วงท้าย และใบที่มีความหมายเฉพาะตอนต้นถูกตั้งให้
+    /// ปิดตัวเองเมื่อพ้นช่วงนั้น — ท่าเดียวกับ augment ของ TFT
+    ///
+    /// **นาฬิกาเป็นของ server และอ่านได้ทุกเครื่อง** (`GameTimeline.gameTime` เป็น
+    /// NetworkVariable) การคัดฝั่ง client จึงได้ผลเดียวกับที่ server จะคัด
+    /// ถ้าหานาฬิกาไม่เจอ (ซีนทดสอบ / ยังไม่เริ่มรัน) ถือว่าเป็นนาทีที่ 0
+    /// ซึ่งเปิดเฉพาะใบต้นเกม — ปลอดภัยกว่าเปิดทุกใบ
     /// </summary>
     List<UpgradeCardInfo> PickAugmentCards(int count)
     {
@@ -420,12 +380,15 @@ public class UpgradeManager : NetworkBehaviour
         var db = CloneSwarm.Meta.MetaDatabase.Instance;
         if (db == null || db.augments == null || augmentManager == null) return result;
 
+        float now = GameTimeline.Instance != null ? GameTimeline.Instance.GetGameTime() : 0f;
+
         var pool = new List<AugmentData>();
         foreach (var a in db.augments)
         {
             if (a == null) continue;
             if (a.exclusiveCharacter != null && a.exclusiveCharacter != myCharacter) continue;
-            if (augmentManager.GetStackCount(a) >= a.maxStacks) continue;
+            if (augmentManager.HasAugment(a)) continue;      // ใบละครั้งเดียว
+            if (!a.IsAvailableAt(now)) continue;             // ยังไม่ถึงเวลา หรือเลยเวลาแล้ว
             pool.Add(a);
         }
 

@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12fbd886087b03c4780dff572a28859d, type: 3}
+  m_Name: aug_swarm_lord
+  m_EditorClassIdentifier: Assembly-CSharp::StatAugment
+  augmentId: aug_swarm_lord
+  augmentName: Swarm Lord
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_swarm_lord.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_swarm_lord.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  icon: {fileID: 0}
+  weight: 12
+  exclusiveCharacter: {fileID: 0}
+  availableFromMinutes: 9
+  availableUntilMinutes: 0
+  bonuses:
+  - type: 4
+    value: 2
+  - type: 0
+    value: -0.1
+  references:
+    version: 2
+    RefIds: []

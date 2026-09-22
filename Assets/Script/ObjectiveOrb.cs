@@ -12,6 +12,14 @@ using UnityEngine;
 /// </summary>
 public class ObjectiveOrb : NetworkBehaviour
 {
+    [Header("Reward")]
+    [Tooltip("orb ใบนี้ให้การ์ดจากกองไหน\n\n" +
+             "OwnedCard = อัปของที่ถืออยู่แล้ว (พฤติกรรมเดิม)\n" +
+             "Augment   = การ์ด augment กองเดียวกับที่แจกตอนเลเวลที่กำหนด\n\n" +
+             "**ไม่ต้องทำ prefab คนละสาย** — การเก็บ การดูด การ despawn เหมือนกันหมด\n" +
+             "ต่างแค่ช่องนี้ช่องเดียว · แยกเป็นสองสคริปต์แล้วมันจะค่อยๆ เพี้ยนออกจากกัน")]
+    public OrbReward reward = OrbReward.OwnedCard;
+
     [Header("Visuals")]
     [Tooltip("VFX เสริมตอนเก็บ — เลือก key จาก VFXDatabase · None = ไม่เล่นอะไรเพิ่ม · " +
              "(OrbVisual.PlayCollectEffect หรือ OrbPickup ด้านล่างเล่นอยู่แล้ว ตัวนี้เป็นของแถม)")]
@@ -107,7 +115,7 @@ public class ObjectiveOrb : NetworkBehaviour
 
         // ส่ง clientId ของคนที่เก็บ → แสดง card เฉพาะคนนั้น
         ulong collectorId = pm.OwnerClientId;
-        SharedExperienceManager.Instance?.StartOrbPhaseForPlayer(collectorId);
+        SharedExperienceManager.Instance?.StartOrbPhaseForPlayer(collectorId, reward);
 
         // แจ้งเตือนทุก Client ให้เล่น VFX
         PlayCollectEffectClientRpc();

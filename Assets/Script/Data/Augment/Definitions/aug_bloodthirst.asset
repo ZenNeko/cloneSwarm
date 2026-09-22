@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09b9e19faa060874d97c317790e90373, type: 3}
+  m_Name: aug_bloodthirst
+  m_EditorClassIdentifier: Assembly-CSharp::TriggerAugment
+  augmentId: aug_bloodthirst
+  augmentName: Bloodthirst
+  displayName:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_bloodthirst.name
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  description:
+    m_TableReference:
+      m_TableCollectionName: Content
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: augment.aug_bloodthirst.desc
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  icon: {fileID: 0}
+  weight: 100
+  exclusiveCharacter: {fileID: 0}
+  availableFromMinutes: 0
+  availableUntilMinutes: 0
+  trigger: 0
+  triggerAmount: 20
+  internalCooldown: 0
+  effect: 1
+  magnitude: 0.05
+  duration: 0
+  vfxOnTrigger: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

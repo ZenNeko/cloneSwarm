@@ -39,10 +39,10 @@ public class WinLoseUI : MonoBehaviour
     public Color winDiagonalColor  = new Color32(0x18, 0x24, 0xD8, 0xFF);
     public Color loseDiagonalColor = new Color32(0x5A, 0x0E, 0x0E, 0xFF);
 
-    [Tooltip("ป้ายรองเหนือคำผล — ปล่อยว่างได้ (ซีนเก่าไม่มี)")]
+    // ข้อความย้ายเข้าตาราง UI แล้ว — ไม่เหลือช่อง string ไว้ เพราะช่องที่ยังอยู่
+    // จะกลายเป็นนิยามที่สองที่แก้แล้วไม่มีผล ซึ่งเป็นกับดักเดียวกับลิสต์นัดหมายในซีน
+    [Tooltip("ป้ายรองเหนือคำผล — ปล่อยว่างได้ (ซีนเก่าไม่มี) · ข้อความมาจากตาราง UI")]
     public TextMeshProUGUI subtitleLabel;
-    public string winSubtitle  = "ARENA 01 · เคลียร์แล้ว";
-    public string loseSubtitle = "ARENA 01 · ปาร์ตี้ล้มทั้งทีม";
 
     [Header("Stats (ฟิลด์เดิม — โค้ดยัด prefix ให้เอง)")]
     public TextMeshProUGUI timeLabel;      // "Time    15:32"
@@ -106,7 +106,7 @@ public class WinLoseUI : MonoBehaviour
         IsShowing = false;
 
         canvasGroup = panelRoot?.GetComponent<CanvasGroup>();
-        if (panelRoot) panelRoot.SetActive(false);
+        SetPanelVisible(false);
 
         if (returnButton)    returnButton.onClick.AddListener(ReturnToMenu);
         if (playAgainButton) playAgainButton.onClick.AddListener(OnPlayAgainClicked);
@@ -124,6 +124,46 @@ public class WinLoseUI : MonoBehaviour
         GameTimeline.OnGameWon  -= OnWin;
         GameTimeline.OnGameLost -= OnLose;
         RunRewardTracker.OnRewardBreakdownGranted -= OnRewardBreakdownGranted;
+    }
+
+    /// <summary>
+    /// ซ่อน/โชว์แผงผลลัพธ์ — **ห้ามใช้ SetActive กับ `panelRoot`**
+    ///
+    /// ═══ บั๊กที่เคยทำให้จอนี้ไม่เคยขึ้นเลยทั้งชนะและแพ้ ═══
+    ///
+    /// `panelRoot` ชี้ที่ **GameObject ตัวเดียวกับที่ component นี้เกาะอยู่**
+    /// (builder เขียนไว้ตรงๆ: `ui.panelRoot = root.gameObject`)
+    ///
+    /// `Awake` เรียกซ่อน → `SetActive(false)` ปิด GameObject ของตัวเอง →
+    /// **Unity ไม่เรียก `OnEnable` เลย** → `GameTimeline.OnGameWon/OnGameLost`
+    /// ไม่เคยถูก subscribe → บอสตาย/ผู้เล่นตาย event ยิงออกมาแล้วไม่มีใครฟัง
+    ///
+    /// และมันล็อกตัวเอง: สิ่งเดียวที่จะเปิด GameObject กลับคือ `ShowPanel`
+    /// ซึ่งเรียกได้จาก `OnWin`/`OnLose` เท่านั้น ซึ่งต้องการ subscription ที่ไม่มีวันเกิด
+    ///
+    /// (`LevelUpUI` เขียนแบบเดียวกันแต่ไม่พังเพราะ `UpgradeManager` เรียก
+    /// `LevelUpUI.Instance?.Show()` ตรงๆ ไม่ได้พึ่ง event ใน OnEnable)
+    ///
+    /// ซ่อนด้วย `CanvasGroup` แทน — GameObject ยังเปิดอยู่ subscription จึงรอด
+    /// และคอรูทีนยังเริ่มได้ (`StartCoroutine` บน object ที่ปิดอยู่โยน exception)
+    /// แผงนี้มี `CanvasGroup` ติดมาจาก builder อยู่แล้วและใช้มัน fade อยู่แล้วด้วย
+    ///
+    /// ไม่มี CanvasGroup ค่อยตกไปใช้ SetActive — ยอมให้จอไม่ขึ้นดีกว่าจอค้างทับจอเกม
+    /// </summary>
+    void SetPanelVisible(bool on)
+    {
+        if (panelRoot == null) return;
+
+        if (canvasGroup != null)
+        {
+            if (!panelRoot.activeSelf) panelRoot.SetActive(true);
+            canvasGroup.alpha          = on ? 1f : 0f;
+            canvasGroup.interactable   = on;
+            canvasGroup.blocksRaycasts = on;
+            return;
+        }
+
+        panelRoot.SetActive(on);
     }
 
     // ── Reward ────────────────────────────────────────────────────────────
@@ -273,7 +313,9 @@ public class WinLoseUI : MonoBehaviour
             resultLabel.text  = isWin ? "VICTORY!" : "DEFEAT";
             resultLabel.color = isWin ? winColor : loseColor;
         }
-        if (subtitleLabel)  subtitleLabel.text  = isWin ? winSubtitle : loseSubtitle;
+        if (subtitleLabel)
+            subtitleLabel.text = CloneSwarm.UI.P3R.P3RStrings.Ui(
+                isWin ? "ui.result.subtitle.win" : "ui.result.subtitle.lose");
         if (diagonalPanel)  diagonalPanel.color = isWin ? winDiagonalColor : loseDiagonalColor;
 
         // ฟิลด์เดิม (ป้าย+ค่ารวมกัน) กับฟิลด์ใหม่ (ค่าล้วน) เขียนทั้งคู่
@@ -293,7 +335,7 @@ public class WinLoseUI : MonoBehaviour
         if (goldEarnedLabel && pendingGoldEarned < 0) goldEarnedLabel.text = "...";
 
         // Fade in
-        if (panelRoot) panelRoot.SetActive(true);
+        SetPanelVisible(true);
         panelVisible = true;
 
         // ทองต้องเริ่มไหลหลัง panel เปิดแล้ว ไม่งั้นผู้เล่นพลาดอนิเมชันไปทั้งท่อน
@@ -404,6 +446,10 @@ public class WinLoseUI : MonoBehaviour
         var nm = Unity.Netcode.NetworkManager.Singleton;
         if (nm != null && nm.IsListening)
             nm.Shutdown();
+
+        // เข้าเมนูหลักตรงๆ ไม่ต้องผ่านจอไตเติล — ไตเติลเป็นพิธีเปิดของการเปิดเกม
+        // ไม่ใช่ของการจบรอบ · MenuManager.Start ล้างธงนี้ทิ้งทันทีหลังใช้
+        MenuManager.ReturningFromRun = true;
 
         SceneManager.LoadScene("MenuScene");
     }

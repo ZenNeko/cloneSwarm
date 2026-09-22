@@ -179,6 +179,68 @@ public class DevTools : MonoBehaviour
         Debug.Log("[DevTools] 🎯 Force spawn Objective");
     }
 
+    /// <summary>
+    /// วาง orb ที่ให้ augment ไว้ข้างหน้าผู้เล่น — ทางเดียวที่จะลองเส้นทางนี้โดยไม่ต้อง
+    /// รอเควสต์จบหรือบอสตาย · augment แจกที่เลเวล 3/7/12/18 เท่านั้น การเทสต์ด้วย
+    /// การเล่นจริงจึงแพงมาก
+    ///
+    /// วางห่าง 6 หน่วย — ไกลกว่า `attractRadius` (4) นิดเดียว เพื่อให้ **เห็นมันนิ่งอยู่
+    /// ก่อน แล้วค่อยเห็นมันวิ่งเข้าหา** ตอนเดินเข้าไป · วางทับตัวเลยจะเก็บทันทีจน
+    /// ไม่รู้ว่าการดูดทำงานไหม
+    /// </summary>
+    void OnSpawnAugOrb()
+    {
+        if (!RequireServer()) return;
+
+        var prefab = FindAugmentOrbPrefab();
+        if (prefab == null)
+        {
+            Debug.LogWarning("[DevTools] ไม่พบ orb ที่ตั้ง reward = Augment ในลิสต์ network prefab — " +
+                             "รัน Tools > Clone Swarm > Wire Augment Orb ก่อน");
+            return;
+        }
+
+        Vector3 pos = Vector3.zero;
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var obj = client.PlayerObject;
+            if (obj == null) continue;
+            pos = obj.transform.position + obj.transform.forward * 6f;
+            break;
+        }
+
+        var go = Instantiate(prefab, pos, Quaternion.identity);
+        var no = go.GetComponent<NetworkObject>();
+        if (no == null) { Debug.LogWarning("[DevTools] orb ไม่มี NetworkObject"); Destroy(go); return; }
+
+        no.Spawn(true);
+        Debug.Log($"[DevTools] ✨ วาง Augment Orb ที่ {pos}");
+    }
+
+    /// <summary>
+    /// หา orb ที่ให้ augment **จากสิ่งที่มันทำ ไม่ใช่จากชื่อ**
+    ///
+    /// หาในลิสต์ network prefab เพราะนั่นคือลิสต์เดียวที่ NGO ยอม spawn ได้ —
+    /// ถ้าหาไม่เจอที่นี่ แปลว่าต่อให้มี prefab อยู่ก็ spawn ไม่ได้อยู่ดี
+    /// เช็คที่ `reward` แทนชื่อไฟล์ · เปลี่ยนชื่อ prefab แล้วยังทำงาน และถ้าวันหนึ่ง
+    /// มี orb augment หลายแบบ ก็ยังหาเจอโดยไม่ต้องมาแก้รายชื่อที่นี่
+    /// </summary>
+    GameObject FindAugmentOrbPrefab()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || nm.NetworkConfig?.Prefabs?.Prefabs == null) return null;
+
+        foreach (var entry in nm.NetworkConfig.Prefabs.Prefabs)
+        {
+            var go = entry?.Prefab;
+            if (go == null) continue;
+
+            var orb = go.GetComponent<ObjectiveOrb>();
+            if (orb != null && orb.reward == OrbReward.Augment) return go;
+        }
+        return null;
+    }
+
     bool RequireServer()
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer) return true;
@@ -242,6 +304,7 @@ public class DevTools : MonoBehaviour
         AddButton(panelRoot, "Spawn Mini Boss",  new Color(1f, 0.85f, 0.2f), OnSpawnMiniBoss);
         AddButton(panelRoot, "Spawn Main Boss",  new Color(1f, 0.25f, 0.25f), OnSpawnMainBoss);
         AddButton(panelRoot, "Spawn Objective",  new Color(0.3f, 1f, 0.6f), OnSpawnObjective);
+        AddButton(panelRoot, "Spawn Aug Orb",    new Color(0.72f, 0.4f, 1f), OnSpawnAugOrb);
 
         // ── VFX Pool ──
         AddLabel(panelRoot, "-- VFX Pool (undersized) --", 11, new Color(0.7f,0.7f,0.7f));

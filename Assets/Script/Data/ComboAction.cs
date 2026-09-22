@@ -42,11 +42,12 @@ public class ComboAction : BossAction
         // เหมือน BossTimelineAction — AttackLoop ไม่ roll ให้ท่าลูก ต้อง roll เองครั้งเดียวตอนเริ่ม
         RollForSubActions(runner, EnumerateSubActions());
 
+        int gen = RunGenerationOf(runner);
         foreach (var entry in subActions)
         {
             if (entry.action != null)
             {
-                runner.StartCoroutine(RunSubActionDelayed(runner, telegraphPrefab, entry.action, entry.delayOffset));
+                runner.StartCoroutine(RunSubActionDelayed(runner, telegraphPrefab, entry.action, entry.delayOffset, gen));
             }
         }
 
@@ -61,16 +62,16 @@ public class ComboAction : BossAction
             if (e.action != null) yield return e.action;
     }
 
-    private IEnumerator RunSubActionDelayed(NetworkBehaviour runner, GameObject telegraphPrefab, BossAction action, float delay)
+    private IEnumerator RunSubActionDelayed(NetworkBehaviour runner, GameObject telegraphPrefab, BossAction action, float delay, int gen)
     {
         if (delay > 0f)
         {
             yield return new WaitForSeconds(delay);
         }
 
-        if (runner != null && runner.NetworkObject.IsSpawned)
-        {
-            yield return runner.StartCoroutine(action.ExecuteCoroutine(runner, telegraphPrefab));
-        }
+        // เช็คหลังหน่วง — ท่าลูกที่ยังไม่ถึงคิวตอนเปลี่ยนเฟสต้องไม่ยิงข้ามไปเฟสใหม่
+        if (!RunStillValid(runner, gen)) yield break;
+
+        yield return runner.StartCoroutine(action.ExecuteCoroutine(runner, telegraphPrefab));
     }
 }

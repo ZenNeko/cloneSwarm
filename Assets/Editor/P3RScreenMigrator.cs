@@ -235,9 +235,24 @@ namespace CloneSwarm.EditorTools
 
             if (siblingIndex >= 0) panel.transform.SetSiblingIndex(siblingIndex);
 
-            // ปิดไว้เสมอ — component บน GameObject ที่ปิดอยู่จะไม่ OnEnable ไม่ subscribe อะไร
-            // จึงอยู่ร่วมกับ panel เดิมได้โดยไม่ชนกันจนกว่าจะมีคนสลับสายเอง
-            panel.SetActive(false);
+            // ปิดไว้เป็นค่าปริยาย — component บน GameObject ที่ปิดอยู่จะไม่ OnEnable
+            // ไม่ subscribe อะไร จึงอยู่ร่วมกับ panel เดิมได้โดยไม่ชนกันจนกว่าจะมีคนสลับสายเอง
+            //
+            // **ยกเว้นจอที่ถือ singleton** — `LevelUpUI` / `WinLoseUI` / `PauseMenuUI`
+            // ตั้ง `Instance` ใน `Awake` ซึ่งไม่วิ่งบน object ที่ปิดอยู่ · ปิดทิ้งไว้แปลว่า
+            // `Instance` เป็น null ตลอดเกม จอเลเวลอัปไม่เด้ง จอจบเกมไม่ขึ้น
+            // และ **ไม่มีใครเปิดกลับให้** เพราะสิ่งเดียวที่จะเปิดคือจอเหล่านั้นเอง
+            //
+            // อาการนี้เกิดซ้ำมาหลายรอบแล้วและต้องไล่เปิดคืนด้วยมือทุกครั้ง — ต้นเหตุคือ
+            // บรรทัดนี้ · จอพวกนี้ซ่อนตัวเองใน Awake/Start อยู่แล้ว "เปิด" ไม่ได้แปลว่า "เห็น"
+            bool mustStayActive = System.Array.IndexOf(
+                P3RPanelActivationFix.MustBeActive, s.PanelName) >= 0;
+
+            panel.SetActive(mustStayActive);
+            if (mustStayActive)
+                Debug.Log($"[Migrate] '{s.PanelName}' เปิดค้างไว้ — เป็นจอที่ถือ singleton " +
+                          "ถ้าปิด Awake ไม่วิ่งแล้ว Instance เป็น null ตลอดเกม " +
+                          "(จอพวกนี้ซ่อนตัวเองใน Awake/Start อยู่แล้ว เปิดไม่ได้แปลว่าเห็น)");
 
             var duplicates = FindDuplicateComponents(targetScene, panel);
 

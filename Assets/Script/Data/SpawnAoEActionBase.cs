@@ -126,6 +126,7 @@ public abstract class SpawnAoEActionBase : BossAction
     protected abstract void ConfigureTelegraphZone(TelegraphZone zone);
 
     // warning + ช่วง resolve สั้นๆ หลัง telegraph ระเบิด × จำนวนครั้งที่ยิงซ้ำ
+    // ตรงกับที่ ExecuteCoroutine รอจริง (TelegraphZone ระเบิดที่ warningDuration แล้ว despawn อีก 0.1s)
     public override float GetEditorDuration()
         => actionDelay + Mathf.Max(0, repeatCount - 1) * repeatInterval + warningDuration + 0.5f;
 
@@ -149,21 +150,36 @@ public abstract class SpawnAoEActionBase : BossAction
             if (shot > 0 && rerollEachRepeat && !string.IsNullOrEmpty(rollName))
                 (runner as BossController)?.Rolls?.Roll(rollName);
 
-            SpawnOneWave(runner, telegraphPrefab);
+            SpawnOneWave(runner, telegraphPrefab, AoEWorld.FromRunner(runner));
 
             if (shot < shots - 1 && repeatInterval > 0f)
                 yield return new WaitForSeconds(repeatInterval);
         }
+
+        // รอให้ระลอกสุดท้ายระเบิดก่อนคืนค่า — ดูสัญญาใน BossAction.ExecuteCoroutine
+        //
+        // ของเดิมคืนทันทีที่ spawn เสร็จ ซึ่งไม่เป็นไรตอนที่ timeline รอด้วยนาฬิกา
+        // แต่พอ timeline มารอ coroutine จริง ท่าที่คืนเร็วจะทำให้บอสขึ้นรอบใหม่
+        // ตอนที่วงยังนับถอยหลังอยู่ · LimitCutAction ทำแบบนี้อยู่แล้วตั้งแต่แรก
+        if (warningDuration > 0f) yield return new WaitForSeconds(warningDuration);
     }
 
-    private void SpawnOneWave(NetworkBehaviour runner, GameObject telegraphPrefab)
+    /// <summary>
+    /// จุดเกิด + ทิศของโซนทั้งหมดในหนึ่งระลอก
+    ///
+    /// **นิยามเดียวของ "ท่านี้ลงตรงไหน"** — ตอนยิงจริงเรียกผ่าน SpawnOneWave
+    /// ตอนวาดพรีวิวใน Boss Designer เรียกตรงๆ ด้วย AoEWorld ที่ประกอบจากผู้เล่นสมมติ
+    /// ถ้าแยกเป็นสองสูตร ภาพที่วาดจะเพี้ยนจากของจริงทันทีที่ใครแก้ข้างเดียว
+    /// </summary>
+    public List<(Vector3 pos, Quaternion rot)> ResolveWave(in AoEWorld world)
     {
+        var result = new List<(Vector3, Quaternion)>();
+
         // roll ครั้งเดียวต่อระลอก แล้วใช้ transform เดียวกันกับทุกจุดเกิด
         // ถ้าแปลงแยกทีละจุด แพตเทิร์น AllPlayers จะกลายเป็นมั่วแทนลวดลายที่อ่านออก
-        RollTransform rollTf = GetRollTransform(runner);
+        RollTransform rollTf = GetRollTransform(world);
 
-        List<Vector3> spawnPositions = GetSpawnPositions(runner);
-        foreach (var rawPos in spawnPositions)
+        foreach (var rawPos in GetSpawnPositions(world))
         {
             Vector3 pos = rollTf.Apply(rawPos);
 
@@ -172,12 +188,11 @@ public abstract class SpawnAoEActionBase : BossAction
             if (GetAoEType() == AoEType.Line || GetAoEType() == AoEType.Cone)
             {
                 // หมุนไปทางผู้เล่นที่ใกล้ที่สุดหรือเป้าหมายเพื่อให้พาดผ่านตัว
-                Transform nearestPlayer = FindNearestPlayer(pos);
-                if (nearestPlayer != null)
+                if (world.TryNearestPlayer(pos, out Vector3 near))
                 {
-                    Vector3 dir = (nearestPlayer.position - pos).normalized;
+                    Vector3 dir = near - pos;
                     dir.y = 0f;
-                    if (dir != Vector3.zero) rot = Quaternion.LookRotation(dir);
+                    if (dir.sqrMagnitude > 0.0001f) rot = Quaternion.LookRotation(dir.normalized);
                 }
             }
             else
@@ -186,8 +201,16 @@ public abstract class SpawnAoEActionBase : BossAction
                 rot = rollTf.Apply(rot);
             }
 
-            SpawnZoneAt(runner, telegraphPrefab, pos, rot);
+            result.Add((pos, rot));
         }
+
+        return result;
+    }
+
+    private void SpawnOneWave(NetworkBehaviour runner, GameObject telegraphPrefab, in AoEWorld world)
+    {
+        foreach (var (pos, rot) in ResolveWave(world))
+            SpawnZoneAt(runner, telegraphPrefab, pos, rot);
     }
 
     /// <summary>
@@ -280,10 +303,10 @@ public abstract class SpawnAoEActionBase : BossAction
         return db != null ? db.GetIdForAsset(asset) : -1;
     }
 
-    private List<Vector3> GetSpawnPositions(NetworkBehaviour runner)
+    private List<Vector3> GetSpawnPositions(in AoEWorld world)
     {
         var list = new List<Vector3>();
-        Vector3 basePos = runner.transform.position;
+        Vector3 basePos = world.bossPos;
 
         switch (targetingMode)
         {
@@ -292,13 +315,13 @@ public abstract class SpawnAoEActionBase : BossAction
                 break;
             case TargetingMode.RandomPlayer:
             {
-                // เดิมไม่กรอง isDead ทั้งที่ AllPlayers กรอง — สุ่มติดศพแล้ววงไปลงที่ศพ
-                // บั๊กตระกูลเดียวกับ tether ที่แก้ไปแล้ว
-                var alive = CollectAlivePlayerPositions(basePos.y);
-                if (alive.Count > 0)
+                // AoEWorld กรอง isDead ให้แล้วตั้งแต่ตอนประกอบ — เดิมทางนี้ไม่กรองทั้งที่
+                // AllPlayers กรอง สุ่มติดศพแล้ววงไปลงที่ศพ (บั๊กตระกูลเดียวกับ tether)
+                var alive = world.alivePlayers;
+                if (world.PlayerCount > 0)
                 {
                     // RollKind.Target ให้ roll เป็นคนเลือก จะได้ reproduce ตาม seed ได้
-                    int idx = TryGetTargetRoll(runner, alive.Count, out int rolled)
+                    int idx = TryGetTargetRoll(world, alive.Count, out int rolled)
                         ? rolled
                         : Random.Range(0, alive.Count);
                     list.Add(alive[idx] + targetOffset);
@@ -310,34 +333,16 @@ public abstract class SpawnAoEActionBase : BossAction
                 break;
             }
             case TargetingMode.NearestPlayer:
-                Transform nearest = FindNearestPlayer(basePos);
-                if (nearest != null)
-                {
-                    Vector3 pos = nearest.position;
-                    pos.y = basePos.y;
-                    list.Add(pos + targetOffset);
-                }
+                if (world.TryNearestPlayer(basePos, out Vector3 nearest))
+                    list.Add(nearest + targetOffset);
                 else
-                {
                     list.Add(basePos + targetOffset);
-                }
                 break;
             case TargetingMode.AllPlayers:
-                if (NetworkManager.Singleton != null)
-                {
-                    foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
-                    {
-                        if (c.PlayerObject != null)
-                        {
-                            var pm = c.PlayerObject.GetComponent<playermove>();
-                            if (pm != null && pm.isDead.Value) continue;
+                if (world.alivePlayers != null)
+                    foreach (var p in world.alivePlayers)
+                        list.Add(p + targetOffset);
 
-                            Vector3 pos = c.PlayerObject.transform.position;
-                            pos.y = basePos.y;
-                            list.Add(pos + targetOffset);
-                        }
-                    }
-                }
                 if (list.Count == 0)
                 {
                     list.Add(basePos + targetOffset);
@@ -348,7 +353,7 @@ public abstract class SpawnAoEActionBase : BossAction
                 break;
 
             case TargetingMode.ArenaAnchor:
-                list.Add(ResolveAnchorPosition(runner) + targetOffset);
+                list.Add(ResolveAnchorPosition(world) + targetOffset);
                 break;
         }
 
@@ -359,55 +364,36 @@ public abstract class SpawnAoEActionBase : BossAction
     /// จุดยึดในสนาม · ถ้า roll เป็น RollKind.Anchor และมี anchorChoices ให้ roll เลือกจากลิสต์
     /// (เลือกจากลิสต์ที่ designer ตั้ง ไม่ใช่ index ดิบของ enum — ไม่งั้นจะได้จุดมั่วซั่ว)
     /// </summary>
-    private Vector3 ResolveAnchorPosition(NetworkBehaviour runner)
+    private Vector3 ResolveAnchorPosition(in AoEWorld world)
     {
-        var boss = runner as BossController;
-        ArenaDefinition arena = boss?.config?.arena;
+        var rolls = world.rolls;
 
         ArenaAnchor chosen = arenaAnchor;
-        if (anchorChoices != null && anchorChoices.Length > 0 && boss?.Rolls != null
+        if (anchorChoices != null && anchorChoices.Length > 0 && rolls != null
             && !string.IsNullOrEmpty(rollName)
-            && boss.Rolls.GetKind(rollName) == RollKind.Anchor)
+            && rolls.GetKind(rollName) == RollKind.Anchor)
         {
-            int value = boss.Rolls.Peek(rollName);
+            int value = rolls.Peek(rollName);
             if (value >= 0) chosen = anchorChoices[value % anchorChoices.Length];
         }
 
-        if (arena == null)
+        if (world.arena == null)
         {
             Debug.LogWarning($"[{GetType().Name}] {name}: targetingMode = ArenaAnchor แต่ BossEncounterConfig.arena ว่าง — ใช้ตำแหน่งบอสแทน");
-            return runner != null ? runner.transform.position : Vector3.zero;
+            return world.bossPos;
         }
 
-        return ArenaAnchors.Resolve(arena, chosen, arenaDistanceScale);
+        return ArenaAnchors.Resolve(world.arena, chosen, arenaDistanceScale);
     }
 
-    private List<Vector3> CollectAlivePlayerPositions(float y)
-    {
-        var list = new List<Vector3>();
-        if (NetworkManager.Singleton == null) return list;
-
-        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (c.PlayerObject == null) continue;
-            var pm = c.PlayerObject.GetComponent<playermove>();
-            if (pm == null || pm.isDead.Value) continue;
-
-            Vector3 p = c.PlayerObject.transform.position;
-            p.y = y;
-            list.Add(p);
-        }
-        return list;
-    }
-
-    private bool TryGetTargetRoll(NetworkBehaviour runner, int count, out int index)
+    private bool TryGetTargetRoll(in AoEWorld world, int count, out int index)
     {
         index = 0;
-        var boss = runner as BossController;
-        if (boss?.Rolls == null || string.IsNullOrEmpty(rollName)) return false;
-        if (boss.Rolls.GetKind(rollName) != RollKind.Target) return false;
+        var rolls = world.rolls;
+        if (rolls == null || string.IsNullOrEmpty(rollName)) return false;
+        if (rolls.GetKind(rollName) != RollKind.Target) return false;
 
-        int value = boss.Rolls.Peek(rollName);
+        int value = rolls.Peek(rollName);
         if (value < 0) return false;
 
         index = value % count;
