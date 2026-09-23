@@ -39,6 +39,11 @@ public class WaveManager : NetworkBehaviour
              "0.10 = -10% ต่อ wave (interval สั้นลง)\n" +
              "wave 5 → interval × (1-0.10)^5 ≈ 0.59 ของ base")]
     public float spawnRateAccel       = 0.10f;
+    [Tooltip("ศัตรูปกติที่มีชีวิตพร้อมกันได้สูงสุด (เล่นคนเดียว) · 0 = ไม่จำกัด\n" +
+             "ถึงเพดานแล้วหยุดปล่อยตัวใหม่ (แบบ Vampire Survivors) · บอสไม่นับ · แมพตั้งทับได้")]
+    [Min(0)] public int maxAliveEnemies        = 300;
+    [Tooltip("เพดานเพิ่มต่อผู้เล่นที่เกินคนแรก")]
+    [Min(0)] public int maxAlivePerExtraPlayer = 50;
 
     [Header("Wave Configs — ช่วงตามนาที (แนะนำ)")]
     // ตั้งแล้วจะแทน waveConfigs + wavesPerConfig ข้างล่างทั้งคู่
@@ -94,6 +99,8 @@ public class WaveManager : NetworkBehaviour
         expMultPerWave     = expMultPerWave,
         maxSpeedMultiplier = maxSpeedMultiplier,
         spawnRateAccel     = spawnRateAccel,
+        maxAliveEnemies        = maxAliveEnemies,
+        maxAlivePerExtraPlayer = maxAlivePerExtraPlayer,
     };
 
     /// <summary>
@@ -265,6 +272,7 @@ public class WaveManager : NetworkBehaviour
         CurrentHealthMultiplier = healthMult;   // เก็บไว้ให้ BossManager อ่าน
         CurrentExpMultiplier    = expMult;
 
+        spawner.SetAliveCap(sc);   // ทุก wave — จำนวนผู้เล่นอาจเปลี่ยนระหว่างรัน
         spawner.StartSpawning(spawnRate, healthMult, speedMult, expMult, GetConfigFor(wave, t));
         Debug.Log($"[WaveManager] Wave {wave} @ {t / 60f:0.0}m — " +
                   $"HP×{healthMult:F2} SPD×{speedMult:F2} EXP×{expMult:F2} rate:{spawnRate:F2}s");

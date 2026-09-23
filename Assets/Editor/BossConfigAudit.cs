@@ -69,8 +69,9 @@ namespace CloneSwarm.EditorTools
         /// ค่า ≤ 0 บนเฟสที่ไม่ใช่เฟสสุดท้าย = ต้องรอ HP เหลือ 0 ซึ่งบอสตายไปก่อน → เฟสถัดไปไม่มีวันมา
         /// เกิดจริงได้ง่าย: เฟสสุดท้ายมักตั้ง 0 (ค่านี้ไม่ถูกใช้) แล้วกด "+ Phase" ต่อท้าย
         /// ค่าไม่ลดลงจากเฟสก่อน = ข้ามเฟสนี้ทันทีที่เข้า (HP ต่ำกว่าเกณฑ์อยู่แล้ว)
+        /// internal (ไม่ใช่ private) เพื่อให้ BossConfigAuditTests เรียกตรงได้ — assembly เดียวกัน
         /// </summary>
-        static void CheckPhaseThresholds(BossEncounterConfig cfg, List<Problem> problems)
+        internal static void CheckPhaseThresholds(BossEncounterConfig cfg, List<Problem> problems)
         {
             var phases = cfg.phases;
             if (phases == null) return;

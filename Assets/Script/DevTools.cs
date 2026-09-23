@@ -27,6 +27,17 @@ public class DevTools : MonoBehaviour
     private TextMeshProUGUI vfxText;
 
     // ─────────────────────────────────────────────────────────────────────
+    // ปุ่มโกง (spawn บอส / ฆ่าศัตรูทั้งหมด / บังคับเลเวลอัป) ห้ามหลุดไปใน release build
+    // ใช้เช็กตอนรันแทน #if เพราะ component นี้ serialize อยู่ใน SampleScene —
+    // ครอบทั้งคลาสด้วย #if จะกลายเป็น missing script ใน build
+    // Debug.isDebugBuild = true ใน Editor และ Development Build เท่านั้น
+    void Awake()
+    {
+        if (Debug.isDebugBuild) return;
+        if (panelRoot != null) panelRoot.SetActive(false);
+        enabled = false;
+    }
+
     void Update()
     {
         if (Keyboard.current != null && Keyboard.current.f1Key.wasPressedThisFrame) TogglePanel();

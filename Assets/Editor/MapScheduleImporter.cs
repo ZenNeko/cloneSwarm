@@ -157,6 +157,8 @@ namespace CloneSwarm.EditorTools
                         expMultPerWave     = wm.expMultPerWave,
                         maxSpeedMultiplier = wm.maxSpeedMultiplier,
                         spawnRateAccel     = wm.spawnRateAccel,
+                        maxAliveEnemies        = wm.maxAliveEnemies,
+                        maxAlivePerExtraPlayer = wm.maxAlivePerExtraPlayer,
                     };
 
                     log.AppendLine($"  {map.name} / {tier.tier} ← สเกลศัตรู {tier.enemyScaling}");

@@ -28,14 +28,37 @@ public class EnemySpawner : NetworkBehaviour
     private WaveConfig currentConfig;
     private Coroutine  _spawnLoop;
 
-    public override void OnNetworkSpawn()
-    {
-        // WaveManager เรียก StartSpawning() เอง — ไม่ spawn ทันที
-    }
+    // ── เพดานจำนวน (Server only) ──────────────────────────────────────────
+    // นับเฉพาะตัวที่ spawner นี้ปล่อย — บอส/มินิบอสมาจาก BossManager จึงไม่นับและไม่ถูกกัน
+    // ตัวที่ตายออกจากลิสต์ผ่าน Enemy.OnEnemyDiedServer · ตัวที่ถูก despawn ทางอื่น (ล้างซีน ฯลฯ)
+    // ถูกกวาดทิ้งตอนนับ — ลิสต์จึงไม่พึ่ง event อย่างเดียว
+    private readonly System.Collections.Generic.List<Enemy> _alive = new();
+    private static readonly System.Predicate<Enemy> IsGone = e => e == null || !e.IsSpawned;
+    private EnemyScaling _capSource;
+    private bool _capReachedLogged;
+
+    /// <summary>ศัตรูปกติที่มีชีวิตอยู่ตอนนี้ (server) — สำหรับ DevTools / log</summary>
+    public int AliveCount { get { _alive.RemoveAll(IsGone); return _alive.Count; } }
+
+    /// <summary>เพดาน ณ ตอนนี้ตามจำนวนผู้เล่นที่ต่ออยู่ · 0 = ไม่จำกัด</summary>
+    public int CurrentAliveCap =>
+        _capSource == null || NetworkManager.Singleton == null ? 0
+        : _capSource.AliveCapFor(NetworkManager.Singleton.ConnectedClientsList.Count);
+
+    /// <summary>WaveManager ส่งสเกลที่ใช้จริงมาทุก wave (แมพหรือซีน)</summary>
+    public void SetAliveCap(EnemyScaling source) => _capSource = source;
+
+    public override void OnNetworkSpawn() => Enemy.OnEnemyDiedServer += OnEnemyDied;
+
+    void OnEnemyDied(Enemy e, Vector3 _) => _alive.Remove(e);
+
+    // WaveManager เรียก StartSpawning() เอง — ไม่ spawn ทันทีใน OnNetworkSpawn
 
     public override void OnNetworkDespawn()
     {
+        Enemy.OnEnemyDiedServer -= OnEnemyDied;
         StopSpawning();
+        _alive.Clear();
     }
 
     // ── API สำหรับ WaveManager ─────────────────────────────────────────────
@@ -97,6 +120,26 @@ public class EnemySpawner : NetworkBehaviour
 
         // base spawn 1 ครั้ง + extra (boost)
         int total = 1 + extraSpawnsPerTick;
+
+        // ถึงเพดาน = ข้ามรอบนี้ ไม่ฆ่าตัวเก่า (ผู้เล่นอาจกำลังตีอยู่) · ลูปยังเดินต่อ
+        // พอฆ่าลดลงก็ปล่อยตัวใหม่ได้เองในรอบถัดไป
+        int cap = CurrentAliveCap;
+        if (cap > 0)
+        {
+            int room = cap - AliveCount;
+            if (room <= 0)
+            {
+                if (!_capReachedLogged)
+                {
+                    _capReachedLogged = true;
+                    Debug.Log($"[EnemySpawner] ถึงเพดาน {cap} ตัว — หยุดปล่อยจนกว่าจะลดลง");
+                }
+                return;
+            }
+            _capReachedLogged = false;
+            total = Mathf.Min(total, room);
+        }
+
         for (int i = 0; i < total; i++)
             DoSpawnOnce();
     }
@@ -116,7 +159,12 @@ public class EnemySpawner : NetworkBehaviour
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         // Apply wave scaling หลัง Spawn (OnNetworkSpawn set base health แล้ว)
-        go.GetComponent<Enemy>()?.ApplyWaveScaling(currentHealthMult, currentSpeedMult, currentExpMult);
+        var enemy = go.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            enemy.ApplyWaveScaling(currentHealthMult, currentSpeedMult, currentExpMult);
+            _alive.Add(enemy);
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

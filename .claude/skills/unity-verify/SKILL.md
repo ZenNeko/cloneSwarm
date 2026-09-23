@@ -33,18 +33,26 @@ coverage.
 
 `Temp/UnityLockfile` makes batchmode fail most of the time. Compile with Unity's own build-graph
 response file instead — same compiler, same defines, same references as the Editor uses.
+The lockfile can also be **stale** (left behind by a crashed Editor) — check `Get-Process Unity*`
+before concluding the Editor is open.
+
+Derive the Editor path from `ProjectSettings/ProjectVersion.txt` — never hardcode a version.
+Older editors (e.g. 6000.7.0a2) are still installed, and opening this project with one of them
+risks a downgrade/reimport. The bundled .NET SDK version changes per editor too, so glob for it.
 
 ```bash
 # หา rsp ที่มี UNITY_EDITOR — ห้ามใช้ ls -t เฉยๆ
 RSP=$(grep -l 'UNITY_EDITOR' Library/Bee/artifacts/*.dag/Assembly-CSharp.rsp | head -1)
 SCRATCH="<your scratch dir>"
+VER=$(head -1 ProjectSettings/ProjectVersion.txt | cut -d' ' -f2)
+ED="E:/Zenity Why not/Unity/$VER/Editor"
+CSC=$(ls "$ED"/Data/DotNetSdk/sdk/*/Roslyn/bincore/csc.dll | head -1)
 
 sed -e "s#^-out:.*#-out:\"$SCRATCH/AC.dll\"#" \
     -e "s#^-refout:.*#-refout:\"$SCRATCH/AC.ref.dll\"#" \
     "$RSP" > "$SCRATCH/AC.rsp"
 
-dotnet "E:/Zenity Why not/Unity/6000.7.0a2/Editor/Data/DotNetSdk/sdk/8.0.318/Roslyn/bincore/csc.dll" \
-    "@$SCRATCH/AC.rsp"
+"$ED/Data/DotNetSdk/dotnet.exe" "$CSC" "@$SCRATCH/AC.rsp"
 ```
 
 Four ways this goes wrong silently:
@@ -70,7 +78,8 @@ Editor and runtime assemblies are separate compilations. A change spanning both 
 The Editor must be **closed** first. Ask the owner to close it; do not kill the process.
 
 ```bash
-U="E:/Zenity Why not/Unity/6000.7.0a2/Editor/Unity.exe"
+VER=$(head -1 ProjectSettings/ProjectVersion.txt | cut -d' ' -f2)   # อย่า hardcode — a2 ยังติดตั้งอยู่
+U="E:/Zenity Why not/Unity/$VER/Editor/Unity.exe"
 P="E:/Zenity Why not/cloneSwarm"
 
 "$U" -quit -batchmode -nographics -projectPath "$P" \

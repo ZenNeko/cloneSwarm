@@ -91,6 +91,9 @@ public class ColorMatchAoEAction : SpawnAoEActionBase
         return ArenaAnchors.Resolve(arena, arenaAnchor, arenaDistanceScale);
     }
 
+    // เตือนครั้งเดียวต่อ session — SpawnColoredZone ถูกเรียกต่อผู้เล่นต่อ volley จะท่วม Console
+    private static bool s_warnedMissingSlot;
+
     private void SpawnColoredZone(Vector3 position, GameObject telegraphPrefab, ulong clientId, NetworkBehaviour runner)
     {
         // ต้องตั้ง isColorMatch/requiredClientId "ก่อน" Spawn — ไม่งั้น client จะเห็นค่า default
@@ -106,7 +109,20 @@ public class ColorMatchAoEAction : SpawnAoEActionBase
         // แจ้งผู้เล่นว่าต้องเข้าวงสีอะไร
         int slot = PlayerSlotRegistry.Instance != null
             ? PlayerSlotRegistry.Instance.GetSlot(clientId) : -1;
-        if (slot < 0) slot = (int)(clientId % 4);
+        if (slot < 0)
+        {
+            // ห้าม fallback เป็น clientId % 4 (CLAUDE.md ข้อ 11) — clientId ไม่ใช่ slot
+            // และห้ามเดาสีใดสีหนึ่งแทน: สีที่ประกาศบน HUD คือคำสั่งให้ผู้เล่นวิ่งเข้าวง
+            // ถ้าเดาผิดจากสีที่วงทาจริง ผู้เล่นตายเพราะทำตาม HUD — ไม่ประกาศเลยยังปลอดภัยกว่า
+            // (วงยังเกิดและผูก requiredClientId ตามปกติ แค่ไม่มีข้อความบอกสี)
+            if (!s_warnedMissingSlot)
+            {
+                s_warnedMissingSlot = true;
+                Debug.LogWarning($"[ColorMatch] {name}: หา slot ของ client {clientId} ไม่เจอใน PlayerSlotRegistry — " +
+                                 "ข้ามการประกาศสีบน HUD (เตือนครั้งเดียว)");
+            }
+            return;
+        }
 
         string colorName = slot switch
         {

@@ -38,8 +38,9 @@ One button does the first three: `Window > Clone Swarm > P3R Screens` → **ส�
 Headless equivalent (Unity Editor must be **closed** — it holds `Temp/UnityLockfile`):
 
 ```bash
-U="E:/Zenity Why not/Unity/6000.7.0a2/Editor/Unity.exe"
 P="E:/Zenity Why not/cloneSwarm"
+VER=$(head -1 "$P/ProjectSettings/ProjectVersion.txt" | cut -d' ' -f2)   # อย่า hardcode — editor รุ่นเก่ายังติดตั้งอยู่
+U="E:/Zenity Why not/Unity/$VER/Editor/Unity.exe"
 "$U" -quit -batchmode -nographics -projectPath "$P" \
      -executeMethod CloneSwarm.EditorTools.P3RCharacterSceneBuilder.Build -logFile "<ABS>/b.log"
 "$U" -quit -batchmode -nographics -projectPath "$P" \

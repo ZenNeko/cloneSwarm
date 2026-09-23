@@ -260,6 +260,258 @@ public class PlayerWeaponManager : NetworkBehaviour
         return null;
     }
 
+    // ── Server sanity clamp: ค่าต่อสู้ที่ client ส่งขึ้นมา ──────────────────
+    //
+    // ServerRpc ฝั่งต่อสู้รับ damage / radius / range / ตำแหน่ง / knockback จาก client ตรงๆ
+    // เดิมเชื่อทุกค่า — ส่ง radius 9999 + damage 1e9 มาครั้งเดียวก็ล้างทั้งแมพ
+    // เกมนี้เล่นกับเพื่อน เป้าหมายจึง **ไม่ใช่ anti-cheat** แค่กันค่าหลุดโลก (บั๊กหรือแก้เล่นง่ายๆ)
+    // เพดานทุกตัวจึงหลวมมากโดยตั้งใจ — ห้ามบีบจนตัดการเล่นปกติ
+    //
+    // เพดานอิงข้อมูลจริงที่ server มี:
+    //   • WeaponData / AbilityData ตามชื่อที่ส่งมา (ค่าสูงสุดทุก level)
+    //   • PlayerStatManager ฝั่ง server — การ์ด stat / talent / augment mirror มาถึง server แล้ว
+    //     แต่บัฟชั่วคราวบางตัว (augment TempDamage, บัฟจาก SupportArena) อยู่แค่ฝั่ง owner
+    //     → power ฝั่ง server ต่ำกว่าจริงได้ นี่คือเหตุผลที่ DamageSlack สูงกว่าตัวอื่น
+    //   • ตำแหน่งผู้เล่นฝั่ง server — การเดินเป็น owner-authoritative และ NetworkTransform
+    //     ตามหลัง จึงต้องเผื่อระยะคงที่ (PositionMargin) เสมอ
+    //
+    // ชื่อที่หาไม่เจอ ("Unknown", ชื่อที่สร้างเองอย่าง "Funnel Railgun" ของ FunnelObject)
+    // **ไม่ปฏิเสธ** — ใช้เพดานรวม: ดาเมจสูงสุดของทั้งเกม + ระยะ UnknownBaseReach
+    //
+    // เกินเพดาน = clamp ไม่ใช่ทิ้ง · เตือนครั้งเดียวต่อชื่ออาวุธต่อ session (ทางนี้ร้อน ห้าม log รัว)
+    // ทาง fast path ไม่ allocate — lookup เป็น Dictionary<string,…> สร้างครั้งเดียว
+
+    /// <summary>คูณคริต — ต้องตรงกับ RollDamage ใน WeaponBase / AbilityBase</summary>
+    const float CritDamageMult   = 2f;
+    /// <summary>เผื่อตัวคูณเฉพาะอาวุธ (Runic Blade +15%, Funnel ×1.5, ThunderRail chain ≤×2)
+    /// และบัฟชั่วคราวที่ server ไม่เห็น</summary>
+    const float DamageSlack      = 4f;
+    /// <summary>เผื่อตัวคูณรัศมีเฉพาะอาวุธ (BunnyHop exile ×1.5, projectile exile ×2 ฯลฯ)</summary>
+    const float ReachSlack       = 3f;
+    const float PositionSlack    = 2f;
+    /// <summary>เผื่อ NetworkTransform ตามหลัง + ระยะ dash / ขยับระหว่าง coroutine ของอาวุธ</summary>
+    const float PositionMargin   = 15f;
+    /// <summary>พื้นขั้นต่ำของระยะฐาน — หลายอาวุธเก็บรัศมีไว้ที่ field ในสคริปต์ ไม่ใช่ใน data
+    /// (GiantRocket 6, HunterMissile 3, sticky rocket 2.5, chain search 8–10)</summary>
+    const float MinBaseReach     = 10f;
+    /// <summary>ระยะฐานของชื่อที่หาไม่เจอ — Funnel ยิงไกล 20 × area</summary>
+    const float UnknownBaseReach = 60f;
+    /// <summary>knockback / pull เป็นการย้ายตำแหน่งตรงๆ (เมตร) ของจริงสูงสุด 1.5</summary>
+    const float MaxDisplacement  = 5f;
+    const int   MaxSpawnCount    = 64;    // SplitSpike 28 + bonus projectile คือสูงสุดที่เจอ
+    const int   MaxZoneTicks     = 50;
+    const float MaxFreezeSeconds = 10f;   // ของจริง 1.5–2 × duration mult
+    const float MaxSlowSeconds   = 30f;
+
+    struct WeaponCap { public float damage; public float reach; }
+
+    struct CombatBounds
+    {
+        public string name;
+        public float  damage;     // ดาเมจต่อ hit
+        public float  reach;      // radius / range / maxRange / width
+        public float  position;   // ระยะจากตัวผู้เล่นฝั่ง server
+        public bool   anyPosition;
+    }
+
+    static Dictionary<string, WeaponCap> s_weaponCaps;
+    static float                         s_globalMaxDamage;
+    static readonly HashSet<string>      s_clampWarned = new();
+
+    // Enter Play Mode แบบไม่ reload domain — static ค้างข้ามรอบ ต้องล้างเอง
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetSanityCaches()
+    {
+        s_weaponCaps      = null;
+        s_globalMaxDamage = 0f;
+        s_clampWarned.Clear();
+    }
+
+    /// <summary>สร้างตารางเพดานครั้งเดียว — ชุดเดียวกับที่ FindWeaponDataByName ค้น
+    /// (allWeapons + Super + Fusion) บวกของประจำตัวละครจาก MetaDatabase
+    /// (starting / passive weapon และ AbilityData ซึ่ง ability ส่ง abilityName มาเป็น weaponName)</summary>
+    void EnsureWeaponCaps()
+    {
+        if (s_weaponCaps != null) return;
+
+        var um = GetComponent<UpgradeManager>();
+        var db = CloneSwarm.Meta.MetaDatabase.Instance;
+        if (um == null && db == null) return;   // ยังไม่มีแหล่งข้อมูล — ลองใหม่รอบหน้า
+
+        var caps = new Dictionary<string, WeaponCap>();
+
+        if (um != null)
+        {
+            if (um.allWeapons != null)
+                foreach (var w in um.allWeapons)
+                {
+                    AddWeaponCap(caps, w);
+                    if (w != null) AddWeaponCap(caps, w.superVersion);
+                }
+            if (um.allRecipes != null)
+                foreach (var r in um.allRecipes)
+                    if (r != null) AddWeaponCap(caps, r.fusionResult);
+        }
+
+        if (db != null && db.characters != null)
+            foreach (var cd in db.characters)
+            {
+                if (cd == null) continue;
+                AddWeaponCap(caps, cd.startingWeapon);
+                if (cd.passiveWeapons != null)
+                    foreach (var w in cd.passiveWeapons) AddWeaponCap(caps, w);
+                if (cd.abilities != null)
+                    foreach (var a in cd.abilities) AddAbilityCap(caps, a);
+            }
+
+        float globalMax = 0f;
+        foreach (var kv in caps) globalMax = Mathf.Max(globalMax, kv.Value.damage);
+        s_globalMaxDamage = globalMax > 0f ? globalMax : 5000f;
+        s_weaponCaps      = caps;
+    }
+
+    static void AddWeaponCap(Dictionary<string, WeaponCap> caps, WeaponData w)
+    {
+        if (w == null || string.IsNullOrEmpty(w.weaponName) || w.levels == null) return;
+        float dmg = 0f, reach = 0f;
+        foreach (var ld in w.levels)
+        {
+            if (ld == null) continue;
+            dmg   = Mathf.Max(dmg, ld.damage);
+            reach = Mathf.Max(reach, Mathf.Max(ld.range, ld.radius));
+        }
+        MergeCap(caps, w.weaponName, dmg, reach);
+    }
+
+    static void AddAbilityCap(Dictionary<string, WeaponCap> caps, AbilityData a)
+    {
+        if (a == null || string.IsNullOrEmpty(a.abilityName) || a.levels == null) return;
+        float dmg = 0f, reach = 0f;
+        foreach (var ld in a.levels)
+        {
+            if (ld == null) continue;
+            dmg   = Mathf.Max(dmg, ld.damage);
+            reach = Mathf.Max(reach, ld.range);
+        }
+        MergeCap(caps, a.abilityName, dmg, reach);
+    }
+
+    // ชื่อซ้ำ (asset สองตัวชื่อเดียวกัน) → เอาค่าที่หลวมกว่า
+    static void MergeCap(Dictionary<string, WeaponCap> caps, string name, float dmg, float reach)
+    {
+        if (caps.TryGetValue(name, out var old))
+        {
+            dmg   = Mathf.Max(dmg, old.damage);
+            reach = Mathf.Max(reach, old.reach);
+        }
+        caps[name] = new WeaponCap { damage = dmg, reach = reach };
+    }
+
+    /// <summary>เพดานของการยิงครั้งนี้ — อ่านตัวคูณจาก PlayerStatManager ฝั่ง server
+    /// (ตัวคูณต่ำกว่า 1 ถูกปัดขึ้นเป็น 1 · เพดานมีไว้กันค่าสูงเกิน ไม่ได้กันค่าต่ำ)</summary>
+    CombatBounds GetCombatBounds(string weaponName)
+    {
+        EnsureWeaponCaps();
+
+        float baseDmg = 0f, baseReach = UnknownBaseReach;
+        if (weaponName != null && s_weaponCaps != null && s_weaponCaps.TryGetValue(weaponName, out var cap))
+        {
+            baseDmg   = cap.damage;
+            baseReach = Mathf.Max(cap.reach, MinBaseReach);
+        }
+        // data ไม่ได้ระบุดาเมจ (Hunter Passive / Blade of Exile = 0) หรือหาชื่อไม่เจอ → เพดานรวม
+        if (baseDmg <= 0f) baseDmg = s_globalMaxDamage > 0f ? s_globalMaxDamage : 5000f;
+
+        float power = 1f, reachMult = 1f;
+        if (statManager != null)
+        {
+            power     = Mathf.Max(1f, statManager.GetPowerMultiplier());
+            // projectile maxRange โตตาม Duration ส่วน AoE โตตาม Area — เอาตัวที่ใหญ่กว่า
+            reachMult = Mathf.Max(1f, Mathf.Max(statManager.GetAreaMultiplier(), statManager.GetDurationMultiplier()));
+        }
+
+        float reach = baseReach * reachMult;
+        return new CombatBounds
+        {
+            name        = weaponName,
+            damage      = baseDmg * power * CritDamageMult * DamageSlack,
+            reach       = reach * ReachSlack,
+            position    = reach * PositionSlack + PositionMargin,
+            anyPosition = IsDeployableWeapon(weaponName),
+        };
+    }
+
+    /// <summary>อาวุธที่วางของค้างไว้แล้วยิงจากจุดนั้นทีหลัง — เสา Fence อยู่ได้ 8 วิ × duration
+    /// ผู้เล่นเดินห่างออกไปเกินร้อยเมตรได้ตามปกติ จึงไม่ตรวจตำแหน่ง (ดาเมจกับความยาวยังถูกคุม)
+    /// วน for ธรรมดาแทน slots.Find(lambda) — ทางนี้ร้อน ห้ามสร้าง closure</summary>
+    bool IsDeployableWeapon(string weaponName)
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            var s = slots[i];
+            if (s.data != null && s.data.weaponName == weaponName)
+                return s.script is FenceWeapon;
+        }
+        return false;
+    }
+
+    // v อยู่ใน [0, max] → คืนตามเดิม (NaN ตกทั้งสองเงื่อนไข) · ติดลบ/NaN → 0 · เกิน/+inf → max
+    float SaneMax(float v, float max, in CombatBounds b, string what)
+    {
+        if (v >= 0f && v <= max) return v;
+        float clamped = v > max ? max : 0f;
+        WarnClampOnce(b.name, what, v, clamped);
+        return clamped;
+    }
+
+    /// <summary>สำหรับพารามิเตอร์ที่ ≤ 0 แปลว่า "ใช้ค่า default ของ prefab" — ปล่อยค่า sentinel ผ่าน</summary>
+    float SaneOptionalMax(float v, float max, in CombatBounds b, string what)
+        => v > 0f ? SaneMax(v, max, b, what) : v;
+
+    int SaneCount(int v, int max, in CombatBounds b, string what)
+    {
+        if (v <= max) return v;
+        WarnClampOnce(b.name, what, v, max);
+        return max;
+    }
+
+    /// <summary>ตำแหน่งต้องอยู่ในรัศมี b.position จากตัวผู้เล่นฝั่ง server
+    /// เกิน → ดึงเข้ามาที่ขอบ · NaN/inf → ใช้ตำแหน่งผู้เล่น</summary>
+    Vector3 SanePosition(Vector3 p, in CombatBounds b, string what)
+    {
+        Vector3 origin = transform.position;
+        if (!IsFinite(p))
+        {
+            WarnClampOnce(b.name, what, float.NaN, 0f);
+            return origin;
+        }
+        if (b.anyPosition) return p;
+
+        Vector3 offset = p - origin;
+        float   maxSqr = b.position * b.position;
+        if (offset.sqrMagnitude <= maxSqr) return p;
+
+        float dist = offset.magnitude;
+        WarnClampOnce(b.name, what, dist, b.position);
+        return origin + offset * (b.position / dist);
+    }
+
+    static bool IsFinite(Vector3 v)
+        => float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z);
+
+    /// <summary>ทิศทาง NaN/inf → zero (ผู้เรียกทุกจุดรับมือกับ zero อยู่แล้ว)
+    /// ไม่งั้น normalized เป็น NaN แล้วไปทับตำแหน่งศัตรูตอน knockback</summary>
+    static Vector3 SaneDirection(Vector3 v) => IsFinite(v) ? v : Vector3.zero;
+
+    static void WarnClampOnce(string weaponName, string what, float got, float cap)
+    {
+        string key = weaponName ?? "(null)";
+        if (s_clampWarned.Count >= 256 || !s_clampWarned.Add(key)) return;
+        Debug.LogWarning(
+            $"[WeaponManager] ค่าจาก client เกินเพดาน — '{key}' {what}={got:0.##} → {cap:0.##} " +
+            "(clamp แล้ว · เตือนครั้งเดียวต่ออาวุธ ถ้าเป็นการเล่นปกติให้ขยาย slack ใน PlayerWeaponManager)");
+    }
+
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     public override void OnNetworkSpawn()
@@ -484,6 +736,12 @@ public class PlayerWeaponManager : NetworkBehaviour
         Vector3 spawnPos, Vector3 direction,
         float damage, float speed, float maxRange, bool isCrit = false, string weaponName = "Unknown", int projPrefabId = -1)
     {
+        var b    = GetCombatBounds(weaponName);
+        spawnPos = SanePosition(spawnPos, b, "spawnPos");
+        damage   = SaneMax(damage, b.damage, b, "damage");
+        maxRange = SaneMax(maxRange, b.reach, b, "maxRange");
+        direction = SaneDirection(direction);
+
         var targetPrefab = boomerangPrefab;
         if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
         {
@@ -523,6 +781,14 @@ public class PlayerWeaponManager : NetworkBehaviour
         ulong targetNetworkObjectId = 999999,
         float explosionRadius = 0f)
     {
+        var b           = GetCombatBounds(weaponName);
+        spawnPos        = SanePosition(spawnPos, b, "spawnPos");
+        damage          = SaneMax(damage, b.damage, b, "damage");
+        count           = SaneCount(count, MaxSpawnCount, b, "count");
+        maxRange        = SaneOptionalMax(maxRange, b.reach, b, "maxRange");          // ≤ 0 = ใช้ค่าบน prefab
+        explosionRadius = SaneOptionalMax(explosionRadius, b.reach, b, "explosionRadius");
+        baseDir         = SaneDirection(baseDir);
+
         GameObject prefab = null;
         if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
         {
@@ -692,6 +958,13 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void FireMeleeServerRpc(Vector3 center, float radius, float damage, bool isCrit = false, string weaponName = "Unknown", float knockbackForce = 0f, Vector3 knockbackDir = default)
     {
+        var b          = GetCombatBounds(weaponName);
+        center         = SanePosition(center, b, "center");
+        radius         = SaneMax(radius, b.reach, b, "radius");
+        damage         = SaneMax(damage, b.damage, b, "damage");
+        knockbackForce = SaneMax(knockbackForce, MaxDisplacement, b, "knockbackForce");
+        knockbackDir   = SaneDirection(knockbackDir);
+
         foreach (var c in OverlapEnemy(center, radius))
         {
             var enemy = c.GetComponent<Enemy>();
@@ -717,6 +990,15 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void FireArcMeleeServerRpc(Vector3 center, Vector3 forward, float radius, float arcAngle, float damage, bool isCrit = false, string weaponName = "Unknown", float knockbackForce = 0f, Vector3 knockbackDir = default)
     {
+        var b          = GetCombatBounds(weaponName);
+        center         = SanePosition(center, b, "center");
+        radius         = SaneMax(radius, b.reach, b, "radius");
+        damage         = SaneMax(damage, b.damage, b, "damage");
+        knockbackForce = SaneMax(knockbackForce, MaxDisplacement, b, "knockbackForce");
+        knockbackDir   = SaneDirection(knockbackDir);
+        forward        = SaneDirection(forward);
+        // arcAngle ไม่ต้องคุม — เกิน 360 ก็แค่ครอบเต็มวง ซึ่งรัศมีถูกคุมไว้แล้ว
+
         float halfArc = arcAngle * 0.5f;
         foreach (var c in OverlapEnemy(center, radius))
         {
@@ -748,6 +1030,13 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void PullEnemiesServerRpc(Vector3 center, float radius, float force)
     {
+        // ไม่มีชื่ออาวุธส่งมา → เพดานของชื่อที่หาไม่เจอ (ไม่มีดาเมจ แรงดูดถูกคุมที่ MaxDisplacement)
+        var b  = GetCombatBounds(null);
+        b.name = "PullEnemies";   // ป้ายใน log เท่านั้น
+        center = SanePosition(center, b, "pull center");
+        radius = SaneMax(radius, b.reach, b, "pull radius");
+        force  = SaneMax(force, MaxDisplacement, b, "pull force");
+
         foreach (var c in OverlapEnemy(center, radius))
         {
             var enemy = c.GetComponent<Enemy>();
@@ -821,6 +1110,19 @@ public class PlayerWeaponManager : NetworkBehaviour
         float fuseTime = 1.5f, bool cluster = false, string weaponName = "Unknown", int projPrefabId = -1, bool isCrit = false,
         GrenadeClusterSettings clusterSettings = default)
     {
+        var b     = GetCombatBounds(weaponName);
+        spawnPos  = SanePosition(spawnPos, b, "spawnPos");
+        targetPos = SanePosition(targetPos, b, "targetPos");
+        damage    = SaneMax(damage, b.damage, b, "damage");
+        radius    = SaneOptionalMax(radius, b.reach, b, "radius");   // ≤ 0 = ใช้ค่าบน prefab
+        if (clusterSettings.overrideProjectile)
+        {
+            clusterSettings.pellets      = SaneCount(clusterSettings.pellets, MaxSpawnCount, b, "cluster pellets");
+            clusterSettings.dmgPercent   = SaneMax(clusterSettings.dmgPercent, 2f, b, "cluster dmgPercent");
+            clusterSettings.spreadRadius = SaneMax(clusterSettings.spreadRadius, b.reach, b, "cluster spreadRadius");
+            clusterSettings.childRadius  = SaneMax(clusterSettings.childRadius, b.reach, b, "cluster childRadius");
+        }
+
         var targetPrefab = grenadePrefab;
         if (projPrefabId >= 0 && NetworkedVFXPool.Instance != null)
         {
@@ -935,6 +1237,17 @@ public class PlayerWeaponManager : NetworkBehaviour
         float knockbackForce = 0f, string vfxKey = "None", string weaponName = "Unknown",
         float slowPercent = 1f, float slowDuration = 0f, float freezeChance = 0f, float freezeDuration = 0f)
     {
+        var b          = GetCombatBounds(weaponName);
+        origin         = SanePosition(origin, b, "origin");
+        damage         = SaneMax(damage, b.damage, b, "damage");
+        range          = SaneMax(range, b.reach, b, "range");
+        width          = SaneMax(width, b.reach, b, "width");
+        knockbackForce = SaneMax(knockbackForce, MaxDisplacement, b, "knockbackForce");
+        slowPercent    = SaneMax(slowPercent, 1f, b, "slowPercent");   // 1 = ไม่ช้าลง (default)
+        slowDuration   = SaneMax(slowDuration, MaxSlowSeconds, b, "slowDuration");
+        freezeDuration = SaneMax(freezeDuration, MaxFreezeSeconds, b, "freezeDuration");
+        direction      = SaneDirection(direction);
+
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
         direction = direction.normalized;
@@ -1017,6 +1330,13 @@ public class PlayerWeaponManager : NetworkBehaviour
                                      bool isCrit = false, bool playHitVfx = true, string weaponName = "Unknown",
                                      float thickness = 0f)
     {
+        var b     = GetCombatBounds(weaponName);
+        origin    = SanePosition(origin, b, "origin");
+        damage    = SaneMax(damage, b.damage, b, "damage");
+        maxDist   = SaneMax(maxDist, b.reach, b, "maxDist");
+        thickness = SaneMax(thickness, b.reach, b, "thickness");
+        direction = SaneDirection(direction);
+
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) return;
         direction = direction.normalized;
@@ -1063,6 +1383,12 @@ public class PlayerWeaponManager : NetworkBehaviour
     public void DropMineServerRpc(Vector3 position, float damage, float triggerRadius, string weaponName = "Unknown", bool isCrit = false)
     {
         if (minePrefab == null) return;
+
+        var b         = GetCombatBounds(weaponName);
+        position      = SanePosition(position, b, "position");
+        damage        = SaneMax(damage, b.damage, b, "damage");
+        triggerRadius = SaneMax(triggerRadius, b.reach, b, "triggerRadius");
+
         var go = Instantiate(minePrefab, position, Quaternion.identity);
         var m  = go.GetComponent<MineObject>();
         if (m != null)
@@ -1082,11 +1408,18 @@ public class PlayerWeaponManager : NetworkBehaviour
         Vector3[] spawnPositions, ulong[] targetNetIds,
         float damage, float explosionRadius, string weaponName = "Unknown", bool isCrit = false)
     {
-        if (missilePrefab == null) return;
+        if (missilePrefab == null || spawnPositions == null || targetNetIds == null) return;
+
+        var b           = GetCombatBounds(weaponName);
+        damage          = SaneMax(damage, b.damage, b, "damage");
+        explosionRadius = SaneMax(explosionRadius, b.reach, b, "explosionRadius");
+
         int count = Mathf.Min(spawnPositions.Length, targetNetIds.Length);
+        count = SaneCount(count, MaxSpawnCount, b, "missile count");
         for (int i = 0; i < count; i++)
         {
-            var go = Instantiate(missilePrefab, spawnPositions[i], missilePrefab.transform.localRotation);
+            Vector3 spawnPos = SanePosition(spawnPositions[i], b, "spawnPos");
+            var go = Instantiate(missilePrefab, spawnPos, missilePrefab.transform.localRotation);
             go.transform.localScale = missilePrefab.transform.localScale;
             var mp = go.GetComponent<MissileProjectile>();
             if (mp != null)
@@ -1109,6 +1442,18 @@ public class PlayerWeaponManager : NetworkBehaviour
         int beamCount = 1, string weaponName = "Unknown")
     {
         if (funnelPrefab == null) return;
+
+        var b         = GetCombatBounds(weaponName);
+        center        = SanePosition(center, b, "center");
+        count         = SaneCount(count, MaxSpawnCount, b, "funnel count");
+        beamCount     = SaneCount(beamCount, MaxSpawnCount, b, "beamCount");
+        orbitRadius   = SaneMax(orbitRadius, b.reach, b, "orbitRadius");
+        attackRange   = SaneMax(attackRange, b.reach, b, "attackRange");
+        laserDamage   = SaneMax(laserDamage, b.damage, b, "laserDamage");
+        // cooldown ใกล้ศูนย์ = ยิงทุกเฟรม · อายุยาวไม่จำกัด = funnel ค้างทั้งเกม
+        if (!(laserCooldown >= 0.05f)) { WarnClampOnce(weaponName, "laserCooldown", laserCooldown, 0.05f); laserCooldown = 0.05f; }
+        lifetime      = SaneMax(lifetime, 120f, b, "lifetime");
+
         for (int i = 0; i < count; i++)
         {
             float   angle    = i * (360f / count);
@@ -1143,6 +1488,13 @@ public class PlayerWeaponManager : NetworkBehaviour
         float damage, float speed, float explosionRadius, string weaponName = "Unknown", bool isCrit = false)
     {
         if (stickyRocketPrefab == null) return;
+
+        var b           = GetCombatBounds(weaponName);
+        spawnPos        = SanePosition(spawnPos, b, "spawnPos");
+        damage          = SaneMax(damage, b.damage, b, "damage");
+        explosionRadius = SaneMax(explosionRadius, b.reach, b, "explosionRadius");
+        direction       = SaneDirection(direction);
+
         Quaternion stickyRot = Quaternion.LookRotation(direction) * stickyRocketPrefab.transform.localRotation;
         var go = Instantiate(stickyRocketPrefab, spawnPos, stickyRot);
         go.transform.localScale = stickyRocketPrefab.transform.localScale;
@@ -1169,8 +1521,14 @@ public class PlayerWeaponManager : NetworkBehaviour
     {
         if (giantRocketPrefab == null) return;
 
+        var b           = GetCombatBounds(weaponName);
+        spawnPos        = SanePosition(spawnPos, b, "spawnPos");
+        baseDamage      = SaneMax(baseDamage, b.damage, b, "baseDamage");
+        maxRange        = SaneMax(maxRange, b.reach, b, "maxRange");
+        explosionRadius = SaneMax(explosionRadius, b.reach, b, "explosionRadius");
+
         // direction มาจาก client แล้ว (horizontal, normalized)
-        Vector3 dir = direction;
+        Vector3 dir = SaneDirection(direction);
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.001f) dir = Vector3.forward;
         dir = dir.normalized;
@@ -1229,6 +1587,22 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void ApplySuperBigAoEExplosionServerRpc(Vector3 center, float radius, float buffAmount, float buffDuration, float expMultiplier)
     {
+        // ไม่มีชื่อส่งมา แต่ผู้เรียกเดียวคือ SuperBigAoEWeapon ซึ่งใช้รัศมีเดียวกับ FireMelee ของมัน
+        // ค่าที่นี่ไปถึงผู้เล่นคนอื่น (บัฟดาเมจ) และ EXP ของทั้งทีม — ของจริง +30% / 6 วิ / ×2
+        var b         = GetCombatBounds(null);
+        b.name        = "SuperBigAoE";
+        center        = SanePosition(center, b, "buff center");
+        radius        = SaneMax(radius, b.reach, b, "buff radius");
+        buffAmount    = SaneMax(buffAmount, 1f, b, "buffAmount");
+        buffDuration  = SaneMax(buffDuration, 30f, b, "buffDuration");
+        // เพดาน 5 เท่ากับที่ SharedExperienceManager คุม expMultiplier · ต่ำกว่า 1 = ลด EXP ไม่ใช่อัปเกรด
+        if (!(expMultiplier >= 1f && expMultiplier <= 5f))
+        {
+            float clamped = expMultiplier > 5f ? 5f : 1f;
+            WarnClampOnce("SuperBigAoE", "expMultiplier", expMultiplier, clamped);
+            expMultiplier = clamped;
+        }
+
         // 1. บัฟผู้เล่นในระยะ
         var playerMask = LayerMask.GetMask("Player");
         foreach (var c in Physics.OverlapSphere(center, radius, playerMask))
@@ -1420,6 +1794,17 @@ public class PlayerWeaponManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
+        var b             = GetCombatBounds(weaponName);
+        startPos          = SanePosition(startPos, b, "startPos");
+        damage            = SaneMax(damage, b.damage, b, "damage");
+        searchRadius      = SaneMax(searchRadius, b.reach, b, "searchRadius");
+        chainSearchRadius = SaneMax(chainSearchRadius, b.reach, b, "chainSearchRadius");
+        chainTargets      = SaneCount(chainTargets, MaxSpawnCount, b, "chainTargets");
+        chainDamageMult   = SaneMax(chainDamageMult, 1f, b, "chainDamageMult");   // ทุกตัว ≤ 1 (ดาเมจลดลงต่อทอด)
+        zoneRadius        = SaneMax(zoneRadius, b.reach, b, "zoneRadius");
+        zoneDamage        = SaneMax(zoneDamage, b.damage, b, "zoneDamage");
+        zoneTicks         = SaneCount(zoneTicks, MaxZoneTicks, b, "zoneTicks");
+
         int mask = LayerMask.GetMask("Enemy");
         var hitSet = new HashSet<int>();
 
@@ -1466,6 +1851,20 @@ public class PlayerWeaponManager : NetworkBehaviour
         float thickness = 0f)
     {
         if (!IsServer) return;
+
+        var b        = GetCombatBounds(weaponName);
+        origin       = SanePosition(origin, b, "origin");
+        damage       = SaneMax(damage, b.damage, b, "damage");
+        range        = SaneMax(range, b.reach, b, "range");
+        thickness    = SaneMax(thickness, b.reach, b, "thickness");
+        beamCount    = SaneCount(beamCount, MaxSpawnCount, b, "beamCount");
+        chainTargets = SaneCount(chainTargets, MaxSpawnCount, b, "chainTargets");
+        chainDamage  = SaneMax(chainDamage, b.damage, b, "chainDamage");
+        chainRadius  = SaneMax(chainRadius, b.reach, b, "chainRadius");
+        zoneRadius   = SaneMax(zoneRadius, b.reach, b, "zoneRadius");
+        zoneDamage   = SaneMax(zoneDamage, b.damage, b, "zoneDamage");
+        zoneTicks    = SaneCount(zoneTicks, MaxZoneTicks, b, "zoneTicks");
+        direction    = SaneDirection(direction);
 
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
@@ -1691,6 +2090,13 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void ApplySlowToEnemiesServerRpc(Vector3 center, float radius, float duration, float slowPercent)
     {
+        var b       = GetCombatBounds(null);   // ไม่มีชื่อส่งมา
+        b.name      = "SlowEnemies";
+        center      = SanePosition(center, b, "slow center");
+        radius      = SaneMax(radius, b.reach, b, "slow radius");
+        duration    = SaneMax(duration, MaxSlowSeconds, b, "slow duration");
+        slowPercent = SaneMax(slowPercent, 1f, b, "slowPercent");
+
         foreach (var c in OverlapEnemy(center, radius))
         {
             var enemy = c.GetComponent<Enemy>();
@@ -1701,6 +2107,13 @@ public class PlayerWeaponManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void ApplyFreezeToEnemiesServerRpc(Vector3 center, float radius, float duration)
     {
+        // freeze นานไม่จำกัด = ล็อกบอสตายตัวทั้งไฟต์ · ของจริง 1.5–2 วิ × duration mult
+        var b    = GetCombatBounds(null);
+        b.name   = "FreezeEnemies";
+        center   = SanePosition(center, b, "freeze center");
+        radius   = SaneMax(radius, b.reach, b, "freeze radius");
+        duration = SaneMax(duration, MaxFreezeSeconds, b, "freeze duration");
+
         foreach (var c in OverlapEnemy(center, radius))
         {
             var enemy = c.GetComponent<Enemy>();

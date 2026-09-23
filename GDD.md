@@ -374,6 +374,9 @@ Level Up → pause → ทุก player เห็น Upgrade Cards (default 3 �
 
 - **องค์ประกอบศัตรู** เปลี่ยนตามช่วงเวลา: `WavePhase[]` ระบุ "ตั้งแต่นาที X ใช้ WaveConfig ใบนี้" (แทนแบบเก่า "ทุก 3 wave") · ว่าง = ใช้ `waveConfigs` + `wavesPerConfig`
 - **หยุด spawn เมื่อรันจบ** (บอสใหญ่ออกหรือเกมจบ)
+- **เพดานศัตรูที่มีชีวิตพร้อมกัน (2026-09-24):** 300 ตัวตอนเล่นคนเดียว +50 ต่อผู้เล่นที่เพิ่ม (4 คน = 450) · ถึงเพดานแล้ว **หยุดปล่อยตัวใหม่** ไม่ฆ่าตัวเก่า (แบบ Vampire Survivors) · บอส/มินิบอสไม่นับและไม่ถูกกัน · ตั้งในซีน (`WaveManager`) หรือต่อแมพ/ระดับ (`EnemyScaling.maxAliveEnemies` / `maxAlivePerExtraPlayer`) · ค่าตั้งต้นยังไม่ได้วัดจริง ต้องจูนหลังเล่นสองเครื่อง
+  - อ้างอิง: Vampire Survivors หยุด spawn ปกติที่ 300 (เพดานแข็ง 500) · Brotato 100 · LoL Swarm ~550 (server ของ Riot)
+- **ข้อมูลเครือข่ายของศัตรู:** NetworkTransform ส่งเฉพาะตำแหน่ง X/Z และหมุนแกน Y แบบ half float ไม่ส่ง scale (ตั้งด้วย `Tools > Clone Swarm > Network > Tune Enemy + VFX Prefabs`) · ถ้ายังกินเน็ตเกิน ขั้นถัดไปคือส่งตำแหน่งศัตรูทั้งหมดเป็นก้อนเดียวจาก manager ตัวเดียวแทน NetworkTransform รายตัว
 
 ### 7.5 Flow Field Pathfinding (Server-only)
 รองรับศัตรูหลักพันตัวในจอเดียว (แบบ LoL Swarm):

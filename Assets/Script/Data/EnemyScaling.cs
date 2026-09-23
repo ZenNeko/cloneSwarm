@@ -42,18 +42,41 @@ public class EnemyScaling
     [Tooltip("Spawn rate เร็วขึ้นกี่ % ต่อ wave (ทศนิยม) · 0.10 = interval สั้นลง 10% ต่อ wave")]
     [Range(0f, 0.9f)] public float spawnRateAccel = 0.10f;
 
+    // ── เพดานจำนวนศัตรูที่มีชีวิตพร้อมกัน ────────────────────────────────
+    //
+    // แบบ Vampire Survivors (หยุด spawn ศัตรูปกติเมื่อมีชีวิตถึง 300) และ LoL Swarm
+    // (~550 ตัว ปรับตามจำนวนผู้เล่นกับความยาก) · ถึงเพดาน = **ไม่ปล่อยตัวใหม่** ไม่ฆ่าตัวเก่า
+    // บอส/มินิบอสไม่นับและไม่ถูกกัน (BossManager spawn เอง ไม่ผ่าน EnemySpawner)
+    //
+    // ศัตรูทุกตัวเป็น NetworkObject ที่ host ส่งตำแหน่งให้ทุก client ทุก tick · ไม่มีเพดาน
+    // = แบนด์วิดท์ขาขึ้นของเครื่อง host โตไม่จำกัดเมื่อผู้เล่นฆ่าไม่ทัน
+    //
+    // ค่าเริ่มต้นเป็นจุดตั้งต้นที่ยังไม่ได้วัดจริง — ต้องจูนหลังเล่นสองเครื่อง
+    [Tooltip("ศัตรูปกติที่มีชีวิตพร้อมกันได้สูงสุด (เล่นคนเดียว) · 0 = ไม่จำกัด")]
+    [Min(0)] public int maxAliveEnemies = 300;
+
+    [Tooltip("เพดานเพิ่มต่อผู้เล่นที่เกินคนแรก · 4 คน = maxAliveEnemies + 3 × ค่านี้")]
+    [Min(0)] public int maxAlivePerExtraPlayer = 50;
+
+    /// <summary>เพดานสำหรับจำนวนผู้เล่นนี้ · 0 = ไม่จำกัด</summary>
+    public int AliveCapFor(int players) =>
+        maxAliveEnemies <= 0 ? 0 : maxAliveEnemies + Mathf.Max(0, players - 1) * maxAlivePerExtraPlayer;
+
     /// <summary>สำเนาใหม่ — กันสองที่แชร์ instance เดียวกันแล้วแก้ที่หนึ่งไปโดนอีกที่</summary>
     public EnemyScaling Clone() => new EnemyScaling
     {
-        enabled            = enabled,
-        healthMultPerWave  = healthMultPerWave,
-        speedMultPerWave   = speedMultPerWave,
-        expMultPerWave     = expMultPerWave,
-        maxSpeedMultiplier = maxSpeedMultiplier,
-        spawnRateAccel     = spawnRateAccel,
+        enabled                = enabled,
+        healthMultPerWave      = healthMultPerWave,
+        speedMultPerWave       = speedMultPerWave,
+        expMultPerWave         = expMultPerWave,
+        maxSpeedMultiplier     = maxSpeedMultiplier,
+        spawnRateAccel         = spawnRateAccel,
+        maxAliveEnemies        = maxAliveEnemies,
+        maxAlivePerExtraPlayer = maxAlivePerExtraPlayer,
     };
 
     public override string ToString()
         => $"HP+{healthMultPerWave:P0} SPD+{speedMultPerWave:P0} (เพดาน ×{maxSpeedMultiplier:0.#}) " +
-           $"EXP+{expMultPerWave:P0} rate-{spawnRateAccel:P0}";
+           $"EXP+{expMultPerWave:P0} rate-{spawnRateAccel:P0} · " +
+           (maxAliveEnemies > 0 ? $"มีชีวิตไม่เกิน {maxAliveEnemies} (+{maxAlivePerExtraPlayer}/คน)" : "ไม่จำกัดจำนวน");
 }
