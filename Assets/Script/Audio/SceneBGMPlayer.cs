@@ -36,6 +36,10 @@ public class SceneBGMPlayer : MonoBehaviour
 
     void PlayBgm()
     {
+        // ซีนเกมที่มีเพลงซ้อนชั้นให้เล่น — MusicDirector เป็นเจ้าของเพลงแทน
+        // ถ้าแมพไม่ได้ตั้งเพลงไว้ HasProfile = false แล้วคลิปนี้ยังเป็นทางสำรองเหมือนเดิม
+        if (MusicDirector.Active != null && MusicDirector.Active.HasProfile) return;
+
         SoundManager.Instance.PlayMusic(bgm, loop);
     }
 }

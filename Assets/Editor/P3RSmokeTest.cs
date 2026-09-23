@@ -821,7 +821,76 @@ namespace CloneSwarm.EditorTools
                 CheckTimelineCues();
                 CheckBossConfigs();
                 CheckWaveSchedule();
+                CheckMusicProfiles();
                 CheckMissingGlyphs();
+            }
+
+            /// <summary>
+            /// เพลงซ้อนชั้นของทุกแมพ — stem ยาวเท่ากัน · ชื่อใน mix มีอยู่จริง
+            ///
+            /// batchmode ไม่มีเสียงให้ฟัง · stem ที่ยาวไม่เท่ากันจะค่อยๆ เหลื่อมทุกรอบลูป และชื่อที่พิมพ์ผิด
+            /// ทำให้ชั้นนั้นเงียบตลอด — ทั้งคู่ไม่มีอาการอื่นนอกจากหูคนฟัง จึงต้องตรวจที่ข้อมูล
+            /// </summary>
+            private void CheckMusicProfiles()
+            {
+                var profiles = new HashSet<MusicProfile>();
+                foreach (var map in AssetDatabase.FindAssets("t:MapData")
+                                                 .Select(AssetDatabase.GUIDToAssetPath)
+                                                 .Select(AssetDatabase.LoadAssetAtPath<MapData>))
+                {
+                    if (map?.tiers == null) continue;
+                    foreach (var tier in map.tiers)
+                        if (tier?.musicProfile != null) profiles.Add(tier.musicProfile);
+                }
+                var director = FindAnyObjectByType<MusicDirector>(FindObjectsInactive.Include);
+                if (director != null && director.sceneProfile != null) profiles.Add(director.sceneProfile);
+
+                if (profiles.Count == 0)
+                {
+                    lines.Add("   หมายเหตุ  ยังไม่มีแมพไหนตั้งเพลงซ้อนชั้น — ใช้ SceneBGMPlayer แบบเดิม");
+                    return;
+                }
+
+                foreach (var p in profiles)
+                {
+                    Require(p.track != null, $"เพลง {p.name}: มี track หลัก");
+                    if (p.track == null) continue;
+
+                    string bad = p.track.Validate();
+                    Require(bad == null, $"เพลง {p.name}: track '{p.track.name}' ใช้ได้{(bad != null ? $" — {bad}" : "")}");
+                    if (p.mainBossTrack != null)
+                    {
+                        bad = p.mainBossTrack.Validate();
+                        Require(bad == null, $"เพลง {p.name}: ธีมบอส '{p.mainBossTrack.name}' ใช้ได้{(bad != null ? $" — {bad}" : "")}");
+                    }
+
+                    var missing = new List<string>();
+                    void Scan(StemLevel[] levels, string where, params LayeredTrack[] tracks)
+                    {
+                        if (levels == null) return;
+                        foreach (var l in levels)
+                        {
+                            if (string.IsNullOrEmpty(l.stem)) continue;
+                            if (!tracks.Any(t => t != null && t.IndexOf(l.stem) >= 0))
+                                missing.Add($"{where}: '{l.stem}'");
+                        }
+                    }
+
+                    if (p.timeBands != null)
+                        for (int i = 0; i < p.timeBands.Length; i++)
+                            Scan(p.timeBands[i].mix?.levels, $"timeBands[{i}]", p.track);
+                    Scan(p.miniBossOverlay?.levels, "miniBossOverlay", p.track);
+                    if (p.mainBossPhases != null)
+                        for (int i = 0; i < p.mainBossPhases.Length; i++)
+                            Scan(p.mainBossPhases[i]?.levels, $"mainBossPhases[{i}]", p.mainBossTrack);
+                    Scan(p.cardPickOverrides, "cardPickOverrides", p.track, p.mainBossTrack);
+
+                    Require(missing.Count == 0, $"เพลง {p.name}: ทุกชื่อ stem ใน mix มีอยู่ใน track");
+                    foreach (var m in missing.Take(5)) lines.Add($"        └ {m}");
+
+                    if (p.mainBossTrack == null && p.mainBossPhases != null && p.mainBossPhases.Length > 0)
+                        lines.Add($"   หมายเหตุ  {p.name}: ตั้ง mainBossPhases ไว้แต่ไม่มีธีมบอส — ค่าพวกนี้ไม่ถูกใช้");
+                }
             }
 
             /// <summary>

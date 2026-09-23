@@ -599,12 +599,19 @@ public class UpgradeManager : NetworkBehaviour
     }
 
     // ── Apply ─────────────────────────────────────────────────────────────
+    /// <summary>
+    /// ผู้เล่นเครื่องนี้เลือกการ์ดแล้ว (รวมตอนหมดเวลาแล้วระบบเลือกให้) — ยิงเฉพาะเครื่อง owner
+    /// เพราะ UpgradeManager ปิดตัวเองบนเครื่องอื่น · ใช้กับของที่ "ได้ยิน/เห็นแค่ตัวเอง" เช่นเสียงกดเลือก
+    /// </summary>
+    public static event System.Action<UpgradeCardInfo> OnLocalCardPicked;
+
     public void ApplyCard(UpgradeCardInfo card)
     {
         if (card == null || hasPicked) return;
         hasPicked = true;
         LevelUpUI.Instance?.HideCards();
         ApplyCardInternal(card);
+        OnLocalCardPicked?.Invoke(card);
         NotifyLevelUpPicked();
     }
 
@@ -614,6 +621,7 @@ public class UpgradeManager : NetworkBehaviour
         hasPicked = true;
         LevelUpUI.Instance?.HideCards();
         ApplyCardInternal(card);
+        OnLocalCardPicked?.Invoke(card);
         NotifyOrbPicked();
     }
 

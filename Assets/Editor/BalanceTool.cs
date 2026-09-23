@@ -42,6 +42,11 @@ public class BalanceTool : OdinMenuEditorWindow
             Config = { DrawSearchToolbar = true }
         };
 
+        // ── ภาพรวม — ตารางเทียบข้าม asset ────────────────────────────────
+        // เปิดทีละ asset ไม่มีทางเห็นว่าอะไรแรงเกิน/อ่อนเกิน ต้องเห็นเรียงกันในหน่วยเดียวกัน
+        tree.Add("ภาพรวม/อาวุธ (DPS)", new WeaponBalanceTable());
+        tree.Add("ภาพรวม/Talent (ราคา)", new TalentBalanceTable());
+
         // ── Combat / Player ─────────────────────────────────────────────
         // WeaponData แยกโฟลเดอร์ย่อย Hero/Super/Fusion/Passive — ไม่ flatten เพื่อให้เห็นกลุ่ม
         Add(tree, "Weapons",    "Assets/ScriptableObjects/WeaponData",    typeof(WeaponData), flatten: false);
@@ -49,6 +54,8 @@ public class BalanceTool : OdinMenuEditorWindow
         Add(tree, "Stats",      "Assets/ScriptableObjects/StatData",      typeof(StatData));
         Add(tree, "Characters", "Assets/ScriptableObjects/Characters",    typeof(CharacterData));
         Add(tree, "Fusions",    "Assets/ScriptableObjects/FusionRecipes", typeof(WeaponFusionRecipe));
+        // augment อยู่ใต้ Script/ ไม่ใช่ ScriptableObjects/ — MetaSetupTools สร้างไว้ตรงนั้น
+        Add(tree, "Augments",   "Assets/Script/Data/Augment/Definitions", typeof(AugmentData));
 
         // ── Enemy / Boss ─────────────────────────────────────────────────
         // กรองด้วย BossEncounterConfig (คลาสแม่) ไม่ใช่ MiniBossConfig
@@ -59,6 +66,10 @@ public class BalanceTool : OdinMenuEditorWindow
         Add(tree, "Boss Encounters", "Assets/ScriptableObjects/BossAction", typeof(BossEncounterConfig));
         Add(tree, "Boss Actions",    "Assets/ScriptableObjects/BossAction", typeof(BossAction));
         Add(tree, "Waves",           "Assets/ScriptableObjects/Waves",      typeof(WaveConfig));
+        // ตารางเวลา · สเกลศัตรูต่อ wave · config บอส · เพลง — ต่อระดับความยาก
+        // ตัวเลขบาลานซ์ที่กระทบทั้งรันมากที่สุดอยู่ที่นี่ ไม่ใช่ใน WaveConfig
+        Add(tree, "Maps",            "Assets/ScriptableObjects/Map",        typeof(MapData));
+        // Elite ไม่ใส่ — ถอดออกจากเกมแล้ว 2026-09-24 (GDD ข้อ 7.2)
 
         // ── Meta / progression ───────────────────────────────────────────
         // ราคา talent กับสูตรจ่ายทองเป็นตัวเลขบาลานซ์เต็มตัว แต่เดิมไม่เคยอยู่ในเครื่องมือนี้
@@ -68,9 +79,10 @@ public class BalanceTool : OdinMenuEditorWindow
         // ── Presentation ─────────────────────────────────────────────────
         Add(tree, "VFX Assets",  "Assets/ScriptableObjects/VFX",       typeof(VFXAsset));
 
-        // ยังไม่ใส่ Augments — ตอนนี้ยังไม่มี AugmentData asset สักตัวในโปรเจกต์
-        // MetaSetupTools สร้างลง Assets/Script/Data/Augment/Definitions
-        // พอสร้างแล้วให้เพิ่มบรรทัด Add(...) ตรงนี้
+        // เพลงซ้อนชั้น — ยังไม่มีใครสร้าง asset · หาทั้งโปรเจกต์แทนการตรึงโฟลเดอร์
+        // จะได้ไม่ LogError ทุกครั้งที่เปิดเครื่องมือระหว่างที่ยังไม่ได้ตัดสินว่าจะเก็บไว้ไหน
+        AddAnywhere(tree, "Music/Profiles", typeof(MusicProfile));
+        AddAnywhere(tree, "Music/Tracks",   typeof(LayeredTrack));
 
         return tree;
     }
@@ -100,5 +112,15 @@ public class BalanceTool : OdinMenuEditorWindow
         }
 
         tree.AddAllAssetsAtPath(label, path, type, includeSubDirectories: true, flattenSubDirectories: flatten);
+    }
+
+    /// <summary>ทุก asset ชนิดนี้ในโปรเจกต์ ไม่ผูกโฟลเดอร์ · ไม่มีเลย = ไม่มีหมวด ไม่เตือน</summary>
+    static void AddAnywhere(OdinMenuTree tree, string label, Type type)
+    {
+        foreach (var guid in AssetDatabase.FindAssets($"t:{type.Name}", new[] { "Assets" }))
+        {
+            var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(AssetDatabase.GUIDToAssetPath(guid));
+            if (obj != null) tree.Add($"{label}/{obj.name}", obj);
+        }
     }
 }

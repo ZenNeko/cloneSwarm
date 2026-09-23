@@ -25,12 +25,19 @@ public class BossController : NetworkBehaviour
     public static event System.Action<BossController>                OnAnyBossDespawned;
     public static event System.Action<BossController, string, float> OnAnyCastStarted;
     public static event System.Action<BossController>                OnAnyCastEnded;
+    /// <summary>บอสตัวไหนก็ได้เปลี่ยนเฟส (index ใหม่) — ยิงบนทุก client · เช็ค IsMainBoss ถ้าสนใจแค่บอสใหญ่</summary>
+    public static event System.Action<BossController, int>           OnAnyPhaseChanged;
 
     // ── Phase Threshold Properties for BossHUDUI ─────────────────────────
     public virtual float phase2Threshold => (config != null && config.phases != null && config.phases.Count > 0) ? config.phases[0].transitionHealthPct : 0.75f;
     public virtual float phase3Threshold => (config != null && config.phases != null && config.phases.Count > 1) ? config.phases[1].transitionHealthPct : 0.30f;
 
     public NetworkVariable<int> FightSeed = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    // บอสใหญ่หรือมินิ — component เดียวกันทั้งคู่ client จึงแยกเองไม่ได้
+    // BossManager ตั้งก่อน Spawn → ค่าไปพร้อม spawn payload และอ่านได้แล้วใน OnNetworkSpawn
+    // ของทุก client (รวม OnAnyBossSpawned ที่ยิงตรงนั้น) · ถ้าตั้งหลัง Spawn client จะเห็น false ก่อนหนึ่งช่วง
+    public NetworkVariable<bool> IsMainBoss = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public RollContext Rolls { get; private set; }
 
     protected Enemy enemy;
@@ -68,6 +75,18 @@ public class BossController : NetworkBehaviour
     protected Coroutine attackLoopCoroutine;
     protected Coroutine phaseTransitionCoroutine;
 
+    // ── Enrage ────────────────────────────────────────────────────────────
+    //
+    // เดิม AttackLoop เช็คเวลา enrage แค่ตอนเริ่มท่า · แต่ timeline ทั้งเส้นนับเป็น "ท่าเดียว"
+    // ที่ยาวสิบกว่าวินาที enrage จึงเริ่มจริงหลังรอบที่เล่นอยู่จบ ไม่ใช่ตรง enrageTime ที่ตั้งไว้
+    // และป้าย "enrage 20s" ใน Boss Designer บอกเวลาที่ไม่จริง
+    //
+    // ตอนนี้ใช้ตัวจับเวลาแยก พอถึงเวลาก็ตัดลูปปกติทิ้งแล้วเริ่มลูป enrage ทันที
+    // telegraph ที่วางไปแล้วปล่อยให้ระเบิดตามที่เตือนไว้ (ยุติธรรมกับผู้เล่น — เห็นวงมาแล้ว)
+    // ท่าที่ยังไม่ลงมือทิ้งตัวเองผ่านเลขรอบ แบบเดียวกับตอนเปลี่ยนเฟส
+    protected Coroutine enrageTimerCoroutine;
+    protected bool enrageActive;
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -102,6 +121,7 @@ public class BossController : NetworkBehaviour
             mechanicIndex = 0;
             currentPhaseStartTime = Time.time;
             attackLoopCoroutine = StartCoroutine(AttackLoop(config.firstAttackDelay));
+            StartEnrageTimer();
         }
     }
 
@@ -146,6 +166,7 @@ public class BossController : NetworkBehaviour
                 currentPhaseIndex++;
                 mechanicIndex = 0; // รีเซ็ตการวนโจมตีสำหรับ Phase ใหม่
                 _runGen++;         // ท่าของเฟสเก่าที่ยังค้างอยู่จะทิ้งตัวเองเมื่อเห็นเลขนี้เปลี่ยน
+                StopEnrageTimer(); // นาฬิกา enrage เริ่มใหม่หลังอมตะจบ (ใน PhaseTransitionInvincibility)
 
                 if (phaseTransitionCoroutine != null) StopCoroutine(phaseTransitionCoroutine);
                 phaseTransitionCoroutine = StartCoroutine(PhaseTransitionInvincibility(config.phases[currentPhaseIndex]));
@@ -179,11 +200,51 @@ public class BossController : NetworkBehaviour
         // เปลี่ยนเฟสมีช่องว่าง invincibilityDuration + firstAttackDelay และคลิปที่คนออกแบบ
         // วางไว้ที่ t=0 ใน Boss Designer ไม่ได้ยิงที่ 0 จริง
         attackLoopCoroutine = StartCoroutine(AttackLoop(0f));
+        StartEnrageTimer();
+    }
+
+    void StartEnrageTimer()
+    {
+        StopEnrageTimer();
+        if (config?.phases == null || currentPhaseIndex >= config.phases.Count) return;
+
+        float t = config.phases[currentPhaseIndex].enrageTime;
+        if (t > 0f) enrageTimerCoroutine = StartCoroutine(EnrageTimer(currentPhaseIndex, t));
+    }
+
+    void StopEnrageTimer()
+    {
+        if (enrageTimerCoroutine != null) StopCoroutine(enrageTimerCoroutine);
+        enrageTimerCoroutine = null;
+        enrageActive = false;
+    }
+
+    IEnumerator EnrageTimer(int phase, float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        enrageTimerCoroutine = null;
+
+        // เปลี่ยนเฟสหรือตายระหว่างรอ — ตัวจับเวลาของเฟสนั้นหมดความหมายแล้ว
+        if (deathHandled || phase != currentPhaseIndex || phaseTransitionCoroutine != null) yield break;
+
+        enrageActive = true;
+        var list = config.phases[phase].enrageActions;
+        if (list == null || list.Count == 0) yield break;   // ไม่มีท่า enrage — ลูปปกติเดินต่อ
+
+        Debug.Log($"[BossController] {gameObject.name} ENRAGE — Phase {phase + 1} ครบ {seconds:0.#}s");
+
+        _runGen++;             // คลิปที่เหลือของ timeline ปกติทิ้งตัวเอง
+        mechanicIndex = 0;     // เริ่มท่า enrage ตัวแรก ไม่ใช่ index ที่ค้างจากลูปปกติ
+        if (attackLoopCoroutine != null) StopCoroutine(attackLoopCoroutine);
+        CastEndClientRpc();    // ถ้าตัดกลาง cast แถบ cast บน HUD ต้องหายด้วย
+        attackLoopCoroutine = StartCoroutine(AttackLoop(0f));
     }
 
     [ClientRpc]
     protected void PhaseChangedClientRpc(int phaseIndex)
     {
+        // ยิงก่อนเรียก virtual — คลาสลูกที่ override แล้วไม่เรียก base จะได้ไม่ทำ event หาย
+        OnAnyPhaseChanged?.Invoke(this, phaseIndex);
         OnPhaseChangedClient(phaseIndex);
     }
 
@@ -231,12 +292,8 @@ public class BossController : NetworkBehaviour
 
             BossPhase currentPhase = config.phases[currentPhaseIndex];
 
-            // ── Check Enrage Timer ──
-            bool isEnraged = false;
-            if (currentPhase.enrageTime > 0f && Time.time - currentPhaseStartTime >= currentPhase.enrageTime)
-            {
-                isEnraged = true;
-            }
+            // ── Enrage ── ตั้งโดย EnrageTimer ตรงเวลา ไม่ใช่เช็คเวลาเองตอนเริ่มท่า (ดูหัวข้อ Enrage ด้านบน)
+            bool isEnraged = enrageActive;
 
             var currentActionList = isEnraged && currentPhase.enrageActions != null && currentPhase.enrageActions.Count > 0
                 ? currentPhase.enrageActions
@@ -306,7 +363,8 @@ public class BossController : NetworkBehaviour
 
         if (attackLoopCoroutine != null) StopCoroutine(attackLoopCoroutine);
         if (phaseTransitionCoroutine != null) StopCoroutine(phaseTransitionCoroutine);
-        
+        StopEnrageTimer();
+
         CleanupMechanics();
         SpawnExtraDrops();
     }

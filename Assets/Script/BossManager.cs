@@ -163,10 +163,11 @@ public class BossManager : NetworkBehaviour
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(mainBossPrefab, pos, Quaternion.identity);
 
-        if (activeBossConfig != null)
+        var bc = go.GetComponent<BossController>();
+        if (bc != null)
         {
-            var bc = go.GetComponent<BossController>();
-            if (bc != null) bc.config = activeBossConfig;
+            if (activeBossConfig != null) bc.config = activeBossConfig;
+            bc.IsMainBoss.Value = true;   // ก่อน Spawn — ให้ค่าไปพร้อม spawn payload
         }
 
         go.GetComponent<NetworkObject>()?.Spawn(true);

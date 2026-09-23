@@ -41,6 +41,11 @@ public class MapData : ScriptableObject
         // แมพเดียวกัน ตารางเวลาเดียวกัน แต่ศัตรูโตคนละอัตรา
         [Tooltip("สเกลศัตรูต่อ wave ของ tier นี้ · ปิด = ใช้ค่าในซีน")]
         public EnemyScaling enemyScaling = new EnemyScaling();
+
+        // เพลงของ tier นี้ — ระดับยากมีธีมบอสหรือจังหวะเพิ่มชั้นของตัวเองได้
+        // ว่าง = ใช้ MusicDirector.sceneProfile ในซีน · ว่างทั้งคู่ = SceneBGMPlayer เล่นเพลงเดียวแบบเดิม
+        [Tooltip("เพลงซ้อนชั้นของ tier นี้ · ว่าง = ใช้ของในซีน")]
+        public MusicProfile musicProfile;
     }
     public TierContent[] tiers;
 

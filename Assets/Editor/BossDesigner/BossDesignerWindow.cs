@@ -45,6 +45,11 @@ public class BossDesignerWindow : EditorWindow
 
     // ── UI refs ───────────────────────────────────────────────────────────
     ObjectField   configField;
+    Button        auditButton;
+    Label         usageLabel;
+
+    /// <summary>ผล BossConfigAudit เฉพาะ config ที่เปิดอยู่ · คำนวณตอนเปลี่ยน config / กดตรวจ ไม่ใช่ทุก rebuild</summary>
+    readonly List<CloneSwarm.EditorTools.BossConfigAudit.Problem> auditProblems = new();
     VisualElement graphPane;
     VisualElement timelinePane;
     VisualElement inspectorPane;
@@ -87,7 +92,7 @@ public class BossDesignerWindow : EditorWindow
 
     void OnEnable()  => Undo.undoRedoPerformed += OnUndoRedo;
     void OnDisable() => Undo.undoRedoPerformed -= OnUndoRedo;
-    void OnUndoRedo() { RebuildAll(); }
+    void OnUndoRedo() { RefreshAudit(); RebuildAll(); }
 
     public void SetConfig(BossEncounterConfig cfg)
     {
@@ -95,6 +100,7 @@ public class BossDesignerWindow : EditorWindow
         phaseIndex = (cfg != null && cfg.phases != null && cfg.phases.Count > 0) ? 0 : -1;
         editingEnrage = false;
         timeline = ResolvePhaseTimeline();
+        RefreshAudit();
         RebuildAll();
     }
 
@@ -132,6 +138,19 @@ public class BossDesignerWindow : EditorWindow
         configField.style.flexGrow = 1;
         configField.RegisterValueChangedCallback(evt => SetConfig(evt.newValue as BossEncounterConfig));
         toolbar.Add(configField);
+
+        // ใช้โดยแมพ/ระดับไหน — แก้ config ตัวเดียวกระทบทุกที่ที่อ้าง (สำคัญเมื่อเริ่มมี Savage/Epic)
+        usageLabel = new Label();
+        usageLabel.style.marginLeft = 8;
+        usageLabel.style.fontSize = 10;
+        usageLabel.style.opacity = 0.7f;
+        toolbar.Add(usageLabel);
+
+        // ผล BossConfigAudit ของ config นี้ — เดิมต้องไปรันจากเมนูแยก เลยไม่มีใครรันจนกว่าจะพัง
+        auditButton = new Button(ShowAuditDetails);
+        auditButton.style.marginLeft = 8;
+        toolbar.Add(auditButton);
+
         root.Add(toolbar);
 
         graphPane = new VisualElement();
@@ -185,6 +204,8 @@ public class BossDesignerWindow : EditorWindow
 
         root.Add(bodyRow);
 
+        // config รอด domain reload มาได้ (serialize) แต่ผลตรวจไม่รอด — ตรวจใหม่ตอนสร้าง UI
+        RefreshAudit();
         RebuildAll();
     }
 
@@ -192,10 +213,86 @@ public class BossDesignerWindow : EditorWindow
     {
         if (graphPane == null || timelinePane == null) return;
         if (configField != null) configField.SetValueWithoutNotify(config);
+        UpdateToolbarStatus();
         BuildGraphPane();
         BuildTimelinePane();
         BuildInspectorPane();
         RefreshPreview();
+    }
+
+    // ── Audit + usage ─────────────────────────────────────────────────────
+    void RefreshAudit()
+    {
+        auditProblems.Clear();
+        if (config == null) return;
+
+        // Collect ไล่ทุก config ในโปรเจกต์ — กรองเอาเฉพาะของตัวนี้ (ทุก Problem ขึ้นต้นด้วยชื่อ config)
+        string prefix = config.name + " ·";
+        foreach (var p in CloneSwarm.EditorTools.BossConfigAudit.Collect(out _))
+            if (p.where != null && (p.where == config.name || p.where.StartsWith(prefix)))
+                auditProblems.Add(p);
+    }
+
+    void UpdateToolbarStatus()
+    {
+        if (auditButton != null)
+        {
+            auditButton.style.display = config != null ? DisplayStyle.Flex : DisplayStyle.None;
+            int blocking = auditProblems.Count(p => p.blocking);
+            int notes    = auditProblems.Count - blocking;
+            auditButton.text = blocking > 0 ? $"⚠ {blocking} ปัญหา"
+                             : notes > 0    ? $"✓ ผ่าน · {notes} หมายเหตุ"
+                             : "✓ ผ่าน";
+            auditButton.style.color = blocking > 0 ? new Color(1f, 0.55f, 0.35f) : new Color(0.55f, 0.9f, 0.65f);
+            auditButton.tooltip = "ผลตรวจ config นี้ (BossConfigAudit) — คลิกเพื่อดูรายละเอียดและตรวจใหม่";
+        }
+
+        if (usageLabel != null) usageLabel.text = config != null ? DescribeUsage(config) : "";
+    }
+
+    void ShowAuditDetails()
+    {
+        RefreshAudit();
+        UpdateToolbarStatus();
+        BuildGraphPane();
+
+        string body = auditProblems.Count == 0
+            ? "ไม่พบปัญหาใน config นี้"
+            : string.Join("\n\n", auditProblems.Select(p => $"{(p.blocking ? "⚠" : "·")} {p.where}\n   {p.what}"));
+        EditorUtility.DisplayDialog($"ตรวจ {config?.name}", body, "OK");
+    }
+
+    /// <summary>แมพ/ระดับที่ชี้มาที่ config นี้ — ไม่นับบอสที่ใช้ config จาก prefab ตรงๆ</summary>
+    static string DescribeUsage(BossEncounterConfig cfg)
+    {
+        var uses = new List<string>();
+        foreach (var guid in AssetDatabase.FindAssets("t:MapData"))
+        {
+            var map = AssetDatabase.LoadAssetAtPath<MapData>(AssetDatabase.GUIDToAssetPath(guid));
+            if (map?.tiers == null) continue;
+            foreach (var t in map.tiers)
+            {
+                if (t == null) continue;
+                if (t.mainBossConfig == cfg) uses.Add($"{map.mapId}/{t.tier} (บอสใหญ่)");
+                if (t.miniBossConfig == cfg) uses.Add($"{map.mapId}/{t.tier} (มินิ)");
+            }
+        }
+        return uses.Count > 0 ? "ใช้โดย: " + string.Join(", ", uses)
+                              : "ไม่มีแมพไหนอ้าง — ใช้ผ่าน prefab บอสเท่านั้น";
+    }
+
+    /// <summary>
+    /// เกณฑ์ HP ของเฟสนี้ใช้ได้ไหม — สูตรเดียวกับ BossConfigAudit.CheckPhaseThresholds
+    /// (BossController เปลี่ยนเฟสเมื่อ HP ≤ ค่าของเฟสปัจจุบัน · เฟสสุดท้ายไม่ใช้ค่านี้)
+    /// </summary>
+    string ThresholdProblem(int idx)
+    {
+        if (config?.phases == null || idx >= config.phases.Count - 1) return null;
+        float t    = config.phases[idx].transitionHealthPct;
+        float prev = idx > 0 ? config.phases[idx - 1].transitionHealthPct : 1f;
+        if (t <= 0f)   return $"HP ≤ 0% — บอสตายก่อน Phase {idx + 2} จะมา";
+        if (t >= prev) return $"ไม่ต่ำกว่าเฟสก่อน ({prev:P0}) — จะข้าม Phase {idx + 1} ทันที";
+        return null;
     }
 
     /// <summary>ป้อน context ปัจจุบันให้แผนผังสนาม — เรียกทุกครั้งที่เฟส/playhead/คลิปเปลี่ยน</summary>
@@ -223,6 +320,13 @@ public class BossDesignerWindow : EditorWindow
     {
         if (inspectorPane == null) return;
         inspectorPane.Clear();
+
+        // ไม่ได้เลือกคลิป แต่เลือกเฟสอยู่ → แก้ค่าของเฟสที่นี่ ไม่ต้องเด้งไป Inspector ของ config
+        if (selectedClip?.action == null && config != null && phaseIndex >= 0 && phaseIndex < (config.phases?.Count ?? 0))
+        {
+            BuildPhaseInspector();
+            return;
+        }
 
         if (selectedClip?.action == null)
         {
@@ -299,6 +403,89 @@ public class BossDesignerWindow : EditorWindow
         inspectorPane.Add(scroll);
     }
 
+    /// <summary>
+    /// ค่าของเฟสที่เลือก — เดิมต้องกด "Select Config in Inspector" แล้วไล่หาเฟสใน list
+    /// และสร้าง enrage จากหน้าต่างไม่ได้เลย เพราะป้าย enrage โผล่เฉพาะเมื่อ enrageTime > 0 อยู่แล้ว
+    /// </summary>
+    void BuildPhaseInspector()
+    {
+        bool isLast = phaseIndex == config.phases.Count - 1;
+
+        var title = new Label($"Phase {phaseIndex + 1}  ·  ค่าของเฟส");
+        title.style.unityFontStyleAndWeight = FontStyle.Bold;
+        title.style.marginTop = 6;
+        title.style.marginBottom = 4;
+        inspectorPane.Add(title);
+
+        var so    = new SerializedObject(config);
+        var phase = so.FindProperty("phases").GetArrayElementAtIndex(phaseIndex);
+
+        var scroll = new ScrollView();
+        scroll.style.flexGrow = 1;
+
+        string[] fields =
+        {
+            "transitionHealthPct", "invincibilityDuration", "attackInterval", "cameraShakeMagnitude",
+            "announcement", "announcementColor", "phaseVfx", "enrageTime",
+        };
+
+        foreach (var name in fields)
+        {
+            var prop = phase.FindPropertyRelative(name);
+            if (prop == null) continue;
+
+            var field = new PropertyField(prop);
+            scroll.Add(field);
+
+            if (name == "transitionHealthPct")
+            {
+                if (isLast)
+                {
+                    field.SetEnabled(false);
+                    scroll.Add(Note("เฟสสุดท้าย — ค่านี้ไม่ถูกใช้ (ไม่มีเฟสถัดไปให้เปลี่ยนไป)", 0.55f));
+                }
+                else
+                {
+                    string problem = ThresholdProblem(phaseIndex);
+                    scroll.Add(problem != null
+                        ? Note($"⚠ {problem}", 1f, new Color(1f, 0.55f, 0.35f))
+                        : Note($"เปลี่ยนไป Phase {phaseIndex + 2} เมื่อ HP ≤ ค่านี้", 0.55f));
+                }
+            }
+
+            if (name == "enrageTime")
+            {
+                // BossController ใช้ตัวจับเวลาแยกแล้ว (2026-09-24) — enrage ตัด timeline ที่เล่นอยู่
+                // ตรงเวลานี้ · telegraph ที่วางไปแล้วยังระเบิดตามที่เตือน · ท่าที่ยังไม่ลงมือถูกทิ้ง
+                scroll.Add(Note("-1 = ไม่มี enrage · นับจากตอนเข้าเฟส (หลังอมตะจบ) · ถึงเวลาแล้วตัดท่าปกติทันที " +
+                                "วงที่เตือนไปแล้วยังระเบิดตามเดิม · ไม่มีท่า enrage = ลูปปกติเดินต่อ", 0.6f));
+                if (config.phases[phaseIndex].enrageTime > 0f)
+                {
+                    var goEnrage = new Button(() => SelectPhase(phaseIndex, enrage: true)) { text = "แก้ท่า enrage →" };
+                    goEnrage.style.alignSelf = Align.FlexStart;
+                    scroll.Add(goEnrage);
+                }
+            }
+        }
+
+        scroll.Bind(so);
+        // เกณฑ์ HP กับ enrage แสดงบนกราฟ — แก้แล้วให้กราฟตามทันที
+        scroll.TrackSerializedObjectValue(so, _ => BuildGraphPane());
+
+        inspectorPane.Add(scroll);
+    }
+
+    static Label Note(string text, float opacity, Color? color = null)
+    {
+        var l = new Label(text);
+        l.style.whiteSpace = WhiteSpace.Normal;
+        l.style.fontSize = 10;
+        l.style.opacity = opacity;
+        l.style.marginBottom = 4;
+        if (color.HasValue) l.style.color = color.Value;
+        return l;
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // Encounter Graph (ครึ่งบน)
     // ══════════════════════════════════════════════════════════════════════
@@ -339,7 +526,16 @@ public class BossDesignerWindow : EditorWindow
 
             if (i < config.phases.Count - 1)
             {
-                row.Add(ConditionChip($"HP ≤ {phase.transitionHealthPct:P0}"));
+                string problem = ThresholdProblem(i);
+                var chip = ConditionChip($"HP ≤ {phase.transitionHealthPct:P0}");
+                if (problem != null)
+                {
+                    chip.text += "  ⚠";
+                    chip.tooltip = problem;
+                    chip.style.color = new Color(1f, 0.6f, 0.4f);
+                    chip.style.backgroundColor = new Color(0.7f, 0.25f, 0.1f, 0.35f);
+                }
+                row.Add(chip);
                 row.Add(ArrowLabel());
             }
         }
@@ -426,6 +622,24 @@ public class BossDesignerWindow : EditorWindow
     void AddPhase()
     {
         Undo.RecordObject(config, "Add Boss Phase");
+
+        // เฟสสุดท้ายเดิมมักตั้ง 0% ไว้ (ค่านี้ไม่ถูกใช้ตอนเป็นเฟสสุดท้าย) · พอต่อเฟสใหม่ท้าย
+        // มันกลายเป็นเกณฑ์จริง "HP ≤ 0%" → บอสตายก่อน เฟสใหม่ไม่มีวันมา
+        // ตั้งให้ครึ่งทางระหว่างเกณฑ์ของเฟสก่อนหน้ากับ 0 (ปัด 5%) แล้วค่อยปรับเองใน Phase panel
+        int n = config.phases.Count;
+        if (n > 0)
+        {
+            var last = config.phases[n - 1];
+            float prev = n >= 2 ? config.phases[n - 2].transitionHealthPct : 1f;
+            if (last.transitionHealthPct <= 0f || last.transitionHealthPct >= prev)
+            {
+                float t = Mathf.Max(0.05f, Mathf.Round(prev * 0.5f * 20f) / 20f);
+                Debug.Log($"[BossDesigner] Phase {n} เปลี่ยนเฟสที่ {last.transitionHealthPct:P0} → ตั้งเป็น {t:P0} " +
+                          $"ไม่งั้น Phase {n + 1} ที่เพิ่งเพิ่มจะไปไม่ถึง", config);
+                last.transitionHealthPct = t;
+            }
+        }
+
         config.phases.Add(new BossPhase
         {
             transitionHealthPct = 0f,
@@ -990,7 +1204,9 @@ public class BossDesignerWindow : EditorWindow
             el.Add(warn);
         }
 
-        var lbl = new Label(clip.action.name);
+        // roll ที่ท่านี้ใช้ — เดิมมองไม่เห็นจาก timeline เลย ระบบ roll จึงไม่มีใครใช้
+        string roll = clip.action.rollName;
+        var lbl = new Label(string.IsNullOrEmpty(roll) ? clip.action.name : $"🎲{roll} · {clip.action.name}");
         lbl.style.fontSize = 10;
         lbl.style.color = Color.white;
         lbl.style.marginLeft = 4;
@@ -1001,7 +1217,8 @@ public class BossDesignerWindow : EditorWindow
         lbl.pickingMode = PickingMode.Ignore;
         el.Add(lbl);
 
-        el.tooltip = $"{clip.action.GetType().Name}\nstart {clip.startTime:0.0}s · ยาว ~{dur:0.0}s";
+        el.tooltip = $"{clip.action.GetType().Name}\nstart {clip.startTime:0.0}s · ยาว ~{dur:0.0}s" +
+                     (string.IsNullOrEmpty(roll) ? "" : $"\nroll: {roll}");
 
         // ── ลากเลื่อนเวลา ──
         float dragStartT = 0f;
