@@ -269,8 +269,13 @@ public class WaveManager : NetworkBehaviour
             spawner.baseSpawnRate * Mathf.Pow(1f - sc.spawnRateAccel, w)
         );
 
-        CurrentHealthMultiplier = healthMult;   // เก็บไว้ให้ BossManager อ่าน
+        CurrentHealthMultiplier = healthMult;   // เก็บไว้ให้ BossManager อ่าน (ก่อนคูณระดับ — มินิบอสมีตัวคูณระดับของตัวเอง)
         CurrentExpMultiplier    = expMult;
+
+        // กติกากลางของระดับ (DifficultyProfile) — ศัตรูทั่วไปเท่านั้น
+        var diff = DifficultyProfile.Current;
+        healthMult *= diff.enemyHpMult;
+        expMult    *= diff.expMult;
 
         spawner.SetAliveCap(sc);   // ทุก wave — จำนวนผู้เล่นอาจเปลี่ยนระหว่างรัน
         spawner.StartSpawning(spawnRate, healthMult, speedMult, expMult, GetConfigFor(wave, t));

@@ -87,6 +87,10 @@ public class BossController : NetworkBehaviour
     protected Coroutine enrageTimerCoroutine;
     protected bool enrageActive;
 
+    // ── ระดับความยาก (server) — ตั้งก่อน Spawn ได้ (ปุ่มทดสอบ) ไม่ตั้ง = ระดับของรัน ──
+    public DifficultyTier Tier { get; set; } = RunSetup.Difficulty;
+    public DifficultyProfile Tuning { get; set; }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -100,6 +104,8 @@ public class BossController : NetworkBehaviour
 
         if (IsServer)
         {
+            Tuning ??= DifficultyProfile.For(Tier);
+
             int s;
             do { s = new System.Random().Next(); } while (s == 0);
             FightSeed.Value = s;
@@ -208,7 +214,8 @@ public class BossController : NetworkBehaviour
         StopEnrageTimer();
         if (config?.phases == null || currentPhaseIndex >= config.phases.Count) return;
 
-        float t = config.phases[currentPhaseIndex].enrageTime;
+        if (Tuning != null && !Tuning.enrageEnabled) return;
+        float t = config.phases[currentPhaseIndex].enrageTime * (Tuning?.enrageTimeMult ?? 1f);
         if (t > 0f) enrageTimerCoroutine = StartCoroutine(EnrageTimer(currentPhaseIndex, t));
     }
 
@@ -350,12 +357,12 @@ public class BossController : NetworkBehaviour
 
                 float phaseInterval = currentPhase.attackInterval > 0f ? currentPhase.attackInterval : config.attackInterval;
                 float cooldown = action.cooldownAfter > 0f ? action.cooldownAfter : phaseInterval;
-                yield return new WaitForSeconds(cooldown);
+                yield return new WaitForSeconds(cooldown * (Tuning?.bossIntervalMult ?? 1f));
             }
             else
             {
                 float phaseInterval = currentPhase.attackInterval > 0f ? currentPhase.attackInterval : config.attackInterval;
-                yield return new WaitForSeconds(phaseInterval);
+                yield return new WaitForSeconds(phaseInterval * (Tuning?.bossIntervalMult ?? 1f));
             }
 
             mechanicIndex++;

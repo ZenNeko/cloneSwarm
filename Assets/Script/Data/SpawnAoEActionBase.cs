@@ -172,8 +172,12 @@ public abstract class SpawnAoEActionBase : BossAction
         // ของเดิมคืนทันทีที่ spawn เสร็จ ซึ่งไม่เป็นไรตอนที่ timeline รอด้วยนาฬิกา
         // แต่พอ timeline มารอ coroutine จริง ท่าที่คืนเร็วจะทำให้บอสขึ้นรอบใหม่
         // ตอนที่วงยังนับถอยหลังอยู่ · LimitCutAction ทำแบบนี้อยู่แล้วตั้งแต่แรก
-        if (warningDuration > 0f) yield return new WaitForSeconds(warningDuration);
+        float warn = WarningFor(runner);
+        if (warn > 0f) yield return new WaitForSeconds(warn);
     }
+
+    /// <summary>เวลาเตือนจริงตามระดับความยาก — ทั้งตัว zone และการรอของท่าต้องใช้ค่านี้ค่าเดียว</summary>
+    protected float WarningFor(NetworkBehaviour runner) => warningDuration * TuningOf(runner).bossWarningMult;
 
     /// <summary>
     /// จุดเกิด + ทิศของโซนทั้งหมดในหนึ่งระลอก
@@ -269,8 +273,9 @@ public abstract class SpawnAoEActionBase : BossAction
         zone.scaleStart = scaleStart;
         zone.scaleEnd = scaleEnd;
         zone.sweepDegreesPerSecond = sweepDegreesPerSecond;
-        zone.warningDuration = warningDuration;
-        zone.damage = damage;
+        var tuning = TuningOf(runner);
+        zone.warningDuration = warningDuration * tuning.bossWarningMult;
+        zone.damage = damage * tuning.bossDamageMult;
         zone.isChasing = isChasing;
         zone.isRotatingChase = isRotatingChase;
         zone.isStackMarker = isStackMarker;

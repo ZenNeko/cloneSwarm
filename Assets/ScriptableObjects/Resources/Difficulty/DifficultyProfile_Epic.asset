@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 381ff3df5653fa5439a914dd599741d8, type: 3}
+  m_Name: DifficultyProfile_Epic
+  m_EditorClassIdentifier: Assembly-CSharp::DifficultyProfile
+  tier: 4
+  bossHpMult: 1.8
+  bossDamageMult: 2
+  bossWarningMult: 0.8
+  bossIntervalMult: 0.8
+  enrageEnabled: 1
+  enrageTimeMult: 0.75
+  hpByPlayers:
+  - 0.9
+  - 1.7
+  - 2.4
+  - 3
+  enemyHpMult: 1.6
+  expMult: 0.7

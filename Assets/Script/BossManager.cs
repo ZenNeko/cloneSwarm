@@ -91,7 +91,9 @@ public class BossManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        var prefab = PickMiniBoss(variantId);
+        // รายชื่อของแมพก่อน (MapData.miniBosses) · แมพที่ไม่มีรายชื่อ = ลิสต์ในซีนแบบเดิม
+        var entry = PickFromMap(variantId);
+        var prefab = entry != null ? entry.prefab : PickMiniBoss(variantId);
         if (prefab == null)
         {
             Debug.LogWarning("[BossManager] miniBossPrefabs is empty — assign at least one prefab!");
@@ -101,17 +103,21 @@ public class BossManager : NetworkBehaviour
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(prefab, pos, Quaternion.identity);
 
-        if (activeMiniBossConfig != null)
-        {
-            var bc = go.GetComponent<BossController>();
-            if (bc != null) bc.config = activeMiniBossConfig;
-        }
+        // ท่า: override ของระดับ > ของรายชื่อแมพ > (แบบเก่า) miniBossConfig ของระดับ > ของบน prefab
+        var tierContent = RunSetup.Map != null ? RunSetup.Map.GetTier(RunSetup.Difficulty) : null;
+        var config = entry != null
+            ? (tierContent?.OverrideFor(entry.id) ?? entry.config ?? activeMiniBossConfig)
+            : activeMiniBossConfig;
+        var bc = go.GetComponent<BossController>();
+        if (bc != null && config != null) bc.config = config;
 
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
-        // HP = baseHP × miniBossBaseHealthMult × waveHealthMult
+        // HP = baseHP × miniBossBaseHealthMult × waveHealthMult × ระดับ × จำนวนคน
+        var tuning = DifficultyProfile.Current;
         float waveHealthMult  = WaveManager.Instance?.CurrentHealthMultiplier ?? 1f;
-        float finalHealthMult = miniBossBaseHealthMult * waveHealthMult;
+        float finalHealthMult = miniBossBaseHealthMult * waveHealthMult
+                              * tuning.bossHpMult * tuning.HpForPlayers(PlayerCount());
 
         go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
         Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
@@ -126,6 +132,32 @@ public class BossManager : NetworkBehaviour
     ///
     /// หาไม่เจอแล้ว **บ่น** ไม่ใช่เงียบแล้วสุ่มแทน — ชื่อพิมพ์ผิดกับดวงไม่ดีหน้าตาเหมือนกัน
     /// </summary>
+    /// <summary>
+    /// มินิบอสจากรายชื่อของแมพ · id ว่าง = สุ่มจากรายชื่อ · id ไม่มีในรายชื่อ = บ่นแล้วสุ่ม
+    /// แมพไม่มีรายชื่อ = null (ใช้ลิสต์ในซีน)
+    /// </summary>
+    MapData.MiniBossEntry PickFromMap(string variantId)
+    {
+        var roster = RunSetup.Map?.miniBosses;
+        if (roster == null) return null;
+        var valid = System.Array.FindAll(roster, m => m != null && m.prefab != null);
+        if (valid.Length == 0) return null;
+
+        if (!string.IsNullOrEmpty(variantId))
+        {
+            var hit = RunSetup.Map.FindMiniBoss(variantId);
+            if (hit != null) return hit;
+            Debug.LogWarning($"[BossManager] นัดหมายขอมินิบอส '{variantId}' แต่ไม่มีใน {RunSetup.Map.mapId}.miniBosses → สุ่มแทน");
+        }
+        return valid[Random.Range(0, valid.Length)];
+    }
+
+    static int PlayerCount()
+    {
+        var nm = NetworkManager.Singleton;
+        return nm != null ? Mathf.Max(1, nm.ConnectedClientsList.Count) : 1;
+    }
+
     GameObject PickMiniBoss(string variantId)
     {
         if (!string.IsNullOrEmpty(variantId))
@@ -183,6 +215,13 @@ public class BossManager : NetworkBehaviour
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         activeMainBossEnemy = go.GetComponent<Enemy>();
+
+        // HP ตามระดับ × จำนวนคนตอนเกิด (ไม่ปรับกลางไฟต์ — คนหลุดแล้วหลอดกระโดดไม่ได้)
+        // เดิมบอสใหญ่ไม่ถูกสเกลเลย: ทุกระดับ ทุกจำนวนคน HP เท่ากัน
+        var tuning = DifficultyProfile.Current;
+        float hpMult = tuning.bossHpMult * tuning.HpForPlayers(PlayerCount());
+        if (activeMainBossEnemy != null && !Mathf.Approximately(hpMult, 1f))
+            activeMainBossEnemy.ApplyWaveScaling(hpMult, 1f);
         if (activeMainBossEnemy != null)
         {
             _mainBossDeathHandled = false;

@@ -81,6 +81,14 @@ public abstract class BossAction : ScriptableObject
     /// <summary>
     /// อ่านค่า roll ที่ resolve แล้วของ fight นี้ — คืน -1 ถ้าไม่มี roll หรือหาไม่เจอ
     /// </summary>
+    /// <summary>ตัวคูณของระดับความยากที่บอสตัวนี้ใช้ · ไม่ได้รันผ่าน BossController = ค่ากลาง</summary>
+    protected static DifficultyProfile TuningOf(NetworkBehaviour runner)
+        => (runner as BossController)?.Tuning ?? DifficultyProfile.For(DifficultyTier.Normal);
+
+    /// <summary>ระดับความยากของบอสตัวนี้ — คลิปที่ตั้งช่วงระดับไว้ดูค่านี้</summary>
+    protected static DifficultyTier TierOf(NetworkBehaviour runner)
+        => (runner as BossController)?.Tier ?? RunSetup.Difficulty;
+
     protected int GetRoll(NetworkBehaviour runner)
     {
         if (string.IsNullOrEmpty(rollName) || runner == null) return -1;

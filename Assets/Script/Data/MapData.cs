@@ -15,6 +15,32 @@ public class MapData : ScriptableObject
     public string Description  => description.IsEmpty ? "" : description.GetLocalizedString();
 
     public Sprite previewImage;
+
+    /// <summary>
+    /// มินิบอสของแมพนี้ — ใส่ครั้งเดียว ทุกระดับใช้ร่วม · ตารางของแต่ละระดับเลือกด้วย id
+    /// (TimelineCue.variant) · ว่าง = ใช้ BossManager.miniBossPrefabs ในซีนแบบเดิม
+    /// asset อ้าง prefab ได้ตรงๆ — รายชื่อจึงย้ายจากซีนมาเป็นเนื้อหาของแมพได้
+    /// </summary>
+    [System.Serializable]
+    public class MiniBossEntry
+    {
+        [Tooltip("ชื่อที่ตารางใช้เรียก · ห้ามซ้ำในแมพ")]
+        public string id = "";
+        [Tooltip("ต้องอยู่ใน DefaultNetworkPrefabs")]
+        public GameObject prefab;
+        [Tooltip("ท่าของตัวนี้ · ว่าง = ของบน prefab")]
+        public BossEncounterConfig config;
+    }
+    [Tooltip("มินิบอสของแมพ · ว่าง = ใช้รายชื่อในซีน (BossManager)")]
+    public MiniBossEntry[] miniBosses = new MiniBossEntry[0];
+
+    public MiniBossEntry FindMiniBoss(string id)
+    {
+        if (miniBosses == null || string.IsNullOrEmpty(id)) return null;
+        foreach (var m in miniBosses)
+            if (m != null && m.prefab != null && m.id == id) return m;
+        return null;
+    }
     public string sceneName = "SampleScene"; // ต้องอยู่ใน Build Settings
 
     [System.Serializable]
@@ -23,8 +49,19 @@ public class MapData : ScriptableObject
         public DifficultyTier tier = DifficultyTier.Normal;
         public WaveConfig[] wavesByPhase;              // เรียงตามช่วงของรัน
         public BossEncounterConfig mainBossConfig;     // ปล่อย null = ใช้ของบน prefab
-        [Tooltip("ปล่อยว่าง = ใช้ของบน prefab")]
+        [Tooltip("(แบบเก่า) ทับท่าของมินิบอส **ทุกตัว** · ใช้เฉพาะแมพที่ยังไม่มี miniBosses — ใช้ miniBossOverrides แทน")]
         public BossEncounterConfig miniBossConfig;
+
+        [Tooltip("เปลี่ยนท่าของมินิบอสบางตัวเฉพาะระดับนี้ · ตัวที่ไม่อยู่ในนี้ใช้ท่าจาก miniBosses")]
+        public MiniBossOverride[] miniBossOverrides = new MiniBossOverride[0];
+
+        public BossEncounterConfig OverrideFor(string id)
+        {
+            if (miniBossOverrides == null) return null;
+            foreach (var o in miniBossOverrides)
+                if (o != null && o.id == id && o.config != null) return o.config;
+            return null;
+        }
 
         // จังหวะของรัน — โซนเควสต์กับมินิบอสออกนาทีไหนบ้าง
         //
@@ -48,6 +85,14 @@ public class MapData : ScriptableObject
         public MusicProfile musicProfile;
     }
     public TierContent[] tiers;
+
+    [System.Serializable]
+    public class MiniBossOverride
+    {
+        [Tooltip("id ใน miniBosses")]
+        [VariantId] public string id = "";
+        public BossEncounterConfig config;
+    }
 
     /// <summary>สเกลศัตรูของ tier ที่ขอ — null เมื่อ tier นั้นไม่ได้เปิดสวิตช์ไว้</summary>
     public EnemyScaling GetEnemyScaling(DifficultyTier tier)

@@ -21,6 +21,16 @@ public class BossTimelineAction : BossAction
         public BossAction action;
         [Tooltip("วินาทีเริ่มนับจากจุดเริ่ม timeline")]
         [Min(0f)] public float startTime;
+
+        // ── ช่วงระดับความยาก — ท่าต่อยอดแบบ Rabbit and Steel ในไฟล์บอสไฟล์เดียว ──
+        // ปิด (ค่าเริ่ม) = ออกทุกระดับ · เป็น bool นำ ไม่ใช่ maxTier = Epic ตรงๆ เพราะคลิปเก่าในไฟล์
+        // ไม่มีช่องนี้ ถ้าค่าที่หายไปอ่านเป็น 0 (Easy) คลิปเก่าทั้งหมดจะออกแค่ Easy
+        [Tooltip("เปิด = คลิปนี้ออกเฉพาะระดับ minTier ถึง maxTier · ปิด = ทุกระดับ")]
+        public bool limitTiers;
+        public DifficultyTier minTier = DifficultyTier.Easy;
+        public DifficultyTier maxTier = DifficultyTier.Epic;
+
+        public bool ActiveIn(DifficultyTier t) => !limitTiers || (t >= minTier && t <= maxTier);
     }
 
     [System.Serializable]
@@ -94,6 +104,7 @@ public class BossTimelineAction : BossAction
             foreach (var clip in track.clips)
             {
                 if (clip?.action == null || clip.action == this) continue;
+                if (!clip.ActiveIn(TierOf(runner))) continue;   // คลิปของระดับอื่น
                 tally.Running++;
                 runner.StartCoroutine(RunClipDelayed(runner, telegraphPrefab, clip.action, clip.startTime, gen, tally));
             }

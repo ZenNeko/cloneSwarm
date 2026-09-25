@@ -23,7 +23,9 @@ namespace CloneSwarm.EditorTools
     {
         BossEncounterConfig _source;
         DifficultyTier _tier = DifficultyTier.Savage;
-        float _warnMult = 0.8f, _damageMult = 1.5f, _intervalMult = 0.85f;
+        // ×1 = ไม่คูณ — ตัวคูณของระดับอยู่ใน DifficultyProfile แล้ว (คูณตอนเล่น) · ใส่ตรงนี้อีกจะคูณซ้ำสองชั้น
+        // เครื่องมือนี้เหลือไว้สำหรับระดับที่ "ท่าต่างจนเป็นคนละไฟต์" — ท่าต่อยอดใช้ช่วงระดับบนคลิปแทน
+        float _warnMult = 1f, _damageMult = 1f, _intervalMult = 1f;
         MapData _map;
         System.Action<BossEncounterConfig> _onCreated;
 
@@ -36,7 +38,7 @@ namespace CloneSwarm.EditorTools
             w._map = AssetDatabase.FindAssets("t:MapData")
                 .Select(g => AssetDatabase.LoadAssetAtPath<MapData>(AssetDatabase.GUIDToAssetPath(g)))
                 .FirstOrDefault(m => m?.tiers != null && m.tiers.Any(t => t?.mainBossConfig == source));
-            w.minSize = w.maxSize = new Vector2(360, 230);
+            w.minSize = w.maxSize = new Vector2(380, 290);
             w.ShowUtility();
         }
 
@@ -46,6 +48,7 @@ namespace CloneSwarm.EditorTools
 
             EditorGUILayout.LabelField("ต้นทาง", _source.name);
             _tier = (DifficultyTier)EditorGUILayout.EnumPopup("ระดับ", _tier);
+            EditorGUILayout.HelpBox("ท่าเพิ่มในระดับสูง: ใช้ \"ออกเฉพาะระดับ\" บนคลิปแทนการก๊อป · ตัวเลขของระดับอยู่ใน DifficultyProfile (คูณตอนเล่น) — ตัวคูณข้างล่างจะคูณซ้ำ ปล่อย ×1 ไว้", MessageType.Info);
             EditorGUILayout.Space(4);
             _warnMult     = EditorGUILayout.Slider("เวลาเตือน ×",  _warnMult,     0.3f, 1.5f);
             _damageMult   = EditorGUILayout.Slider("ดาเมจ ×",      _damageMult,   0.5f, 4f);

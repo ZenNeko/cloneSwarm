@@ -27,11 +27,13 @@ public class BossTestRunner : MonoBehaviour
     public const string KeyConfig = "CloneSwarm.BossTest.ConfigGuid";
     public const string KeyPhase  = "CloneSwarm.BossTest.Phase";
     public const string KeyGod    = "CloneSwarm.BossTest.God";
+    public const string KeyTier   = "CloneSwarm.BossTest.Tier";   // -1 = ระดับของแมพที่ใช้ config นี้
     public const string MenuScenePath = "Assets/GameScenes/MenuScene.unity";
 
     string _guid;
     int    _phase;
     bool   _god;
+    int    _tier = -1;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot()
@@ -44,11 +46,13 @@ public class BossTestRunner : MonoBehaviour
         runner._guid  = guid;
         runner._phase = SessionState.GetInt(KeyPhase, 0);
         runner._god   = SessionState.GetBool(KeyGod, true);
+        runner._tier  = SessionState.GetInt(KeyTier, -1);
 
         // ใช้ครั้งเดียว
         SessionState.EraseString(KeyConfig);
         SessionState.EraseInt(KeyPhase);
         SessionState.EraseBool(KeyGod);
+        SessionState.EraseInt(KeyTier);
     }
 
     IEnumerator Start()
@@ -88,6 +92,7 @@ public class BossTestRunner : MonoBehaviour
 
         // ── 2. เลือกแมพที่ใช้ config นี้ แล้วเริ่มรันแบบเดียวกับปุ่มในล็อบบี้ ──
         var (map, tier) = FindMapFor(config);
+        if (_tier >= 0) tier = (DifficultyTier)_tier;   // ระดับที่เลือกดูใน Boss Designer
         RunSetup.Set(map, tier);
         string scene = map != null && !string.IsNullOrEmpty(map.sceneName) ? map.sceneName : "SampleScene";
         if (!GameSessionManager.Instance.StartGame(scene)) { Debug.LogError("[BossTest] StartGame ไม่สำเร็จ — ดู log ของ [Session]"); yield break; }

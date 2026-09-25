@@ -72,7 +72,8 @@ public class ColorMatchAoEAction : SpawnAoEActionBase
         }
 
         // รอให้วงระเบิดก่อนคืนค่า — สัญญาเดียวกับ SpawnAoEActionBase
-        if (warningDuration > 0f) yield return new WaitForSeconds(warningDuration);
+        float warn = WarningFor(runner);
+        if (warn > 0f) yield return new WaitForSeconds(warn);
     }
 
     private Vector3 ResolveSharedCenter(NetworkBehaviour runner)

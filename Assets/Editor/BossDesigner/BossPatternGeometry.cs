@@ -81,6 +81,12 @@ namespace CloneSwarm.EditorTools
             return ctx;
         }
 
+        /// <summary>
+        /// ระดับที่ Boss Designer กำลังดู · null = ทุกคลิป — static เพราะแผนผังกับแถบปลอดภัยเรียกผ่าน
+        /// Collect/ActiveClips หลายทาง และทุกทางต้องเห็นชุดคลิปเดียวกัน (ตั้งจาก BossDesignerWindow)
+        /// </summary>
+        public static DifficultyTier? ViewTier;
+
         /// <summary>คลิปที่ active ณ เวลา t — ตั้งแต่เริ่มเตือนจนจบท่า (ความยาวจาก GetEditorDuration)</summary>
         public static IEnumerable<BossTimelineAction.TimelineClip> ActiveClips(BossTimelineAction timeline, float t)
         {
@@ -91,6 +97,7 @@ namespace CloneSwarm.EditorTools
                 foreach (var clip in track.clips)
                 {
                     if (clip?.action == null || clip.action == timeline) continue;
+                    if (ViewTier.HasValue && !clip.ActiveIn(ViewTier.Value)) continue;
                     float len = Mathf.Max(clip.action.GetEditorDuration(), 0.3f);
                     if (t >= clip.startTime && t < clip.startTime + len) yield return clip;
                 }

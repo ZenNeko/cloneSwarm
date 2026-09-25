@@ -92,7 +92,7 @@ public class LimitCutAction : SpawnAoEActionBase
             if (i < players.Count - 1) yield return new WaitForSeconds(perNumberDelay);
         }
 
-        yield return new WaitForSeconds(warningDuration);
+        yield return new WaitForSeconds(WarningFor(runner));
 
         // กันเลขค้างบนหัวถ้ามีใครหลุดคิวไป
         foreach (var pm in players)

@@ -1330,9 +1330,9 @@ namespace CloneSwarm.EditorTools
 
                 // ตารางของซีน + ตารางของทุกแมพทุก tier — แมพที่ตั้งชื่อแบบผิดไว้
                 // จะพังเฉพาะตอนเลือกแมพนั้น ซึ่งอาจไม่ใช่แมพที่ใครเปิดทดสอบ
-                var tables = new List<(string where, TimelineCue[] cues, float bossAt)>
+                var tables = new List<(string where, TimelineCue[] cues, float bossAt, MapData map)>
                 {
-                    ("ซีน", gt.cues, gt.mainBossTimeMin)
+                    ("ซีน", gt.cues, gt.mainBossTimeMin, null)
                 };
 
                 var maps = AssetDatabase.FindAssets("t:MapData")
@@ -1346,11 +1346,11 @@ namespace CloneSwarm.EditorTools
                         if (tier == null || tier.schedule == null || !tier.schedule.HasCues) continue;
                         float bossAt = tier.schedule.mainBossMinutes > 0f
                                      ? tier.schedule.mainBossMinutes : gt.mainBossTimeMin;
-                        tables.Add(($"{map.mapId}/{tier.tier}", tier.schedule.cues, bossAt));
+                        tables.Add(($"{map.mapId}/{tier.tier}", tier.schedule.cues, bossAt, map));
                     }
                 }
 
-                foreach (var (where, cues, bossAt) in tables)
+                foreach (var (where, cues, bossAt, ownerMap) in tables)
                 {
                     if (cues == null) continue;
                     foreach (var cue in cues)
@@ -1367,8 +1367,9 @@ namespace CloneSwarm.EditorTools
                         bool found = cue.kind == TimelineCueKind.ZoneObjective
                             ? om != null && om.zoneVariants != null &&
                               om.zoneVariants.Any(v => v.prefab != null && v.id == cue.variant)
-                            : bm != null && bm.miniBossPrefabs != null &&
-                              bm.miniBossPrefabs.Any(p => p != null && p.name == cue.variant);
+                            : ownerMap != null && ownerMap.FindMiniBoss(cue.variant) != null
+                              || bm != null && bm.miniBossPrefabs != null &&
+                                 bm.miniBossPrefabs.Any(p => p != null && p.name == cue.variant);
 
                         if (!found) unknown.Add($"{name} → '{cue.variant}'");
                     }

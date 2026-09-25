@@ -32,12 +32,62 @@ MonoBehaviour:
     m_WaitForCompletion: 0
     m_LocalVariables: []
   previewImage: {fileID: 21300000, guid: c1073028faea5c14192b7ac7831dd8fd, type: 3}
+  miniBosses:
+  - id: Purple 1
+    prefab: {fileID: 116688, guid: 366576c175f3f734a9b33421259b0ebe, type: 3}
+    config: {fileID: 0}
+  - id: newRed
+    prefab: {fileID: 5361871700786666957, guid: 52a30c9ee44b60743ac6bbe02ac811c3, type: 3}
+    config: {fileID: 0}
   sceneName: SampleScene
   tiers:
   - tier: 1
     wavesByPhase: []
     mainBossConfig: {fileID: 0}
     miniBossConfig: {fileID: 0}
+    miniBossOverrides: []
+    schedule:
+      cues:
+      - label: Obj augment
+        kind: 0
+        atMinutes:
+        - 5
+        - 8
+        - 12
+        variant: augment
+      - label: 'Obj '
+        kind: 0
+        atMinutes:
+        - 1
+        - 7
+        - 10
+        - 14
+        variant: normal
+      - label: Miniboss
+        kind: 1
+        atMinutes:
+        - 3
+        - 6
+        - 9
+        - 12
+        variant: 
+      mainBossMinutes: 15
+      wavePhases: []
+    enemyScaling:
+      enabled: 1
+      healthMultPerWave: 0.1
+      speedMultPerWave: 0.05
+      expMultPerWave: 0.1
+      maxSpeedMultiplier: 2
+      spawnRateAccel: 0.15
+      maxAliveEnemies: 300
+      maxAlivePerExtraPlayer: 50
+    musicProfile: {fileID: 11400000, guid: 8a0af5911df760f4b8afd55202326f01, type: 2}
+  - tier: 2
+    wavesByPhase: []
+    mainBossConfig: {fileID: 0}
+    miniBossConfig: {fileID: 0}
+    miniBossOverrides: []
     schedule:
       cues:
       - label: Obj augment
@@ -68,11 +118,13 @@ MonoBehaviour:
       wavePhases: []
     enemyScaling:
       enabled: 1
-      healthMultPerWave: 0.1
-      speedMultPerWave: 0.05
-      expMultPerWave: 0.1
+      healthMultPerWave: 0.2
+      speedMultPerWave: 0.1
+      expMultPerWave: 0.15
       maxSpeedMultiplier: 2
       spawnRateAccel: 0.15
+      maxAliveEnemies: 300
+      maxAlivePerExtraPlayer: 50
     musicProfile: {fileID: 11400000, guid: 8a0af5911df760f4b8afd55202326f01, type: 2}
   references:
     version: 2

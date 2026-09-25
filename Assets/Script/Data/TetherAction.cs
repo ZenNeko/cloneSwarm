@@ -159,7 +159,7 @@ public class TetherAction : BossAction
         tether.closeFailMode    = closeFailMode;
         tether.requiredDistance = tetherDistance;
         tether.duration         = tetherDuration;
-        tether.failDamage       = tetherFailDamage;
+        tether.failDamage       = tetherFailDamage * TuningOf(boss).bossDamageMult;
 
         no.Spawn(true);
         boss.RegisterMechanic(no);

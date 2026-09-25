@@ -263,6 +263,8 @@ public partial class BossDesignerWindow : EditorWindow
                               "กดเพื่อก๊อปทุกตัวเข้ามาเป็นของบอสนี้ · คลิปที่แชร์ท่ากันภายในบอสยังแชร์กันเหมือนเดิม · ไฟล์ต้นทางไม่ถูกลบ";
         toolbar.Add(embedButton);
 
+        toolbar.Add(BuildViewTierField());
+
         var fontDown = new Button(() => ChangeFontScale(-0.1f)) { text = "A−", tooltip = "ตัวอักษรเล็กลง" };
         var fontUp   = new Button(() => ChangeFontScale(+0.1f)) { text = "A+", tooltip = $"ตัวอักษรใหญ่ขึ้น (ตอนนี้ ×{FontScale:0.##})" };
         fontDown.style.marginLeft = 8;
@@ -511,6 +513,7 @@ public partial class BossDesignerWindow : EditorWindow
         SessionState.SetString(BossTestRunner.KeyConfig, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(config)));
         SessionState.SetInt(BossTestRunner.KeyPhase, Mathf.Max(0, phaseIndex));
         SessionState.SetBool(BossTestRunner.KeyGod, EditorPrefs.GetBool(PrefGod, true));
+        SessionState.SetInt(BossTestRunner.KeyTier, ViewTier.HasValue ? (int)ViewTier.Value : -1);
         EditorApplication.EnterPlaymode();
     }
 
@@ -655,6 +658,7 @@ public partial class BossDesignerWindow : EditorWindow
             BuildTimelinePane();
         });
         inspectorPane.Add(startField);
+        inspectorPane.Add(BuildClipTierRow(selectedClip));
 
         var scroll = new ScrollView();
         scroll.style.flexGrow = 1;
@@ -1973,7 +1977,8 @@ public partial class BossDesignerWindow : EditorWindow
         string text = clip.action is RandomAttackAction pool
             ? $"🎲 {string.Join(" | ", (pool.attackPool ?? new List<BossAction>()).Where(a => a != null).Select(a => a.name))}"
             : string.IsNullOrEmpty(roll) ? clip.action.name : $"🎲{roll} · {clip.action.name}";
-        var lbl = new Label(text);
+        var lbl = new Label(TierBadge(clip) + text);
+        if (!ClipVisibleInView(clip)) el.style.opacity = 0.3f;   // ไม่ออกในระดับที่ดูอยู่
         lbl.style.fontSize = Fs(10);
         lbl.style.color = Color.white;
         lbl.style.marginLeft = 4;

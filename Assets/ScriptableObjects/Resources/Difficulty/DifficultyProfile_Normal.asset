@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 381ff3df5653fa5439a914dd599741d8, type: 3}
+  m_Name: DifficultyProfile_Normal
+  m_EditorClassIdentifier: Assembly-CSharp::DifficultyProfile
+  tier: 1
+  bossHpMult: 1
+  bossDamageMult: 1
+  bossWarningMult: 1
+  bossIntervalMult: 1
+  enrageEnabled: 1
+  enrageTimeMult: 1
+  hpByPlayers:
+  - 0.9
+  - 1.7
+  - 2.4
+  - 3
+  enemyHpMult: 1
+  expMult: 1

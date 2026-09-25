@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 381ff3df5653fa5439a914dd599741d8, type: 3}
+  m_Name: DifficultyProfile_Savage
+  m_EditorClassIdentifier: Assembly-CSharp::DifficultyProfile
+  tier: 3
+  bossHpMult: 1.5
+  bossDamageMult: 1.5
+  bossWarningMult: 0.85
+  bossIntervalMult: 0.85
+  enrageEnabled: 1
+  enrageTimeMult: 0.8
+  hpByPlayers:
+  - 0.9
+  - 1.7
+  - 2.4
+  - 3
+  enemyHpMult: 1.4
+  expMult: 0.8
