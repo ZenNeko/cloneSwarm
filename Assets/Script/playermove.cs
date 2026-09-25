@@ -200,9 +200,12 @@ public class playermove : NetworkBehaviour
 
     // ── Damage / Health (Server only) ────────────────────────────────────
     /// <summary>เรียกจาก Enemy.cs (Server side) เท่านั้น</summary>
+    /// <summary>ผู้เล่นไม่รับดาเมจ — ปุ่ม "ทดสอบในเกม" ของ Boss Designer เปิดให้ (dev only · อ่านบน server)</summary>
+    public static bool DevInvulnerable;
+
     public void TakeDamage(float amount)
     {
-        if (!IsServer || isDead.Value) return;
+        if (!IsServer || isDead.Value || DevInvulnerable) return;
 
         // อมตะสั้นๆ หลังเกิดใหม่ — เกิดที่จุดที่ตายแปลว่าโผล่กลางกองเดิมที่เพิ่งฆ่าเรา
         // ไม่มีช่วงนี้จะโดนตีตายซ้ำก่อนขยับทัน (โปรเจกต์นี้ไม่เคยมี i-frame ให้ player มาก่อน)

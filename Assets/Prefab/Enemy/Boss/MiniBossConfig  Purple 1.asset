@@ -20,13 +20,13 @@ MonoBehaviour:
   tracks:
   - trackName: Main
     clips:
-    - action: {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+    - action: {fileID: 7527814731122968006}
       startTime: 0
     - action: {fileID: -3729593960924732028}
       startTime: 4.1
     - action: {fileID: 6905806424393476747}
       startTime: 21
-    - action: {fileID: 11400000, guid: 1e7195cafe331f44fa9818d8d1c29912, type: 2}
+    - action: {fileID: -1195213464419468533}
       startTime: 16
   waitForTimelineEnd: 1
   extraTailTime: 0
@@ -55,6 +55,65 @@ MonoBehaviour:
   tetherSoloSpawnOffset: 3
   leashScope: 2
   leashAnchorOffset: 0
+--- !u!114 &-1195213464419468533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bef310bf925c95944b3d2b2cbdc7103a, type: 3}
+  m_Name: DonutAoEAction
+  m_EditorClassIdentifier: Assembly-CSharp::DonutAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 5
+  targetOffset: {x: 0, y: 0, z: 0}
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2
+  damage: 30
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 25
+  innerRadius: 18
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,9 +133,17 @@ MonoBehaviour:
     invincibilityDuration: 1.5
     attackInterval: -1
     cameraShakeMagnitude: 0.4
-    announcementText: 
+    announcement:
+      m_TableReference:
+        m_TableCollectionName: 
+      m_TableEntryReference:
+        m_KeyId: 0
+        m_Key: 
+      m_FallbackState: 0
+      m_WaitForCompletion: 0
+      m_LocalVariables: []
     announcementColor: {r: 1, g: 1, b: 1, a: 1}
-    phaseVfxName: 
+    phaseVfx: {fileID: 0}
     actions:
     - {fileID: -7828266700600522419}
     enrageTime: -1
@@ -93,6 +160,67 @@ MonoBehaviour:
   - prefab: {fileID: 9144944588933778266, guid: 777b9cd6a65bc9a428e9191feaeb1966, type: 3}
     count: 10
     scatterRadius: 2
+  references:
+    version: 2
+    RefIds: []
+--- !u!114 &2822617717259652009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede484211ee4e7148b86f94badc62990, type: 3}
+  m_Name: CircleAoE
+  m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 25
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 5
 --- !u!114 &6905806424393476747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -138,12 +266,70 @@ MonoBehaviour:
   tracks:
   - trackName: Main
     clips:
-    - action: {fileID: 11400000, guid: 10919155d3c1fc243b6ed676b79778a1, type: 2}
+    - action: {fileID: 2822617717259652009}
       startTime: 7.4
-    - action: {fileID: 11400000, guid: 10919155d3c1fc243b6ed676b79778a1, type: 2}
+    - action: {fileID: 2822617717259652009}
       startTime: 11.900001
   waitForTimelineEnd: 1
   extraTailTime: 0
+--- !u!114 &7527814731122968006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede484211ee4e7148b86f94badc62990, type: 3}
+  m_Name: AoE_Boss_Circle
+  m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2
+  damage: 30
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 10
 --- !u!114 &9137735223014551562
 MonoBehaviour:
   m_ObjectHideFlags: 0

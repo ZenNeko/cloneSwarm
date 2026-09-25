@@ -76,6 +76,16 @@ public class BossManager : NetworkBehaviour
     /// <summary>Force spawn main boss (dev tool only — server only)</summary>
     public void DevSpawnMainBoss() => SpawnMainBoss();
 
+    /// <summary>
+    /// เรียกบอสใหญ่ด้วย config ที่ระบุ — ปุ่ม "ทดสอบในเกม" ของ Boss Designer (dev only · server only)
+    /// ทับ config ของแมพ/prefab เฉพาะรอบนี้
+    /// </summary>
+    public void DevSpawnMainBoss(BossEncounterConfig config)
+    {
+        if (config != null) activeBossConfig = config;
+        SpawnMainBoss();
+    }
+
     // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnMiniBoss(string variantId)
     {

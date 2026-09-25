@@ -240,6 +240,28 @@ public class BossController : NetworkBehaviour
         attackLoopCoroutine = StartCoroutine(AttackLoop(0f));
     }
 
+    /// <summary>
+    /// ข้ามไปเฟส target ทันที — ปุ่ม "ทดสอบในเกม" ของ Boss Designer (dev only · server only)
+    ///
+    /// ลด HP ลงต่ำกว่าเกณฑ์ของทีละเฟส ให้เดินทางเดียวกับการเปลี่ยนเฟสจริง (OnHealthChanged →
+    /// อมตะ · ล้างกระดาน · PhaseChangedClientRpc · ตัวจับเวลา enrage) แทนการตั้ง index ตรงๆ
+    /// ซึ่งจะข้ามผลข้างเคียงเหล่านั้นทั้งหมดและทดสอบสิ่งที่ไม่ใช่ของจริง
+    /// </summary>
+    public void DevJumpToPhase(int target)
+    {
+        if (!IsServer || enemy == null || config?.phases == null) return;
+        target = Mathf.Clamp(target, 0, config.phases.Count - 1);
+
+        while (currentPhaseIndex < target)
+        {
+            float pct = config.phases[currentPhaseIndex].transitionHealthPct;
+            float hp  = Mathf.Max(1f, enemy.maxHealth * pct - 1f);   // ต่ำกว่าเกณฑ์นิดเดียว แต่ไม่ตาย
+            int before = currentPhaseIndex;
+            enemy.netHealth.Value = hp;                               // → OnHealthChanged เลื่อนเฟส
+            if (currentPhaseIndex == before) break;                   // เกณฑ์ผิด (เช่น 0%) — ไม่วนค้าง
+        }
+    }
+
     [ClientRpc]
     protected void PhaseChangedClientRpc(int phaseIndex)
     {

@@ -32,6 +32,19 @@ public struct RollTransform
         return pivot + local;
     }
 
+    /// <summary>
+    /// พลิก/หมุน "เวกเตอร์" (ไม่มีจุดหมุน) — ใช้กับ targetOffset ของท่าที่ยึดตัวบอส/ผู้เล่น
+    /// ท่าพวกนั้นต้องเกิดที่ตัวคนเสมอ หมุนแค่ส่วนที่เยื้องออกไป ไม่ใช่หมุนตัวคนรอบกลางสนาม
+    /// </summary>
+    public Vector3 ApplyVector(Vector3 v)
+    {
+        if (IsIdentity) return v;
+        if (mirrorX) v.x = -v.x;
+        if (mirrorZ) v.z = -v.z;
+        if (Mathf.Abs(angleDeg) > 0.001f) v = Quaternion.Euler(0f, angleDeg, 0f) * v;
+        return v;
+    }
+
     /// <summary>แปลงทิศการหันให้สอดคล้องกับตำแหน่ง — ไม่งั้น Line จะพาดผิดทางหลังพลิก</summary>
     public Quaternion Apply(Quaternion rot)
     {
