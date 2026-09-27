@@ -35,23 +35,24 @@ MonoBehaviour:
   miniBosses:
   - id: Purple 1
     prefab: {fileID: 116688, guid: 366576c175f3f734a9b33421259b0ebe, type: 3}
-    config: {fileID: 0}
+    config: {fileID: 11400000, guid: 27c9a83db8d85bb40856283db9b471ba, type: 2}
   - id: newRed
     prefab: {fileID: 5361871700786666957, guid: 52a30c9ee44b60743ac6bbe02ac811c3, type: 3}
-    config: {fileID: 0}
+    config: {fileID: 11400000, guid: dc7d4e54db3a62f468b3ace731162303, type: 2}
   sceneName: SampleScene
   tiers:
   - tier: 1
     wavesByPhase: []
     mainBossConfig: {fileID: 0}
     miniBossConfig: {fileID: 0}
+    difficultyOverride: {fileID: 0}
     miniBossOverrides: []
     schedule:
       cues:
       - label: Obj augment
         kind: 0
         atMinutes:
-        - 5
+        - 4.5
         - 8
         - 12
         variant: augment
@@ -59,7 +60,7 @@ MonoBehaviour:
         kind: 0
         atMinutes:
         - 1
-        - 7
+        - 6
         - 10
         - 14
         variant: normal
@@ -87,13 +88,16 @@ MonoBehaviour:
     wavesByPhase: []
     mainBossConfig: {fileID: 0}
     miniBossConfig: {fileID: 0}
-    miniBossOverrides: []
+    difficultyOverride: {fileID: 0}
+    miniBossOverrides:
+    - id: Purple 1
+      config: {fileID: 11400000, guid: 27c9a83db8d85bb40856283db9b471ba, type: 2}
     schedule:
       cues:
       - label: Obj augment
         kind: 0
         atMinutes:
-        - 3
+        - 4.5
         - 8
         - 12
         variant: augment
@@ -101,18 +105,17 @@ MonoBehaviour:
         kind: 0
         atMinutes:
         - 1
-        - 5
-        - 8
-        - 13
+        - 6
+        - 10
+        - 14
         variant: normal
       - label: Miniboss
         kind: 1
         atMinutes:
-        - 2
-        - 4
+        - 3
+        - 6
         - 9
-        - 11
-        - 14
+        - 12
         variant: 
       mainBossMinutes: 15
       wavePhases: []
@@ -120,7 +123,7 @@ MonoBehaviour:
       enabled: 1
       healthMultPerWave: 0.2
       speedMultPerWave: 0.1
-      expMultPerWave: 0.15
+      expMultPerWave: 0.1
       maxSpeedMultiplier: 2
       spawnRateAccel: 0.15
       maxAliveEnemies: 300

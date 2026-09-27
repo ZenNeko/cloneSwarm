@@ -152,8 +152,11 @@ namespace CloneSwarm.EditorTools
 
                     if (a is not SpawnAoEActionBase aoe) continue;
 
+                    // roll เชิงพื้นที่ต้องมีสนามเฉพาะท่าที่ยึดสนาม (พิกัดตายตัว / จุดในสนาม)
+                    // ท่าที่ยึดตัวบอส/ผู้เล่นหมุนรอบตัวคนนั้น — เดิมเตือนทุกท่าที่มี roll หมุน ซึ่งผิดหลังแก้ pivot
                     bool needsArena = aoe.targetingMode == SpawnAoEActionBase.TargetingMode.ArenaAnchor
-                                   || (!string.IsNullOrEmpty(aoe.rollName)
+                                   || (aoe.IsArenaRelative
+                                       && !string.IsNullOrEmpty(aoe.rollName)
                                        && defined.Contains(aoe.rollName)
                                        && IsSpatial(cfg, aoe.rollName));
 
@@ -161,8 +164,8 @@ namespace CloneSwarm.EditorTools
                         problems.Add(new Problem
                         {
                             where = $"{cfg.name} · {a.name}",
-                            what = "ใช้ ArenaAnchor หรือ roll เชิงพื้นที่ แต่ config ไม่ได้ผูก arena — " +
-                                   "ตอนรันจะถอยไปใช้ตำแหน่งบอส วงไปโผล่ผิดที่ทั้งชุด",
+                            what = "ยึดจุดในสนาม (ArenaAnchor / พิกัดตายตัว + roll) แต่ config ไม่ได้ผูก arena — " +
+                                   "ตอนรันจะถอยไปใช้ตำแหน่งบอส · ถ้าตั้งใจให้เกิดที่ตัวบอส เปลี่ยน \"ที่ไหน\" เป็น \"ที่ตัวบอส\"",
                             blocking = true,
                         });
 

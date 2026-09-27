@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 72087681564016867}
   - component: {fileID: 6769503639743797583}
   - component: {fileID: 2990291151783387425}
+  - component: {fileID: 454163394104296331}
   m_Layer: 0
   m_Name: PortraitBox
   m_TagString: Untagged
@@ -25,6 +26,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 131202406858124026}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -77,6 +79,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &454163394104296331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 131202406858124026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c0d9bca59a182a4e8114f0a62535c8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.UIShear
+  angleDegrees: 9
+  shearVertical: 0
+  pivotOnParent: 0
 --- !u!1 &736975811045711311
 GameObject:
   m_ObjectHideFlags: 0
@@ -88,6 +105,7 @@ GameObject:
   - component: {fileID: 1518324785444777901}
   - component: {fileID: 5396940686311257411}
   - component: {fileID: 4979848497834787034}
+  - component: {fileID: 7729408213614145127}
   m_Layer: 0
   m_Name: Bg
   m_TagString: Untagged
@@ -102,6 +120,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 736975811045711311}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -152,6 +171,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7729408213614145127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 736975811045711311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c0d9bca59a182a4e8114f0a62535c8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.UIShear
+  angleDegrees: 9
+  shearVertical: 0
+  pivotOnParent: 0
 --- !u!1 &1431482694787887281
 GameObject:
   m_ObjectHideFlags: 0
@@ -176,6 +210,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1431482694787887281}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -235,6 +270,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3752829391941319832}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -310,6 +346,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5370780612997004820}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -372,7 +409,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -405,6 +442,7 @@ MonoBehaviour:
   checkPaddingRequired: 0
   m_isRichText: 1
   m_EmojiFallbackSupport: 1
+  m_EnableAdvancedText: 0
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -433,6 +471,7 @@ GameObject:
   - component: {fileID: 5206803330744492936}
   - component: {fileID: 1931719685163274207}
   - component: {fileID: 9048084821597813229}
+  - component: {fileID: 5813508456488826818}
   m_Layer: 0
   m_Name: Accent
   m_TagString: Untagged
@@ -447,6 +486,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7562181324980483817}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -497,6 +537,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5813508456488826818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7562181324980483817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c0d9bca59a182a4e8114f0a62535c8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CloneSwarm.UI.P3R.UIShear
+  angleDegrees: 9
+  shearVertical: 0
+  pivotOnParent: 0
 --- !u!1 &8648765018553253628
 GameObject:
   m_ObjectHideFlags: 0
@@ -522,6 +577,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8648765018553253628}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -571,7 +627,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 2583691263
   m_fontColor: {r: 1, g: 1, b: 1, a: 0.6}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -584,7 +640,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -617,6 +673,7 @@ MonoBehaviour:
   checkPaddingRequired: 0
   m_isRichText: 1
   m_EmojiFallbackSupport: 1
+  m_EnableAdvancedText: 0
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0

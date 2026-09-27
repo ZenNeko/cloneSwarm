@@ -58,7 +58,6 @@ namespace CloneSwarm.EditorTools
                 if (existing.Contains(r.t)) { log.AppendLine($"  มีแล้ว: {r.t}"); continue; }
                 var p = ScriptableObject.CreateInstance<DifficultyProfile>();
                 p.tier = r.t;
-                p.bossHpMult = r.hp;
                 p.bossDamageMult = r.dmg;
                 p.bossWarningMult = r.warn;
                 p.bossIntervalMult = r.intv;
@@ -67,7 +66,7 @@ namespace CloneSwarm.EditorTools
                 p.enemyHpMult = r.eHp;
                 p.expMult = r.exp;
                 AssetDatabase.CreateAsset(p, $"{Dir}/DifficultyProfile_{r.t}.asset");
-                log.AppendLine($"  สร้าง: {r.t}  HP×{r.hp} ดาเมจ×{r.dmg} เตือน×{r.warn} ห่าง×{r.intv} enrage {(r.en ? $"×{r.enT}" : "ปิด")}");
+                log.AppendLine($"  สร้าง: {r.t}  HP×{r.eHp} ดาเมจ×{r.dmg} เตือน×{r.warn} ห่าง×{r.intv} enrage {(r.en ? $"×{r.enT}" : "ปิด")}");
             }
         }
 

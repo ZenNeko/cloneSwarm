@@ -104,7 +104,7 @@ public class BossController : NetworkBehaviour
 
         if (IsServer)
         {
-            Tuning ??= DifficultyProfile.For(Tier);
+            Tuning ??= DifficultyProfile.Resolve(RunSetup.Map, Tier);
 
             int s;
             do { s = new System.Random().Next(); } while (s == 0);

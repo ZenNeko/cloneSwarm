@@ -117,6 +117,9 @@ public abstract class BossAction : ScriptableObject
     /// แปลงค่า roll ที่ resolve แล้วเป็นการพลิก/หมุนพิกัด · คืน Identity ถ้าไม่ใช่ roll เชิงพื้นที่
     /// `Anchor` ไม่อยู่ในนี้เพราะมันคือการ **เลือกจุดเกิด** ไม่ใช่การแปลง — จัดการที่ targeting
     /// </summary>
+    /// <summary>roll เชิงพื้นที่ของท่านี้หมุน/พลิกรอบกลางสนามไหม · false = หมุนรอบตัวคนที่ยึด (ไม่ต้องมี arena)</summary>
+    protected virtual bool UsesArenaPivot => true;
+
     protected RollTransform GetRollTransform(in AoEWorld world)
     {
         var rolls = world.rolls;
@@ -141,7 +144,9 @@ public abstract class BossAction : ScriptableObject
                 return RollTransform.Identity;   // Variant / Target / Anchor / Order — ไม่ใช่การแปลงพิกัด
         }
 
-        t.pivot = ResolveArenaPivot(world);
+        // จุดหมุนใช้เฉพาะท่าที่ยึดสนาม — ท่าที่ยึดตัวบอส/ผู้เล่นหมุนแค่ offset (ไม่ใช้ pivot)
+        // จึงไม่ต้องหาสนาม และไม่ต้องเตือนว่า config ไม่ได้ผูก arena (มินิบอสเดินทั่วแมพ ไม่มีสนาม)
+        t.pivot = UsesArenaPivot ? ResolveArenaPivot(world) : world.bossPos;
         return t;
     }
 

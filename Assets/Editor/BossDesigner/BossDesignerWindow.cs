@@ -211,6 +211,9 @@ public partial class BossDesignerWindow : EditorWindow
         toolbar.style.paddingBottom   = 4;
         toolbar.style.borderBottomWidth = 1;
         toolbar.style.borderBottomColor = GridLine;
+        // ปุ่มเยอะขึ้นเรื่อยๆ — หน้าต่างแคบให้ขึ้นบรรทัดใหม่ แทนการบีบช่องจนอ่านไม่ออก
+        toolbar.style.flexWrap = Wrap.Wrap;
+        toolbar.style.rowGap = 2;
 
         configField = new ObjectField("Encounter Config")
         {
@@ -219,6 +222,7 @@ public partial class BossDesignerWindow : EditorWindow
             value = config,
         };
         configField.style.flexGrow = 1;
+        configField.style.minWidth = 260;
         configField.RegisterValueChangedCallback(evt => SetConfig(evt.newValue as BossEncounterConfig));
         toolbar.Add(configField);
 
@@ -526,7 +530,57 @@ public partial class BossDesignerWindow : EditorWindow
         string body = auditProblems.Count == 0
             ? "ไม่พบปัญหาใน config นี้"
             : string.Join("\n\n", auditProblems.Select(p => $"{(p.blocking ? "⚠" : "·")} {p.where}\n   {p.what}"));
-        EditorUtility.DisplayDialog($"ตรวจ {config?.name}", body, "OK");
+        int orphans = config != null ? UnusedRollNames().Count : 0;
+        if (orphans == 0)
+        {
+            EditorUtility.DisplayDialog($"ตรวจ {config?.name}", body, "OK");
+            return;
+        }
+        if (EditorUtility.DisplayDialog($"ตรวจ {config?.name}", body, $"ล้าง roll ที่ไม่ใช้ ({orphans})", "ปิด"))
+        {
+            RemoveUnusedRolls();
+            RefreshAudit();
+            UpdateToolbarStatus();
+            BuildInspectorPane();
+        }
+    }
+
+    /// <summary>rollName ที่ท่าไหนในไฟล์ config ใช้อยู่ (รวมท่าไฟล์นอกที่ config ชี้ถึง)</summary>
+    HashSet<string> RollNamesInUse()
+    {
+        var used = new HashSet<string>();
+        if (config == null) return used;
+        foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(config)))
+        {
+            if (o is BossAction a && !string.IsNullOrEmpty(a.rollName)) used.Add(a.rollName);
+            if (o == null) continue;
+            var it = new SerializedObject(o).GetIterator();
+            while (it.Next(true))
+                if (it.propertyType == SerializedPropertyType.ObjectReference &&
+                    it.objectReferenceValue is BossAction ext && !string.IsNullOrEmpty(ext.rollName))
+                    used.Add(ext.rollName);
+        }
+        return used;
+    }
+
+    List<string> UnusedRollNames()
+    {
+        var used = RollNamesInUse();
+        return (config?.rolls ?? new RollDefinition[0])
+            .Where(r => r != null && !string.IsNullOrEmpty(r.rollName) && !used.Contains(r.rollName))
+            .Select(r => r.rollName).ToList();
+    }
+
+    /// <summary>ลบ Roll Definition ที่ไม่มีท่าไหนใช้ · only = ลบเฉพาะชื่อนี้ (ถ้าไม่มีใครใช้)</summary>
+    void RemoveUnusedRolls(string only = null)
+    {
+        if (config?.rolls == null) return;
+        var dead = UnusedRollNames();
+        if (only != null) dead = dead.Where(n => n == only).ToList();
+        if (dead.Count == 0) return;
+        Undo.RecordObject(config, "Remove Unused Rolls");
+        config.rolls = config.rolls.Where(r => r == null || !dead.Contains(r.rollName)).ToArray();
+        EditorUtility.SetDirty(config);
     }
 
     /// <summary>แมพ/ระดับที่ชี้มาที่ config นี้ — ไม่นับบอสที่ใช้ config จาก prefab ตรงๆ</summary>
@@ -536,12 +590,23 @@ public partial class BossDesignerWindow : EditorWindow
         foreach (var guid in AssetDatabase.FindAssets("t:MapData"))
         {
             var map = AssetDatabase.LoadAssetAtPath<MapData>(AssetDatabase.GUIDToAssetPath(guid));
-            if (map?.tiers == null) continue;
-            foreach (var t in map.tiers)
+            if (map == null) continue;
+
+            // รายชื่อมินิบอสของแมพ — ท่าที่ตั้งในรายชื่อ หรือ (ว่าง) ท่าบน prefab ของตัวนั้น
+            foreach (var m in map.miniBosses ?? new MapData.MiniBossEntry[0])
+            {
+                if (m?.prefab == null) continue;
+                var own = m.config != null ? m.config : m.prefab.GetComponent<BossController>()?.config;
+                if (own == cfg) uses.Add($"{map.mapId} (มินิ {m.id})");
+            }
+
+            foreach (var t in map.tiers ?? new MapData.TierContent[0])
             {
                 if (t == null) continue;
                 if (t.mainBossConfig == cfg) uses.Add($"{map.mapId}/{t.tier} (บอสใหญ่)");
-                if (t.miniBossConfig == cfg) uses.Add($"{map.mapId}/{t.tier} (มินิ)");
+                if (t.miniBossConfig == cfg) uses.Add($"{map.mapId}/{t.tier} (มินิ ทุกตัว)");
+                foreach (var o in t.miniBossOverrides ?? new MapData.MiniBossOverride[0])
+                    if (o != null && o.config == cfg) uses.Add($"{map.mapId}/{t.tier} (มินิ {o.id})");
             }
         }
         return uses.Count > 0 ? "ใช้โดย: " + string.Join(", ", uses)
@@ -657,6 +722,8 @@ public partial class BossDesignerWindow : EditorWindow
             EditorUtility.SetDirty(timeline);
             BuildTimelinePane();
         });
+        startField.style.flexShrink = 0;   // หัวแผงไม่หด — ให้การ์ดข้างล่างเป็นตัวเลื่อนแทน
+        badge.style.flexShrink = 0;
         inspectorPane.Add(startField);
         inspectorPane.Add(BuildClipTierRow(selectedClip));
 
@@ -916,9 +983,12 @@ public partial class BossDesignerWindow : EditorWindow
             else if (i - 1 - presets.Length < existing.Count) name = existing[i - 1 - presets.Length].rollName;
             else return;   // ค่าผิดเดิม — เลือกแล้วไม่เปลี่ยน
 
+            string old = rollProp.stringValue;
             so.Update();
             rollProp.stringValue = name;
             so.ApplyModifiedProperties();
+            // roll เดิมไม่มีใครใช้แล้ว (ส่วนใหญ่เพิ่งสร้างจากช่องนี้) — ลบทิ้ง ไม่งั้นเปลี่ยนใจสองสามรอบได้ roll ขยะเป็นกอง
+            if (!string.IsNullOrEmpty(old) && old != name) RemoveUnusedRolls(only: old);
             RefreshAudit();
             UpdateToolbarStatus();
             inspectorPane.schedule.Execute(BuildInspectorPane);

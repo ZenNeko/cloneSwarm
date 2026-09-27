@@ -88,6 +88,21 @@ public class BalanceTool : OdinMenuEditorWindow
     }
 
     /// <summary>
+    /// MapData: เส้นเวลาของรัน (ใครออกนาทีไหน ต่อระดับ) เหนือช่องปกติ — ตัววาดชุดเดียวกับ MapData Inspector
+    /// Odin วาดด้วย PropertyTree ของมันเอง ไม่ผ่าน custom editor ของ Unity จึงต้องเสียบตรงนี้
+    /// </summary>
+    protected override void DrawEditor(int index)
+    {
+        var targets = CurrentDrawingTargets;
+        if (targets != null && index >= 0 && index < targets.Count && targets[index] is MapData map)
+        {
+            CloneSwarm.EditorTools.MapTimelineGUI.Draw(map);
+            GUILayout.Space(10);
+        }
+        base.DrawEditor(index);
+    }
+
+    /// <summary>
     /// ห่อ AddAllAssetsAtPath ให้ "หาไม่เจอ" ดังขึ้นมา แทนที่จะได้หมวดว่างแบบเงียบๆ
     ///
     /// LogError = path ผิด (เกือบทุกครั้งคือ asset ถูกย้ายแล้วลืมแก้ตรงนี้)

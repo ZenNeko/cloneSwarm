@@ -52,6 +52,10 @@ public class MapData : ScriptableObject
         [Tooltip("(แบบเก่า) ทับท่าของมินิบอส **ทุกตัว** · ใช้เฉพาะแมพที่ยังไม่มี miniBosses — ใช้ miniBossOverrides แทน")]
         public BossEncounterConfig miniBossConfig;
 
+        [Tooltip("ตัวคูณความยากเฉพาะแมพนี้ในระดับนี้ · ว่าง = ใช้ค่ากลาง (Resources/Difficulty/DifficultyProfile_<ระดับ>)\n" +
+                 "ใช้ทั้งไฟล์ ไม่ผสมกับค่ากลาง · เก็บไฟล์ไว้นอก Resources/Difficulty")]
+        public DifficultyProfile difficultyOverride;
+
         [Tooltip("เปลี่ยนท่าของมินิบอสบางตัวเฉพาะระดับนี้ · ตัวที่ไม่อยู่ในนี้ใช้ท่าจาก miniBosses")]
         public MiniBossOverride[] miniBossOverrides = new MiniBossOverride[0];
 

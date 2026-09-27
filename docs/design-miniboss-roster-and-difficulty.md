@@ -1,6 +1,6 @@
 # มินิบอสตามเวลา + บอสตามระดับความยาก — ออกแบบ
 
-สถานะ: **ทำแล้ว ก + ข + ค** (2026-09-26) — ใช้แบบ §10 · ฝั่งผู้เล่น (HP/ชุบ) ยังไม่ทำ · หน้าจอเส้นเวลาใน MapData ยังไม่ทำ
+สถานะ: **ทำแล้ว ก + ข + ค** (2026-09-26) — ใช้แบบ §10 · ฝั่งผู้เล่น (HP/ชุบ) ยังไม่ทำ · หน้าจอเส้นเวลาใน MapData ทำแล้ว (`Editor/MapDataEditor.cs`)
 โค้ด: `DifficultyProfile` · `TimelineClip.limitTiers/minTier/maxTier` · `MapData.miniBosses` + `TierContent.miniBossOverrides` · `BossManager` (HP ระดับ × จำนวนคน · เลือกจากรายชื่อแมพ) · `DifficultySetup` (สร้างไฟล์เริ่ม)
 
 คำถามจากเจ้าของเกม:

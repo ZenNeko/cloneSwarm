@@ -26,6 +26,22 @@ public class DifficultyTierTests
     }
 
     [Test]
+    public void MapOverride_OnlyForThatExactTier()
+    {
+        var map = ScriptableObject.CreateInstance<MapData>();
+        var own = ScriptableObject.CreateInstance<DifficultyProfile>();
+        try
+        {
+            map.tiers = new[] { new MapData.TierContent { tier = DifficultyTier.Normal, difficultyOverride = own } };
+            Assert.AreSame(own, DifficultyProfile.Resolve(map, DifficultyTier.Normal));
+            // แมพไม่มีระดับ Epic — ต้องได้ค่ากลางของ Epic ไม่ใช่ override ของ Normal (GetTier ถอยไป Normal)
+            Assert.AreNotSame(own, DifficultyProfile.Resolve(map, DifficultyTier.Epic));
+            Assert.AreSame(DifficultyProfile.For(DifficultyTier.Normal), DifficultyProfile.Resolve(null, DifficultyTier.Normal));
+        }
+        finally { Object.DestroyImmediate(map); Object.DestroyImmediate(own); }
+    }
+
+    [Test]
     public void HpForPlayers_UsesTableAndClampsBeyondFour()
     {
         var p = ScriptableObject.CreateInstance<DifficultyProfile>();
@@ -48,7 +64,7 @@ public class DifficultyTierTests
             Assert.IsNotNull(DifficultyProfile.For(t), t.ToString());
 
         var n = DifficultyProfile.For(DifficultyTier.Normal);
-        Assert.AreEqual(1f, n.bossHpMult);
+        Assert.AreEqual(1f, n.enemyHpMult);
         Assert.AreEqual(1f, n.bossDamageMult);
         Assert.AreEqual(1f, n.bossWarningMult);
     }

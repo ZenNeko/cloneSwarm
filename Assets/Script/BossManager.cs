@@ -117,7 +117,7 @@ public class BossManager : NetworkBehaviour
         var tuning = DifficultyProfile.Current;
         float waveHealthMult  = WaveManager.Instance?.CurrentHealthMultiplier ?? 1f;
         float finalHealthMult = miniBossBaseHealthMult * waveHealthMult
-                              * tuning.bossHpMult * tuning.HpForPlayers(PlayerCount());
+                              * tuning.enemyHpMult * tuning.HpForPlayers(PlayerCount());
 
         go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
         Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
@@ -219,7 +219,7 @@ public class BossManager : NetworkBehaviour
         // HP ตามระดับ × จำนวนคนตอนเกิด (ไม่ปรับกลางไฟต์ — คนหลุดแล้วหลอดกระโดดไม่ได้)
         // เดิมบอสใหญ่ไม่ถูกสเกลเลย: ทุกระดับ ทุกจำนวนคน HP เท่ากัน
         var tuning = DifficultyProfile.Current;
-        float hpMult = tuning.bossHpMult * tuning.HpForPlayers(PlayerCount());
+        float hpMult = tuning.enemyHpMult * tuning.HpForPlayers(PlayerCount());
         if (activeMainBossEnemy != null && !Mathf.Approximately(hpMult, 1f))
             activeMainBossEnemy.ApplyWaveScaling(hpMult, 1f);
         if (activeMainBossEnemy != null)

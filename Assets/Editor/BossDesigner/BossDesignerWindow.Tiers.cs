@@ -42,8 +42,12 @@ public partial class BossDesignerWindow
         field.tooltip = "ดูบอสแบบระดับไหน — คลิปที่ตั้ง \"ออกเฉพาะระดับ\" ไว้แล้วไม่ออกในระดับนี้จะจาง\n" +
                         "แผนผัง · แถบปลอดภัย · ▶ ทดสอบในเกม ใช้ระดับนี้\n" +
                         "ตัวคูณ HP/ดาเมจ/เวลาเตือนของระดับอยู่ใน Resources/Difficulty/DifficultyProfile_*";
-        field.labelElement.style.minWidth = 34;
+        field.labelElement.style.minWidth = field.labelElement.style.width = 34;
         field.style.marginLeft = 8;
+        field.style.flexShrink = 0;
+        // ช่องตัวเลือกไม่หดจนเหลือ "ทุกระ…" — กว้างพอชื่อระดับที่ยาวสุด
+        var input = field.Q(className: "unity-base-popup-field__input") ?? field.Q(className: "unity-popup-field__input");
+        if (input != null) input.style.minWidth = 84;
         field.RegisterValueChangedCallback(e =>
         {
             int i = choices.IndexOf(e.newValue);
@@ -72,7 +76,10 @@ public partial class BossDesignerWindow
     /// <summary>แผงขวา: ออกเฉพาะระดับ — แก้ที่ timeline (คลิปไม่ใช่ Object) จึงใช้ RecordObject ตรงๆ</summary>
     VisualElement BuildClipTierRow(Clip clip)
     {
+        // ไม่หด — แผงขวาให้การ์ด (ScrollView flexGrow) กินที่ แล้วแถวนี้ถูกบีบจนแบนเหลือแต่ขอบ dropdown
         var box = new VisualElement();
+        box.style.flexShrink = 0;
+        box.style.marginBottom = 2;
         var names = new System.Collections.Generic.List<string>(System.Enum.GetNames(typeof(DifficultyTier)));
 
         var limit = new Toggle("ออกเฉพาะระดับ") { value = clip.limitTiers };
@@ -83,11 +90,13 @@ public partial class BossDesignerWindow
 
         var row = new VisualElement();
         row.style.flexDirection = FlexDirection.Row;
+        row.style.flexShrink = 0;
         var from = new PopupField<string>("ตั้งแต่", names, (int)clip.minTier);
         var to   = new PopupField<string>("ถึง", names, (int)clip.maxTier);
         from.style.flexGrow = to.style.flexGrow = 1;
-        from.labelElement.style.minWidth = 40;
-        to.labelElement.style.minWidth = 24;
+        from.style.flexBasis = to.style.flexBasis = 0;   // แบ่งครึ่งเท่ากัน ไม่ให้ label กว้างของ PopupField ดันตัวเลือกจนล้น
+        from.labelElement.style.minWidth = from.labelElement.style.width = 44;
+        to.labelElement.style.minWidth = to.labelElement.style.width = 28;
         row.Add(from);
         row.Add(to);
         row.style.display = clip.limitTiers ? DisplayStyle.Flex : DisplayStyle.None;

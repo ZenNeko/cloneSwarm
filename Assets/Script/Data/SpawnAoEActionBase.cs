@@ -186,6 +186,11 @@ public abstract class SpawnAoEActionBase : BossAction
     /// ตอนวาดพรีวิวใน Boss Designer เรียกตรงๆ ด้วย AoEWorld ที่ประกอบจากผู้เล่นสมมติ
     /// ถ้าแยกเป็นสองสูตร ภาพที่วาดจะเพี้ยนจากของจริงทันทีที่ใครแก้ข้างเดียว
     /// </summary>
+    /// <summary>พิกัดตายตัว / จุดในสนาม = ยึดสนาม · ที่เหลือยึดตัวบอส/ผู้เล่น — ต้องตรงกับ arenaRelative ใน ResolveWave</summary>
+    public bool IsArenaRelative => targetingMode == TargetingMode.StaticCoords || targetingMode == TargetingMode.ArenaAnchor;
+
+    protected override bool UsesArenaPivot => IsArenaRelative;
+
     public List<(Vector3 pos, Quaternion rot)> ResolveWave(in AoEWorld world)
     {
         var result = new List<(Vector3, Quaternion)>();
@@ -198,7 +203,7 @@ public abstract class SpawnAoEActionBase : BossAction
         // จุดเกิดที่ผูกกับตัวคน (บอส / ผู้เล่น) อยู่ที่ตัวคนเสมอ หมุนแค่ targetOffset
         // เดิมหมุนทุกจุดรอบกลางสนาม: บอสไม่ได้ยืนกลางสนาม → กากบาท roll 45° ไปโผล่ห่างจากตัวบอส
         // (พรีวิววาดบอสไว้กลางสนามพอดี จึงไม่เคยเห็นอาการนี้ใน editor)
-        bool arenaRelative = targetingMode == TargetingMode.StaticCoords || targetingMode == TargetingMode.ArenaAnchor;
+        bool arenaRelative = IsArenaRelative;
         Vector3 offsetFix = rollTf.ApplyVector(targetOffset) - targetOffset;
 
         foreach (var rawPos in GetSpawnPositions(world))

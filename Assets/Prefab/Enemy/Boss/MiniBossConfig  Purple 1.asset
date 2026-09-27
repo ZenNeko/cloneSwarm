@@ -20,14 +20,58 @@ MonoBehaviour:
   tracks:
   - trackName: Main
     clips:
-    - action: {fileID: 7527814731122968006}
-      startTime: 0
     - action: {fileID: -3729593960924732028}
-      startTime: 4.1
+      startTime: 4
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
     - action: {fileID: 6905806424393476747}
+      startTime: 18
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
+    - action: {fileID: 3785139261250823381}
+      startTime: 0
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
+    - action: {fileID: 1980967759970657324}
+      startTime: 13
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
+    - action: {fileID: 0}
+      startTime: 4
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
+  - trackName: Hard
+    clips:
+    - action: {fileID: 0}
+      startTime: 3
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
+    - action: {fileID: 3857257012849863648}
+      startTime: 0
+      limitTiers: 1
+      minTier: 2
+      maxTier: 4
+    - action: {fileID: -2371027563298347497}
+      startTime: 13
+      limitTiers: 1
+      minTier: 2
+      maxTier: 4
+    - action: {fileID: 1793243269832581616}
+      startTime: 7
+      limitTiers: 1
+      minTier: 2
+      maxTier: 4
+    - action: {fileID: 2414666453368081798}
       startTime: 21
-    - action: {fileID: -1195213464419468533}
-      startTime: 16
+      limitTiers: 1
+      minTier: 2
+      maxTier: 4
   waitForTimelineEnd: 1
   extraTailTime: 0
 --- !u!114 &-3729593960924732028
@@ -50,11 +94,72 @@ MonoBehaviour:
   mode: 0
   closeFailMode: 0
   tetherDistance: 20
-  tetherDuration: 8
+  tetherDuration: 5
   tetherFailDamage: 50
   tetherSoloSpawnOffset: 3
   leashScope: 2
   leashAnchorOffset: 0
+--- !u!114 &-2371027563298347497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a755acb3800c348a3fa0db9e0bc561, type: 3}
+  m_Name: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_2"
+  m_EditorClassIdentifier: Assembly-CSharp::CrossAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_SnapAngle"
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 45
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 40
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 70
+  lineWidth: 5
 --- !u!114 &-1195213464419468533
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72,15 +177,17 @@ MonoBehaviour:
   castTime: 0
   rollName: 
   cooldownAfter: 0
-  targetingMode: 5
+  targetingMode: 0
   targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
   arenaAnchor: 0
   arenaDistanceScale: 1
   anchorChoices: 
   repeatCount: 1
   repeatInterval: 0.6
   rerollEachRepeat: 0
-  warningDuration: 2
+  warningDuration: 2.5
   damage: 30
   detonateVfx: {fileID: 0}
   overrideTelegraphColors: 0
@@ -114,6 +221,67 @@ MonoBehaviour:
   sweepDegreesPerSecond: 0
   radius: 25
   innerRadius: 18
+--- !u!114 &-498614474960400139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a755acb3800c348a3fa0db9e0bc561, type: 3}
+  m_Name: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_3"
+  m_EditorClassIdentifier: Assembly-CSharp::CrossAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_SnapAngle"
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 40
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 70
+  lineWidth: 5
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -127,7 +295,23 @@ MonoBehaviour:
   m_Name: MiniBossConfig  Purple 1
   m_EditorClassIdentifier: Assembly-CSharp::MiniBossConfig
   arena: {fileID: 0}
-  rolls: []
+  rolls:
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_Variant"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_SnapAngle"
+    kind: 2
+    optionCount: 8
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_Variant_2"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_3_\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_3_Variant"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
   phases:
   - transitionHealthPct: 0
     invincibilityDuration: 1.5
@@ -163,6 +347,106 @@ MonoBehaviour:
   references:
     version: 2
     RefIds: []
+--- !u!114 &1572837861351640227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_3"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_Variant_2"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 7527814731122968006}
+  - {fileID: -1195213464419468533}
+  attackCount: 1
+  delayBetweenPicks: 0
+  repeatCount: 1
+  repeatInterval: 0.6
+  repeatPick: 0
+--- !u!114 &1793243269832581616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_3_\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_3"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_3_\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_3_Variant"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 1572837861351640227}
+  - {fileID: -498614474960400139}
+  attackCount: 1
+  delayBetweenPicks: 0
+  repeatCount: 1
+  repeatInterval: 0.6
+  repeatPick: 0
+--- !u!114 &1980967759970657324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_2"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_Variant"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 7527814731122968006}
+  - {fileID: -1195213464419468533}
+  attackCount: 1
+  delayBetweenPicks: 0
+  repeatCount: 1
+  repeatInterval: 0.6
+  repeatPick: 0
+--- !u!114 &2414666453368081798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_4"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_Variant_2"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 7527814731122968006}
+  - {fileID: -1195213464419468533}
+  attackCount: 1
+  delayBetweenPicks: 0
+  repeatCount: 1
+  repeatInterval: 0.6
+  repeatPick: 0
 --- !u!114 &2822617717259652009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -182,6 +466,8 @@ MonoBehaviour:
   cooldownAfter: 0
   targetingMode: 0
   targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
   arenaAnchor: 0
   arenaDistanceScale: 1
   anchorChoices: 
@@ -221,6 +507,92 @@ MonoBehaviour:
   scaleEnd: 1
   sweepDegreesPerSecond: 0
   radius: 5
+--- !u!114 &3785139261250823381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_DonutAoEAction_Variant_2"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 7527814731122968006}
+  - {fileID: -1195213464419468533}
+  attackCount: 1
+  delayBetweenPicks: 0
+  repeatCount: 1
+  repeatInterval: 0.6
+  repeatPick: 0
+--- !u!114 &3857257012849863648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a755acb3800c348a3fa0db9e0bc561, type: 3}
+  m_Name: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21"
+  m_EditorClassIdentifier: Assembly-CSharp::CrossAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E01\u0E32\u0E01\u0E1A\u0E32\u0E17\u0E01\u0E25\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21_SnapAngle"
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 40
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 70
+  lineWidth: 5
 --- !u!114 &6905806424393476747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -241,7 +613,7 @@ MonoBehaviour:
   mode: 1
   closeFailMode: 0
   tetherDistance: 20
-  tetherDuration: 8
+  tetherDuration: 5
   tetherFailDamage: 50
   tetherSoloSpawnOffset: 3
   leashScope: 2
@@ -268,8 +640,14 @@ MonoBehaviour:
     clips:
     - action: {fileID: 2822617717259652009}
       startTime: 7.4
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
     - action: {fileID: 2822617717259652009}
       startTime: 11.900001
+      limitTiers: 0
+      minTier: 0
+      maxTier: 4
   waitForTimelineEnd: 1
   extraTailTime: 0
 --- !u!114 &7527814731122968006
@@ -291,13 +669,15 @@ MonoBehaviour:
   cooldownAfter: 0
   targetingMode: 0
   targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
   arenaAnchor: 0
   arenaDistanceScale: 1
   anchorChoices: 
   repeatCount: 1
   repeatInterval: 0.6
   rerollEachRepeat: 0
-  warningDuration: 2
+  warningDuration: 2.5
   damage: 30
   detonateVfx: {fileID: 0}
   overrideTelegraphColors: 0
