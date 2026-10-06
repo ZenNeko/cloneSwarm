@@ -66230,8 +66230,6 @@ MonoBehaviour:
     - 14
     variant: 
   mainBossTimeMin: 15
-  objectiveExpReward: 80
-  objectiveHealAmount: 20
   waitForAllPlayers: 1
   startWaitTimeout: 20
   gameTime:

@@ -23,9 +23,8 @@ namespace CloneSwarm.EditorTools
         private const string ScenePath  = "Assets/GameScenes/Proto_Character.unity";
         private const string CardPrefab = PrefabDir + "/CharacterCard.prefab";
 
-        private const float TopBarH  = 84f;
-        private const float TabBarH  = 62f;
-        private const float ContentY = TopBarH + TabBarH;
+        // หัวจอ = แถบเดียว (BuildHubHeader) — เดิมแถบบน 84 + แถบแท็บ 62
+        private const float ContentY = HubHeaderH;
         private const float PadX     = 64f;
         private const float ListW    = 360f;
         private const float RightW   = 480f;
@@ -85,70 +84,15 @@ namespace CloneSwarm.EditorTools
 
         private static void BuildChrome(RectTransform root, CharacterSelectUI ui)
         {
-            var bar = NewImage("TopBar", root, TopBar);
-            var brt = bar.rectTransform;
-            brt.anchorMin = new Vector2(0f, 1f); brt.anchorMax = new Vector2(1f, 1f);
-            brt.pivot = new Vector2(0.5f, 1f);
-            brt.sizeDelta = new Vector2(0f, TopBarH);
-            brt.anchoredPosition = Vector2.zero;
-
-            var title = NewMono("Title", brt, "CLONE SWARM", 22f, 0.26f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(title.rectTransform, PadX, 26f, 460f, 34f);
-
-            var gold = NewMono("Gold", brt, "8,420 G", 22f, 0.10f,
-                               TextAlignmentOptions.MidlineRight, Gold);
-            TopRight(gold.rectTransform, PadX, 26f, 240f, 34f);
+            BuildHubHeader(root, 2, out var gold);
             ui.goldText = gold;
 
-            var tabs = NewRect("TabBar", root);
-            tabs.anchorMin = new Vector2(0f, 1f); tabs.anchorMax = new Vector2(1f, 1f);
-            tabs.pivot = new Vector2(0.5f, 1f);
-            tabs.sizeDelta = new Vector2(0f, TabBarH);
-            tabs.anchoredPosition = new Vector2(0f, -TopBarH);
-
-            string[] names = { "LOBBY", "MAP", "CHARACTER", "SHOP" };
-            float x = PadX;
-            for (int i = 0; i < names.Length; i++)
-            {
-                var tab = NewRect($"Tab_{names[i]}", tabs);
-                tab.anchorMin = tab.anchorMax = new Vector2(0f, 0.5f);
-                tab.pivot = new Vector2(0f, 0.5f);
-                tab.sizeDelta = new Vector2(176f, 42f);
-                tab.anchoredPosition = new Vector2(x, 0f);
-
-                bool active = i == 2;
-                var bg = NewImage("Bg", tab, active ? Primary : Lift(InkDeep, 0.05f));
-                Stretch(bg.rectTransform);
-                Shear(bg);
-
-                // แท็บต้องกดได้จริง — P3RScreenWirer เอา P3RTabJump มาใส่ตอนย้ายลงซีนจริง
-                // ในซีนต้นแบบมันยังกดไม่ไปไหนเพราะไม่มี TabBar ให้ไป ซึ่งถูกต้องแล้ว
-                bg.raycastTarget = true;
-                var tabBtn = tab.gameObject.AddComponent<Button>();
-                tabBtn.targetGraphic = bg;
-                var tabNav = tabBtn.navigation; tabNav.mode = Navigation.Mode.None;
-                tabBtn.navigation = tabNav;
-
-                var label = NewMono("Label", tab, names[i], 16f, 0.18f, TextAlignmentOptions.Center,
-                                    active ? Color.white : new Color(1f, 1f, 1f, 0.55f));
-                Stretch(label.rectTransform);
-                x += 186f;
-            }
-
-            // ปุ่มถอย มุมขวาบนของแถบแท็บ — ที่เดียวกับจอ TALENT SHOP เพื่อให้หาเจอที่เดิม
+            // ปุ่มถอยบนหัวจอ ถัดซ้ายของยอดทอง — ที่เดียวกันทั้ง CHARACTER และ SHOP
             // กว้างพอสำหรับป้าย "BACK TO LOBBY" ที่ P3RTabJump เปลี่ยนให้ตอนเข้ามาจากล็อบบี้
-            var back = NewRect("Btn_Back", tabs);
-            TopRight(back, PadX, 10f, 240f, 42f);
-            var bbg = NewImage("Bg", back, Lift(InkDeep, 0.08f));
-            Stretch(bbg.rectTransform);
-            bbg.raycastTarget = true;
-            Shear(bbg);
-            var blabel = NewMono("Label", back, "BACK", 16f, 0.2f, TextAlignmentOptions.Center,
-                                 new Color(1f, 1f, 1f, 0.75f));
-            Stretch(blabel.rectTransform);
-            var bbtn = back.gameObject.AddComponent<Button>();
-            bbtn.targetGraphic = bbg;
-            var bnav = bbtn.navigation; bnav.mode = Navigation.Mode.None; bbtn.navigation = bnav;
+            // (อยู่ใน HeaderExtras — โผล่เฉพาะตอนอยู่แท็บของจอนี้)
+            var extras = BuildHubHeaderExtras(root);
+            HubHeaderButton(extras, "Btn_Back", "BACK", HubPadX + 250f, 240f,
+                            new Color(1f, 1f, 1f, 0.75f), out _);
         }
 
         // ═══════════════════════════════════════════════════════════════════

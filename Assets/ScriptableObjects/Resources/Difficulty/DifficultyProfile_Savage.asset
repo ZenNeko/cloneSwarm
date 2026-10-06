@@ -25,4 +25,6 @@ MonoBehaviour:
   - 2.4
   - 3
   enemyHpMult: 1.4
+  enemyDamageMult: 1.35
   expMult: 0.8
+  goldMult: 1.5

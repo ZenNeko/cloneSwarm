@@ -18,6 +18,7 @@ public class BossManager : NetworkBehaviour
     public GameObject[] miniBossPrefabs = new GameObject[0];
 
     [Header("Mini Boss Scaling")]
+    // HP / exp คูณตัวคูณของ wave และ DifficultyProfile ต่อ — ค่าที่นี่คือฐานก่อนคูณ
     [Tooltip("ค่า x ใน:  bossHP = enemyBaseHP  ×  x  ×  waveHealthMult")]
     public float miniBossBaseHealthMult = 5f;
     public float miniBossSpeedMult      = 1.2f;
@@ -119,7 +120,13 @@ public class BossManager : NetworkBehaviour
         float finalHealthMult = miniBossBaseHealthMult * waveHealthMult
                               * tuning.enemyHpMult * tuning.HpForPlayers(PlayerCount());
 
-        go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
+        // exp = ฐาน prefab × miniBossExpMult × ตัวคูณ exp ของ wave × ของระดับ
+        // (เดิม miniBossExpMult ไม่ถูกส่งเลย — ตั้ง ×6 ในซีนแต่มินิบอสให้ 100 เท่ากันทุกนาที)
+        float waveExpMult = WaveManager.Instance?.CurrentExpMultiplier ?? 1f;
+        var miniEnemy = go.GetComponent<Enemy>();
+        miniEnemy?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult, miniBossExpMult * waveExpMult * tuning.expMult);
+        // ดาเมจชนตัว — เดิมไม่สเกลเลย ทุกระดับโดน 10 เท่ากัน
+        if (miniEnemy != null) miniEnemy.contactDamage *= tuning.bossDamageMult;
         Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
     }
 
@@ -222,6 +229,7 @@ public class BossManager : NetworkBehaviour
         float hpMult = tuning.enemyHpMult * tuning.HpForPlayers(PlayerCount());
         if (activeMainBossEnemy != null && !Mathf.Approximately(hpMult, 1f))
             activeMainBossEnemy.ApplyWaveScaling(hpMult, 1f);
+        if (activeMainBossEnemy != null) activeMainBossEnemy.contactDamage *= tuning.bossDamageMult;
         if (activeMainBossEnemy != null)
         {
             _mainBossDeathHandled = false;

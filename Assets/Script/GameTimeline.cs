@@ -36,11 +36,8 @@ public class GameTimeline : NetworkBehaviour
     [Tooltip("เวลาที่ Main Boss spawn (นาที) — wave จะหยุด · แมพ override ได้")]
     public float mainBossTimeMin      = 15f;
 
-    [Header("Rewards (Zone Objective)")]
-    [Tooltip("EXP โบนัสที่ให้เมื่อเสร็จ objective")]
-    public float objectiveExpReward   = 80f;
-    [Tooltip("HP ที่ฟื้นให้ผู้เล่นทุกคน")]
-    public float objectiveHealAmount  = 20f;
+    // รางวัลเควสต์อยู่ที่ ZoneObjective.expReward / healAmount บน prefab ของโซน — ที่เดียว
+    // (เดิมมี objectiveExpReward / objectiveHealAmount ตรงนี้ แต่ไม่มีโค้ดไหนอ่าน แก้แล้วเกมไม่เปลี่ยน · ลบ 2026-09-27)
 
     [Header("Start Gate")]
     [Tooltip("รอให้ทุก client ที่ต่ออยู่มี player object ก่อน จึงเริ่มนับเวลาและปล่อย wave")]

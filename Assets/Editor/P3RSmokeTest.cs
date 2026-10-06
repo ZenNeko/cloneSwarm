@@ -449,8 +449,20 @@ namespace CloneSwarm.EditorTools
                 var shop = Find("P3R_TalentShop");
                 if (shop == null) { Require(false, "แท็บในร้าน: หา P3R_TalentShop เจอ"); return; }
 
-                var all = shop.GetComponentsInChildren<Transform>(true);
+                // หัวจอเหลือชุดเดียวบน P3R_Hub (P3RScreenWirer.EnsureHubHeader) — แท็บอยู่ที่นั่น ไม่ใช่ในแผงร้าน
+                var hub = Find("P3R_Hub");
+                CheckSingleHubHeader(hub);
+                var all = (hub != null ? hub : shop).GetComponentsInChildren<Transform>(true);
                 GameObject Tab(string n) => all.FirstOrDefault(t => t.name == n)?.gameObject;
+
+                // ไฮไลต์ตามแท็บที่เลือก — สีที่ builder อบไว้เป็นของ LOBBY ถ้าไม่ย้อมใหม่จะค้างที่ LOBBY
+                var strip = hub != null ? hub.GetComponentInChildren<P3RTabStrip>(true) : null;
+                var shopBg = Tab("Tab_SHOP")?.transform.Find("Bg")?.GetComponent<Image>();
+                if (strip != null && shopBg != null)
+                    Require(ColorsClose(shopBg.color, strip.activeBg),
+                            $"แท็บ SHOP ถูกไฮไลต์ตอนอยู่ในร้าน (สีพื้น {shopBg.color} · ควรเป็น {strip.activeBg})");
+                else
+                    Require(false, "หาไฮไลต์แท็บ (P3RTabStrip / Tab_SHOP/Bg) บนหัวจอ P3R_Hub เจอ");
 
                 foreach (var n in new[] { "Tab_LOBBY", "Tab_MAP" })
                 {
@@ -469,22 +481,77 @@ namespace CloneSwarm.EditorTools
                         $"ป้ายปุ่มถอยในร้าน = 'BACK' (เข้ามาจากเมนูหลัก) · ได้ '{BackLabel(shop)}'");
             }
 
+            /// <summary>
+            /// หัวจอต้องมีชุดเดียวบน P3R_Hub — สำเนาในแผงเคยค้างมาสี่ชุด (ทุกแผงวาดเอง)
+            /// </summary>
+            private void CheckSingleHubHeader(GameObject hub)
+            {
+                if (hub == null) { Require(false, "หัวจอ: หา P3R_Hub เจอ"); return; }
+                int onHub = 0, inPanels = 0;
+                foreach (Transform child in hub.transform)
+                {
+                    if (child.name == "TopBar") { onHub++; continue; }
+                    inPanels += child.GetComponentsInChildren<Transform>(true).Count(t => t.name == "TopBar");
+                }
+                Require(onHub == 1, $"หัวจอ: P3R_Hub มี TopBar ชุดเดียว (เจอ {onHub})");
+                Require(inPanels == 0, $"หัวจอ: ไม่มีหัวจอสำเนาค้างในแผง (เจอ {inPanels})");
+
+                // ของเฉพาะจอบนหัวจอ — ย้ายขึ้นมาครบ และเปิดเฉพาะของแท็บที่เลือก
+                var top = hub.transform.Find("TopBar");
+                var tabStrip = hub.GetComponentInChildren<P3RTabStrip>(true);
+                string cur = hub.GetComponent<TabBar>()?.CurrentTabId;
+                foreach (var id in new[] { "lobby", "character", "shop" })
+                {
+                    var x = top != null ? top.Find($"HeaderExtras_{id}") : null;
+                    Require(x != null, $"หัวจอ: มี HeaderExtras_{id} (ของเฉพาะจอ {id} บนหัวจอ)");
+                    if (x != null && !string.IsNullOrEmpty(cur))
+                        Require(x.gameObject.activeSelf == (id == cur),
+                                $"หัวจอ: HeaderExtras_{id} {(id == cur ? "เปิด" : "ปิด")}อยู่ตอนแท็บ {cur}");
+                }
+                Require(tabStrip != null && tabStrip.extras.Count >= 3,
+                        $"หัวจอ: P3RTabStrip.extras ครบ (เจอ {(tabStrip != null ? tabStrip.extras.Count : 0)})");
+                int leftInPanels = 0;
+                foreach (Transform child in hub.transform)
+                    leftInPanels += child.GetComponentsInChildren<Transform>(true).Count(t => t.name == "HeaderExtras");
+                Require(leftInPanels == 0, $"หัวจอ: ไม่มี HeaderExtras ค้างในแผง (เจอ {leftInPanels})");
+                var bar = hub.GetComponent<TabBar>();
+                Require(bar != null && bar.tabs.All(t => t != null && t.button != null),
+                        "หัวจอ: TabBar.tabs[].button ชี้ปุ่มแท็บบนหัวจอครบสี่");
+            }
+
+            private static bool ColorsClose(Color a, Color b)
+                => Mathf.Abs(a.r - b.r) < 0.02f && Mathf.Abs(a.g - b.g) < 0.02f && Mathf.Abs(a.b - b.b) < 0.02f;
+
+            /// <summary>
+            /// Btn_Back ของ panel นี้ — อยู่บนหัวจอชุดเดียว (TopBar/HeaderExtras_&lt;id&gt;) ไม่ใช่ในแผง
+            /// · ยังค้นในแผงด้วยสำหรับซีนที่ยังไม่มีหัวจอชุดเดียว
+            /// </summary>
+            private static Transform BackOf(GameObject panel)
+            {
+                if (panel == null) return null;
+                string id = panel.name switch
+                {
+                    "P3R_Lobby" => "lobby", "P3R_MapSelect" => "map",
+                    "P3R_Character" => "character", "P3R_TalentShop" => "shop", _ => null,
+                };
+                var hub = Find("P3R_Hub");
+                var extras = hub != null && id != null ? hub.transform.Find($"TopBar/HeaderExtras_{id}") : null;
+                return (extras != null ? extras.GetComponentsInChildren<Transform>(true) : new Transform[0])
+                       .Concat(panel.GetComponentsInChildren<Transform>(true))
+                       .FirstOrDefault(t => t.name == "Btn_Back");
+            }
+
             /// <summary>ข้อความบนปุ่ม Btn_Back ของ panel นี้ — "" เมื่อหาไม่เจอ</summary>
             private static string BackLabel(GameObject panel)
             {
-                var back = panel == null ? null
-                         : panel.GetComponentsInChildren<Transform>(true)
-                                .FirstOrDefault(t => t.name == "Btn_Back");
+                var back = BackOf(panel);
                 var tmp = back == null ? null : back.GetComponentInChildren<TMPro.TMP_Text>(true);
                 return tmp != null ? tmp.text : "";
             }
 
             private void ShopBackFromMain()
             {
-                var shop = Find("P3R_TalentShop");
-                var back = shop == null ? null
-                         : shop.GetComponentsInChildren<Transform>(true)
-                               .FirstOrDefault(t => t.name == "Btn_Back");
+                var back = BackOf(Find("P3R_TalentShop"));
                 var btn = back == null ? null : back.GetComponent<Button>();
 
                 if (btn == null) { Require(false, "หาปุ่ม BACK ในร้านเจอ"); return; }

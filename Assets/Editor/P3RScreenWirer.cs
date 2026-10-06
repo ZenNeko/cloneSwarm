@@ -231,6 +231,8 @@ namespace CloneSwarm.EditorTools
 
             // ต้องมี hub ก่อนคำนวณแผนที่เหลือ เพราะ MenuManager.lobbyPanel ต้องชี้มัน
             EnsureHub(scene, panels, plan);
+            // หัวจอชุดเดียวบน hub — ต้องทำก่อนต่อปุ่มแท็บ (ปุ่มแท็บในแผงหายไปแล้วหลังขั้นนี้)
+            EnsureHubHeader(panels, plan);
 
             // ── 1. สลับ object reference ที่ชี้ panel เดิม ให้ชี้ panel ใหม่ ──
             foreach (var mb in AllBehaviours(scene))
@@ -530,6 +532,177 @@ namespace CloneSwarm.EditorTools
         }
 
         /// <summary>
+        /// หัวจอ (TopBar + TabBar) **ชุดเดียว** บน <c>P3R_Hub</c> — แทนสำเนาสี่ชุดที่แต่ละแผงวาดเอง
+        ///
+        /// ตัว builder ของแต่ละจอยังวาดหัวจอเองในซีนต้นแบบ (ไว้ถ่ายภาพ) · ทุกครั้งที่ย้ายจอลงซีน
+        /// แผงใหม่จึงพกหัวจอมาอีกชุด · ขั้นนี้ยกหัวจอของแผงหนึ่ง (LOBBY ก่อน) ขึ้นไปแทนตัวเดิมบน hub
+        /// แล้วลบของแผงที่เหลือ → หัวจอบน hub ตรงกับ builder ล่าสุดเสมอ ไม่ค้างของเก่า
+        ///
+        /// แล้วต่อ: TabBar.tabs[].button → ปุ่มแท็บบนหัวจอ (TabBar ผูก onClick เอง ไม่ต้องมี P3RTabJump)
+        /// · P3RTabStrip ตัวเดียว (ซ่อนแท็บ + ไฮไลต์แท็บที่เลือก — สีที่อบไว้เป็นของ LOBBY)
+        /// · goldText ของทั้งสี่จอ → ป้ายทองอันเดียว
+        ///
+        /// ของเฉพาะจอ: ชั้น <c>HeaderExtras</c> (ลูกตรงของแผง · P3RBuilderKit.BuildHubHeaderExtras)
+        /// ถูกย้ายขึ้นหัวจอเป็น <c>HeaderExtras_&lt;id&gt;</c> · ตอนเปลี่ยนหัวจอ ชั้นของจอที่ไม่ได้ย้ายมา
+        /// รอบนี้ถูกยกจากหัวจอเก่าไปหัวจอใหม่ (ย้ายแค่ CHARACTER แล้วปุ่มห้องของ LOBBY ต้องไม่หาย)
+        /// · P3RTabStrip.extras เปิดเฉพาะชั้นของแท็บที่เลือก
+        /// ทำทันทีไม่รอ apply แบบเดียวกับ EnsureHub · ยกเลิกก็แค่ไม่เซฟ
+        /// </summary>
+        private const string HeaderExtras = "HeaderExtras";
+
+        private static void EnsureHubHeader(Dictionary<string, GameObject> panels, List<string> plan)
+        {
+            if (!panels.TryGetValue("P3R_Hub", out var hub) || hub == null) return;
+            string[] tabPanels = { "P3R_Lobby", "P3R_MapSelect", "P3R_Character", "P3R_TalentShop" };
+            (string id, string obj)[] tabs =
+            {
+                ("lobby", "Tab_LOBBY"), ("map", "Tab_MAP"), ("character", "Tab_CHARACTER"), ("shop", "Tab_SHOP"),
+            };
+
+            var idOf = new Dictionary<string, string>
+            {
+                ["P3R_Lobby"] = "lobby", ["P3R_MapSelect"] = "map",
+                ["P3R_Character"] = "character", ["P3R_TalentShop"] = "shop",
+            };
+
+            // ── ของเฉพาะจอที่แผงพกมารอบนี้ (ลูกตรงชื่อ HeaderExtras) ──
+            var freshExtras = new List<(string id, Transform t)>();
+            foreach (var name in tabPanels)
+            {
+                if (!panels.TryGetValue(name, out var p) || p == null) continue;
+                var x = p.transform.Find(HeaderExtras);
+                if (x != null) freshExtras.Add((idOf[name], x));
+            }
+
+            // ── หัวจอใหม่จากแผง (ลูกตรงชื่อ TopBar) ──
+            Transform fresh = null;
+            foreach (var name in tabPanels)
+            {
+                if (!panels.TryGetValue(name, out var p) || p == null) continue;
+                var t = p.transform.Find("TopBar");
+                if (t == null) continue;
+                if (fresh == null) fresh = t;
+                else
+                {
+                    plan.Add($"   ลบหัวจอสำเนาใน {name} (ใช้ของ P3R_Hub ชุดเดียว)");
+                    Object.DestroyImmediate(t.gameObject);
+                }
+            }
+
+            var header = hub.transform.Find("TopBar");
+            if (fresh != null)
+            {
+                // ลูกตรงของ hub ชื่อ TopBar / TabBar ทุกตัวคือหัวจอรุ่นก่อน — ไม่ใช่แค่ตัวแรก
+                // (เจอค้างอยู่ 3 + 4 ตัวจากสมัยที่แถบบนกับแถบแท็บแยกกัน · Find คืนแค่ตัวแรก
+                // ถ้าลบแค่ตัวนั้น ที่เหลือซ้อนอยู่ใต้หัวจอใหม่ และ smoke test ไปเจอแท็บเก่าก่อน)
+                var stale = hub.transform.Cast<Transform>()
+                               .Where(c => c.name == "TopBar" || c.name == "TabBar").ToList();
+                // ของเฉพาะจอบนหัวจอเก่าที่แผงไม่ได้พกมาใหม่ → ยกไปหัวจอใหม่ก่อนลบ
+                foreach (var old in stale)
+                    foreach (var x in old.Cast<Transform>().Where(c => c.name.StartsWith(HeaderExtras + "_")).ToList())
+                    {
+                        string id = x.name.Substring(HeaderExtras.Length + 1);
+                        if (freshExtras.Any(f => f.id == id) || fresh.Find(x.name) != null) continue;
+                        x.SetParent(fresh, false);
+                        plan.Add($"   ยก {x.name} จากหัวจอเก่าไปหัวจอใหม่");
+                    }
+                if (stale.Count > 0)
+                    plan.Add($"   ลบหัวจอรุ่นก่อนใต้ P3R_Hub {stale.Count} ชิ้น (TopBar/TabBar ที่ค้างอยู่)");
+                foreach (var c in stale) Object.DestroyImmediate(c.gameObject);
+                plan.Add($"   ยกหัวจอของ {fresh.parent.name} ขึ้นเป็นหัวจอชุดเดียวของ P3R_Hub");
+                fresh.SetParent(hub.transform, false);
+                fresh.SetAsLastSibling();   // วาดทับทุกแผง
+                header = fresh;
+            }
+            else
+            {
+                // รอบที่ไม่มีแผงไหนพกหัวจอมา (ต่อสายซ้ำโดยไม่ได้ย้ายจอ) — เก็บตัวที่มี TabBar อยู่ข้างใน
+                // (รูปแบบปัจจุบัน) แล้วกวาดที่เหลือทิ้ง
+                var kids = hub.transform.Cast<Transform>()
+                              .Where(c => c.name == "TopBar" || c.name == "TabBar").ToList();
+                var keep = kids.LastOrDefault(c => c.name == "TopBar" && c.Find("TabBar") != null);
+                var stale = kids.Where(c => c != keep).ToList();
+                if (stale.Count > 0)
+                    plan.Add($"   ลบหัวจอรุ่นก่อนใต้ P3R_Hub {stale.Count} ชิ้น (TopBar/TabBar ที่ค้างอยู่)");
+                foreach (var c in stale) Object.DestroyImmediate(c.gameObject);
+                header = keep;
+                if (header != null) header.SetAsLastSibling();
+            }
+            if (header == null) return;
+
+            // ── ของเฉพาะจอ → หัวจอ (ทับตัวเดิมของจอเดียวกัน) ──
+            foreach (var (id, x) in freshExtras)
+            {
+                string target = $"{HeaderExtras}_{id}";
+                var existing = header.Find(target);
+                if (existing != null) Object.DestroyImmediate(existing.gameObject);
+                x.SetParent(header, false);
+                x.name = target;
+                plan.Add($"   ย้ายของเฉพาะจอ {id} ขึ้นหัวจอ ({target})");
+            }
+            // วาดทับแท็บกับยอดทอง
+            foreach (var x in header.Cast<Transform>().Where(c => c.name.StartsWith(HeaderExtras + "_")).ToList())
+                x.SetAsLastSibling();
+
+            // ── TabBar ผูกปุ่มแท็บจริง ──
+            var bar = hub.GetComponent<TabBar>();
+            var strip = header.Find("TabBar");
+            if (bar != null && strip != null)
+            {
+                foreach (var (id, obj) in tabs)
+                {
+                    var entry = bar.tabs.Find(t => t != null && t.id == id);
+                    var btn = strip.Find(obj)?.GetComponent<UnityEngine.UI.Button>();
+                    if (entry == null || btn == null) continue;
+                    entry.button = btn;
+                    entry.label = null;   // P3RTabStrip ย้อมป้ายพร้อมพื้น — ไม่ให้สองตัวแย่งกันย้อม
+                }
+                EditorUtility.SetDirty(bar);
+
+                var comp = strip.GetComponent<P3RTabStrip>() ?? strip.gameObject.AddComponent<P3RTabStrip>();
+                comp.tabBar = bar;
+                comp.entries.Clear();
+                foreach (var (id, obj) in tabs)
+                {
+                    var b = strip.Find(obj) as RectTransform;
+                    if (b != null) comp.entries.Add(new P3RTabStrip.Entry { id = id, button = b });
+                }
+                comp.highlight    = true;
+                comp.activeBg     = CloneSwarm.EditorTools.P3RBuilderKit.Primary;
+                comp.inactiveBg   = CloneSwarm.EditorTools.P3RBuilderKit.Lift(CloneSwarm.EditorTools.P3RBuilderKit.HubBarColor, 0.05f);
+                comp.activeText   = Color.white;
+                comp.inactiveText = new Color(1f, 1f, 1f, 0.55f);
+                comp.extras.Clear();
+                foreach (Transform c in header)
+                    if (c.name.StartsWith(HeaderExtras + "_"))
+                        comp.extras.Add(new P3RTabStrip.Extra
+                        {
+                            id = c.name.Substring(HeaderExtras.Length + 1), root = c.gameObject,
+                        });
+                EditorUtility.SetDirty(comp);
+                plan.Add("   TabBar.tabs[].button → แท็บบนหัวจอชุดเดียว · P3RTabStrip ซ่อน/ไฮไลต์แท็บ");
+            }
+
+            // ── ป้ายทองอันเดียว ──
+            var gold = header.Find("Gold")?.GetComponent<TMPro.TextMeshProUGUI>();
+            if (gold == null) return;
+            void Point(Component ui, string what)
+            {
+                if (ui == null) return;
+                var so = new SerializedObject(ui);
+                var prop = so.FindProperty("goldText");
+                if (prop == null || prop.objectReferenceValue == gold) return;
+                prop.objectReferenceValue = gold;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                plan.Add($"   {what}.goldText → ป้ายทองบนหัวจอ P3R_Hub");
+            }
+            Point(hub.GetComponentInChildren<LobbyUI>(true), "LobbyUI");
+            Point(hub.GetComponentInChildren<MapSelectUI>(true), "MapSelectUI");
+            Point(hub.GetComponentInChildren<CharacterSelectUI>(true), "CharacterSelectUI");
+            Point(hub.GetComponentInChildren<CloneSwarm.Meta.TalentShopUI>(true), "TalentShopUI");
+        }
+
+        /// <summary>
         /// ยกค่าที่ชี้ไป **asset** จากตัวเดิมมาใส่ตัวใหม่ เฉพาะช่องที่ตัวใหม่ยังว่าง
         ///
         /// ทำเฉพาะ asset (ScriptableObject · prefab · sprite) ไม่ยกของที่ชี้ใน scene
@@ -636,7 +809,8 @@ namespace CloneSwarm.EditorTools
             }
 
             // ── ปุ่มท้ายจอที่ยังไม่ได้ต่อ → สลับแท็บ ──────────────────────────
-            // ปุ่มแท็บในทุกจอ — แต่ละจอมีแถบแท็บของตัวเอง กดข้ามไปจอไหนก็ได้
+            // ปุ่มแท็บในแผง — ใน MenuScene ไม่มีแล้ว (EnsureHubHeader ย้ายขึ้น hub · TabBar ผูก onClick เอง)
+            // ลูปนี้เหลือไว้สำหรับซีนที่ยังไม่มี hub ซึ่งแต่ละจอมีแถบแท็บของตัวเอง
             string[] tabPanels = { "P3R_Lobby", "P3R_MapSelect", "P3R_Character", "P3R_TalentShop" };
             (string obj, string id)[] tabButtons =
             {
@@ -712,13 +886,27 @@ namespace CloneSwarm.EditorTools
             });
         }
 
+        private static string PanelTabId(string panelName) => panelName switch
+        {
+            "P3R_Lobby" => "lobby", "P3R_MapSelect" => "map",
+            "P3R_Character" => "character", "P3R_TalentShop" => "shop", _ => null,
+        };
+
         private static void AddTabJump(Dictionary<string, GameObject> panels, string panelName,
                                        string buttonName, string tabId,
                                        List<string> plan, List<System.Action> apply)
         {
             if (!panels.TryGetValue(panelName, out var panel) || panel == null) return;
 
-            foreach (var t in panel.GetComponentsInChildren<Transform>(true))
+            // ของเฉพาะจอบนหัวจอ (BACK) ถูก EnsureHubHeader ย้ายออกจากแผงไปอยู่ HeaderExtras_<id> แล้ว
+            var search = panel.GetComponentsInChildren<Transform>(true).AsEnumerable();
+            if (panels.TryGetValue("P3R_Hub", out var hub) && hub != null && PanelTabId(panelName) is string tid)
+            {
+                var x = hub.transform.Find($"TopBar/{HeaderExtras}_{tid}");
+                if (x != null) search = search.Concat(x.GetComponentsInChildren<Transform>(true));
+            }
+
+            foreach (var t in search)
             {
                 if (t.name != buttonName) continue;
                 if (t.GetComponent<UnityEngine.UI.Button>() == null) continue;

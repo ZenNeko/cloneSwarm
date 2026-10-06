@@ -150,6 +150,10 @@ MonoBehaviour:
     m_Localized: Other
     m_Metadata:
       m_Items: []
+  - m_Id: 7476980793450527
+    m_Localized: Difficulty bonus
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -30,6 +30,20 @@ namespace CloneSwarm.EditorTools
             (DifficultyTier.Epic,   1.8f, 2.0f, 0.8f,  0.8f,  true,  0.75f, 1.6f, 0.7f),
         };
 
+        /// <summary>ดาเมจชนตัวของศัตรูทั่วไป — เพิ่มทีหลังตาราง Rows (2026-09-27)</summary>
+        static float EnemyDamageFor(DifficultyTier t) => t switch
+        {
+            DifficultyTier.Easy => 0.7f, DifficultyTier.Hard => 1.2f,
+            DifficultyTier.Savage => 1.35f, DifficultyTier.Epic => 1.5f, _ => 1f,
+        };
+
+        /// <summary>ทองตอนจบรัน — เพิ่มทีหลังตาราง Rows (2026-09-28) · ยากขึ้นได้มากขึ้น</summary>
+        static float GoldFor(DifficultyTier t) => t switch
+        {
+            DifficultyTier.Easy => 0.8f, DifficultyTier.Hard => 1.25f,
+            DifficultyTier.Savage => 1.5f, DifficultyTier.Epic => 2f, _ => 1f,
+        };
+
         [MenuItem("Tools/Clone Swarm/Difficulty/Create Profiles + Map Rosters")]
         public static void Run()
         {
@@ -65,6 +79,8 @@ namespace CloneSwarm.EditorTools
                 p.enrageTimeMult = r.enT;
                 p.enemyHpMult = r.eHp;
                 p.expMult = r.exp;
+                p.enemyDamageMult = EnemyDamageFor(r.t);
+                p.goldMult = GoldFor(r.t);
                 AssetDatabase.CreateAsset(p, $"{Dir}/DifficultyProfile_{r.t}.asset");
                 log.AppendLine($"  สร้าง: {r.t}  HP×{r.eHp} ดาเมจ×{r.dmg} เตือน×{r.warn} ห่าง×{r.intv} enrage {(r.en ? $"×{r.enT}" : "ปิด")}");
             }

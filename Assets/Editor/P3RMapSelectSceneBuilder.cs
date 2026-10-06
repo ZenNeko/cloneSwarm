@@ -11,10 +11,10 @@ namespace CloneSwarm.EditorTools
     /// สร้างซีนต้นแบบจอ MAP SELECT ตาม design handoff จอที่ 5
     /// เมนู: Tools > Clone Swarm > Build P3R Map Select Scene
     ///
-    /// **สามอย่างที่แบบวาดไว้เหมือนมีแล้ว แต่เกมยังไม่มี**
-    ///   ตัวคูณ `ENEMY HP ×1.0` / `GOLD ×1.0` — `DifficultyTier` เป็น enum เปล่า
-    ///     ไม่มีตัวคูณให้อ่าน จึงโชว์ `—` · การโชว์ ×1.0 จะเป็นการบอกผู้เล่น
-    ///     ว่ามีระบบที่ยังไม่มีอยู่จริง
+    /// **ตัวคูณ `ENEMY HP` / `GOLD`** — ในซีนต้นแบบโชว์ `—` · ตอนรันอ่านจาก DifficultyProfile ของแมพ+ระดับ
+    ///   (enemyHpMult / goldMult) · เดิมไม่มีระบบนี้จึงห้ามโชว์ตัวเลข — มีจริงแล้วตั้งแต่ 2026-09
+    ///
+    /// **สองอย่างที่แบบวาดไว้เหมือนมีแล้ว แต่เกมยังไม่มี**
     ///   `LOCKED ×2` — ยังไม่มีระบบปลดล็อกแมพ จึงไม่โชว์ตัวเลข
     ///   `OPEN FIELD` — ยังไม่มีฟิลด์ประเภทแมพใน `MapData`
     ///
@@ -27,9 +27,8 @@ namespace CloneSwarm.EditorTools
         private const string ScenePath  = "Assets/GameScenes/Proto_MapSelect.unity";
         private const string CardPrefab = PrefabDir + "/MapCard.prefab";
 
-        private const float TopBarH  = 84f;
-        private const float TabBarH  = 62f;
-        private const float ContentY = TopBarH + TabBarH;
+        // หัวจอ = แถบเดียว (BuildHubHeader) — เดิมแถบบน 84 + แถบแท็บ 62
+        private const float ContentY = HubHeaderH;
         private const float BottomH  = 96f;
         private const float PadX     = 64f;
         private const float PreviewH = 452f;
@@ -78,64 +77,17 @@ namespace CloneSwarm.EditorTools
 
             var ui = root.gameObject.AddComponent<MapSelectUI>();
 
-            BuildChrome(root);
+            BuildChrome(root, ui);
             BuildPreview(root, ui);
             BuildInfo(root, ui);
             BuildCards(root, ui);
             BuildBottomBar(root);
         }
 
-        private static void BuildChrome(RectTransform root)
+        private static void BuildChrome(RectTransform root, MapSelectUI ui)
         {
-            var bar = NewImage("TopBar", root, TopBar);
-            var brt = bar.rectTransform;
-            brt.anchorMin = new Vector2(0f, 1f); brt.anchorMax = new Vector2(1f, 1f);
-            brt.pivot = new Vector2(0.5f, 1f);
-            brt.sizeDelta = new Vector2(0f, TopBarH);
-            brt.anchoredPosition = Vector2.zero;
-
-            var title = NewMono("Title", brt, "CLONE SWARM", 22f, 0.26f, TextAlignmentOptions.MidlineLeft);
-            TopLeft(title.rectTransform, PadX, 26f, 460f, 34f);
-
-            var gold = NewMono("Gold", brt, "8,420 G", 22f, 0.10f,
-                               TextAlignmentOptions.MidlineRight, Gold);
-            TopRight(gold.rectTransform, PadX, 26f, 240f, 34f);
-
-            // แถบแท็บ — MAP เป็นตัว active
-            var tabs = NewRect("TabBar", root);
-            tabs.anchorMin = new Vector2(0f, 1f); tabs.anchorMax = new Vector2(1f, 1f);
-            tabs.pivot = new Vector2(0.5f, 1f);
-            tabs.sizeDelta = new Vector2(0f, TabBarH);
-            tabs.anchoredPosition = new Vector2(0f, -TopBarH);
-
-            string[] names = { "LOBBY", "MAP", "CHARACTER", "SHOP" };
-            float x = PadX;
-            for (int i = 0; i < names.Length; i++)
-            {
-                var tab = NewRect($"Tab_{names[i]}", tabs);
-                tab.anchorMin = tab.anchorMax = new Vector2(0f, 0.5f);
-                tab.pivot = new Vector2(0f, 0.5f);
-                tab.sizeDelta = new Vector2(176f, 42f);
-                tab.anchoredPosition = new Vector2(x, 0f);
-
-                bool active = i == 1;
-                var bg = NewImage("Bg", tab, active ? Primary : Lift(InkDeep, 0.05f));
-                Stretch(bg.rectTransform);
-                Shear(bg);
-
-                // แท็บต้องกดได้จริง — P3RScreenWirer เอา P3RTabJump มาใส่ตอนย้ายลงซีนจริง
-                // ในซีนต้นแบบมันยังกดไม่ไปไหนเพราะไม่มี TabBar ให้ไป ซึ่งถูกต้องแล้ว
-                bg.raycastTarget = true;
-                var tabBtn = tab.gameObject.AddComponent<Button>();
-                tabBtn.targetGraphic = bg;
-                var tabNav = tabBtn.navigation; tabNav.mode = Navigation.Mode.None;
-                tabBtn.navigation = tabNav;
-
-                var label = NewMono("Label", tab, names[i], 16f, 0.18f, TextAlignmentOptions.Center,
-                                    active ? Color.white : new Color(1f, 1f, 1f, 0.55f));
-                Stretch(label.rectTransform);
-                x += 186f;
-            }
+            var brt = BuildHubHeader(root, 1, out var gold);
+            ui.goldText = gold;
         }
 
         private static void BuildPreview(RectTransform root, MapSelectUI ui)
@@ -221,7 +173,7 @@ namespace CloneSwarm.EditorTools
 
         /// <summary>
         /// ชิปตัวคูณ — ป้ายชื่อ + ค่า
-        /// ค่าเป็น `—` จนกว่าจะมีระบบจริง · ห้ามใส่ ×1.0 เพราะนั่นคือการอ้างว่ามีระบบแล้ว
+        /// ค่าในซีนต้นแบบเป็น `—` · ตอนรัน MapSelectUI.RefreshMultipliers เขียนค่าจริงจาก DifficultyProfile
         /// </summary>
         private static TextMeshProUGUI MultChip(RectTransform root, string name, string label,
                                                 float xFromRight, float y)

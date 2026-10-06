@@ -29,8 +29,11 @@ public class DifficultyProfile : ScriptableObject
              "เดิมแยก bossHpMult ไว้ แล้วสองค่าเพี้ยนจากกันเอง (Easy บอส ×0.7 แต่ศัตรู ×0.8) — รวมเหลือตัวเดียว")]
     [Min(0.05f)] public float enemyHpMult = 1f;
 
+    [Tooltip("ดาเมจชนตัวของศัตรูทั่วไป (บอส/มินิบอสใช้ bossDamageMult)")]
+    [Min(0f)] public float enemyDamageMult = 1f;
+
     [Header("บอส + มินิบอส")]
-    [Tooltip("ดาเมจ AoE และโซ่")]
+    [Tooltip("ดาเมจ AoE · โซ่ · ชนตัว")]
     [Min(0f)] public float bossDamageMult = 1f;
     [Tooltip("เวลาเตือนของ AoE · น้อยกว่า 1 = หลบยากขึ้น")]
     [Min(0.1f)] public float bossWarningMult = 1f;
@@ -49,6 +52,9 @@ public class DifficultyProfile : ScriptableObject
     [Header("รางวัล")]
     [Tooltip("exp จากศัตรูทั่วไป × ค่านี้")]
     [Min(0f)] public float expMult = 1f;
+    [Tooltip("ทองตอนจบรัน × ค่านี้ (ก่อนคูณ talent GoldFind) · ขึ้นเป็นบรรทัด \"โบนัสระดับความยาก\" ในจอสรุปผล\n" +
+             "ทองจากศัตรูคิดจาก exp ซึ่ง expMult ลดในระดับยาก — ค่านี้คือของที่ทำให้เล่นยากแล้วได้ทองมากกว่า")]
+    [Min(0f)] public float goldMult = 1f;
 
     /// <summary>ตัวคูณ HP ตามจำนวนผู้เล่น · เกินตารางใช้ช่องสุดท้าย · ตารางว่าง = 1</summary>
     public float HpForPlayers(int players)

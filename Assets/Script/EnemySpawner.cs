@@ -163,6 +163,8 @@ public class EnemySpawner : NetworkBehaviour
         if (enemy != null)
         {
             enemy.ApplyWaveScaling(currentHealthMult, currentSpeedMult, currentExpMult);
+            // ดาเมจชนตัวตามระดับ — เดิมไม่สเกลเลย Easy ถึง Epic โดน 10 เท่ากัน (ศัตรูจากเควสต์ก็ผ่านทางนี้)
+            enemy.contactDamage *= DifficultyProfile.Current.enemyDamageMult;
             _alive.Add(enemy);
         }
     }

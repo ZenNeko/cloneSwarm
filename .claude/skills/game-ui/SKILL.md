@@ -107,6 +107,30 @@ A controller's `cardTemplate` field must point at the **prefab asset**, not a sc
 scene reference is a `fileID` that changes every time the panel is re-migrated, and the template
 gets destroyed along with the old panel.
 
+## Hub header (LOBBY / MAP / CHARACTER / SHOP)
+
+**MenuScene has exactly one header**, a direct child of `P3R_Hub` drawn over the four panels:
+four tabs on the left, gold on the far right, no game title. `P3RBuilderKit.BuildHubHeader` still
+draws one per proto scene (so the PNGs look right), and `P3RScreenWirer.EnsureHubHeader` lifts one
+of them (LOBBY first) onto the hub on every wire, deletes the copies in the panels and any older
+`TopBar`/`TabBar` left under the hub, then points `TabBar.tabs[].button` at those tabs, puts one
+`P3RTabStrip` on it (hide + **highlight** — the baked colours are LOBBY's, so it recolours `Bg`/`Label`
+on `TabBar.OnTabChanged`) and points every screen's `goldText` at the one gold label.
+
+Consequences:
+- **Screen-specific header items never go inside `TopBar`**, because they vanish with the deleted copy.
+  Instead, put them in `BuildHubHeaderExtras(root)` (built after the header, drawn over it; right-aligned before the
+  gold, using `HubHeaderButton`). The wirer moves each panel's `HeaderExtras` onto the header as
+  `HeaderExtras_<id>`. When it swaps headers, it carries over the ones no panel brought fresh, so
+  re-migrating only CHARACTER keeps LOBBY's room buttons. `P3RTabStrip.extras` shows only the
+  selected tab's layer. Today these are LOBBY invite · COPY · room code, and CHARACTER/SHOP `Btn_Back`.
+  `AddTabJump` and the smoke test look for `Btn_Back` there, not in the panel.
+- Content starts at `HubHeaderH` (84). SHOP has no RUNS/WINS/BEST line (removed 2026-09-28).
+- Names are load-bearing: `TopBar` / `TabBar` / `Tab_<NAME>` / `Gold` / `HeaderExtras` / `Btn_Back`. The smoke
+  test checks one `TopBar` on the hub, none in panels, that the current tab is highlighted, and that
+  only the current tab's `HeaderExtras_<id>` is on.
+- Every screen writes the same gold label, so they must all write the same format (`N0` + `" G"`).
+
 ## Lists, carousels, filmstrips
 
 `CarouselBase<TData, TCard>` (`Assets/Script/UI/CarouselBase.cs`) holds everything: layout,
@@ -230,8 +254,8 @@ bars. `P3RBuilderKit.BeginScene` already orders it correctly — do not reorder.
 **`using static P3RBuilderKit` makes `Mono()` ambiguous** with the .NET `Mono` namespace (CS0118).
 The tracking helper is called `MonoStyle`.
 
-**Do not invent data that has no source.** The map screen shows `—` for `ENEMY HP` because
-`DifficultyTier` is a bare enum with no multiplier to read, and hides `LOCKED ×2` because there is
-no map-unlock system. The loading bar is an indeterminate sweep because
+**Do not invent data that has no source.** The map screen hides `LOCKED ×2` because there is
+no map-unlock system. (`ENEMY HP` / `GOLD` used to show `—` for the same reason; since 2026-09 they
+read `DifficultyProfile.enemyHpMult` / `goldMult` through `DifficultyProfile.Resolve(map, tier)`.) The loading bar is an indeterminate sweep because
 `NetworkManager.SceneManager.LoadScene` reports events, not progress. Showing a plausible number
 tells the player a system exists when it does not.

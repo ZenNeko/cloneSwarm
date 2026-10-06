@@ -42,6 +42,9 @@ public class TabBar : MonoBehaviour
 
     private string currentTabId;
 
+    /// <summary>แท็บที่เลือกอยู่ — P3RTabStrip อ่านตอนเปิดเพื่อไฮไลต์ให้ตรงตั้งแต่เฟรมแรก</summary>
+    public string CurrentTabId => currentTabId;
+
     private void Start()
     {
         foreach (var tab in tabs)

@@ -17,6 +17,7 @@ namespace CloneSwarm.Meta
         WinBonus      = 2,   // โบนัสตอนล้ม Main Boss สำเร็จ
         ObjectiveGold = 3,   // ทองพิเศษที่ระบบอื่นเติมผ่าน AddBonusGold()
         GoldFind      = 4,   // ส่วนต่างที่ talent GoldFind เพิ่มให้เฉพาะคนนี้
+        Difficulty    = 5,   // ส่วนต่างจาก DifficultyProfile.goldMult (ติดลบได้ใน Easy)
     }
 
     /// <summary>
@@ -28,7 +29,7 @@ namespace CloneSwarm.Meta
     /// ยัดไว้ใน struct เดียวแล้วเติมฟิลด์แทน — จุดที่เรียกไม่ต้องแก้เลย
     ///
     /// ทุกค่าที่เป็นทองคือ **ทองจริงที่ผู้เล่นคนนี้ได้รับ** (คูณ GoldFind แล้วแยกส่วนต่างออกมาเป็นบรรทัดของตัวเอง)
-    /// และประกันว่า killGold + timeGold + winGold + objectiveGold + goldFindGold == totalGold เป๊ะ
+    /// และประกันว่า killGold + timeGold + winGold + objectiveGold + difficultyGold + goldFindGold == totalGold เป๊ะ
     /// เพราะจอสรุปผลเอาแต่ละบรรทัดมาบวกให้ผู้เล่นดู — บวกแล้วไม่ตรงยอดรวมคือบั๊กที่เห็นด้วยตา
     /// </summary>
     public struct RunRewardBreakdown : INetworkSerializable
@@ -45,8 +46,10 @@ namespace CloneSwarm.Meta
         public int winGold;
         public int objectiveGold;
         public int goldFindGold;
+        public int difficultyGold;
 
         public float goldFindMultiplier;
+        public float difficultyMultiplier;
         public int   totalGold;
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
@@ -61,8 +64,10 @@ namespace CloneSwarm.Meta
             s.SerializeValue(ref winGold);
             s.SerializeValue(ref objectiveGold);
             s.SerializeValue(ref goldFindGold);
+            s.SerializeValue(ref difficultyGold);
 
             s.SerializeValue(ref goldFindMultiplier);
+            s.SerializeValue(ref difficultyMultiplier);
             s.SerializeValue(ref totalGold);
         }
 
@@ -85,6 +90,7 @@ namespace CloneSwarm.Meta
             Add(RewardReason.EnemyKills,    killGold,      kills);
             Add(RewardReason.ObjectiveGold, objectiveGold, 0);
             Add(RewardReason.WinBonus,      winGold,       0);
+            Add(RewardReason.Difficulty,    difficultyGold, 0);
             Add(RewardReason.GoldFind,      goldFindGold,  0);
             return list;
         }
@@ -205,6 +211,11 @@ namespace CloneSwarm.Meta
             int winPart   = Mathf.RoundToInt(winGoldF);
             int basePart  = killPart + bonusPart + timePart + winPart;
 
+            // ระดับความยาก — บรรทัดของตัวเอง (ส่วนต่าง) แล้ว GoldFind คูณต่อจากยอดหลังระดับ
+            float diffMult  = DifficultyProfile.Current.goldMult;
+            int   afterDiff = Mathf.RoundToInt(basePart * diffMult);
+            int   diffPart  = afterDiff - basePart;
+
             foreach (var client in NetworkManager.ConnectedClientsList)
             {
                 var po = client.PlayerObject;
@@ -212,7 +223,7 @@ namespace CloneSwarm.Meta
                     ? (po.GetComponent<PlayerTalentApplier>()?.GoldFindMultiplier ?? 1f)
                     : 1f;
 
-                int goldForThisPlayer = Mathf.RoundToInt(basePart * mult);
+                int goldForThisPlayer = Mathf.RoundToInt(afterDiff * mult);
 
                 var breakdown = new RunRewardBreakdown
                 {
@@ -226,9 +237,11 @@ namespace CloneSwarm.Meta
                     winGold            = winPart,
                     objectiveGold      = bonusPart,
                     // ส่วนต่างจาก talent เป็นบรรทัดของตัวเอง — คิดจากผลต่างเพื่อให้ยอดรวมไม่มีเศษหาย
-                    goldFindGold       = goldForThisPlayer - basePart,
+                    difficultyGold     = diffPart,
+                    goldFindGold       = goldForThisPlayer - afterDiff,
 
                     goldFindMultiplier = mult,
+                    difficultyMultiplier = diffMult,
                     totalGold          = goldForThisPlayer,
                 };
 
@@ -240,7 +253,7 @@ namespace CloneSwarm.Meta
             }
 
             Debug.Log($"[Reward] จบเกม {(won ? "WIN" : "LOSE")} · kill {killPart} + time {timePart} + " +
-                      $"win {winPart} + bonus {bonusPart} = {basePart} (ก่อนคูณ GoldFinder)");
+                      $"win {winPart} + bonus {bonusPart} = {basePart} · ระดับ ×{diffMult:0.##} = {afterDiff} (ก่อนคูณ GoldFinder)");
         }
 
         /// <summary>รันบนเครื่องผู้เล่นแต่ละคน — เขียนลงเซฟของเครื่องนั้น</summary>
