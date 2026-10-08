@@ -358,6 +358,24 @@ namespace CloneSwarm.EditorTools
                 var captured = go;
                 apply.Add(() => captured.SetActive(false));
             }
+
+            // ── 5. หัวจอ hub อันเดียว ──────────────────────────────────────────
+            //
+            // migrate จอแท็บใหม่เมื่อไร builder ก็พา TopBar/TabBar ของต้นแบบกลับมาด้วย
+            // ยุบซ้ำทุกครั้งที่ต่อสาย ไม่งั้นหัวซ้อนกลับมาเงียบๆ · ดู P3RHubHeaderUnify
+            //
+            // **ต้องเป็น apply ตัวสุดท้าย** — ขั้น 3.5 เพิ่งวาง P3RTabJump ลงปุ่มแท็บของแต่ละจอ
+            // ถ้ายุบก่อน ปุ่มพวกนั้นถูกลบไปแล้ว action ข้างบนจะไปแตะ object ที่ถูกทำลาย
+            if (P3RHubHeaderUnify.Needed(scene))
+            {
+                plan.Add("   ยุบ TopBar/TabBar ของสี่จอแท็บเหลือ P3R_Hub/HubHeader อันเดียว (รายละเอียดใน log ถัดไป)");
+                apply.Add(() =>
+                {
+                    var log = new StringBuilder("[หัวจอ hub] ยุบให้เหลืออันเดียว\n");
+                    P3RHubHeaderUnify.Apply(scene, log);
+                    Debug.Log(log.ToString());
+                });
+            }
         }
 
         /// <summary>

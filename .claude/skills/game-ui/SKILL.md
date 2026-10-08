@@ -201,6 +201,16 @@ existing panel and creates a *second* one at the Canvas root — the old one kee
 stays the one the game uses, so every builder edit appears to do nothing, silently. Search the
 whole subtree and put the replacement back at the same parent and sibling index.
 
+**The four tab screens share one header: `P3R_Hub/HubHeader`.** Their proto scenes still draw
+their own TopBar/TabBar so the PNG looks complete, and migration brings that copy back every time.
+`P3RHubHeaderUnify` (run by the wirer as its last step, also `Tools > Clone Swarm > Unify Hub
+Header`) dissolves it again in place: shared items map onto the header, screen-only TopBar items
+go into `HubHeader/TopBar/Extras_<tab>` (shown only on that tab by `P3RHubHeader`), screen-only
+tab-row items like `Btn_Back` stay on their screen under `TabRow`, and references into the copy are
+retargeted by path. Tab highlight is live (`P3RTabStrip.highlight`), not baked colour. A change to
+the header made only in a builder never reaches MenuScene once the header exists — edit
+`HubHeader` in the scene, or delete it and re-run the wirer to re-lift it from the Lobby screen.
+
 **The wirer matches by controller type only.** Matching components by type alone once dragged
 every `Button` in the scene onto one panel's first button and every TMP onto its first label —
 170 references in one pass, saved to disk. Empty `GameObject` fields use an explicit name table
