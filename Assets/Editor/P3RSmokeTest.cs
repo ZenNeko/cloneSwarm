@@ -193,14 +193,14 @@ namespace CloneSwarm.EditorTools
 
                     // TALENT SHOP อยู่ใต้ hub — กดแล้ว hub เปิด แล้ว TabBar เลือกแท็บ shop
                     case 4: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
-                    case 5: Verify(); CheckShop(); CheckShopTabs(); ShopBackFromMain(); break;
+                    case 5: Verify(); CheckShop(); CheckShopTabs(); CheckHubHeader("shop"); ShopBackFromMain(); break;
                     // VerifyShopBack ตั้ง wait ไว้ให้อนิเมชันเข้าเมนูวิ่งจบก่อน — wait มีผลกับ
                     // **ขั้นถัดไป** ไม่ใช่บรรทัดถัดไป การกดในขั้นเดียวกันจึงโดนปฏิเสธเงียบๆ
                     case 6: VerifyShopBack(); break;
                     case 7: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
                     case 8: Verify(); JumpTab("lobby", "P3R_Lobby"); break;
-                    case 9: Verify(); JumpTab("character", "P3R_Character"); break;
-                    case 10: Verify(); CheckCharacter(); break;
+                    case 9: Verify(); CheckHubHeader("lobby"); JumpTab("character", "P3R_Character"); break;
+                    case 10: Verify(); CheckHubHeader("character"); CheckCharacter(); break;
                     case 11: CheckCharacterClick(); break;
                     case 12: ShowMain(); break;
 
@@ -212,7 +212,7 @@ namespace CloneSwarm.EditorTools
                     // ตอนไม่ใช่ host (SetTabVisible("map", lobbyMode && isHost))
                     // เพราะ client เปลี่ยนแมพไม่ได้อยู่แล้ว · ไม่ใช่บั๊ก
                     case 15: JumpTab("map", "P3R_MapSelect"); break;
-                    case 16: Verify(); CheckMapSelect(); break;
+                    case 16: Verify(); CheckHubHeader("map"); CheckMapSelect(); break;
 
                     // ต้องกลับแท็บ LOBBY ก่อน — ปุ่ม READY/START RUN อยู่ใน P3R_Lobby
                     // และ LobbyUI ก็อยู่บน panel เดียวกัน · อยู่แท็บอื่น = มันถูกปิด
@@ -449,7 +449,11 @@ namespace CloneSwarm.EditorTools
                 var shop = Find("P3R_TalentShop");
                 if (shop == null) { Require(false, "แท็บในร้าน: หา P3R_TalentShop เจอ"); return; }
 
-                var all = shop.GetComponentsInChildren<Transform>(true);
+                // ปุ่มแท็บอยู่บนหัวจอ hub อันเดียวแล้ว ไม่ใช่สำเนาในร้าน
+                var header = Find("P3R_Hub")?.transform.Find("HubHeader");
+                if (header == null) { Require(false, "แท็บในร้าน: หา P3R_Hub/HubHeader เจอ"); return; }
+
+                var all = header.GetComponentsInChildren<Transform>(true);
                 GameObject Tab(string n) => all.FirstOrDefault(t => t.name == n)?.gameObject;
 
                 foreach (var n in new[] { "Tab_LOBBY", "Tab_MAP" })
@@ -467,6 +471,50 @@ namespace CloneSwarm.EditorTools
 
                 Require(BackLabel(shop) == "BACK",
                         $"ป้ายปุ่มถอยในร้าน = 'BACK' (เข้ามาจากเมนูหลัก) · ได้ '{BackLabel(shop)}'");
+            }
+
+            /// <summary>
+            /// หัวจอ hub ต้องมี **อันเดียว** และไฮไลต์แท็บที่เลือกอยู่จริง
+            ///
+            /// เดิมสี่จอวาด TopBar/TabBar ของตัวเอง แต่ละอันอบสีแท็บ active ไว้ตายตัว
+            /// ยุบเหลือ `HubHeader` แล้ว (`P3RHubHeaderUnify`) — ถ้า migrate จอใหม่แล้วไม่ได้ยุบซ้ำ
+            /// หัวของต้นแบบจะกลับมาซ้อน และไฮไลต์จะค้างที่แท็บเดียวไม่ว่าอยู่จอไหน
+            /// ทั้งสองอย่างดูไม่ออกจากภาพนิ่งของจอเดียว ต้องนับและเทียบสีตรงนี้
+            /// </summary>
+            private void CheckHubHeader(string activeId)
+            {
+                string tag = $"หัวจอ hub ({activeId})";
+                var hub    = Find("P3R_Hub");
+                var header = hub == null ? null : hub.transform.Find("HubHeader");
+                if (header == null) { Require(false, $"{tag}: P3R_Hub มี HubHeader"); return; }
+
+                var all = hub.GetComponentsInChildren<Transform>(true);
+                foreach (var bar in new[] { "TopBar", "TabBar" })
+                {
+                    var found = all.Where(t => t.name == bar).ToList();
+                    Require(found.Count == 1 && found[0].IsChildOf(header),
+                            $"{tag}: {bar} มีอันเดียวใต้ hub และอยู่ใน HubHeader (เจอ {found.Count})");
+                }
+
+                Require(header.GetSiblingIndex() == hub.transform.childCount - 1,
+                        $"{tag}: HubHeader วาดทับทุกจอ (ลูกคนสุดท้ายของ hub)");
+
+                var strip = header.GetComponentInChildren<P3RTabStrip>(true);
+                Require(strip != null && strip.highlight, $"{tag}: P3RTabStrip เปิดไฮไลต์");
+                if (strip != null)
+                    foreach (var e in strip.entries.Where(e => e != null && e.bg != null))
+                    {
+                        bool on   = e.id == activeId;
+                        var  want = (Color32)(on ? strip.activeBg : strip.inactiveBg);
+                        Require(((Color32)e.bg.color).Equals(want),
+                                $"{tag}: แท็บ {e.id} {(on ? "ไฮไลต์" : "ไม่ไฮไลต์")}");
+                    }
+
+                var hh = header.GetComponent<P3RHubHeader>();
+                if (hh != null)
+                    foreach (var g in hh.groups.Where(g => g != null && g.root != null))
+                        Require(g.root.activeSelf == (g.tabId == activeId),
+                                $"{tag}: {g.root.name} {(g.tabId == activeId ? "โชว์" : "ซ่อน")}");
             }
 
             /// <summary>ข้อความบนปุ่ม Btn_Back ของ panel นี้ — "" เมื่อหาไม่เจอ</summary>

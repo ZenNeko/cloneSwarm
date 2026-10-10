@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CloneSwarm.UI.P3R
 {
@@ -27,6 +29,13 @@ namespace CloneSwarm.UI.P3R
     /// builder วางปุ่มไว้ที่ x คงที่ไล่ไปทีละ 186px · ซ่อนสองตัวแรกเฉยๆ จะเหลือช่องว่าง
     /// ที่ขอบซ้ายแล้วปุ่มที่เหลือลอยอยู่กลาง · ตัวนี้จึงจัดระยะใหม่ให้ตัวที่เหลือชิดกัน
     /// โดยอ่าน x ตั้งต้นกับระยะห่างจากที่ builder วางไว้ ไม่ได้ฮาร์ดโค้ดเลข
+    ///
+    /// ═══ ไฮไลต์แท็บที่เลือกอยู่ ═══
+    ///
+    /// ตอนแต่ละจอมีแถบของตัวเอง ไฮไลต์ถูก **อบไว้ในสี** ตอน build (จอ MAP อบ Tab_MAP เป็นสีเข้ม)
+    /// พอยุบเหลือ `HubHeader` อันเดียว (<c>P3RHubHeaderUnify</c>) สีที่อบไว้ก็ผิดทันทีที่สลับแท็บ
+    /// `highlight` จึงให้ตัวนี้เป็นคนเดียวที่เขียนสีพื้นกับสีป้ายของปุ่มแท็บ ตาม
+    /// <see cref="TabBar.OnTabChanged"/> · สีอ่านมาจากที่ builder อบไว้ ไม่ได้ฮาร์ดโค้ดที่นี่
     /// </summary>
     [DisallowMultipleComponent]
     public class P3RTabStrip : MonoBehaviour
@@ -37,12 +46,26 @@ namespace CloneSwarm.UI.P3R
             [Tooltip("id ที่ตรงกับ TabBar.tabs[].id — lobby / map / character / shop")]
             public string id;
             public RectTransform button;
+
+            [Tooltip("พื้นปุ่ม — ว่างได้ถ้าไม่ใช้ไฮไลต์")]
+            public Image bg;
+
+            [Tooltip("ป้ายปุ่ม — ว่างได้ถ้าไม่ใช้ไฮไลต์")]
+            public TMP_Text label;
         }
 
         [Tooltip("ปล่อยว่างได้ — จะหา TabBar ในซีนเอง")]
         public TabBar tabBar;
 
         public List<Entry> entries = new();
+
+        [Header("── ไฮไลต์แท็บที่เลือกอยู่ ─────────────────")]
+        [Tooltip("ปิดไว้ = ไม่แตะสีเลย (แถบที่อบสีไว้ตายตัวตอน build)")]
+        public bool highlight;
+        public Color activeBg      = Color.white;
+        public Color inactiveBg    = Color.gray;
+        public Color activeLabel   = Color.white;
+        public Color inactiveLabel = new Color(1f, 1f, 1f, 0.55f);
 
         // x ที่ builder วางไว้ตอนแรก — ใช้เป็นจุดตั้งต้นกับระยะห่าง ไม่เก็บก็จัดใหม่ไม่ได้
         // เพราะพอซ่อนรอบแรกแล้วตำแหน่งเดิมหายไป
@@ -59,12 +82,30 @@ namespace CloneSwarm.UI.P3R
         private void OnEnable()
         {
             TabBar.OnTabsChanged += Apply;
+            TabBar.OnTabChanged  += Highlight;
             // จอถูกเปิดทีหลังคำสั่งซ่อน — ต้องอ่านสถานะปัจจุบันเองรอบหนึ่งเสมอ
             // ไม่งั้นจอที่เพิ่งเปิดจะโชว์แท็บครบทั้งที่ TabBar สั่งซ่อนไปแล้ว
             Apply();
+            if (tabBar != null) Highlight(tabBar.CurrentTabId);
         }
 
-        private void OnDisable() => TabBar.OnTabsChanged -= Apply;
+        private void OnDisable()
+        {
+            TabBar.OnTabsChanged -= Apply;
+            TabBar.OnTabChanged  -= Highlight;
+        }
+
+        private void Highlight(string currentId)
+        {
+            if (!highlight) return;
+            foreach (var e in entries)
+            {
+                if (e == null) continue;
+                bool on = e.id == currentId;
+                if (e.bg    != null) e.bg.color    = on ? activeBg    : inactiveBg;
+                if (e.label != null) e.label.color = on ? activeLabel : inactiveLabel;
+            }
+        }
 
         private void Capture()
         {
