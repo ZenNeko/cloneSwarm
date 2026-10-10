@@ -1378,28 +1378,49 @@ namespace CloneSwarm.EditorTools
             /// สีเน้นของการ์ดต้องมาจาก **ชนิดของการ์ด** ไม่ใช่จากช่องที่มันไปลง
             ///
             /// builder ของจอ P3R อบสีไว้กับ object ตอนสร้าง (ช่อง 1 น้ำเงิน · 2 อำพัน ·
-            /// 3 เขียว) ส่วน `UpgradeCardUI.Populate` ย้อมแค่ Header — กรอบกับพื้นไอคอน
-            /// จึงค้างสีเดิม · การ์ด STAT ตกช่องแรก = หัวเขียวแต่กรอบน้ำเงิน
+            /// 3 เขียว) · ถ้าย้อมไม่ครบ ชิ้นที่ไม่ได้ย้อมจะค้างสีของช่อง
+            /// การ์ด STAT ตกช่องแรก = หัวเขียวแต่พื้นไอคอนน้ำเงิน
+            ///
+            /// การ์ดแบบใหม่ (LevelUpCard.prefab) ไม่มีกรอบสี่ด้านแล้ว · ชิ้นที่ยังบอกชนิดการ์ด
+            /// คือ `cardBackground` (หัวการ์ด) กับทุกชิ้นใน `accentTargets` (ตอนนี้พื้นไอคอน)
+            /// เช็คทั้งหมดกับสีที่ **คำนวณจากชนิดการ์ดเอง** ด้วยจานสีของ UpgradeCardUI
+            /// ไม่ได้เทียบชิ้นกับชิ้น — ถ้า Populate เลิกย้อม หรือย้อมผิดชนิด ทุกชิ้นจะผิดพร้อมกัน
+            /// แล้วการเทียบกันเองจะผ่านเงียบๆ
             /// </summary>
             private void CheckCardAccentFollowsType(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
             {
-                for (int i = 0; i < slots.Count; i++)
+                // จานสีเดียวกับ UpgradeCardUI.AccentFor (private) — ถ้าสองที่ไม่ตรงกัน เช็คนี้จะฟ้อง
+                static Color Expected(UpgradeCardUI c, UpgradeCardType t) => t switch
                 {
-                    var head = slots[i].cardBackground;
+                    UpgradeCardType.Augment      => c.augmentColor,
+                    UpgradeCardType.WeaponSuper  => c.superColor,
+                    UpgradeCardType.WeaponFusion => c.fusionColor,
+                    UpgradeCardType.Stat         => c.statColor,
+                    _                            => c.weaponColor,
+                };
+
+                // ชุดทดสอบต้องมีการ์ดคนละสีอย่างน้อยสองใบ ไม่งั้น "สีตามชนิด" กับ "สีเดียวทุกใบ" แยกกันไม่ออก
+                int n = Mathf.Min(slots.Count, cards.Count);
+                Require(Enumerable.Range(0, n).Select(i => Hex(Expected(slots[i], cards[i].type))).Distinct().Count() >= 2,
+                        "ชุดการ์ดทดสอบมีสีชนิดอย่างน้อยสองสี (แยกสีตามชนิดออกจากสีตายตัวได้)");
+
+                for (int i = 0; i < n; i++)
+                {
+                    var ui   = slots[i];
+                    var want = Expected(ui, cards[i].type);
+                    var head = ui.cardBackground;
                     if (head == null) { Require(false, $"การ์ดใบ {i + 1} ต่อ cardBackground ไว้"); continue; }
 
-                    // `AddBorder` สร้างลูกชื่อ Border ที่ **ไม่มี Image** — Image อยู่ที่ขอบ
-                    // สี่ด้านข้างใน (Top/Bottom/Left/Right) · หาผิดชั้นแล้วเช็คจะข้ามไปเงียบๆ
-                    var border = slots[i].transform.Find("Border/Top")?.GetComponent<Image>();
-                    if (border == null)
-                    {
-                        Require(false, $"การ์ดใบ {i + 1} หากรอบ (Border/Top) เจอ");
-                        continue;
-                    }
+                    Require(Close(head.color, want),
+                            $"การ์ดใบ {i + 1} ({cards[i].type}) สีหัวตามชนิด " +
+                            $"(หัว {Hex(head.color)} · ควรเป็น {Hex(want)})");
 
-                    Require(Close(border.color, head.color),
-                            $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
-                            $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
+                    var targets = ui.accentTargets.Where(t => t?.graphic != null).ToList();
+                    Require(targets.Count > 0, $"การ์ดใบ {i + 1} มีชิ้นใน accentTargets (พื้นไอคอน ฯลฯ)");
+                    foreach (var t in targets)
+                        Require(Close(t.graphic.color, want) && Mathf.Abs(t.graphic.color.a - t.alpha) < 0.02f,
+                                $"การ์ดใบ {i + 1} ({cards[i].type}) {t.graphic.name} สีตามชนิด " +
+                                $"({Hex(t.graphic.color)} a{t.graphic.color.a:0.00} · ควรเป็น {Hex(want)} a{t.alpha:0.00})");
                 }
             }
 
