@@ -74,12 +74,30 @@ namespace CloneSwarm.EditorTools
 
         private static bool IsZone(SerializedProperty property)
         {
+            if (property.propertyPath.Contains("miniBossOverrides")) return false;
             var kind = KindSibling(property);
             return kind == null || kind.enumValueIndex == (int)TimelineCueKind.ZoneObjective;
         }
 
+        /// <summary>
+        /// มินิบอส: รายชื่อของแมพที่กำลังแก้ (MapData.miniBosses) มาก่อน — ไม่ต้องเปิดซีนก็เลือกได้
+        /// แมพที่ยังไม่มีรายชื่อใช้ลิสต์ในซีนแบบเดิม
+        /// </summary>
+        private static string[] RosterIds(SerializedProperty property)
+            => property.serializedObject.targetObject is MapData map && map.miniBosses != null
+             ? map.miniBosses.Where(m => m != null && m.prefab != null && !string.IsNullOrEmpty(m.id))
+                             .Select(m => m.id).Distinct().ToArray()
+             : new string[0];
+
         private static string[] IdsFor(SerializedProperty property)
-            => IsZone(property) ? _zoneIds : _bossIds;
+        {
+            if (IsZone(property)) return _zoneIds;
+            var roster = RosterIds(property);
+            return roster.Length > 0 ? roster : _bossIds;
+        }
+
+        private static bool HasList(SerializedProperty property)
+            => _managersInScene || (!IsZone(property) && RosterIds(property).Length > 0);
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
@@ -87,7 +105,7 @@ namespace CloneSwarm.EditorTools
             float line = EditorGUIUtility.singleLineHeight;
             float gap  = EditorGUIUtility.standardVerticalSpacing;
 
-            if (!_managersInScene) return line + gap + line * 2f;
+            if (!HasList(property)) return line + gap + line * 2f;
 
             string cur = property.stringValue ?? "";
             bool unknown = !string.IsNullOrEmpty(cur) && !IdsFor(property).Contains(cur);
@@ -106,7 +124,7 @@ namespace CloneSwarm.EditorTools
             //
             // แก้ MapData ตอนเปิดซีนเมนูอยู่ก็เจอกรณีนี้ · ปิดช่องไปเลยจะแย่กว่า
             // เพราะคนแก้ทำอะไรไม่ได้เลย — ปล่อยให้พิมพ์ได้ แต่บอกว่าตรวจให้ไม่ได้
-            if (!_managersInScene)
+            if (!HasList(property))
             {
                 EditorGUI.PropertyField(row, property, label);
                 EditorGUI.HelpBox(note,
@@ -140,7 +158,8 @@ namespace CloneSwarm.EditorTools
             if (!unknown) return;
 
             string where = IsZone(property) ? "ObjectiveManager.zoneVariants"
-                                            : "BossManager.miniBossPrefabs";
+                         : RosterIds(property).Length > 0 ? "MapData.miniBosses"
+                         : "BossManager.miniBossPrefabs";
             EditorGUI.HelpBox(note,
                 $"'{cur}' ไม่มีใน {where} — นัดหมายนี้จะสุ่มแทน ไม่ใช่แบบที่ตั้งไว้",
                 MessageType.Warning);

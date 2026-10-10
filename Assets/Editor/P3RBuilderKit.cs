@@ -553,5 +553,124 @@ namespace CloneSwarm.EditorTools
             bind?.Invoke(clone);
             return clone;
         }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // หัวจอของฮับ — LOBBY / MAP / CHARACTER / SHOP
+        // ═══════════════════════════════════════════════════════════════════
+        //
+        //   [LOBBY] [MAP] [CHARACTER] [SHOP]                                      8,420 G
+        //
+        // เดิมเป็นสองแถบ (บน 84 + แท็บ 62 = 146px) และแต่ละจอเขียนโค้ดสองแถบนี้ซ้ำกันเองสี่ชุด
+        // รวมเป็นแถบเดียว → เนื้อหาทุกจอได้ที่เพิ่ม 62px · แก้หน้าตาหัวจอที่นี่ที่เดียว สี่จอตามกัน
+        //
+        // **ใน MenuScene มีหัวจอชุดเดียว** — P3RScreenWirer.EnsureHubHeader ยกตัวหนึ่งขึ้นไปไว้บน
+        // P3R_Hub แล้วลบของที่เหลือในแต่ละแผง · ในซีนต้นแบบแต่ละจอยังวาดเอง (ไว้ถ่ายภาพ)
+        // ของเฉพาะจอบนหัวจอ (ปุ่มห้องของ LOBBY · BACK) **ห้ามใส่ใน TopBar ตรงๆ** — มันจะหายไปพร้อม
+        // สำเนาที่ถูกลบ · ใส่ใน BuildHubHeaderExtras แทน ตัวต่อสายย้ายมันขึ้นหัวจอเป็น
+        // HeaderExtras_<id> แล้ว P3RTabStrip เปิดเฉพาะของแท็บที่เลือก · ไม่มีชื่อเกมบนแถบ (ตัดออก 2026-09-28)
+        //
+        // ชื่อ object คงเดิม: TopBar / TabBar / Tab_<ชื่อ> / Gold — ตัวต่อสายหาตามชื่อเหล่านี้
+        public const float HubHeaderH = 84f;
+        public const float HubPadX    = 64f;
+        public const float HubTabsX   = HubPadX;          // ไม่มีชื่อเกมแล้ว แท็บเริ่มที่ขอบ
+        public const float HubTabW    = 150f;
+        public const float HubTabGap  = 8f;
+        public static readonly Color HubBarColor = new Color32(0x08, 0x0B, 0x18, 0xFF);
+        public static readonly string[] HubTabNames = { "LOBBY", "MAP", "CHARACTER", "SHOP" };
+
+        /// <summary>ขอบขวาของแท็บ</summary>
+        public const float HubTabsEndX = HubTabsX + 4 * HubTabW + 3 * HubTabGap;   // 688
+
+        /// <summary>
+        /// แถบหัวจอเดียวของฮับ · activeTab = ดัชนีใน <see cref="HubTabNames"/>
+        /// คืนตัวแถบ (ใส่ของเฉพาะจอเพิ่มได้ · ชิดขวาไว้ก่อนยอดทอง) และป้ายทองให้ต่อสาย
+        /// </summary>
+        public static RectTransform BuildHubHeader(RectTransform root, int activeTab, out TextMeshProUGUI gold)
+        {
+            var bar = NewImage("TopBar", root, HubBarColor);
+            var brt = bar.rectTransform;
+            brt.anchorMin = new Vector2(0f, 1f); brt.anchorMax = new Vector2(1f, 1f);
+            brt.pivot = new Vector2(0.5f, 1f);
+            brt.sizeDelta = new Vector2(0f, HubHeaderH);
+            brt.anchoredPosition = Vector2.zero;
+
+            var tabs = NewRect("TabBar", brt);
+            Stretch(tabs);
+            for (int i = 0; i < HubTabNames.Length; i++)
+            {
+                var tab = NewRect($"Tab_{HubTabNames[i]}", tabs);
+                tab.anchorMin = tab.anchorMax = new Vector2(0f, 0.5f);
+                tab.pivot = new Vector2(0f, 0.5f);
+                tab.sizeDelta = new Vector2(HubTabW, 42f);
+                tab.anchoredPosition = new Vector2(HubTabsX + i * (HubTabW + HubTabGap), 0f);
+
+                bool active = i == activeTab;
+                var bg = NewImage("Bg", tab, active ? Primary : Lift(HubBarColor, 0.05f));
+                Stretch(bg.rectTransform);
+                Shear(bg);
+
+                // แท็บต้องกดได้จริง — P3RScreenWirer เอา P3RTabJump มาใส่ตอนย้ายลงซีนจริง
+                // ในซีนต้นแบบยังกดไม่ไปไหนเพราะไม่มี TabBar ให้ไป ซึ่งถูกต้องแล้ว
+                bg.raycastTarget = true;
+                var btn = tab.gameObject.AddComponent<Button>();
+                btn.targetGraphic = bg;
+                var nav = btn.navigation; nav.mode = Navigation.Mode.None; btn.navigation = nav;
+
+                var label = NewMono("Label", tab, HubTabNames[i], 16f, 0.18f, TextAlignmentOptions.Center,
+                                    active ? Color.white : new Color(1f, 1f, 1f, 0.55f));
+                Stretch(label.rectTransform);
+            }
+
+            // ยอดทองขวาสุดทุกจอ — ตำแหน่งต้องเดาได้โดยไม่ต้องมอง
+            gold = NewMono("Gold", brt, "8,420 G", 22f, 0.10f, TextAlignmentOptions.MidlineRight, Gold);
+            TopRight(gold.rectTransform, HubPadX, 25f, 220f, 34f);
+
+            var rule = NewImage("Rule", brt, FaintLine);
+            var rrt = rule.rectTransform;
+            rrt.anchorMin = new Vector2(0f, 0f); rrt.anchorMax = new Vector2(1f, 0f);
+            rrt.pivot = new Vector2(0.5f, 0f);
+            rrt.sizeDelta = new Vector2(0f, 1f); rrt.anchoredPosition = Vector2.zero;
+            return brt;
+        }
+
+        /// <summary>
+        /// ชั้นของเฉพาะจอบนหัวจอ — สูงเท่าหัวจอ วางทับมัน · ใส่ของชิดขวาไว้ก่อนยอดทอง
+        /// (แท็บจบที่ x = <see cref="HubTabsEndX"/>)
+        ///
+        /// ต้องสร้าง **หลัง** BuildHubHeader (วาดทับ) · ชื่อ <c>HeaderExtras</c> เป็นลูกตรงของแผง —
+        /// P3RScreenWirer.EnsureHubHeader หาตามชื่อนี้ ย้ายขึ้นหัวจอชุดเดียวเป็น <c>HeaderExtras_&lt;id&gt;</c>
+        /// และให้ P3RTabStrip เปิดเฉพาะของแท็บที่เลือก · ของข้างในยังต่อสายกับ UI ของจอได้ตามปกติ
+        /// </summary>
+        public static RectTransform BuildHubHeaderExtras(RectTransform root)
+        {
+            var x = NewRect("HeaderExtras", root);
+            x.anchorMin = new Vector2(0f, 1f); x.anchorMax = new Vector2(1f, 1f);
+            x.pivot = new Vector2(0.5f, 1f);
+            x.sizeDelta = new Vector2(0f, HubHeaderH);
+            x.anchoredPosition = Vector2.zero;
+            return x;
+        }
+
+        /// <summary>ปุ่มเล็กบนหัวจอ — เอียงตามธีม ป้ายตรงกลาง · xFromRight วัดจากขอบขวา</summary>
+        public static Button HubHeaderButton(RectTransform parent, string name, string text,
+                                             float xFromRight, float w, Color tint,
+                                             out TextMeshProUGUI label)
+        {
+            var root = NewRect(name, parent);
+            TopRight(root, xFromRight, 22f, w, 40f);
+
+            var bg = NewImage("Bg", root, Over(tint, HubBarColor, 0.14f));
+            Stretch(bg.rectTransform);
+            bg.raycastTarget = true;
+            Shear(bg);
+
+            label = NewMono("Label", root, text, 15f, 0.22f, TextAlignmentOptions.Center, tint);
+            Stretch(label.rectTransform);
+
+            var btn = root.gameObject.AddComponent<Button>();
+            btn.targetGraphic = bg;
+            var nav = btn.navigation; nav.mode = Navigation.Mode.None; btn.navigation = nav;
+            return btn;
+        }
     }
 }

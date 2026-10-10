@@ -24,9 +24,8 @@ namespace CloneSwarm.EditorTools
         private const string ChipPrefab = PrefabDir + "/LobbyAbilityChip.prefab";
 
         // ── layout ที่ 1920x1080 ────────────────────────────────────────────
-        private const float TopBarH  = 84f;
-        private const float TabBarH  = 62f;
-        private const float ContentY = TopBarH + TabBarH;      // 146
+        // หัวจอ = แถบเดียว (BuildHubHeader) — เดิมแถบบน 84 + แถบแท็บ 62
+        private const float ContentY = HubHeaderH;
         private const float BottomH  = 104f;
         private const float PadX     = 64f;
         private const float ColGap   = 32f;
@@ -77,7 +76,6 @@ namespace CloneSwarm.EditorTools
             var ui = root.gameObject.AddComponent<LobbyUI>();
 
             BuildTopBar(root, ui);
-            BuildTabBar(root);
 
             var rowPrefab  = BuildPartyRowPrefab();
             var chipPrefab = BuildAbilityChipPrefab();
@@ -113,118 +111,31 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildTopBar(RectTransform root, LobbyUI ui)
         {
-            var bar = NewImage("TopBar", root, TopBar);
-            var brt = bar.rectTransform;
-            brt.anchorMin = new Vector2(0f, 1f); brt.anchorMax = new Vector2(1f, 1f);
-            brt.pivot = new Vector2(0.5f, 1f);
-            brt.sizeDelta = new Vector2(0f, TopBarH);
-            brt.anchoredPosition = Vector2.zero;
-
-            var title = NewMono("Title", brt, "CLONE SWARM", 22f, 0.26f,
-                                TextAlignmentOptions.MidlineLeft);
-            TopLeft(title.rectTransform, PadX, 26f, 460f, 34f);
+            BuildHubHeader(root, 0, out var gold);
+            ui.goldText = gold;
 
             // ── แถวควบคุมห้อง ชิดขวา · เรียงจากขวาไปซ้าย ─────────────────────
             //
-            //   [รหัส 7K4M2P] [COPY] [เชิญเพื่อน]      8,420 G
+            //   [LOBBY] [MAP] [CHARACTER] [SHOP]     [เชิญเพื่อน] [COPY] 7K4M2P   8,420 G
             //
             // **ปุ่มเชิญเพื่อนคือทางเดียวที่จะเปิดห้องออนไลน์ได้** — `LobbyUI.OnInviteClicked`
             // เรียก `GameSessionManager.CreateSessionAsync()` และไม่มีใครอื่นเรียกมันเลย
-            // ทั้งเกม · builder เดิมไม่เคยสร้างปุ่มนี้ ช่อง inviteButton จึงว่างตลอด
-            // แปลว่าเล่นหลายคนไม่ได้เลยแม้โค้ดฝั่งเน็ตเวิร์กจะพร้อมมานานแล้ว
-            // ยอดทองอยู่ขวาสุดเหมือนทุกจอ — ตำแหน่งของมันต้องเดาได้โดยไม่ต้องมอง
-            var gold = NewMono("Gold", brt, "8,420 G", 22f, 0.10f,
-                               TextAlignmentOptions.MidlineRight, Gold);
-            TopRight(gold.rectTransform, PadX, 26f, 220f, 34f);
-            ui.goldText = gold;
+            // อยู่ใน HeaderExtras ไม่ใช่ TopBar — ใน MenuScene หัวจอเหลือชุดเดียวของ P3R_Hub
+            // และชั้นนี้โผล่เฉพาะตอนอยู่แท็บ LOBBY
+            var extras = BuildHubHeaderExtras(root);
 
-            var code = NewMono("RoomCode", brt, "7K4M2P", 22f, 0.24f,
+            var code = NewMono("RoomCode", extras, "7K4M2P", 22f, 0.24f,
                                TextAlignmentOptions.MidlineRight);
             TopRight(code.rectTransform, PadX + 250f, 26f, 180f, 34f);
             ui.roomCodeLabel = code;
 
-            var copyBtn = TopBarButton(brt, "CopyCode", "COPY", PadX + 450f, 140f,
-                                       new Color(1f, 1f, 1f, 0.8f), out var copyLabel);
-            ui.copyCodeButton     = copyBtn;
+            ui.copyCodeButton = HubHeaderButton(extras, "CopyCode", "COPY", PadX + 450f, 140f,
+                                                new Color(1f, 1f, 1f, 0.8f), out var copyLabel);
             ui.copyCodeButtonText = copyLabel;
 
-            var inviteBtn = TopBarButton(brt, "Invite", "เชิญเพื่อน", PadX + 610f, 200f,
-                                         Teal, out var inviteLabel);
-            ui.inviteButton     = inviteBtn;
+            ui.inviteButton = HubHeaderButton(extras, "Invite", "เชิญเพื่อน", PadX + 610f, 200f,
+                                              Teal, out var inviteLabel);
             ui.inviteButtonText = inviteLabel;
-
-            var rule = NewImage("Rule", brt, FaintLine);
-            var rrt = rule.rectTransform;
-            rrt.anchorMin = new Vector2(0f, 0f); rrt.anchorMax = new Vector2(1f, 0f);
-            rrt.pivot = new Vector2(0.5f, 0f);
-            rrt.sizeDelta = new Vector2(0f, 1f); rrt.anchoredPosition = Vector2.zero;
-        }
-
-        /// <summary>ปุ่มเล็กบนแถบบน — เอียงตามธีม ป้ายตรงกลาง คืนป้ายออกมาให้ต่อสายได้</summary>
-        private static Button TopBarButton(RectTransform bar, string name, string text,
-                                           float xFromRight, float w, Color tint,
-                                           out TextMeshProUGUI label)
-        {
-            var root = NewRect(name, bar);
-            TopRight(root, xFromRight, 22f, w, 40f);
-
-            var bg = NewImage("Bg", root, Over(tint, TopBar, 0.14f));
-            Stretch(bg.rectTransform);
-            bg.raycastTarget = true;
-            Shear(bg);
-
-            label = NewMono("Label", root, text, 15f, 0.22f, TextAlignmentOptions.Center, tint);
-            Stretch(label.rectTransform);
-
-            var btn = root.gameObject.AddComponent<Button>();
-            btn.targetGraphic = bg;
-            var nav = btn.navigation; nav.mode = Navigation.Mode.None; btn.navigation = nav;
-            return btn;
-        }
-
-        /// <summary>
-        /// แถบแท็บสี่อัน · อันที่ active พื้นน้ำเงินเอียง
-        /// จงใจไม่ใส่ component <c>TabBar</c> — มันต้องการ panel จริงต่อแท็บ
-        /// ซึ่งซีนต้นแบบไม่มี · ที่นี่สนใจแค่หน้าตา ส่วนการสลับแท็บของจริงอยู่ใน MenuScene แล้ว
-        /// </summary>
-        private static void BuildTabBar(RectTransform root)
-        {
-            var bar = NewRect("TabBar", root);
-            bar.anchorMin = new Vector2(0f, 1f); bar.anchorMax = new Vector2(1f, 1f);
-            bar.pivot = new Vector2(0.5f, 1f);
-            bar.sizeDelta = new Vector2(0f, TabBarH);
-            bar.anchoredPosition = new Vector2(0f, -TopBarH);
-
-            string[] tabs = { "LOBBY", "MAP", "CHARACTER", "SHOP" };
-            float x = PadX;
-            for (int i = 0; i < tabs.Length; i++)
-            {
-                float w = 176f;
-                var tab = NewRect($"Tab_{tabs[i]}", bar);
-                tab.anchorMin = tab.anchorMax = new Vector2(0f, 0.5f);
-                tab.pivot     = new Vector2(0f, 0.5f);
-                tab.sizeDelta = new Vector2(w, 42f);
-                tab.anchoredPosition = new Vector2(x, 0f);
-
-                bool active = i == 0;
-                var bg = NewImage("Bg", tab, active ? Primary : Lift(InkDeep, 0.05f));
-                Stretch(bg.rectTransform);
-                Shear(bg);
-
-                // แท็บต้องกดได้จริง — P3RScreenWirer เอา P3RTabJump มาใส่ตอนย้ายลงซีนจริง
-                // ในซีนต้นแบบมันยังกดไม่ไปไหนเพราะไม่มี TabBar ให้ไป ซึ่งถูกต้องแล้ว
-                bg.raycastTarget = true;
-                var tabBtn = tab.gameObject.AddComponent<Button>();
-                tabBtn.targetGraphic = bg;
-                var tabNav = tabBtn.navigation; tabNav.mode = Navigation.Mode.None;
-                tabBtn.navigation = tabNav;
-
-                var label = NewMono("Label", tab, tabs[i], 16f, 0.18f, TextAlignmentOptions.Center,
-                                    active ? Color.white : new Color(1f, 1f, 1f, 0.55f));
-                Stretch(label.rectTransform);
-
-                x += w + 10f;
-            }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -417,6 +328,7 @@ namespace CloneSwarm.EditorTools
             // `OnLobbyJoinClicked` ปิด offline host ให้เองก่อนต่อเป็น client
             ui.lobbyJoinButton = BarButton(bar, "Join", "เข้าห้องเพื่อน", left: true, x: PadX + 240f,
                                            w: 240f, filled: false, tint: Teal);
+
 
             ui.readyButton     = BarButton(bar, "Ready", "READY", left: false, x: PadX + 300f,
                                            w: 260f, filled: false, tint: Teal);

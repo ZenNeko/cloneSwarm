@@ -29,7 +29,6 @@ namespace CloneSwarm.Meta
 
         [Header("── Header ─────────────────────────────")]
         public TextMeshProUGUI goldText;
-        public TextMeshProUGUI statsText;    // "Runs 12 · Wins 3 · Best 14:22"
 
         [Header("── Detail Panel (ขวา) ─────────────────")]
         public Image           detailIcon;
@@ -158,15 +157,8 @@ namespace CloneSwarm.Meta
         // ═══════════════════════════════════════════════════════════════════
         void RefreshAll()
         {
-            if (goldText != null) goldText.text = $"{MetaProgression.Gold:N0}";
-
-            if (statsText != null)
-            {
-                var d = SaveManager.Data;
-                int m = Mathf.FloorToInt(d.bestTimeSec / 60f);
-                int s = Mathf.FloorToInt(d.bestTimeSec % 60f);
-                statsText.text = $"Runs {d.totalRuns} · Wins {d.totalWins} · Best {m:00}:{s:00}";
-            }
+            // " G" เหมือนอีกสามจอ — ใน MenuScene ทั้งสี่จอเขียนป้ายทองอันเดียวกันบนหัวจอของ P3R_Hub
+            if (goldText != null) goldText.text = $"{MetaProgression.Gold:N0} G";
 
             foreach (var tile in tiles) tile?.Refresh();
 

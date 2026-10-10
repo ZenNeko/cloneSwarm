@@ -3,6 +3,11 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
+/// ⚠ ถอดออกจากเกมแล้ว (2026-09-24) — ไม่มีอะไรเรียกใช้ · เก็บไว้เป็นจุดตั้งต้นถ้าจะทำ Elite ใหม่
+///   ทางเดิม EnemySpawner AddComponent ตัวนี้ **หลัง** Spawn() บน server อย่างเดียว → client ไม่มี
+///   NetworkBehaviour นี้ · ทำใหม่ต้องใส่ไว้ใน prefab ตั้งแต่แรก · Split/Exploder ยังไม่มีพฤติกรรม
+///   ดู GDD ข้อ 7.2
+///
 /// Elite Controller — wraps Enemy ด้วย modifier behaviors
 ///
 /// ติดบน enemy ตอน spawn (server เรียก ApplyServer + BroadcastModsClientRpc)

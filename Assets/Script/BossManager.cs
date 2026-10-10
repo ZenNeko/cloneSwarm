@@ -18,6 +18,7 @@ public class BossManager : NetworkBehaviour
     public GameObject[] miniBossPrefabs = new GameObject[0];
 
     [Header("Mini Boss Scaling")]
+    // HP / exp คูณตัวคูณของ wave และ DifficultyProfile ต่อ — ค่าที่นี่คือฐานก่อนคูณ
     [Tooltip("ค่า x ใน:  bossHP = enemyBaseHP  ×  x  ×  waveHealthMult")]
     public float miniBossBaseHealthMult = 5f;
     public float miniBossSpeedMult      = 1.2f;
@@ -76,12 +77,24 @@ public class BossManager : NetworkBehaviour
     /// <summary>Force spawn main boss (dev tool only — server only)</summary>
     public void DevSpawnMainBoss() => SpawnMainBoss();
 
+    /// <summary>
+    /// เรียกบอสใหญ่ด้วย config ที่ระบุ — ปุ่ม "ทดสอบในเกม" ของ Boss Designer (dev only · server only)
+    /// ทับ config ของแมพ/prefab เฉพาะรอบนี้
+    /// </summary>
+    public void DevSpawnMainBoss(BossEncounterConfig config)
+    {
+        if (config != null) activeBossConfig = config;
+        SpawnMainBoss();
+    }
+
     // ── Spawn ─────────────────────────────────────────────────────────────
     void SpawnMiniBoss(string variantId)
     {
         if (!IsServer) return;
 
-        var prefab = PickMiniBoss(variantId);
+        // รายชื่อของแมพก่อน (MapData.miniBosses) · แมพที่ไม่มีรายชื่อ = ลิสต์ในซีนแบบเดิม
+        var entry = PickFromMap(variantId);
+        var prefab = entry != null ? entry.prefab : PickMiniBoss(variantId);
         if (prefab == null)
         {
             Debug.LogWarning("[BossManager] miniBossPrefabs is empty — assign at least one prefab!");
@@ -91,19 +104,29 @@ public class BossManager : NetworkBehaviour
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(prefab, pos, Quaternion.identity);
 
-        if (activeMiniBossConfig != null)
-        {
-            var bc = go.GetComponent<BossController>();
-            if (bc != null) bc.config = activeMiniBossConfig;
-        }
+        // ท่า: override ของระดับ > ของรายชื่อแมพ > (แบบเก่า) miniBossConfig ของระดับ > ของบน prefab
+        var tierContent = RunSetup.Map != null ? RunSetup.Map.GetTier(RunSetup.Difficulty) : null;
+        var config = entry != null
+            ? (tierContent?.OverrideFor(entry.id) ?? entry.config ?? activeMiniBossConfig)
+            : activeMiniBossConfig;
+        var bc = go.GetComponent<BossController>();
+        if (bc != null && config != null) bc.config = config;
 
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
-        // HP = baseHP × miniBossBaseHealthMult × waveHealthMult
+        // HP = baseHP × miniBossBaseHealthMult × waveHealthMult × ระดับ × จำนวนคน
+        var tuning = DifficultyProfile.Current;
         float waveHealthMult  = WaveManager.Instance?.CurrentHealthMultiplier ?? 1f;
-        float finalHealthMult = miniBossBaseHealthMult * waveHealthMult;
+        float finalHealthMult = miniBossBaseHealthMult * waveHealthMult
+                              * tuning.enemyHpMult * tuning.HpForPlayers(PlayerCount());
 
-        go.GetComponent<Enemy>()?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult);
+        // exp = ฐาน prefab × miniBossExpMult × ตัวคูณ exp ของ wave × ของระดับ
+        // (เดิม miniBossExpMult ไม่ถูกส่งเลย — ตั้ง ×6 ในซีนแต่มินิบอสให้ 100 เท่ากันทุกนาที)
+        float waveExpMult = WaveManager.Instance?.CurrentExpMultiplier ?? 1f;
+        var miniEnemy = go.GetComponent<Enemy>();
+        miniEnemy?.ApplyWaveScaling(finalHealthMult, miniBossSpeedMult, miniBossExpMult * waveExpMult * tuning.expMult);
+        // ดาเมจชนตัว — เดิมไม่สเกลเลย ทุกระดับโดน 10 เท่ากัน
+        if (miniEnemy != null) miniEnemy.contactDamage *= tuning.bossDamageMult;
         Debug.Log($"[BossManager] 🟡 Mini Boss [{prefab.name}] spawned — HP×{finalHealthMult:F2}");
     }
 
@@ -116,6 +139,32 @@ public class BossManager : NetworkBehaviour
     ///
     /// หาไม่เจอแล้ว **บ่น** ไม่ใช่เงียบแล้วสุ่มแทน — ชื่อพิมพ์ผิดกับดวงไม่ดีหน้าตาเหมือนกัน
     /// </summary>
+    /// <summary>
+    /// มินิบอสจากรายชื่อของแมพ · id ว่าง = สุ่มจากรายชื่อ · id ไม่มีในรายชื่อ = บ่นแล้วสุ่ม
+    /// แมพไม่มีรายชื่อ = null (ใช้ลิสต์ในซีน)
+    /// </summary>
+    MapData.MiniBossEntry PickFromMap(string variantId)
+    {
+        var roster = RunSetup.Map?.miniBosses;
+        if (roster == null) return null;
+        var valid = System.Array.FindAll(roster, m => m != null && m.prefab != null);
+        if (valid.Length == 0) return null;
+
+        if (!string.IsNullOrEmpty(variantId))
+        {
+            var hit = RunSetup.Map.FindMiniBoss(variantId);
+            if (hit != null) return hit;
+            Debug.LogWarning($"[BossManager] นัดหมายขอมินิบอส '{variantId}' แต่ไม่มีใน {RunSetup.Map.mapId}.miniBosses → สุ่มแทน");
+        }
+        return valid[Random.Range(0, valid.Length)];
+    }
+
+    static int PlayerCount()
+    {
+        var nm = NetworkManager.Singleton;
+        return nm != null ? Mathf.Max(1, nm.ConnectedClientsList.Count) : 1;
+    }
+
     GameObject PickMiniBoss(string variantId)
     {
         if (!string.IsNullOrEmpty(variantId))
@@ -163,15 +212,24 @@ public class BossManager : NetworkBehaviour
         Vector3 pos = GetSpawnPosition();
         var go = Instantiate(mainBossPrefab, pos, Quaternion.identity);
 
-        if (activeBossConfig != null)
+        var bc = go.GetComponent<BossController>();
+        if (bc != null)
         {
-            var bc = go.GetComponent<BossController>();
-            if (bc != null) bc.config = activeBossConfig;
+            if (activeBossConfig != null) bc.config = activeBossConfig;
+            bc.IsMainBoss.Value = true;   // ก่อน Spawn — ให้ค่าไปพร้อม spawn payload
         }
 
         go.GetComponent<NetworkObject>()?.Spawn(true);
 
         activeMainBossEnemy = go.GetComponent<Enemy>();
+
+        // HP ตามระดับ × จำนวนคนตอนเกิด (ไม่ปรับกลางไฟต์ — คนหลุดแล้วหลอดกระโดดไม่ได้)
+        // เดิมบอสใหญ่ไม่ถูกสเกลเลย: ทุกระดับ ทุกจำนวนคน HP เท่ากัน
+        var tuning = DifficultyProfile.Current;
+        float hpMult = tuning.enemyHpMult * tuning.HpForPlayers(PlayerCount());
+        if (activeMainBossEnemy != null && !Mathf.Approximately(hpMult, 1f))
+            activeMainBossEnemy.ApplyWaveScaling(hpMult, 1f);
+        if (activeMainBossEnemy != null) activeMainBossEnemy.contactDamage *= tuning.bossDamageMult;
         if (activeMainBossEnemy != null)
         {
             _mainBossDeathHandled = false;

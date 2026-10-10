@@ -114,6 +114,7 @@ namespace CloneSwarm.EditorTools
             ("ui.reward.objective_gold",   "Bonus gold during the run","ทองพิเศษระหว่างรอบ"),
             ("ui.reward.win_bonus",        "Main Boss defeated",       "ล้ม Main Boss สำเร็จ"),
             ("ui.reward.gold_find",        "Treasure hunter bonus",    "โบนัสนักล่าสมบัติ"),
+            ("ui.reward.difficulty",       "Difficulty bonus",         "โบนัสระดับความยาก"),
             ("ui.reward.other",            "Other",                    "อื่นๆ"),
         };
 

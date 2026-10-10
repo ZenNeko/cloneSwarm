@@ -8,10 +8,21 @@ public abstract class SpawnAoEActionBase : BossAction
 {
     public enum TargetingMode { BossPosition, RandomPlayer, AllPlayers, NearestPlayer, StaticCoords, ArenaAnchor }
 
+    /// <summary>ทิศของ Line / Cone — Cross กับทรงกลมไม่ได้หันหาใคร ใช้ angleDegrees ตรงๆ</summary>
+    public enum AimMode { NearestPlayer, FixedAngle }
+
     [Header("Targeting")]
     public TargetingMode targetingMode = TargetingMode.BossPosition;
     [Tooltip("ค่า offset ทิศทางที่บวกเพิ่มจากพิกัดเป้าหมาย (แกน XZ)")]
     public Vector3 targetOffset = Vector3.zero;
+
+    [Header("Direction  (Line / Cone / Cross)")]
+    [Tooltip("Line / Cone: NearestPlayer = หันหาผู้เล่นใกล้จุดเกิดที่สุด (ค่าเดิม) · FixedAngle = ใช้ angleDegrees\n" +
+             "Cross ไม่สนช่องนี้ — ใช้ angleDegrees เสมอ")]
+    public AimMode aimMode = AimMode.NearestPlayer;
+    [Tooltip("มุม (องศา) · 0 = เหนือ (+Z) · บวก = ตามเข็มนาฬิกา · Cross 45 = รูป ×\n" +
+             "roll แบบหมุน/พลิกทำต่อจากมุมนี้ (ยกเว้น Line/Cone ที่หันหาผู้เล่น)")]
+    public float angleDegrees = 0f;
 
     [Header("Arena Anchor  (targetingMode = ArenaAnchor)")]
     [Tooltip("จุดยึดในสนาม — ต้องผูก BossEncounterConfig.arena ด้วย")]
@@ -161,8 +172,12 @@ public abstract class SpawnAoEActionBase : BossAction
         // ของเดิมคืนทันทีที่ spawn เสร็จ ซึ่งไม่เป็นไรตอนที่ timeline รอด้วยนาฬิกา
         // แต่พอ timeline มารอ coroutine จริง ท่าที่คืนเร็วจะทำให้บอสขึ้นรอบใหม่
         // ตอนที่วงยังนับถอยหลังอยู่ · LimitCutAction ทำแบบนี้อยู่แล้วตั้งแต่แรก
-        if (warningDuration > 0f) yield return new WaitForSeconds(warningDuration);
+        float warn = WarningFor(runner);
+        if (warn > 0f) yield return new WaitForSeconds(warn);
     }
+
+    /// <summary>เวลาเตือนจริงตามระดับความยาก — ทั้งตัว zone และการรอของท่าต้องใช้ค่านี้ค่าเดียว</summary>
+    protected float WarningFor(NetworkBehaviour runner) => warningDuration * TuningOf(runner).bossWarningMult;
 
     /// <summary>
     /// จุดเกิด + ทิศของโซนทั้งหมดในหนึ่งระลอก
@@ -171,6 +186,11 @@ public abstract class SpawnAoEActionBase : BossAction
     /// ตอนวาดพรีวิวใน Boss Designer เรียกตรงๆ ด้วย AoEWorld ที่ประกอบจากผู้เล่นสมมติ
     /// ถ้าแยกเป็นสองสูตร ภาพที่วาดจะเพี้ยนจากของจริงทันทีที่ใครแก้ข้างเดียว
     /// </summary>
+    /// <summary>พิกัดตายตัว / จุดในสนาม = ยึดสนาม · ที่เหลือยึดตัวบอส/ผู้เล่น — ต้องตรงกับ arenaRelative ใน ResolveWave</summary>
+    public bool IsArenaRelative => targetingMode == TargetingMode.StaticCoords || targetingMode == TargetingMode.ArenaAnchor;
+
+    protected override bool UsesArenaPivot => IsArenaRelative;
+
     public List<(Vector3 pos, Quaternion rot)> ResolveWave(in AoEWorld world)
     {
         var result = new List<(Vector3, Quaternion)>();
@@ -179,13 +199,22 @@ public abstract class SpawnAoEActionBase : BossAction
         // ถ้าแปลงแยกทีละจุด แพตเทิร์น AllPlayers จะกลายเป็นมั่วแทนลวดลายที่อ่านออก
         RollTransform rollTf = GetRollTransform(world);
 
+        // จุดเกิดที่ผูกกับสนาม (พิกัดตายตัว / จุดในสนาม) หมุนรอบกลางสนาม — แพตเทิร์นสนามพลิก/หมุนทั้งผืน
+        // จุดเกิดที่ผูกกับตัวคน (บอส / ผู้เล่น) อยู่ที่ตัวคนเสมอ หมุนแค่ targetOffset
+        // เดิมหมุนทุกจุดรอบกลางสนาม: บอสไม่ได้ยืนกลางสนาม → กากบาท roll 45° ไปโผล่ห่างจากตัวบอส
+        // (พรีวิววาดบอสไว้กลางสนามพอดี จึงไม่เคยเห็นอาการนี้ใน editor)
+        bool arenaRelative = IsArenaRelative;
+        Vector3 offsetFix = rollTf.ApplyVector(targetOffset) - targetOffset;
+
         foreach (var rawPos in GetSpawnPositions(world))
         {
-            Vector3 pos = rollTf.Apply(rawPos);
+            Vector3 pos = arenaRelative ? rollTf.Apply(rawPos) : rawPos + offsetFix;
 
             // คำนวณทิศทางการหันหน้า: หากยิงใส่เป้าหมาย หรือหันไปทางเป้าหมาย
             Quaternion rot = Quaternion.identity;
-            if (GetAoEType() == AoEType.Line || GetAoEType() == AoEType.Cone)
+            bool aimsAtPlayer = (GetAoEType() == AoEType.Line || GetAoEType() == AoEType.Cone)
+                                && aimMode == AimMode.NearestPlayer;
+            if (aimsAtPlayer)
             {
                 // หมุนไปทางผู้เล่นที่ใกล้ที่สุดหรือเป้าหมายเพื่อให้พาดผ่านตัว
                 if (world.TryNearestPlayer(pos, out Vector3 near))
@@ -197,8 +226,9 @@ public abstract class SpawnAoEActionBase : BossAction
             }
             else
             {
-                // ทรงที่ไม่หันตามใคร ให้ roll หมุน/พลิกทิศได้
-                rot = rollTf.Apply(rot);
+                // ทรงที่ไม่หันตามใคร — มุมที่ตั้งไว้ แล้วให้ roll หมุน/พลิกต่อจากนั้น
+                // (ค่า default 0° = identity เหมือนเดิม ท่าเก่าไม่เปลี่ยน)
+                rot = rollTf.Apply(Quaternion.Euler(0f, angleDegrees, 0f));
             }
 
             result.Add((pos, rot));
@@ -248,8 +278,9 @@ public abstract class SpawnAoEActionBase : BossAction
         zone.scaleStart = scaleStart;
         zone.scaleEnd = scaleEnd;
         zone.sweepDegreesPerSecond = sweepDegreesPerSecond;
-        zone.warningDuration = warningDuration;
-        zone.damage = damage;
+        var tuning = TuningOf(runner);
+        zone.warningDuration = warningDuration * tuning.bossWarningMult;
+        zone.damage = damage * tuning.bossDamageMult;
         zone.isChasing = isChasing;
         zone.isRotatingChase = isRotatingChase;
         zone.isStackMarker = isStackMarker;

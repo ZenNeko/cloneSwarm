@@ -4,7 +4,7 @@ using UnityEngine.Audio;
 /// <summary>
 /// Centralized sound system — singleton ที่ดูแล:
 ///   • SFX pool (3D positional, ไม่ต้องสร้าง GameObject ทุกครั้ง)
-///   • Music source (loop background)
+///   • Music — เพลงซ้อนชั้น (LayeredMusicPlayer) · เพลงธรรมดาคือ track ที่มี stem เดียว
 ///   • Volume control (Master / Music / SFX) → บันทึกใน PlayerPrefs
 ///   • AudioMixer integration (optional — assign ใน Inspector ของ SoundManager prefab)
 ///
@@ -21,6 +21,9 @@ using UnityEngine.Audio;
 ///   SoundManager.Instance.PlaySfx(clip, position, volume, pitchVariance);
 ///   SoundManager.Instance.PlaySfx2D(clip, volume);
 ///   SoundManager.Instance.PlayMusic(clip, loop);
+///   SoundManager.Instance.PlayMusicTrack(track, fade, levels);   // เพลงซ้อนชั้น (MusicDirector ใช้)
+///   SoundManager.Instance.SetMusicLevels(levels, fade);
+///   SoundManager.Instance.SetMusicDuck(0.5f, fade);
 ///   SoundManager.Instance.SetMasterVolume(0.8f);   // 0..1
 /// </summary>
 public class SoundManager : MonoBehaviour
@@ -80,7 +83,11 @@ public class SoundManager : MonoBehaviour
     // ── Runtime state ─────────────────────────────────────────────────────
     AudioSource[] sfxPool;
     int           poolIdx;
-    AudioSource   musicSource;
+    LayeredMusicPlayer music;
+
+    // PlayMusic(clip) ห่อคลิปเป็น track stem เดียว — แคชไว้ ไม่สร้าง asset ใหม่ทุกครั้ง
+    readonly System.Collections.Generic.Dictionary<AudioClip, LayeredTrack> _singleClipTracks = new();
+    static readonly float[] FullLevel = { 1f };
 
     // Mixer params ที่ exposed จริง ใน assigned mixer — set ใน Awake (ValidateMixerParams)
     // ถ้า user ไม่ได้ expose ตามชื่อมาตรฐาน → param หายไปจาก set → ApplyMixerVolume skip
@@ -145,13 +152,11 @@ public class SoundManager : MonoBehaviour
 
     void BuildMusicSource()
     {
-        var go = new GameObject("MusicSource");
+        var go = new GameObject("Music");
         go.transform.SetParent(transform);
-        musicSource = go.AddComponent<AudioSource>();
-        musicSource.playOnAwake          = false;
-        musicSource.loop                 = true;
-        musicSource.spatialBlend         = 0f;   // 2D
-        musicSource.outputAudioMixerGroup = musicGroup;
+        music = go.AddComponent<LayeredMusicPlayer>();
+        music.Init(musicGroup);
+        music.SetOutputScale(GetMusicScale());
     }
 
     // ── Public API: SFX ───────────────────────────────────────────────────
@@ -193,19 +198,43 @@ public class SoundManager : MonoBehaviour
     }
 
     // ── Public API: Music ─────────────────────────────────────────────────
+    /// <summary>เล่นเพลงธรรมดาหนึ่งไฟล์ — ตัดทันทีเหมือนเดิม · คลิปเดิมที่เล่นอยู่ = ไม่ทำอะไร</summary>
     public void PlayMusic(AudioClip clip, bool loop = true)
     {
         if (clip == null) return;
-        if (musicSource.clip == clip && musicSource.isPlaying) return;
-
-        musicSource.clip   = clip;
-        musicSource.loop   = loop;
-        musicSource.volume = GetMusicScale();
-        musicSource.Play();
+        music.Play(SingleClipTrack(clip), 0f, FullLevel, loop);
     }
 
-    public void StopMusic() => musicSource.Stop();
-    public bool IsMusicPlaying => musicSource != null && musicSource.isPlaying;
+    /// <summary>
+    /// เล่นเพลงซ้อนชั้น · มีเพลงอื่นเล่นอยู่ = crossfade ภายใน fade วินาที
+    /// levels = ระดับเริ่มของแต่ละ stem ตามลำดับใน track (ขาด = 0)
+    /// </summary>
+    public void PlayMusicTrack(LayeredTrack track, float fade, float[] levels) =>
+        music.Play(track, fade, levels);
+
+    /// <summary>ปรับระดับของแต่ละ stem ใน track ที่เล่นอยู่</summary>
+    public void SetMusicLevels(float[] levels, float fade) => music.SetLevels(levels, fade);
+
+    /// <summary>ลดเสียงเพลงทั้งเพลงชั่วคราว (1 = ปกติ) · ไม่ยุ่งกับ slider ของผู้เล่น</summary>
+    public void SetMusicDuck(float mult, float fade) => music.SetDuck(mult, fade);
+
+    public void StopMusic() => music.Stop(0f);
+    public void StopMusic(float fade) => music.Stop(fade);
+    public bool IsMusicPlaying => music != null && music.IsPlaying;
+
+    /// <summary>ตัวเล่นเพลง — สำหรับ DevTools อ่านสถานะ · สั่งงานให้ผ่านเมธอดข้างบน</summary>
+    public LayeredMusicPlayer Music => music;
+
+    LayeredTrack SingleClipTrack(AudioClip clip)
+    {
+        if (_singleClipTracks.TryGetValue(clip, out var t) && t != null) return t;
+        t = ScriptableObject.CreateInstance<LayeredTrack>();
+        t.name = clip.name;
+        t.hideFlags = HideFlags.DontSave;
+        t.stems = new[] { new LayeredTrack.Stem { name = "main", clip = clip } };
+        _singleClipTracks[clip] = t;
+        return t;
+    }
 
     // ── Public API: Volume ────────────────────────────────────────────────
     public void SetMasterVolume(float v) { MasterVolume = Mathf.Clamp01(v); ApplyMixerVolume(PARAM_MASTER, MasterVolume); RescalePlaying(); SaveVolumes(); }
@@ -249,9 +278,9 @@ public class SoundManager : MonoBehaviour
     /// </summary>
     void RescalePlaying()
     {
-        // Music: update ทุกครั้ง
-        if (musicSource != null && musicSource.isPlaying)
-            musicSource.volume = GetMusicScale();
+        // Music: ส่งแค่สเกลให้ตัวเล่น — ห้าม set volume ตรง ไม่งั้นชั้นที่ปิดอยู่
+        // และ fade ที่ทำอยู่จะกระโดดไปเต็มทันทีที่ผู้เล่นขยับ slider
+        if (music != null) music.SetOutputScale(GetMusicScale());
 
         // SFX pool: update sources ที่ playing (สำหรับ long beam SFX)
         if (sfxPool != null)

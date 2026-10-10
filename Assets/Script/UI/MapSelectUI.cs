@@ -43,11 +43,14 @@ public class MapSelectUI : MonoBehaviour
     public int runLengthMinutes = 15;
     public TextMeshProUGUI runLengthLabel;
 
-    [Tooltip("ตัวคูณ HP ศัตรูตามระดับความยาก — **เกมยังไม่มีระบบนี้**\n" +
-             "DifficultyTier เป็น enum เปล่า ไม่มีตัวคูณให้อ่าน จึงโชว์ '—' ไม่ใช่ '×1.0'\n" +
-             "การโชว์ ×1.0 จะเป็นการบอกผู้เล่นว่ามีระบบที่ยังไม่มีอยู่จริง")]
+    [Tooltip("ตัวคูณ HP ศัตรูของระดับที่เลือกบนแมพที่เลือก — DifficultyProfile.enemyHpMult\n" +
+             "(เดิมโชว์ '—' เพราะ DifficultyTier เป็น enum เปล่า · มีระบบจริงแล้ว 2026-09)")]
     public TextMeshProUGUI enemyHpMultLabel;
+    [Tooltip("ตัวคูณทองตอนจบรัน — DifficultyProfile.goldMult")]
     public TextMeshProUGUI goldMultLabel;
+
+    [Tooltip("ยอดทองบนแถบหัวจอ — เดิมจอนี้ไม่มีช่องนี้ ป้ายจึงค้างเลขตัวอย่าง 8,420 G ตลอด")]
+    public TextMeshProUGUI goldText;
 
     [Tooltip("จำนวนแมพที่ยังล็อก — **ยังไม่มีระบบปลดล็อกแมพ** ปล่อยว่างไว้จนกว่าจะมี")]
     public TextMeshProUGUI lockedLabel;
@@ -194,9 +197,31 @@ public class MapSelectUI : MonoBehaviour
         if (lobbyUI != null) lobbyUI.SelectMap(map);
     }
 
+    // แมพ/ระดับที่ป้ายตัวคูณโชว์อยู่ — ระดับเปลี่ยนได้จากหลายทาง (ปุ่มของเรา · host ส่งมาให้ client)
+    // จึงเทียบทุกเฟรมแทนการไล่ต่อ event ทุกเส้น
+    MapData _shownMap;
+    DifficultyTier _shownTier = (DifficultyTier)(-1);
+
+    void Update()
+    {
+        if (selected != _shownMap || RunSetup.Difficulty != _shownTier) RefreshMultipliers();
+    }
+
+    /// <summary>ป้าย ENEMY HP / GOLD — ค่าจริงจาก DifficultyProfile ของแมพ+ระดับ (แมพทับค่ากลางได้)</summary>
+    void RefreshMultipliers()
+    {
+        if (goldText != null) goldText.text = $"{CloneSwarm.Meta.MetaProgression.Gold:N0} G";
+        _shownMap  = selected;
+        _shownTier = RunSetup.Difficulty;
+        var p = DifficultyProfile.Resolve(selected, RunSetup.Difficulty);
+        if (enemyHpMultLabel != null) enemyHpMultLabel.text = $"×{p.enemyHpMult:0.##}";
+        if (goldMultLabel    != null) goldMultLabel.text    = $"×{p.goldMult:0.##}";
+    }
+
     void RefreshDetail()
     {
         if (selected == null) return;
+        RefreshMultipliers();
 
         // ภาพพรีวิวต้องมีเจ้าของเดียว — ถ้า carousel ถือภาพใหญ่อยู่ ปล่อยให้มันวาด
         bool previewOwnedByCarousel = carousel != null && carousel.featuredImage != null;

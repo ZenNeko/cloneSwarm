@@ -20,14 +20,36 @@ MonoBehaviour:
   tracks:
   - trackName: Main
     clips:
-    - action: {fileID: 11400000, guid: e18e71993c88e9842819826c38e4e4da, type: 2}
+    - action: {fileID: 5449063382500443316}
       startTime: 0
-    - action: {fileID: 11400000, guid: c037964714b80454ea87062e689ce89b, type: 2}
+    - action: {fileID: 2436853438696113870}
       startTime: 6
-    - action: {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
-      startTime: 12.1
+    - action: {fileID: -7023976251900461451}
+      startTime: 12
   waitForTimelineEnd: 1
   extraTailTime: 0
+--- !u!114 &-8446553998872288768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_Chasing_AoE_Boss_Donut_Chasing_2"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_Chasing_AoE_Boss_Donut_Chasing_2_Variant_2"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 2912716843810241426}
+  - {fileID: 477004446073464542}
+  attackCount: 1
+  delayBetweenPicks: 0
 --- !u!114 &-7391095579135333687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48,22 +70,165 @@ MonoBehaviour:
   tracks:
   - trackName: Main
     clips:
-    - action: {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+    - action: {fileID: -7023976251900461451}
       startTime: 0
-    - action: {fileID: 11400000, guid: a008a0904d44a9049a94e3a5eefc0797, type: 2}
+    - action: {fileID: 2912716843810241426}
       startTime: 4.5
-    - action: {fileID: 11400000, guid: 79d58f1818293d146b0ef7716dc0780b, type: 2}
+    - action: {fileID: -5647582986096216929}
       startTime: 9
-    - action: {fileID: 11400000, guid: c037964714b80454ea87062e689ce89b, type: 2}
+    - action: {fileID: 2436853438696113870}
       startTime: 14
-    - action: {fileID: 11400000, guid: 9f72db33f075a8f41b4f9e5585df2af3, type: 2}
+    - action: {fileID: 0}
       startTime: 19.1
-    - action: {fileID: 11400000, guid: e18e71993c88e9842819826c38e4e4da, type: 2}
+    - action: {fileID: 5449063382500443316}
       startTime: 24
-    - action: {fileID: 11400000, guid: 7c7be445df6fee24f9b961d50bc82058, type: 2}
+    - action: {fileID: 0}
       startTime: 29
   waitForTimelineEnd: 1
   extraTailTime: 0
+--- !u!114 &-7023976251900461451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede484211ee4e7148b86f94badc62990, type: 3}
+  m_Name: AoE_Boss_Circle
+  m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 3.5
+  damage: 30
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 15
+--- !u!114 &-5647582986096216929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a755acb3800c348a3fa0db9e0bc561, type: 3}
+  m_Name: AoE_Boss_Cross
+  m_EditorClassIdentifier: Assembly-CSharp::CrossAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: AoE_Boss_Cross_SnapAngle_2
+  cooldownAfter: 1
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 50
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 100
+  lineWidth: 10
+--- !u!114 &-366531110814281659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_2_AoE_Boss_Donut_2"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_2_AoE_Boss_Donut_2_Variant_2"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: 5064379619856429457}
+  - {fileID: 8056439930132210818}
+  attackCount: 1
+  delayBetweenPicks: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -97,6 +262,38 @@ MonoBehaviour:
   - rollName: order
     kind: 6
     optionCount: 4
+    excludePrevious: 0
+  - rollName: AoE_Boss_Cross_SnapAngle
+    kind: 2
+    optionCount: 8
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_Chasing_AoE_Boss_Donut_Chasing_2_Variant"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_2_AoE_Boss_Donut_2_Variant"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_AoE_Boss_Cross_2_Variant"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_AoE_Boss_Cross_2_Variant_2"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_Chasing_AoE_Boss_Donut_Chasing_2_Variant_2"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_2_AoE_Boss_Donut_2_Variant_2"
+    kind: 0
+    optionCount: 2
+    excludePrevious: 0
+  - rollName: AoE_Boss_Cross_SnapAngle_2
+    kind: 2
+    optionCount: 8
     excludePrevious: 0
   phases:
   - transitionHealthPct: 0.75
@@ -165,6 +362,249 @@ MonoBehaviour:
   references:
     version: 2
     RefIds: []
+--- !u!114 &477004446073464542
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bef310bf925c95944b3d2b2cbdc7103a, type: 3}
+  m_Name: AoE_Boss_Donut_Chasing_2
+  m_EditorClassIdentifier: Assembly-CSharp::DonutAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 1
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 3
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.3
+  damage: 10
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 1
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 16
+  innerRadius: 8
+--- !u!114 &1627393615902574277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a755acb3800c348a3fa0db9e0bc561, type: 3}
+  m_Name: AoE_Boss_Cross_2
+  m_EditorClassIdentifier: Assembly-CSharp::CrossAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: AoE_Boss_Cross_SnapAngle
+  cooldownAfter: 1
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 50
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 100
+  lineWidth: 10
+--- !u!114 &2436853438696113870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bef310bf925c95944b3d2b2cbdc7103a, type: 3}
+  m_Name: AoE_Boss_Donut
+  m_EditorClassIdentifier: Assembly-CSharp::DonutAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 10
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 60
+  innerRadius: 30
+--- !u!114 &2912716843810241426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede484211ee4e7148b86f94badc62990, type: 3}
+  m_Name: AoE_Boss_Circle_Chasing
+  m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 1
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 3
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.3
+  damage: 20
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 1
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 6
 --- !u!114 &3106902516592259519
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -185,19 +625,227 @@ MonoBehaviour:
   tracks:
   - trackName: Main
     clips:
-    - action: {fileID: 11400000, guid: 8f2bb7d0bc0bcd94fbbb451ebc9b1f0a, type: 2}
+    - action: {fileID: 2436853438696113870}
+      startTime: 9
+    - action: {fileID: 5449063382500443316}
+      startTime: 5
+    - action: {fileID: 0}
+      startTime: 4.3
+    - action: {fileID: 0}
+      startTime: 16
+    - action: {fileID: 7876225242884431182}
       startTime: 0
-    - action: {fileID: 11400000, guid: e18e71993c88e9842819826c38e4e4da, type: 2}
-      startTime: 3.5
-    - action: {fileID: 11400000, guid: a008a0904d44a9049a94e3a5eefc0797, type: 2}
-      startTime: 7.5
-    - action: {fileID: 11400000, guid: c037964714b80454ea87062e689ce89b, type: 2}
-      startTime: 11
-    - action: {fileID: 11400000, guid: 79d58f1818293d146b0ef7716dc0780b, type: 2}
-      startTime: 15
-    - action: {fileID: 11400000, guid: 9f72db33f075a8f41b4f9e5585df2af3, type: 2}
-      startTime: 19
-    - action: {fileID: 11400000, guid: 7c7be445df6fee24f9b961d50bc82058, type: 2}
-      startTime: 23
+  - trackName: Track 2
+    clips:
+    - action: {fileID: -5647582986096216929}
+      startTime: 9
+    - action: {fileID: -8446553998872288768}
+      startTime: 0
+    - action: {fileID: -366531110814281659}
+      startTime: 5
   waitForTimelineEnd: 1
   extraTailTime: 0
+--- !u!114 &5064379619856429457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede484211ee4e7148b86f94badc62990, type: 3}
+  m_Name: AoE_Boss_Circle_2
+  m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 30
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 20
+--- !u!114 &5449063382500443316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cd326737635bdc4288602aea8857430, type: 3}
+  m_Name: AoE_Boss_Line
+  m_EditorClassIdentifier: Assembly-CSharp::LineAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 50
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 1
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  lineLength: 100
+  lineWidth: 10
+--- !u!114 &7876225242884431182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05f32eeb433b5ef4195b52a09e9cc336, type: 3}
+  m_Name: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_AoE_Boss_Cross_2"
+  m_EditorClassIdentifier: Assembly-CSharp::RandomAttackAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: "\u0E2A\u0E38\u0E48\u0E21_AoE_Boss_Circle_AoE_Boss_Cross_2_Variant_2"
+  cooldownAfter: 0
+  attackPool:
+  - {fileID: -7023976251900461451}
+  - {fileID: 1627393615902574277}
+  attackCount: 1
+  delayBetweenPicks: 0
+--- !u!114 &8056439930132210818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bef310bf925c95944b3d2b2cbdc7103a, type: 3}
+  m_Name: AoE_Boss_Donut_2
+  m_EditorClassIdentifier: Assembly-CSharp::DonutAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 0
+  targetOffset: {x: 0, y: 0, z: 0}
+  aimMode: 0
+  angleDegrees: 0
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 2.5
+  damage: 10
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 0
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 60
+  innerRadius: 30

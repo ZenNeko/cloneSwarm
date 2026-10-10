@@ -47,7 +47,7 @@ MonoBehaviour:
     piercing: 0
   - damage: 20
     cooldown: 3.5
-    projectileCount: 1
+    projectileCount: 2
     range: 30
     projectileSpeed: 0
     radius: 0

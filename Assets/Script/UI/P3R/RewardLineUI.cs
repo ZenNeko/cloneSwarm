@@ -90,6 +90,7 @@ namespace CloneSwarm.UI.P3R
             RewardReason.ObjectiveGold => P3RStrings.Ui("ui.reward.objective_gold"),
             RewardReason.WinBonus      => P3RStrings.Ui("ui.reward.win_bonus"),
             RewardReason.GoldFind      => P3RStrings.Ui("ui.reward.gold_find"),
+            RewardReason.Difficulty    => P3RStrings.Ui("ui.reward.difficulty"),
             _                          => P3RStrings.Ui("ui.reward.other"),
         };
     }

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73477ef2c92aded43b59a9f58a5c4642, type: 3}
+  m_Name: Music_Arena01
+  m_EditorClassIdentifier: Assembly-CSharp::MusicProfile
+  track: {fileID: 11400000, guid: 6b2ddd2aecbebcc478e3f2811a83022a, type: 2}
+  timeBands:
+  - atMinutes: 0
+    mix:
+      levels:
+      - stem: main
+        level: 1
+      fadeSeconds: -1
+  miniBossOverlay:
+    levels: []
+    fadeSeconds: -1
+  miniBossReleaseHold: 3
+  mainBossTrack: {fileID: 0}
+  mainBossPhases: []
+  cardPickOverrides: []
+  cardPickDuck: 0.5
+  cardPickFade: 0.4
+  winStinger: {fileID: 0}
+  loseStinger: {fileID: 0}
+  endFade: 1.5
+  defaultFade: 2

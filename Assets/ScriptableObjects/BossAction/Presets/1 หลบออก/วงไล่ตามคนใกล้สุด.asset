@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ede484211ee4e7148b86f94badc62990, type: 3}
+  m_Name: "\u0E27\u0E07\u0E44\u0E25\u0E48\u0E15\u0E32\u0E21\u0E04\u0E19\u0E43\u0E01\u0E25\u0E49\u0E2A\u0E38\u0E14"
+  m_EditorClassIdentifier: Assembly-CSharp::CircleAoEAction
+  actionDelay: 0
+  castName: 
+  castTime: 0
+  rollName: 
+  cooldownAfter: 0
+  targetingMode: 3
+  targetOffset: {x: 0, y: 0, z: 0}
+  arenaAnchor: 0
+  arenaDistanceScale: 1
+  anchorChoices: 
+  repeatCount: 1
+  repeatInterval: 0.6
+  rerollEachRepeat: 0
+  warningDuration: 3
+  damage: 25
+  detonateVfx: {fileID: 0}
+  overrideTelegraphColors: 0
+  telegraphWarningColor: {r: 1, g: 0.64, b: 0.024, a: 0.5}
+  telegraphDangerColor: {r: 1, g: 0, b: 0.099, a: 0.85}
+  overrideTelegraphOutlineColor: 0
+  telegraphOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  overrideTelegraphEffects: 0
+  pulseAmount: 1
+  blinkAmount: 1
+  ringAmount: 3
+  ringSpeed: 1
+  pulseSpeed: 4
+  ringSpacing: 1.5
+  ringWidth: 0.15
+  outlineWidth: 0.15
+  edgeGlow: 1.5
+  edgeStrength: 2
+  baseAlpha: 1
+  isChasing: 1
+  followCaster: 0
+  isRotatingChase: 0
+  isStackMarker: 0
+  isGaze: 0
+  knockbackMode: 0
+  knockbackDistance: 0
+  knockbackDuration: 0.2
+  knockbackFixedDirection: {x: 0, y: 0, z: 1}
+  scaleStart: 1
+  scaleEnd: 1
+  sweepDegreesPerSecond: 0
+  radius: 3

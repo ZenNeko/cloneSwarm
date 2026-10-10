@@ -274,6 +274,8 @@ public class TelegraphZone : NetworkBehaviour
     /// Gaze ตำแหน่งไม่ช่วยเลยต้องหันหลัง · Stack ต้องวิ่งเข้าไม่ใช่ออก · ส่วน Chase ยังหนีถูกอยู่
     /// สีบอกได้ทีละอย่าง จึงให้ตัวที่กลับด้านปฏิกิริยามากที่สุดชนะ
     /// </summary>
+    static bool _warnedMissingSlot;   // เตือนครั้งเดียวต่อ session — zone เกิดถี่ ไม่ต้อง spam
+
     (Color warn, Color danger) ResolveColors()
     {
         if (isColorMatch.Value)
@@ -281,10 +283,22 @@ public class TelegraphZone : NetworkBehaviour
             ulong reqId = requiredClientId.Value;
             int slot = PlayerSlotRegistry.Instance != null
                 ? PlayerSlotRegistry.Instance.GetSlot(reqId) : -1;
-            if (slot < 0) slot = (int)(reqId % 4);
 
-            Color c = GetSlotColor(slot);
-            return (c, c * 0.8f);
+            if (slot >= 0)
+            {
+                Color c = GetSlotColor(slot);
+                return (c, c * 0.8f);
+            }
+
+            // หา slot ไม่เจอ — ห้ามเดาด้วย clientId % 4 (CLAUDE.md ข้อ 11) เพราะสีที่เดาอาจไม่ตรง
+            // กับสีประจำตัวผู้เล่นจริง แล้ววงจะบอกให้คนผิดคนวิ่งเข้า · ทาสีกลางแทน ไม่อ้างว่าเป็นของใคร
+            // ColorMatchAoEAction ก็ไม่ประกาศสีในกรณีเดียวกัน
+            if (!_warnedMissingSlot)
+            {
+                _warnedMissingSlot = true;
+                Debug.LogWarning($"[TelegraphZone] ColorMatch: ไม่พบ slot ของ client {reqId} ใน PlayerSlotRegistry — ทาสีกลาง");
+            }
+            return (warningColor, dangerColor);
         }
 
         if (overrideColors) return (overrideWarningColor, overrideDangerColor);

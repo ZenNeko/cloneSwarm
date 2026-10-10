@@ -45,7 +45,7 @@ MonoBehaviour:
     radius: 0
     duration: 0
     piercing: 0
-  superVersion: {fileID: 11400000, guid: 63cd38928f570194ebf1d53e608c553f, type: 2}
+  superVersion: {fileID: 0}
   superConditions:
   - conditionType: 0
     requiredStatType: 8

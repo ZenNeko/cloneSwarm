@@ -63,6 +63,44 @@ namespace CloneSwarm.EditorTools
             EditorApplication.Exit(blocking.Count > 0 ? 1 : 0);
         }
 
+        /// <summary>
+        /// เฟสที่ไปไม่ถึง — BossController เปลี่ยนเฟสเมื่อ HP ≤ transitionHealthPct ของ **เฟสปัจจุบัน**
+        ///
+        /// ค่า ≤ 0 บนเฟสที่ไม่ใช่เฟสสุดท้าย = ต้องรอ HP เหลือ 0 ซึ่งบอสตายไปก่อน → เฟสถัดไปไม่มีวันมา
+        /// เกิดจริงได้ง่าย: เฟสสุดท้ายมักตั้ง 0 (ค่านี้ไม่ถูกใช้) แล้วกด "+ Phase" ต่อท้าย
+        /// ค่าไม่ลดลงจากเฟสก่อน = ข้ามเฟสนี้ทันทีที่เข้า (HP ต่ำกว่าเกณฑ์อยู่แล้ว)
+        /// internal (ไม่ใช่ private) เพื่อให้ BossConfigAuditTests เรียกตรงได้ — assembly เดียวกัน
+        /// </summary>
+        internal static void CheckPhaseThresholds(BossEncounterConfig cfg, List<Problem> problems)
+        {
+            var phases = cfg.phases;
+            if (phases == null) return;
+
+            float prev = 1f;
+            for (int i = 0; i < phases.Count - 1; i++)
+            {
+                var p = phases[i];
+                if (p == null) continue;
+                float t = p.transitionHealthPct;
+
+                if (t <= 0f)
+                    problems.Add(new Problem
+                    {
+                        where = $"{cfg.name} · Phase {i + 1}",
+                        what = $"เปลี่ยนเฟสที่ HP ≤ 0% — บอสตายก่อน Phase {i + 2} ไม่มีวันมา",
+                        blocking = true,
+                    });
+                else if (t >= prev)
+                    problems.Add(new Problem
+                    {
+                        where = $"{cfg.name} · Phase {i + 1}",
+                        what = $"เปลี่ยนเฟสที่ HP ≤ {t:P0} ไม่ต่ำกว่าเฟสก่อน ({prev:P0}) — เข้าเฟสนี้แล้วข้ามไปเฟสถัดไปทันที",
+                        blocking = true,
+                    });
+                prev = t;
+            }
+        }
+
         public static List<Problem> Collect(out string summary)
         {
             var problems = new List<Problem>();
@@ -80,6 +118,8 @@ namespace CloneSwarm.EditorTools
                     foreach (var d in cfg.rolls)
                         if (d != null && !string.IsNullOrEmpty(d.rollName)) defined.Add(d.rollName);
                 rollsDefined += defined.Count;
+
+                CheckPhaseThresholds(cfg, problems);
 
                 var used = new HashSet<string>();
                 var reached = new HashSet<BossAction>();
@@ -112,8 +152,11 @@ namespace CloneSwarm.EditorTools
 
                     if (a is not SpawnAoEActionBase aoe) continue;
 
+                    // roll เชิงพื้นที่ต้องมีสนามเฉพาะท่าที่ยึดสนาม (พิกัดตายตัว / จุดในสนาม)
+                    // ท่าที่ยึดตัวบอส/ผู้เล่นหมุนรอบตัวคนนั้น — เดิมเตือนทุกท่าที่มี roll หมุน ซึ่งผิดหลังแก้ pivot
                     bool needsArena = aoe.targetingMode == SpawnAoEActionBase.TargetingMode.ArenaAnchor
-                                   || (!string.IsNullOrEmpty(aoe.rollName)
+                                   || (aoe.IsArenaRelative
+                                       && !string.IsNullOrEmpty(aoe.rollName)
                                        && defined.Contains(aoe.rollName)
                                        && IsSpatial(cfg, aoe.rollName));
 
@@ -121,8 +164,8 @@ namespace CloneSwarm.EditorTools
                         problems.Add(new Problem
                         {
                             where = $"{cfg.name} · {a.name}",
-                            what = "ใช้ ArenaAnchor หรือ roll เชิงพื้นที่ แต่ config ไม่ได้ผูก arena — " +
-                                   "ตอนรันจะถอยไปใช้ตำแหน่งบอส วงไปโผล่ผิดที่ทั้งชุด",
+                            what = "ยึดจุดในสนาม (ArenaAnchor / พิกัดตายตัว + roll) แต่ config ไม่ได้ผูก arena — " +
+                                   "ตอนรันจะถอยไปใช้ตำแหน่งบอส · ถ้าตั้งใจให้เกิดที่ตัวบอส เปลี่ยน \"ที่ไหน\" เป็น \"ที่ตัวบอส\"",
                             blocking = true,
                         });
 

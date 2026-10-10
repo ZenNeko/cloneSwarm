@@ -38,8 +38,9 @@ One button does the first three: `Window > Clone Swarm > P3R Screens` → **ส�
 Headless equivalent (Unity Editor must be **closed** — it holds `Temp/UnityLockfile`):
 
 ```bash
-U="E:/Zenity Why not/Unity/6000.7.0a2/Editor/Unity.exe"
 P="E:/Zenity Why not/cloneSwarm"
+VER=$(head -1 "$P/ProjectSettings/ProjectVersion.txt" | cut -d' ' -f2)   # อย่า hardcode — editor รุ่นเก่ายังติดตั้งอยู่
+U="E:/Zenity Why not/Unity/$VER/Editor/Unity.exe"
 "$U" -quit -batchmode -nographics -projectPath "$P" \
      -executeMethod CloneSwarm.EditorTools.P3RCharacterSceneBuilder.Build -logFile "<ABS>/b.log"
 "$U" -quit -batchmode -nographics -projectPath "$P" \
@@ -239,8 +240,8 @@ bars. `P3RBuilderKit.BeginScene` already orders it correctly — do not reorder.
 **`using static P3RBuilderKit` makes `Mono()` ambiguous** with the .NET `Mono` namespace (CS0118).
 The tracking helper is called `MonoStyle`.
 
-**Do not invent data that has no source.** The map screen shows `—` for `ENEMY HP` because
-`DifficultyTier` is a bare enum with no multiplier to read, and hides `LOCKED ×2` because there is
-no map-unlock system. The loading bar is an indeterminate sweep because
+**Do not invent data that has no source.** The map screen hides `LOCKED ×2` because there is
+no map-unlock system. (`ENEMY HP` / `GOLD` used to show `—` for the same reason; since 2026-09 they
+read `DifficultyProfile.enemyHpMult` / `goldMult` through `DifficultyProfile.Resolve(map, tier)`.) The loading bar is an indeterminate sweep because
 `NetworkManager.SceneManager.LoadScene` reports events, not progress. Showing a plausible number
 tells the player a system exists when it does not.

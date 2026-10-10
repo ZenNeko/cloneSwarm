@@ -27,10 +27,8 @@ namespace CloneSwarm.EditorTools
     ///
     /// ═══ ของที่คัดลอกไม่ได้ ═══
     ///
-    /// `objectiveExpReward` · `objectiveHealAmount` · `waitForAllPlayers` ·
-    /// `startWaitTimeout` ไม่มีใน `TimelineSchedule` เพราะไม่ใช่ **ตาราง** —
-    /// มันคือกติกาของซีน ไม่ใช่จังหวะของแมพ · ถ้าวันหนึ่งอยากให้แมพตั้งรางวัลเองได้
-    /// ค่อยเพิ่มเข้า schedule แล้วตัวนี้จะคัดลอกให้เอง
+    /// `waitForAllPlayers` · `startWaitTimeout` ไม่มีใน `TimelineSchedule` เพราะไม่ใช่ **ตาราง** —
+    /// มันคือกติกาของซีน ไม่ใช่จังหวะของแมพ · รางวัลเควสต์อยู่บน prefab ของโซน (ZoneObjective) ไม่ใช่ที่ GameTimeline
     ///
     /// ═══ สเกลศัตรูถูกเปิดสวิตช์ให้เลย ═══
     ///
@@ -157,6 +155,8 @@ namespace CloneSwarm.EditorTools
                         expMultPerWave     = wm.expMultPerWave,
                         maxSpeedMultiplier = wm.maxSpeedMultiplier,
                         spawnRateAccel     = wm.spawnRateAccel,
+                        maxAliveEnemies        = wm.maxAliveEnemies,
+                        maxAlivePerExtraPlayer = wm.maxAlivePerExtraPlayer,
                     };
 
                     log.AppendLine($"  {map.name} / {tier.tier} ← สเกลศัตรู {tier.enemyScaling}");

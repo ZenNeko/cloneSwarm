@@ -39,10 +39,10 @@ MonoBehaviour:
   levels:
   - damage: 25
     cooldown: 3
-    projectileCount: 5
+    projectileCount: 2
     range: 10
     projectileSpeed: 12
-    radius: 2
+    radius: 1.5
     duration: 0
     piercing: 0
   - damage: 30
