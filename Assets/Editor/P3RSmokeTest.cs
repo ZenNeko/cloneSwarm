@@ -193,14 +193,14 @@ namespace CloneSwarm.EditorTools
 
                     // TALENT SHOP อยู่ใต้ hub — กดแล้ว hub เปิด แล้ว TabBar เลือกแท็บ shop
                     case 4: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
-                    case 5: Verify(); CheckShop(); CheckShopTabs(); ShopBackFromMain(); break;
+                    case 5: Verify(); CheckShop(); CheckShopTabs(); CheckHubHeader("shop"); ShopBackFromMain(); break;
                     // VerifyShopBack ตั้ง wait ไว้ให้อนิเมชันเข้าเมนูวิ่งจบก่อน — wait มีผลกับ
                     // **ขั้นถัดไป** ไม่ใช่บรรทัดถัดไป การกดในขั้นเดียวกันจึงโดนปฏิเสธเงียบๆ
                     case 6: VerifyShopBack(); break;
                     case 7: Press("shop", "P3R_Hub", "P3R_TalentShop"); break;
                     case 8: Verify(); JumpTab("lobby", "P3R_Lobby"); break;
-                    case 9: Verify(); JumpTab("character", "P3R_Character"); break;
-                    case 10: Verify(); CheckCharacter(); break;
+                    case 9: Verify(); CheckHubHeader("lobby"); JumpTab("character", "P3R_Character"); break;
+                    case 10: Verify(); CheckHubHeader("character"); CheckCharacter(); break;
                     case 11: CheckCharacterClick(); break;
                     case 12: ShowMain(); break;
 
@@ -212,7 +212,7 @@ namespace CloneSwarm.EditorTools
                     // ตอนไม่ใช่ host (SetTabVisible("map", lobbyMode && isHost))
                     // เพราะ client เปลี่ยนแมพไม่ได้อยู่แล้ว · ไม่ใช่บั๊ก
                     case 15: JumpTab("map", "P3R_MapSelect"); break;
-                    case 16: Verify(); CheckMapSelect(); break;
+                    case 16: Verify(); CheckHubHeader("map"); CheckMapSelect(); break;
 
                     // ต้องกลับแท็บ LOBBY ก่อน — ปุ่ม READY/START RUN อยู่ใน P3R_Lobby
                     // และ LobbyUI ก็อยู่บน panel เดียวกัน · อยู่แท็บอื่น = มันถูกปิด
@@ -549,6 +549,41 @@ namespace CloneSwarm.EditorTools
                 var bar = hub.GetComponent<TabBar>();
                 Require(bar != null && bar.tabs.All(t => t != null && t.button != null),
                         "หัวจอ: TabBar.tabs[].button ชี้ปุ่มแท็บบนหัวจอครบสี่");
+            }
+
+            /// <summary>
+            /// ไฮไลต์กับของเฉพาะจอบนหัวจอชุดเดียว ต้องตาม **แท็บที่เลือกอยู่** — เช็คทุกแท็บ ไม่ใช่แค่ร้าน
+            ///
+            /// สีที่ builder อบไว้เป็นของ LOBBY · ถ้า P3RTabStrip ไม่ได้ย้อมใหม่ ไฮไลต์จะค้างที่แท็บเดียว
+            /// ไม่ว่าอยู่จอไหน และ HeaderExtras/BottomExtras ของจออื่นจะโผล่ซ้อน — ดูไม่ออกจากภาพนิ่งของจอเดียว
+            /// </summary>
+            private void CheckHubHeader(string activeId)
+            {
+                string tag = $"หัวจอ hub ({activeId})";
+                var hub = Find("P3R_Hub");
+                var header = hub != null ? hub.transform.Find("TopBar") : null;
+                if (header == null) { Require(false, $"{tag}: P3R_Hub มี TopBar"); return; }
+
+                // หัวจอต้องวาดทับทุกแผง — ทุกแผงมี Backdrop เต็มจอ
+                int last = hub.transform.Cast<Transform>()
+                              .Where(c => c.name.StartsWith("P3R_")).Select(c => c.GetSiblingIndex())
+                              .DefaultIfEmpty(-1).Max();
+                Require(header.GetSiblingIndex() > last, $"{tag}: TopBar วาดทับทุกแผง (อยู่หลังแผงทั้งหมด)");
+
+                var strip = header.GetComponentInChildren<P3RTabStrip>(true);
+                Require(strip != null && strip.highlight, $"{tag}: P3RTabStrip เปิดไฮไลต์");
+                if (strip == null) return;
+                foreach (var e in strip.entries.Where(e => e != null && e.button != null))
+                {
+                    var bg = e.button.Find("Bg")?.GetComponent<Image>();
+                    if (bg == null) continue;
+                    bool on = e.id == activeId;
+                    Require(ColorsClose(bg.color, on ? strip.activeBg : strip.inactiveBg),
+                            $"{tag}: แท็บ {e.id} {(on ? "ไฮไลต์" : "ไม่ไฮไลต์")} (สีพื้น {bg.color})");
+                }
+                foreach (var x in strip.extras.Where(x => x != null && x.root != null))
+                    Require(x.root.activeSelf == (x.id == activeId),
+                            $"{tag}: {x.root.name} {(x.id == activeId ? "โชว์" : "ซ่อน")}");
             }
 
             private static bool ColorsClose(Color a, Color b)
