@@ -24,22 +24,18 @@ namespace CloneSwarm.UI.P3R
     /// มันอยู่บนปุ่มที่ต้องถูกซ่อน · component ที่ปิด GameObject ตัวเองแล้วจะไม่ได้รับ
     /// event ต่อ และเปิดตัวเองกลับไม่ได้ตลอดกาล · ตัวที่ซ่อนคนอื่นต้องอยู่คนละชั้นกับของที่ถูกซ่อน
     ///
-    /// ═══ ไฮไลต์แท็บที่เลือก (highlight = true) ═══
-    ///
-    /// ใน MenuScene หัวจอเหลือชุดเดียวบน P3R_Hub (P3RScreenWirer.EnsureHubHeader) · สีแท็บที่ builder
-    /// อบไว้เป็นของจอที่ถูกยกขึ้นมา (LOBBY) จึงต้องย้อมใหม่ทุกครั้งที่ TabBar เปลี่ยนแท็บ
-    /// ย้อมทั้งพื้น (ลูกชื่อ Bg) และป้าย (ลูกชื่อ Label) · TabBar ย้อมได้แค่ป้าย
-    ///
-    /// ═══ ของเฉพาะจอบนหัวจอ (extras) ═══
-    ///
-    /// หัวจอใช้ร่วมกันสี่จอ แต่ของบางอย่างเป็นของจอเดียว (ปุ่มห้องของ LOBBY · BACK ของ CHARACTER/SHOP)
-    /// ตัวต่อสายย้ายชั้น HeaderExtras ของแต่ละจอขึ้นมาไว้บนหัวจอ · ตัวนี้เปิดเฉพาะชั้นของแท็บที่เลือก
-    ///
     /// ═══ เรื่องระยะห่าง ═══
     ///
     /// builder วางปุ่มไว้ที่ x คงที่ไล่ไปทีละ 186px · ซ่อนสองตัวแรกเฉยๆ จะเหลือช่องว่าง
     /// ที่ขอบซ้ายแล้วปุ่มที่เหลือลอยอยู่กลาง · ตัวนี้จึงจัดระยะใหม่ให้ตัวที่เหลือชิดกัน
     /// โดยอ่าน x ตั้งต้นกับระยะห่างจากที่ builder วางไว้ ไม่ได้ฮาร์ดโค้ดเลข
+    ///
+    /// ═══ ไฮไลต์แท็บที่เลือกอยู่ ═══
+    ///
+    /// ตอนแต่ละจอมีแถบของตัวเอง ไฮไลต์ถูก **อบไว้ในสี** ตอน build (จอ MAP อบ Tab_MAP เป็นสีเข้ม)
+    /// พอยุบเหลือ `HubHeader` อันเดียว (<c>P3RHubHeaderUnify</c>) สีที่อบไว้ก็ผิดทันทีที่สลับแท็บ
+    /// `highlight` จึงให้ตัวนี้เป็นคนเดียวที่เขียนสีพื้นกับสีป้ายของปุ่มแท็บ ตาม
+    /// <see cref="TabBar.OnTabChanged"/> · สีอ่านมาจากที่ builder อบไว้ ไม่ได้ฮาร์ดโค้ดที่นี่
     /// </summary>
     [DisallowMultipleComponent]
     public class P3RTabStrip : MonoBehaviour
@@ -50,6 +46,12 @@ namespace CloneSwarm.UI.P3R
             [Tooltip("id ที่ตรงกับ TabBar.tabs[].id — lobby / map / character / shop")]
             public string id;
             public RectTransform button;
+
+            [Tooltip("พื้นปุ่ม — ว่างได้ถ้าไม่ใช้ไฮไลต์")]
+            public Image bg;
+
+            [Tooltip("ป้ายปุ่ม — ว่างได้ถ้าไม่ใช้ไฮไลต์")]
+            public TMP_Text label;
         }
 
         [Tooltip("ปล่อยว่างได้ — จะหา TabBar ในซีนเอง")]
@@ -57,24 +59,13 @@ namespace CloneSwarm.UI.P3R
 
         public List<Entry> entries = new();
 
-        [System.Serializable]
-        public class Extra
-        {
-            [Tooltip("id ของแท็บเจ้าของ — โผล่เฉพาะตอนแท็บนี้ถูกเลือก")]
-            public string id;
-            public GameObject root;
-        }
-
-        [Tooltip("ของเฉพาะจอบนหัวจอ (HeaderExtras_<id>) — P3RScreenWirer เติมให้")]
-        public List<Extra> extras = new();
-
-        [Header("── ไฮไลต์แท็บที่เลือก ─────────────────")]
-        [Tooltip("เปิดเมื่อแถบนี้เป็นหัวจอชุดเดียวที่ใช้ร่วมทุกจอ — ปิด = ใช้สีที่ builder อบไว้")]
-        public bool  highlight;
-        public Color activeBg     = new Color32(0x18, 0x24, 0xD8, 0xFF);
-        public Color inactiveBg   = new Color32(0x14, 0x17, 0x23, 0xFF);
-        public Color activeText   = Color.white;
-        public Color inactiveText = new Color(1f, 1f, 1f, 0.55f);
+        [Header("── ไฮไลต์แท็บที่เลือกอยู่ ─────────────────")]
+        [Tooltip("ปิดไว้ = ไม่แตะสีเลย (แถบที่อบสีไว้ตายตัวตอน build)")]
+        public bool highlight;
+        public Color activeBg      = Color.white;
+        public Color inactiveBg    = Color.gray;
+        public Color activeLabel   = Color.white;
+        public Color inactiveLabel = new Color(1f, 1f, 1f, 0.55f);
 
         // x ที่ builder วางไว้ตอนแรก — ใช้เป็นจุดตั้งต้นกับระยะห่าง ไม่เก็บก็จัดใหม่ไม่ได้
         // เพราะพอซ่อนรอบแรกแล้วตำแหน่งเดิมหายไป
@@ -95,7 +86,7 @@ namespace CloneSwarm.UI.P3R
             // จอถูกเปิดทีหลังคำสั่งซ่อน — ต้องอ่านสถานะปัจจุบันเองรอบหนึ่งเสมอ
             // ไม่งั้นจอที่เพิ่งเปิดจะโชว์แท็บครบทั้งที่ TabBar สั่งซ่อนไปแล้ว
             Apply();
-            Highlight(tabBar != null ? tabBar.CurrentTabId : null);
+            if (tabBar != null) Highlight(tabBar.CurrentTabId);
         }
 
         private void OnDisable()
@@ -104,25 +95,15 @@ namespace CloneSwarm.UI.P3R
             TabBar.OnTabChanged  -= Highlight;
         }
 
-        private void Highlight(string id)
+        private void Highlight(string currentId)
         {
-            // ยังไม่มีแท็บที่เลือก → ซ่อนหมด ไม่ให้ของสี่จอซ้อนกันบนหัวจอ
-            foreach (var x in extras)
-            {
-                if (x == null || x.root == null) continue;
-                bool show = !string.IsNullOrEmpty(id) && x.id == id;
-                if (x.root.activeSelf != show) x.root.SetActive(show);
-            }
-
-            if (!highlight || string.IsNullOrEmpty(id)) return;
+            if (!highlight) return;
             foreach (var e in entries)
             {
-                if (e == null || e.button == null) continue;
-                bool on = e.id == id;
-                var bg = e.button.Find("Bg")?.GetComponent<Image>();
-                if (bg != null) bg.color = on ? activeBg : inactiveBg;
-                var label = e.button.Find("Label")?.GetComponent<TMP_Text>();
-                if (label != null) label.color = on ? activeText : inactiveText;
+                if (e == null) continue;
+                bool on = e.id == currentId;
+                if (e.bg    != null) e.bg.color    = on ? activeBg    : inactiveBg;
+                if (e.label != null) e.label.color = on ? activeLabel : inactiveLabel;
             }
         }
 

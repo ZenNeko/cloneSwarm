@@ -42,7 +42,11 @@ public class TabBar : MonoBehaviour
 
     private string currentTabId;
 
-    /// <summary>แท็บที่เลือกอยู่ — P3RTabStrip อ่านตอนเปิดเพื่อไฮไลต์ให้ตรงตั้งแต่เฟรมแรก</summary>
+    /// <summary>
+    /// แท็บที่เลือกอยู่ตอนนี้ — null ถ้ายังไม่มีใครเลือก
+    /// ของที่เพิ่งเปิดขึ้นมาทีหลัง <see cref="OnTabChanged"/> ยิงไปแล้ว (เช่นหัวจอ hub)
+    /// ต้องอ่านค่านี้เองหนึ่งรอบ ไม่งั้นจะไฮไลต์ผิดแท็บจนกว่าจะมีคนกดแท็บอีกครั้ง
+    /// </summary>
     public string CurrentTabId => currentTabId;
 
     private void Start()

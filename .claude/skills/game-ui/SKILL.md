@@ -107,30 +107,6 @@ A controller's `cardTemplate` field must point at the **prefab asset**, not a sc
 scene reference is a `fileID` that changes every time the panel is re-migrated, and the template
 gets destroyed along with the old panel.
 
-## Hub header (LOBBY / MAP / CHARACTER / SHOP)
-
-**MenuScene has exactly one header**, a direct child of `P3R_Hub` drawn over the four panels:
-four tabs on the left, gold on the far right, no game title. `P3RBuilderKit.BuildHubHeader` still
-draws one per proto scene (so the PNGs look right), and `P3RScreenWirer.EnsureHubHeader` lifts one
-of them (LOBBY first) onto the hub on every wire, deletes the copies in the panels and any older
-`TopBar`/`TabBar` left under the hub, then points `TabBar.tabs[].button` at those tabs, puts one
-`P3RTabStrip` on it (hide + **highlight** — the baked colours are LOBBY's, so it recolours `Bg`/`Label`
-on `TabBar.OnTabChanged`) and points every screen's `goldText` at the one gold label.
-
-Consequences:
-- **Screen-specific header items never go inside `TopBar`**, because they vanish with the deleted copy.
-  Instead, put them in `BuildHubHeaderExtras(root)` (built after the header, drawn over it; right-aligned before the
-  gold, using `HubHeaderButton`). The wirer moves each panel's `HeaderExtras` onto the header as
-  `HeaderExtras_<id>`. When it swaps headers, it carries over the ones no panel brought fresh, so
-  re-migrating only CHARACTER keeps LOBBY's room buttons. `P3RTabStrip.extras` shows only the
-  selected tab's layer. Today these are LOBBY invite · COPY · room code, and CHARACTER/SHOP `Btn_Back`.
-  `AddTabJump` and the smoke test look for `Btn_Back` there, not in the panel.
-- Content starts at `HubHeaderH` (84). SHOP has no RUNS/WINS/BEST line (removed 2026-09-28).
-- Names are load-bearing: `TopBar` / `TabBar` / `Tab_<NAME>` / `Gold` / `HeaderExtras` / `Btn_Back`. The smoke
-  test checks one `TopBar` on the hub, none in panels, that the current tab is highlighted, and that
-  only the current tab's `HeaderExtras_<id>` is on.
-- Every screen writes the same gold label, so they must all write the same format (`N0` + `" G"`).
-
 ## Lists, carousels, filmstrips
 
 `CarouselBase<TData, TCard>` (`Assets/Script/UI/CarouselBase.cs`) holds everything: layout,
@@ -225,6 +201,16 @@ four tab screens under `P3R_Hub` after the first migration. A shallow name looku
 existing panel and creates a *second* one at the Canvas root — the old one keeps the real data and
 stays the one the game uses, so every builder edit appears to do nothing, silently. Search the
 whole subtree and put the replacement back at the same parent and sibling index.
+
+**The four tab screens share one header: `P3R_Hub/HubHeader`.** Their proto scenes still draw
+their own TopBar/TabBar so the PNG looks complete, and migration brings that copy back every time.
+`P3RHubHeaderUnify` (run by the wirer as its last step, also `Tools > Clone Swarm > Unify Hub
+Header`) dissolves it again in place: shared items map onto the header, screen-only TopBar items
+go into `HubHeader/TopBar/Extras_<tab>` (shown only on that tab by `P3RHubHeader`), screen-only
+tab-row items like `Btn_Back` stay on their screen under `TabRow`, and references into the copy are
+retargeted by path. Tab highlight is live (`P3RTabStrip.highlight`), not baked colour. A change to
+the header made only in a builder never reaches MenuScene once the header exists — edit
+`HubHeader` in the scene, or delete it and re-run the wirer to re-lift it from the Lobby screen.
 
 **The wirer matches by controller type only.** Matching components by type alone once dragged
 every `Button` in the scene onto one panel's first button and every TMP onto its first label —
