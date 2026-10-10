@@ -366,6 +366,12 @@ public class LobbyUI : MonoBehaviour
         busyFlashRoutine = null;
     }
 
+    /// <summary>
+    /// ถอยออกจากล็อบบี้ (ออกจากห้อง + ปิด network) — ปุ่ม BACK ใน MenuScene เป็นปุ่มเดียวที่ใช้ร่วม
+    /// ทุกแท็บ (แถบล่างชุดเดียวของ P3R_Hub) · P3RTabJump "back" เรียกตัวนี้เฉพาะตอนอยู่แท็บ lobby
+    /// </summary>
+    public void Back() => OnBackClicked();
+
     private async void OnBackClicked()
     {
         var gsm = GameSessionManager.Instance;

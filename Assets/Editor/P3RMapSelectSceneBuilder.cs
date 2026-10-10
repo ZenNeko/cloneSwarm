@@ -92,16 +92,18 @@ namespace CloneSwarm.EditorTools
 
         private static void BuildPreview(RectTransform root, MapSelectUI ui)
         {
-            var box = NewImage("Preview", root, Lift(InkDeep, 0.05f));
-            TopLeft(box.rectTransform, PadX, ContentY + 12f, RefW - PadX * 2f, PreviewH);
+            // ── ค่าที่ผู้ใช้ปรับเองใน MenuScene (อยู่ใน commit "1/10") — ห้ามเปลี่ยนกลับ ──
+            // ย้ายจอลงซีนใหม่ = ค่าจาก builder ทับของในซีน · builder จึงต้องตรงกับที่ผู้ใช้ตั้ง
+            //   สีขาว (sprite ขึ้นสีจริง) · สูง 619.4358 (ยาวลงไปใต้แถวข้อมูล ไม่ใช่ PreviewH)
+            //   ไม่มีป้าย "MAP PREVIEW" · ม่านล่างใช้ sprite ไล่สี Gradient01
+            var box = NewImage("Preview", root, Color.white);
+            TopLeft(box.rectTransform, PadX, ContentY + 12f, RefW - PadX * 2f, 619.4358f);
             ui.detailPreview = box;
-
-            var hint = NewMono("Hint", box.rectTransform, "MAP PREVIEW", 17f, 0.3f,
-                               TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.16f));
-            Stretch(hint.rectTransform);
 
             // ม่านล่างให้ตัวหนังสือที่วางทับอ่านออกเมื่อมีภาพจริง
             var fade = NewImage("BottomFade", box.rectTransform, new Color(6 / 255f, 8 / 255f, 18 / 255f, 0.55f));
+            fade.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+                "Assets/Lana Studio/Hyper Casual FX/Textures/Gradient01.png");
             var frt = fade.rectTransform;
             frt.anchorMin = new Vector2(0f, 0f); frt.anchorMax = new Vector2(1f, 0f);
             frt.pivot = new Vector2(0.5f, 0f);
@@ -355,14 +357,11 @@ namespace CloneSwarm.EditorTools
 
         private static void BuildBottomBar(RectTransform root)
         {
-            var bar = NewRect("BottomBar", root);
-            bar.anchorMin = new Vector2(0f, 0f); bar.anchorMax = new Vector2(1f, 0f);
-            bar.pivot = new Vector2(0.5f, 0f);
-            bar.sizeDelta = new Vector2(0f, BottomH);
-            bar.anchoredPosition = Vector2.zero;
+            // แถบล่างชุดเดียวของฮับ — BACK ใช้ร่วมสี่จอ (BuildHubBottomBar)
+            BuildHubBottomBar(root, out _);
 
-            BarButton(bar, "Back", "BACK", left: true, x: PadX, w: 220f,
-                      filled: false, tint: new Color(1f, 1f, 1f, 0.7f));
+            // ของเฉพาะจอ — ตัวต่อสายย้ายขึ้นแถบล่างชุดเดียวเป็น BottomExtras_map
+            var bar = BuildHubFooterExtras(root);
 
             var hint = NewMono("Hint", bar, "A / D  BROWSE  ·  ENTER  CONFIRM", 15f, 0.22f,
                                TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.4f));

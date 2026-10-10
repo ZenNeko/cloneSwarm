@@ -150,7 +150,9 @@ namespace CloneSwarm.EditorTools
             var crt = col.rectTransform;
 
             // พอร์เทรต — ปิด Image ไว้เพราะยังไม่มี sprite (Char_Hunter/Gunner ยังไม่มี portrait)
-            var portrait = NewImage("Portrait", crt, Lift(PanelBg, 0.06f));
+            // สีขาว — ผู้ใช้ตั้งเองใน MenuScene (2026-10-08) ให้ sprite ขึ้นสีจริง · ห้ามเปลี่ยนกลับเป็นสีพื้น
+            // (ย้ายจอลงซีนใหม่ = ค่าจาก builder ทับของในซีน · builder จึงต้องตรงกับที่ผู้ใช้ตั้ง)
+            var portrait = NewImage("Portrait", crt, Color.white);
             TopLeft(portrait.rectTransform, 0f, 0f, ColW, 470f);
 
             ui.characterImage = portrait;
@@ -274,7 +276,9 @@ namespace CloneSwarm.EditorTools
                                   TextAlignmentOptions.MidlineLeft, new Color(1f, 1f, 1f, 0.5f));
             TopLeft(mapHead.rectTransform, 28f, 470f, 300f, 26f);
 
-            var mapBox = NewImage("MapPreview", crt, Lift(PanelBg, 0.06f));
+            // สีขาว — ผู้ใช้ตั้งเองใน MenuScene (2026-10-08) ให้ sprite ขึ้นสีจริง · ห้ามเปลี่ยนกลับเป็นสีพื้น
+            // (ย้ายจอลงซีนใหม่ = ค่าจาก builder ทับของในซีน · builder จึงต้องตรงกับที่ผู้ใช้ตั้ง)
+            var mapBox = NewImage("MapPreview", crt, Color.white);
             TopLeft(mapBox.rectTransform, 28f, 502f, ColW - 56f, 236f);
             ui.mapImage = mapBox;
             mapBox.enabled = true;      // ยังไม่มี sprite — เป็นกล่องเปล่าให้เห็นระยะ
@@ -311,18 +315,20 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildBottomBar(RectTransform root, LobbyUI ui)
         {
-            var bar = NewRect("BottomBar", root);
-            bar.anchorMin = new Vector2(0f, 0f); bar.anchorMax = new Vector2(1f, 0f);
-            bar.pivot = new Vector2(0.5f, 0f);
-            bar.sizeDelta = new Vector2(0f, BottomH);
-            bar.anchoredPosition = Vector2.zero;
+            // แถบล่างชุดเดียวของฮับ (BuildHubBottomBar) — BACK ใช้ร่วมสี่จอ · ไม่ผูก ui.backButton
+            // เพราะ LobbyUI จะผูก OnBackClicked (ออกจากห้อง) ให้ทุกแท็บ · P3RTabJump "back"
+            // เรียก LobbyUI.Back() เองเฉพาะตอนอยู่แท็บ lobby
+            BuildHubBottomBar(root, out _);
 
-            // **แถบล่างต้องต่อสาย** — SetMode() ซ่อนมันตอนสลับไปโหมดร้าน
+            // ของเฉพาะจอ — ตัวต่อสายย้ายขึ้นแถบล่างชุดเดียวเป็น BottomExtras_lobby
+            var extras = BuildHubFooterExtras(root);
+            var bar = NewRect("Actions", extras);
+            Stretch(bar);
+
+            // **ต้องต่อสาย** — SetMode() ซ่อนมันตอนสลับไปโหมดร้าน
             // ปล่อยว่างแล้วปุ่ม READY / START RUN จะค้างอยู่บนหน้าร้าน Talent
+            // (ชั้นในของ BottomExtras_lobby — ชั้นนอก P3RTabStrip เปิดปิดตามแท็บ ไม่ให้สองตัวแย่งกัน)
             ui.bottomBar = bar.gameObject;
-
-            ui.backButton = BarButton(bar, "Back", "BACK", left: true, x: PadX,
-                                      w: 220f, filled: false, tint: new Color(1f, 1f, 1f, 0.7f));
 
             // เข้าห้องเพื่อนได้จากในล็อบบี้ ไม่ต้องถอยกลับไปเมนูหลักก่อน —
             // `OnLobbyJoinClicked` ปิด offline host ให้เองก่อนต่อเป็น client
@@ -342,10 +348,11 @@ namespace CloneSwarm.EditorTools
         private static Button BarButton(RectTransform bar, string name, string text,
                                         bool left, float x, float w, bool filled, Color tint)
         {
-            const float h = 56f;
+            // ขนาด / ระดับเดียวกับปุ่ม BACK ทุกจอในฮับ (HubBackY / HubBackH) — BACK ต้องอยู่ที่เดิมเป๊ะ
+            const float h = HubBackH;
             var root = NewRect($"Btn_{name}", bar);
-            if (left) BottomLeft(root, x, 24f, w, h);
-            else      BottomRight(root, x, 24f, w, h);
+            if (left) BottomLeft(root, x, HubBackY, w, h);
+            else      BottomRight(root, x, HubBackY, w, h);
 
             var bg = NewImage("Bg", root, filled ? tint : Over(tint, InkDeep, 0.10f));
             Stretch(bg.rectTransform);

@@ -24,6 +24,8 @@ namespace CloneSwarm.EditorTools
 
         // หัวจอ = แถบเดียว (BuildHubHeader) — เดิมแถบบน 84 + แถบแท็บ 62
         private const float ContentY = HubHeaderH;
+        // เนื้อหาจบเหนือแถบล่าง (ปุ่ม BACK ซ้ายล่าง)
+        private const float ContentBottom = HubBottomH + 8f;
         private const float PadX     = 64f;
         private const float RightW   = 620f;
         private const float Gap      = 24f;
@@ -84,18 +86,14 @@ namespace CloneSwarm.EditorTools
             BuildHubHeader(root, 3, out var gold);
             ui.goldText = gold;
 
-            // ปุ่มถอยบนหัวจอ ถัดซ้ายของยอดทอง — ที่เดียวกันทั้ง CHARACTER และ SHOP
-            // กว้างพอสำหรับป้าย "BACK TO LOBBY" ที่ P3RTabJump เปลี่ยนให้ตอนเข้ามาจากล็อบบี้
-            // (อยู่ใน HeaderExtras — โผล่เฉพาะตอนอยู่แท็บของจอนี้)
-            var extras = BuildHubHeaderExtras(root);
-            HubHeaderButton(extras, "Btn_Back", "BACK", HubPadX + 250f, 240f,
-                            new Color(1f, 1f, 1f, 0.75f), out _);
+            // ปุ่มถอยซ้ายล่าง — ที่เดียวกับ LOBBY / MAP (BuildHubBottomBar)
+            BuildHubBottomBar(root, out _);
         }
 
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildGrid(RectTransform root, TalentShopUI ui)
         {
-            float h = RefH - ContentY - 36f;
+            float h = RefH - ContentY - ContentBottom;
             float w = RefW - PadX * 2f - RightW - Gap;
 
             var panel = NewImage("GridPanel", root, PanelBg);
@@ -221,7 +219,7 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildDetail(RectTransform root, TalentShopUI ui)
         {
-            float h = RefH - ContentY - 36f;
+            float h = RefH - ContentY - ContentBottom;
 
             var panel = NewImage("DetailPanel", root, PanelBg);
             TopRight(panel.rectTransform, PadX, ContentY + 12f, RightW, h);

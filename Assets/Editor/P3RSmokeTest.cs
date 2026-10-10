@@ -449,12 +449,20 @@ namespace CloneSwarm.EditorTools
                 var shop = Find("P3R_TalentShop");
                 if (shop == null) { Require(false, "แท็บในร้าน: หา P3R_TalentShop เจอ"); return; }
 
-                // ปุ่มแท็บอยู่บนหัวจอ hub อันเดียวแล้ว ไม่ใช่สำเนาในร้าน
-                var header = Find("P3R_Hub")?.transform.Find("HubHeader");
-                if (header == null) { Require(false, "แท็บในร้าน: หา P3R_Hub/HubHeader เจอ"); return; }
-
-                var all = header.GetComponentsInChildren<Transform>(true);
+                // หัวจอเหลือชุดเดียวบน P3R_Hub (P3RScreenWirer.EnsureHubHeader) — แท็บอยู่ที่นั่น ไม่ใช่ในแผงร้าน
+                var hub = Find("P3R_Hub");
+                CheckSingleHubHeader(hub);
+                var all = (hub != null ? hub : shop).GetComponentsInChildren<Transform>(true);
                 GameObject Tab(string n) => all.FirstOrDefault(t => t.name == n)?.gameObject;
+
+                // ไฮไลต์ตามแท็บที่เลือก — สีที่ builder อบไว้เป็นของ LOBBY ถ้าไม่ย้อมใหม่จะค้างที่ LOBBY
+                var strip = hub != null ? hub.GetComponentInChildren<P3RTabStrip>(true) : null;
+                var shopBg = Tab("Tab_SHOP")?.transform.Find("Bg")?.GetComponent<Image>();
+                if (strip != null && shopBg != null)
+                    Require(ColorsClose(shopBg.color, strip.activeBg),
+                            $"แท็บ SHOP ถูกไฮไลต์ตอนอยู่ในร้าน (สีพื้น {shopBg.color} · ควรเป็น {strip.activeBg})");
+                else
+                    Require(false, "หาไฮไลต์แท็บ (P3RTabStrip / Tab_SHOP/Bg) บนหัวจอ P3R_Hub เจอ");
 
                 foreach (var n in new[] { "Tab_LOBBY", "Tab_MAP" })
                 {
@@ -474,65 +482,145 @@ namespace CloneSwarm.EditorTools
             }
 
             /// <summary>
-            /// หัวจอ hub ต้องมี **อันเดียว** และไฮไลต์แท็บที่เลือกอยู่จริง
+            /// หัวจอต้องมีชุดเดียวบน P3R_Hub — สำเนาในแผงเคยค้างมาสี่ชุด (ทุกแผงวาดเอง)
+            /// </summary>
+            private void CheckSingleHubHeader(GameObject hub)
+            {
+                if (hub == null) { Require(false, "หัวจอ: หา P3R_Hub เจอ"); return; }
+                int onHub = 0, inPanels = 0;
+                foreach (Transform child in hub.transform)
+                {
+                    if (child.name == "TopBar") { onHub++; continue; }
+                    inPanels += child.GetComponentsInChildren<Transform>(true).Count(t => t.name == "TopBar");
+                }
+                Require(onHub == 1, $"หัวจอ: P3R_Hub มี TopBar ชุดเดียว (เจอ {onHub})");
+                Require(inPanels == 0, $"หัวจอ: ไม่มีหัวจอสำเนาค้างในแผง (เจอ {inPanels})");
+
+                // ของเฉพาะจอบนหัวจอ — ย้ายขึ้นมาครบ และเปิดเฉพาะของแท็บที่เลือก
+                var top = hub.transform.Find("TopBar");
+                var tabStrip = hub.GetComponentInChildren<P3RTabStrip>(true);
+                string cur = hub.GetComponent<TabBar>()?.CurrentTabId;
+                foreach (var id in new[] { "lobby" })
+                {
+                    var x = top != null ? top.Find($"HeaderExtras_{id}") : null;
+                    Require(x != null, $"หัวจอ: มี HeaderExtras_{id} (ของเฉพาะจอ {id} บนหัวจอ)");
+                    if (x != null && !string.IsNullOrEmpty(cur))
+                        Require(x.gameObject.activeSelf == (id == cur),
+                                $"หัวจอ: HeaderExtras_{id} {(id == cur ? "เปิด" : "ปิด")}อยู่ตอนแท็บ {cur}");
+                }
+                Require(tabStrip != null && tabStrip.extras.Count >= 1,
+                        $"หัวจอ: P3RTabStrip.extras ครบ (เจอ {(tabStrip != null ? tabStrip.extras.Count : 0)})");
+                int leftInPanels = 0;
+                foreach (Transform child in hub.transform)
+                    leftInPanels += child.GetComponentsInChildren<Transform>(true).Count(t => t.name == "HeaderExtras");
+                Require(leftInPanels == 0, $"หัวจอ: ไม่มี HeaderExtras ค้างในแผง (เจอ {leftInPanels})");
+
+                // แถบล่างชุดเดียว — BACK ปุ่มเดียวซ้ายล่าง ใช้ร่วมทุกจอ
+                int barsOnHub = 0, barsInPanels = 0;
+                foreach (Transform child in hub.transform)
+                {
+                    if (child.name == "BottomBar") { barsOnHub++; continue; }
+                    barsInPanels += child.GetComponentsInChildren<Transform>(true)
+                                         .Count(t => t.name == "BottomBar" || t.name == "BottomExtras");
+                }
+                Require(barsOnHub == 1, $"แถบล่าง: P3R_Hub มี BottomBar ชุดเดียว (เจอ {barsOnHub})");
+                Require(barsInPanels == 0, $"แถบล่าง: ไม่มีแถบล่างสำเนาค้างในแผง (เจอ {barsInPanels})");
+                var footer = hub.transform.Find("BottomBar");
+                foreach (var id in new[] { "lobby", "map" })
+                {
+                    var x = footer != null ? footer.Find($"BottomExtras_{id}") : null;
+                    Require(x != null, $"แถบล่าง: มี BottomExtras_{id}");
+                    if (x != null && !string.IsNullOrEmpty(cur))
+                        Require(x.gameObject.activeSelf == (id == cur),
+                                $"แถบล่าง: BottomExtras_{id} {(id == cur ? "เปิด" : "ปิด")}อยู่ตอนแท็บ {cur}");
+                }
+                int backs = hub.GetComponentsInChildren<Transform>(true).Count(t => t.name == "Btn_Back");
+                Require(backs == 1, $"BACK: มีปุ่มเดียวทั้ง hub (เจอ {backs})");
+                var back = footer != null ? footer.Find("Btn_Back") as RectTransform : null;
+                if (back != null)
+                {
+                    var corners = new Vector3[4];
+                    back.GetWorldCorners(corners);
+                    Vector2 bl = hub.transform.InverseTransformPoint(corners[0]);
+                    Require(bl.x < 0f && bl.y < 0f, $"BACK: อยู่ซ้ายล่าง (มุม {bl})");
+                    Require(back.GetComponent<P3RTabJump>()?.tabId == "back", "BACK: มี P3RTabJump \"back\"");
+                }
+                else Require(false, "BACK: หา BottomBar/Btn_Back บน P3R_Hub เจอ");
+                var bar = hub.GetComponent<TabBar>();
+                Require(bar != null && bar.tabs.All(t => t != null && t.button != null),
+                        "หัวจอ: TabBar.tabs[].button ชี้ปุ่มแท็บบนหัวจอครบสี่");
+            }
+
+            /// <summary>
+            /// ไฮไลต์กับของเฉพาะจอบนหัวจอชุดเดียว ต้องตาม **แท็บที่เลือกอยู่** — เช็คทุกแท็บ ไม่ใช่แค่ร้าน
             ///
-            /// เดิมสี่จอวาด TopBar/TabBar ของตัวเอง แต่ละอันอบสีแท็บ active ไว้ตายตัว
-            /// ยุบเหลือ `HubHeader` แล้ว (`P3RHubHeaderUnify`) — ถ้า migrate จอใหม่แล้วไม่ได้ยุบซ้ำ
-            /// หัวของต้นแบบจะกลับมาซ้อน และไฮไลต์จะค้างที่แท็บเดียวไม่ว่าอยู่จอไหน
-            /// ทั้งสองอย่างดูไม่ออกจากภาพนิ่งของจอเดียว ต้องนับและเทียบสีตรงนี้
+            /// สีที่ builder อบไว้เป็นของ LOBBY · ถ้า P3RTabStrip ไม่ได้ย้อมใหม่ ไฮไลต์จะค้างที่แท็บเดียว
+            /// ไม่ว่าอยู่จอไหน และ HeaderExtras/BottomExtras ของจออื่นจะโผล่ซ้อน — ดูไม่ออกจากภาพนิ่งของจอเดียว
             /// </summary>
             private void CheckHubHeader(string activeId)
             {
                 string tag = $"หัวจอ hub ({activeId})";
-                var hub    = Find("P3R_Hub");
-                var header = hub == null ? null : hub.transform.Find("HubHeader");
-                if (header == null) { Require(false, $"{tag}: P3R_Hub มี HubHeader"); return; }
+                var hub = Find("P3R_Hub");
+                var header = hub != null ? hub.transform.Find("TopBar") : null;
+                if (header == null) { Require(false, $"{tag}: P3R_Hub มี TopBar"); return; }
 
-                var all = hub.GetComponentsInChildren<Transform>(true);
-                foreach (var bar in new[] { "TopBar", "TabBar" })
-                {
-                    var found = all.Where(t => t.name == bar).ToList();
-                    Require(found.Count == 1 && found[0].IsChildOf(header),
-                            $"{tag}: {bar} มีอันเดียวใต้ hub และอยู่ใน HubHeader (เจอ {found.Count})");
-                }
-
-                Require(header.GetSiblingIndex() == hub.transform.childCount - 1,
-                        $"{tag}: HubHeader วาดทับทุกจอ (ลูกคนสุดท้ายของ hub)");
+                // หัวจอต้องวาดทับทุกแผง — ทุกแผงมี Backdrop เต็มจอ
+                int last = hub.transform.Cast<Transform>()
+                              .Where(c => c.name.StartsWith("P3R_")).Select(c => c.GetSiblingIndex())
+                              .DefaultIfEmpty(-1).Max();
+                Require(header.GetSiblingIndex() > last, $"{tag}: TopBar วาดทับทุกแผง (อยู่หลังแผงทั้งหมด)");
 
                 var strip = header.GetComponentInChildren<P3RTabStrip>(true);
                 Require(strip != null && strip.highlight, $"{tag}: P3RTabStrip เปิดไฮไลต์");
-                if (strip != null)
-                    foreach (var e in strip.entries.Where(e => e != null && e.bg != null))
-                    {
-                        bool on   = e.id == activeId;
-                        var  want = (Color32)(on ? strip.activeBg : strip.inactiveBg);
-                        Require(((Color32)e.bg.color).Equals(want),
-                                $"{tag}: แท็บ {e.id} {(on ? "ไฮไลต์" : "ไม่ไฮไลต์")}");
-                    }
+                if (strip == null) return;
+                foreach (var e in strip.entries.Where(e => e != null && e.button != null))
+                {
+                    var bg = e.button.Find("Bg")?.GetComponent<Image>();
+                    if (bg == null) continue;
+                    bool on = e.id == activeId;
+                    Require(ColorsClose(bg.color, on ? strip.activeBg : strip.inactiveBg),
+                            $"{tag}: แท็บ {e.id} {(on ? "ไฮไลต์" : "ไม่ไฮไลต์")} (สีพื้น {bg.color})");
+                }
+                foreach (var x in strip.extras.Where(x => x != null && x.root != null))
+                    Require(x.root.activeSelf == (x.id == activeId),
+                            $"{tag}: {x.root.name} {(x.id == activeId ? "โชว์" : "ซ่อน")}");
+            }
 
-                var hh = header.GetComponent<P3RHubHeader>();
-                if (hh != null)
-                    foreach (var g in hh.groups.Where(g => g != null && g.root != null))
-                        Require(g.root.activeSelf == (g.tabId == activeId),
-                                $"{tag}: {g.root.name} {(g.tabId == activeId ? "โชว์" : "ซ่อน")}");
+            private static bool ColorsClose(Color a, Color b)
+                => Mathf.Abs(a.r - b.r) < 0.02f && Mathf.Abs(a.g - b.g) < 0.02f && Mathf.Abs(a.b - b.b) < 0.02f;
+
+            /// <summary>
+            /// Btn_Back ของ panel นี้ — ปกติอยู่ในแถบล่างของแผง · ค้นบนหัวจอชุดเดียว
+            /// (TopBar/HeaderExtras_&lt;id&gt;) ด้วย เผื่อจอไหนย้ายมันขึ้นไปไว้ที่นั่น
+            /// </summary>
+            private static Transform BackOf(GameObject panel)
+            {
+                if (panel == null) return null;
+                string id = panel.name switch
+                {
+                    "P3R_Lobby" => "lobby", "P3R_MapSelect" => "map",
+                    "P3R_Character" => "character", "P3R_TalentShop" => "shop", _ => null,
+                };
+                var hub = Find("P3R_Hub");
+                var extras = hub != null && id != null ? hub.transform.Find($"TopBar/HeaderExtras_{id}") : null;
+                var shared = hub != null ? hub.transform.Find("BottomBar/Btn_Back") : null;
+                return (shared != null ? new[] { shared } : new Transform[0])
+                       .Concat(extras != null ? extras.GetComponentsInChildren<Transform>(true) : new Transform[0])
+                       .Concat(panel.GetComponentsInChildren<Transform>(true))
+                       .FirstOrDefault(t => t.name == "Btn_Back");
             }
 
             /// <summary>ข้อความบนปุ่ม Btn_Back ของ panel นี้ — "" เมื่อหาไม่เจอ</summary>
             private static string BackLabel(GameObject panel)
             {
-                var back = panel == null ? null
-                         : panel.GetComponentsInChildren<Transform>(true)
-                                .FirstOrDefault(t => t.name == "Btn_Back");
+                var back = BackOf(panel);
                 var tmp = back == null ? null : back.GetComponentInChildren<TMPro.TMP_Text>(true);
                 return tmp != null ? tmp.text : "";
             }
 
             private void ShopBackFromMain()
             {
-                var shop = Find("P3R_TalentShop");
-                var back = shop == null ? null
-                         : shop.GetComponentsInChildren<Transform>(true)
-                               .FirstOrDefault(t => t.name == "Btn_Back");
+                var back = BackOf(Find("P3R_TalentShop"));
                 var btn = back == null ? null : back.GetComponent<Button>();
 
                 if (btn == null) { Require(false, "หาปุ่ม BACK ในร้านเจอ"); return; }
@@ -1290,28 +1378,49 @@ namespace CloneSwarm.EditorTools
             /// สีเน้นของการ์ดต้องมาจาก **ชนิดของการ์ด** ไม่ใช่จากช่องที่มันไปลง
             ///
             /// builder ของจอ P3R อบสีไว้กับ object ตอนสร้าง (ช่อง 1 น้ำเงิน · 2 อำพัน ·
-            /// 3 เขียว) ส่วน `UpgradeCardUI.Populate` ย้อมแค่ Header — กรอบกับพื้นไอคอน
-            /// จึงค้างสีเดิม · การ์ด STAT ตกช่องแรก = หัวเขียวแต่กรอบน้ำเงิน
+            /// 3 เขียว) · ถ้าย้อมไม่ครบ ชิ้นที่ไม่ได้ย้อมจะค้างสีของช่อง
+            /// การ์ด STAT ตกช่องแรก = หัวเขียวแต่พื้นไอคอนน้ำเงิน
+            ///
+            /// การ์ดแบบใหม่ (LevelUpCard.prefab) ไม่มีกรอบสี่ด้านแล้ว · ชิ้นที่ยังบอกชนิดการ์ด
+            /// คือ `cardBackground` (หัวการ์ด) กับทุกชิ้นใน `accentTargets` (ตอนนี้พื้นไอคอน)
+            /// เช็คทั้งหมดกับสีที่ **คำนวณจากชนิดการ์ดเอง** ด้วยจานสีของ UpgradeCardUI
+            /// ไม่ได้เทียบชิ้นกับชิ้น — ถ้า Populate เลิกย้อม หรือย้อมผิดชนิด ทุกชิ้นจะผิดพร้อมกัน
+            /// แล้วการเทียบกันเองจะผ่านเงียบๆ
             /// </summary>
             private void CheckCardAccentFollowsType(List<UpgradeCardUI> slots, List<UpgradeCardInfo> cards)
             {
-                for (int i = 0; i < slots.Count; i++)
+                // จานสีเดียวกับ UpgradeCardUI.AccentFor (private) — ถ้าสองที่ไม่ตรงกัน เช็คนี้จะฟ้อง
+                static Color Expected(UpgradeCardUI c, UpgradeCardType t) => t switch
                 {
-                    var head = slots[i].cardBackground;
+                    UpgradeCardType.Augment      => c.augmentColor,
+                    UpgradeCardType.WeaponSuper  => c.superColor,
+                    UpgradeCardType.WeaponFusion => c.fusionColor,
+                    UpgradeCardType.Stat         => c.statColor,
+                    _                            => c.weaponColor,
+                };
+
+                // ชุดทดสอบต้องมีการ์ดคนละสีอย่างน้อยสองใบ ไม่งั้น "สีตามชนิด" กับ "สีเดียวทุกใบ" แยกกันไม่ออก
+                int n = Mathf.Min(slots.Count, cards.Count);
+                Require(Enumerable.Range(0, n).Select(i => Hex(Expected(slots[i], cards[i].type))).Distinct().Count() >= 2,
+                        "ชุดการ์ดทดสอบมีสีชนิดอย่างน้อยสองสี (แยกสีตามชนิดออกจากสีตายตัวได้)");
+
+                for (int i = 0; i < n; i++)
+                {
+                    var ui   = slots[i];
+                    var want = Expected(ui, cards[i].type);
+                    var head = ui.cardBackground;
                     if (head == null) { Require(false, $"การ์ดใบ {i + 1} ต่อ cardBackground ไว้"); continue; }
 
-                    // `AddBorder` สร้างลูกชื่อ Border ที่ **ไม่มี Image** — Image อยู่ที่ขอบ
-                    // สี่ด้านข้างใน (Top/Bottom/Left/Right) · หาผิดชั้นแล้วเช็คจะข้ามไปเงียบๆ
-                    var border = slots[i].transform.Find("Border/Top")?.GetComponent<Image>();
-                    if (border == null)
-                    {
-                        Require(false, $"การ์ดใบ {i + 1} หากรอบ (Border/Top) เจอ");
-                        continue;
-                    }
+                    Require(Close(head.color, want),
+                            $"การ์ดใบ {i + 1} ({cards[i].type}) สีหัวตามชนิด " +
+                            $"(หัว {Hex(head.color)} · ควรเป็น {Hex(want)})");
 
-                    Require(Close(border.color, head.color),
-                            $"การ์ดใบ {i + 1} ({cards[i].type}) สีกรอบตรงกับสีหัวการ์ด " +
-                            $"(กรอบ {Hex(border.color)} · หัว {Hex(head.color)})");
+                    var targets = ui.accentTargets.Where(t => t?.graphic != null).ToList();
+                    Require(targets.Count > 0, $"การ์ดใบ {i + 1} มีชิ้นใน accentTargets (พื้นไอคอน ฯลฯ)");
+                    foreach (var t in targets)
+                        Require(Close(t.graphic.color, want) && Mathf.Abs(t.graphic.color.a - t.alpha) < 0.02f,
+                                $"การ์ดใบ {i + 1} ({cards[i].type}) {t.graphic.name} สีตามชนิด " +
+                                $"({Hex(t.graphic.color)} a{t.graphic.color.a:0.00} · ควรเป็น {Hex(want)} a{t.alpha:0.00})");
                 }
             }
 
