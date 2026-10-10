@@ -121,11 +121,26 @@ Consequences:
 - **Screen-specific header items never go inside `TopBar`**, because they vanish with the deleted copy.
   Instead, put them in `BuildHubHeaderExtras(root)` (built after the header, drawn over it; right-aligned before the
   gold, using `HubHeaderButton`). The wirer moves each panel's `HeaderExtras` onto the header as
-  `HeaderExtras_<id>`. When it swaps headers, it carries over the ones no panel brought fresh, so
-  re-migrating only CHARACTER keeps LOBBY's room buttons. `P3RTabStrip.extras` shows only the
-  selected tab's layer. Today these are LOBBY invite · COPY · room code, and CHARACTER/SHOP `Btn_Back`.
-  `AddTabJump` and the smoke test look for `Btn_Back` there, not in the panel.
-- Content starts at `HubHeaderH` (84). SHOP has no RUNS/WINS/BEST line (removed 2026-09-28).
+  `HeaderExtras_<id>`. When it swaps headers, it carries over layers only for panels that were not
+  re-migrated this run, so re-migrating only CHARACTER keeps LOBBY's room buttons. A re-migrated panel
+  that brings no layer loses its old one. `P3RTabStrip.extras` shows only the selected tab's layer.
+  Today the only layer is LOBBY's: invite · COPY · room code.
+- **The bottom bar is merged the same way** (`P3RScreenWirer.EnsureHubFooter`, which runs before the header):
+  - MenuScene has one `BottomBar` on `P3R_Hub` holding one shared `Btn_Back`, bottom-left (`HubPadX`, `HubBackY`,
+    `HubBackW` × `HubBackH`; the user asked for the same spot on every screen).
+  - Every builder calls `BuildHubBottomBar`. Screen-specific items go in `BuildHubFooterExtras` and become
+    `BottomExtras_<id>`: LOBBY's join · READY · START RUN, and MAP's hint · CONFIRM.
+  - The shared BACK uses `P3RTabJump "back"`:
+    - On the lobby tab it calls `LobbyUI.Back()` (leave room + shutdown), so `LobbyUI.backButton` stays
+      unassigned. Wiring it would fire that on every tab.
+    - The label follows the tab: BACK / BACK TO LOBBY.
+  - `LobbyUI.bottomBar` points at the inner `Actions` group, so it and `P3RTabStrip` never toggle the same object.
+- Content starts at `HubHeaderH` (84). On CHARACTER/SHOP it ends above `HubBottomH`. SHOP has no
+  RUNS/WINS/BEST line (removed 2026-09-28).
+- **Picture slots are white**: LOBBY `Portrait` / `MapPreview` and CHARACTER `Portrait`. The user set these by hand
+  in MenuScene. Migrating a screen overwrites the scene with builder values, so the builders must match.
+  Before re-migrating, diff `MenuScene` against HEAD for hand edits; if the user changed something, carry it
+  into the builder instead of overwriting it.
 - Names are load-bearing: `TopBar` / `TabBar` / `Tab_<NAME>` / `Gold` / `HeaderExtras` / `Btn_Back`. The smoke
   test checks one `TopBar` on the hub, none in panels, that the current tab is highlighted, and that
   only the current tab's `HeaderExtras_<id>` is on.

@@ -231,6 +231,8 @@ namespace CloneSwarm.EditorTools
 
             // ต้องมี hub ก่อนคำนวณแผนที่เหลือ เพราะ MenuManager.lobbyPanel ต้องชี้มัน
             EnsureHub(scene, panels, plan);
+            // แถบล่างชุดเดียวบน hub — ก่อนหัวจอ เพราะ EnsureHubHeader เติม P3RTabStrip.extras จากทั้งสองแถบ
+            EnsureHubFooter(panels, plan);
             // หัวจอชุดเดียวบน hub — ต้องทำก่อนต่อปุ่มแท็บ (ปุ่มแท็บในแผงหายไปแล้วหลังขั้นนี้)
             EnsureHubHeader(panels, plan);
 
@@ -549,6 +551,89 @@ namespace CloneSwarm.EditorTools
         /// ทำทันทีไม่รอ apply แบบเดียวกับ EnsureHub · ยกเลิกก็แค่ไม่เซฟ
         /// </summary>
         private const string HeaderExtras = "HeaderExtras";
+        private const string FooterExtras = "BottomExtras";
+
+        /// <summary>
+        /// แถบล่าง (BottomBar) **ชุดเดียว** บน <c>P3R_Hub</c> — แบบเดียวกับ <see cref="EnsureHubHeader"/>
+        ///
+        /// BottomBar ของทุกจอมีแค่ Btn_Back ซ้ายล่าง (P3RBuilderKit.BuildHubBottomBar) · ยกของแผงหนึ่ง
+        /// ขึ้น hub ลบที่เหลือ แล้วใส่ P3RTabJump "back" ตัวเดียว (ตัดสินปลายทางตามแท็บ — ที่แท็บ lobby
+        /// เรียก LobbyUI.Back) · ของเฉพาะจอ (ชั้น BottomExtras ของแผง) ย้ายขึ้นแถบเป็น BottomExtras_&lt;id&gt;
+        /// ชั้นของแผงที่ไม่ได้ย้ายลงมารอบนี้ถูกยกจากแถบเก่าไปแถบใหม่ · P3RTabStrip.extras เปิดตามแท็บ
+        /// </summary>
+        private static void EnsureHubFooter(Dictionary<string, GameObject> panels, List<string> plan)
+        {
+            if (!panels.TryGetValue("P3R_Hub", out var hub) || hub == null) return;
+            string[] tabPanels = { "P3R_Lobby", "P3R_MapSelect", "P3R_Character", "P3R_TalentShop" };
+
+            var freshPanels = new HashSet<string>();
+            var freshExtras = new List<(string id, Transform t)>();
+            Transform fresh = null;
+            foreach (var name in tabPanels)
+            {
+                if (!panels.TryGetValue(name, out var p) || p == null) continue;
+                string id = PanelTabId(name);
+                var x = p.transform.Find(FooterExtras);
+                if (x != null) freshExtras.Add((id, x));
+                var t = p.transform.Find("BottomBar");
+                if (t == null) continue;
+                freshPanels.Add(id);
+                if (fresh == null) fresh = t;
+                else
+                {
+                    plan.Add($"   ลบแถบล่างสำเนาใน {name} (ใช้ของ P3R_Hub ชุดเดียว)");
+                    Object.DestroyImmediate(t.gameObject);
+                }
+            }
+
+            var stale = hub.transform.Cast<Transform>().Where(c => c.name == "BottomBar").ToList();
+            Transform footer;
+            if (fresh != null)
+            {
+                foreach (var old in stale)
+                    foreach (var x in old.Cast<Transform>().Where(c => c.name.StartsWith(FooterExtras + "_")).ToList())
+                    {
+                        string id = x.name.Substring(FooterExtras.Length + 1);
+                        if (freshPanels.Contains(id) || fresh.Find(x.name) != null) continue;
+                        x.SetParent(fresh, false);
+                        plan.Add($"   ยก {x.name} จากแถบล่างเก่าไปแถบล่างใหม่");
+                    }
+                foreach (var c in stale) Object.DestroyImmediate(c.gameObject);
+                plan.Add($"   ยกแถบล่างของ {fresh.parent.name} ขึ้นเป็นแถบล่างชุดเดียวของ P3R_Hub");
+                fresh.SetParent(hub.transform, false);
+                footer = fresh;
+            }
+            else
+            {
+                footer = stale.LastOrDefault();
+                foreach (var c in stale.Where(c => c != footer)) Object.DestroyImmediate(c.gameObject);
+            }
+            if (footer == null) return;
+            footer.SetAsLastSibling();   // วาดทับทุกแผง
+
+            foreach (var (id, x) in freshExtras)
+            {
+                string target = $"{FooterExtras}_{id}";
+                var existing = footer.Find(target);
+                if (existing != null) Object.DestroyImmediate(existing.gameObject);
+                x.SetParent(footer, false);
+                x.name = target;
+                plan.Add($"   ย้ายของเฉพาะจอ {id} ขึ้นแถบล่าง ({target})");
+            }
+
+            // BACK ปุ่มเดียว — P3RTabJump "back"
+            var back = footer.Find("Btn_Back");
+            if (back != null && back.GetComponent<UnityEngine.UI.Button>() != null)
+            {
+                var jump = back.GetComponent<P3RTabJump>() ?? back.gameObject.AddComponent<P3RTabJump>();
+                if (jump.tabId != "back")
+                {
+                    jump.tabId = "back";
+                    plan.Add("   P3RTabJump \"back\" บน BACK ของแถบล่างชุดเดียว (แท็บ lobby → LobbyUI.Back)");
+                }
+                EditorUtility.SetDirty(jump);
+            }
+        }
 
         private static void EnsureHubHeader(Dictionary<string, GameObject> panels, List<string> plan)
         {
@@ -573,6 +658,13 @@ namespace CloneSwarm.EditorTools
                 var x = p.transform.Find(HeaderExtras);
                 if (x != null) freshExtras.Add((idOf[name], x));
             }
+
+            // แผงที่เพิ่งย้ายลงมา (ยังพกหัวจอของตัวเอง) — ชั้นของเฉพาะจอของมันคือที่พกมารอบนี้เท่านั้น
+            // ไม่พกมาเลย = จอนั้นไม่มีของบนหัวจอแล้ว ห้ามยกชั้นเก่าข้ามไป (เช่น BACK ที่ย้ายลงซ้ายล่างแล้ว)
+            var freshPanels = new HashSet<string>();
+            foreach (var name in tabPanels)
+                if (panels.TryGetValue(name, out var p) && p != null && p.transform.Find("TopBar") != null)
+                    freshPanels.Add(idOf[name]);
 
             // ── หัวจอใหม่จากแผง (ลูกตรงชื่อ TopBar) ──
             Transform fresh = null;
@@ -602,7 +694,7 @@ namespace CloneSwarm.EditorTools
                     foreach (var x in old.Cast<Transform>().Where(c => c.name.StartsWith(HeaderExtras + "_")).ToList())
                     {
                         string id = x.name.Substring(HeaderExtras.Length + 1);
-                        if (freshExtras.Any(f => f.id == id) || fresh.Find(x.name) != null) continue;
+                        if (freshPanels.Contains(id) || fresh.Find(x.name) != null) continue;
                         x.SetParent(fresh, false);
                         plan.Add($"   ยก {x.name} จากหัวจอเก่าไปหัวจอใหม่");
                     }
@@ -679,6 +771,14 @@ namespace CloneSwarm.EditorTools
                         {
                             id = c.name.Substring(HeaderExtras.Length + 1), root = c.gameObject,
                         });
+                var footer = hub.transform.Find("BottomBar");
+                if (footer != null)
+                    foreach (Transform c in footer)
+                        if (c.name.StartsWith(FooterExtras + "_"))
+                            comp.extras.Add(new P3RTabStrip.Extra
+                            {
+                                id = c.name.Substring(FooterExtras.Length + 1), root = c.gameObject,
+                            });
                 EditorUtility.SetDirty(comp);
                 plan.Add("   TabBar.tabs[].button → แท็บบนหัวจอชุดเดียว · P3RTabStrip ซ่อน/ไฮไลต์แท็บ");
             }
@@ -904,6 +1004,8 @@ namespace CloneSwarm.EditorTools
             {
                 var x = hub.transform.Find($"TopBar/{HeaderExtras}_{tid}");
                 if (x != null) search = search.Concat(x.GetComponentsInChildren<Transform>(true));
+                var y = hub.transform.Find($"BottomBar/{FooterExtras}_{tid}");
+                if (y != null) search = search.Concat(y.GetComponentsInChildren<Transform>(true));
             }
 
             foreach (var t in search)

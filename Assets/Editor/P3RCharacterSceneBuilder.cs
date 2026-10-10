@@ -25,6 +25,8 @@ namespace CloneSwarm.EditorTools
 
         // หัวจอ = แถบเดียว (BuildHubHeader) — เดิมแถบบน 84 + แถบแท็บ 62
         private const float ContentY = HubHeaderH;
+        // เนื้อหาจบเหนือแถบล่าง (ปุ่ม BACK ซ้ายล่าง)
+        private const float ContentBottom = HubBottomH + 8f;
         private const float PadX     = 64f;
         private const float ListW    = 360f;
         private const float RightW   = 480f;
@@ -87,18 +89,14 @@ namespace CloneSwarm.EditorTools
             BuildHubHeader(root, 2, out var gold);
             ui.goldText = gold;
 
-            // ปุ่มถอยบนหัวจอ ถัดซ้ายของยอดทอง — ที่เดียวกันทั้ง CHARACTER และ SHOP
-            // กว้างพอสำหรับป้าย "BACK TO LOBBY" ที่ P3RTabJump เปลี่ยนให้ตอนเข้ามาจากล็อบบี้
-            // (อยู่ใน HeaderExtras — โผล่เฉพาะตอนอยู่แท็บของจอนี้)
-            var extras = BuildHubHeaderExtras(root);
-            HubHeaderButton(extras, "Btn_Back", "BACK", HubPadX + 250f, 240f,
-                            new Color(1f, 1f, 1f, 0.75f), out _);
+            // ปุ่มถอยซ้ายล่าง — ที่เดียวกับ LOBBY / MAP (BuildHubBottomBar)
+            BuildHubBottomBar(root, out _);
         }
 
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildCardList(RectTransform root, CharacterSelectUI ui)
         {
-            float h = RefH - ContentY - 36f;
+            float h = RefH - ContentY - ContentBottom;
 
             var panel = NewImage("CardList", root, PanelBg);
             TopLeft(panel.rectTransform, PadX, ContentY + 12f, ListW, h);
@@ -269,14 +267,16 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildPortrait(RectTransform root, CharacterSelectUI ui)
         {
-            float h = RefH - ContentY - 36f;
+            float h = RefH - ContentY - ContentBottom;
             float x = PadX + ListW + Gap;
             float w = RefW - PadX * 2f - ListW - RightW - Gap * 2f;
 
             var panel = NewImage("PortraitPanel", root, Lift(InkDeep, 0.03f));
             TopLeft(panel.rectTransform, x, ContentY + 12f, w, h);
 
-            var portrait = NewImage("Portrait", panel.rectTransform, Lift(InkDeep, 0.05f));
+            // สีขาว — ผู้ใช้ตั้งเองใน MenuScene (2026-10-08) ให้ sprite ขึ้นสีจริง · ห้ามเปลี่ยนกลับเป็นสีพื้น
+            // (ย้ายจอลงซีนใหม่ = ค่าจาก builder ทับของในซีน · builder จึงต้องตรงกับที่ผู้ใช้ตั้ง)
+            var portrait = NewImage("Portrait", panel.rectTransform, Color.white);
             Stretch(portrait.rectTransform);
             portrait.preserveAspect = true;
             ui.detailPortrait = portrait;
@@ -317,7 +317,7 @@ namespace CloneSwarm.EditorTools
         // ═══════════════════════════════════════════════════════════════════
         private static void BuildDetail(RectTransform root, CharacterSelectUI ui)
         {
-            float h = RefH - ContentY - 36f;
+            float h = RefH - ContentY - ContentBottom;
 
             var panel = NewImage("DetailPanel", root, PanelBg);
             TopRight(panel.rectTransform, PadX, ContentY + 12f, RightW, h);

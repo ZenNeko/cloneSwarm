@@ -36,6 +36,9 @@ namespace CloneSwarm.UI.P3R
         [Tooltip("ป้ายตอนที่กดแล้วกลับล็อบบี้")]
         public string backToLobbyText = "BACK TO LOBBY";
 
+        [Tooltip("ป้ายตอนอยู่แท็บ lobby — กดแล้วออกจากห้อง (LobbyUI.Back)")]
+        public string backAtLobbyText = "BACK";
+
         private Button button;
 
         private void Awake()
@@ -55,6 +58,8 @@ namespace CloneSwarm.UI.P3R
             // จึงอ่านตอน OnEnable ได้ตรง · และ TabBar.OnTabsChanged ยิงทุกครั้งที่ Refresh
             // ซึ่งคือทุกครั้งที่โหมดเปลี่ยน จึงพอสำหรับการอัปเดตระหว่างอยู่ในจอ
             TabBar.OnTabsChanged += RefreshLabel;
+            // ปุ่ม BACK ใน MenuScene มีปุ่มเดียวใช้ร่วมทุกแท็บ — ป้ายต้องตามแท็บที่เปิดอยู่
+            TabBar.OnTabChanged  += OnTabChanged;
             RefreshLabel();
         }
 
@@ -62,12 +67,18 @@ namespace CloneSwarm.UI.P3R
         {
             if (button != null) button.onClick.RemoveListener(Jump);
             TabBar.OnTabsChanged -= RefreshLabel;
+            TabBar.OnTabChanged  -= OnTabChanged;
         }
+
+        private void OnTabChanged(string _) => RefreshLabel();
+
+        private bool AtLobbyTab() => tabBar != null && tabBar.CurrentTabId == "lobby";
 
         private void RefreshLabel()
         {
             if (tabId != "back" || label == null) return;
-            label.text = BackGoesToMain() ? backToMainText : backToLobbyText;
+            label.text = AtLobbyTab()     ? backAtLobbyText
+                       : BackGoesToMain() ? backToMainText : backToLobbyText;
         }
 
         /// <summary>
@@ -92,6 +103,13 @@ namespace CloneSwarm.UI.P3R
             // จึงไปโผล่ที่ล็อบบี้ ซึ่งเป็นหน้าที่ผู้เล่นไม่เคยเห็นมาก่อนในเส้นทางนั้น
             if (tabId == "back")
             {
+                // อยู่แท็บ lobby = ถอยออกจากล็อบบี้ (ออกจากห้อง) — งานของ LobbyUI ไม่ใช่การสลับแท็บ
+                if (AtLobbyTab())
+                {
+                    var lobbyUi = FindAnyObjectByType<LobbyUI>(FindObjectsInactive.Include);
+                    if (lobbyUi != null) { lobbyUi.Back(); return; }
+                }
+
                 if (BackGoesToMain())
                 {
                     var menu = FindAnyObjectByType<MenuManager>(FindObjectsInactive.Include);

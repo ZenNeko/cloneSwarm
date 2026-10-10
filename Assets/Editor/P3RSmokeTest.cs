@@ -500,7 +500,7 @@ namespace CloneSwarm.EditorTools
                 var top = hub.transform.Find("TopBar");
                 var tabStrip = hub.GetComponentInChildren<P3RTabStrip>(true);
                 string cur = hub.GetComponent<TabBar>()?.CurrentTabId;
-                foreach (var id in new[] { "lobby", "character", "shop" })
+                foreach (var id in new[] { "lobby" })
                 {
                     var x = top != null ? top.Find($"HeaderExtras_{id}") : null;
                     Require(x != null, $"หัวจอ: มี HeaderExtras_{id} (ของเฉพาะจอ {id} บนหัวจอ)");
@@ -508,12 +508,44 @@ namespace CloneSwarm.EditorTools
                         Require(x.gameObject.activeSelf == (id == cur),
                                 $"หัวจอ: HeaderExtras_{id} {(id == cur ? "เปิด" : "ปิด")}อยู่ตอนแท็บ {cur}");
                 }
-                Require(tabStrip != null && tabStrip.extras.Count >= 3,
+                Require(tabStrip != null && tabStrip.extras.Count >= 1,
                         $"หัวจอ: P3RTabStrip.extras ครบ (เจอ {(tabStrip != null ? tabStrip.extras.Count : 0)})");
                 int leftInPanels = 0;
                 foreach (Transform child in hub.transform)
                     leftInPanels += child.GetComponentsInChildren<Transform>(true).Count(t => t.name == "HeaderExtras");
                 Require(leftInPanels == 0, $"หัวจอ: ไม่มี HeaderExtras ค้างในแผง (เจอ {leftInPanels})");
+
+                // แถบล่างชุดเดียว — BACK ปุ่มเดียวซ้ายล่าง ใช้ร่วมทุกจอ
+                int barsOnHub = 0, barsInPanels = 0;
+                foreach (Transform child in hub.transform)
+                {
+                    if (child.name == "BottomBar") { barsOnHub++; continue; }
+                    barsInPanels += child.GetComponentsInChildren<Transform>(true)
+                                         .Count(t => t.name == "BottomBar" || t.name == "BottomExtras");
+                }
+                Require(barsOnHub == 1, $"แถบล่าง: P3R_Hub มี BottomBar ชุดเดียว (เจอ {barsOnHub})");
+                Require(barsInPanels == 0, $"แถบล่าง: ไม่มีแถบล่างสำเนาค้างในแผง (เจอ {barsInPanels})");
+                var footer = hub.transform.Find("BottomBar");
+                foreach (var id in new[] { "lobby", "map" })
+                {
+                    var x = footer != null ? footer.Find($"BottomExtras_{id}") : null;
+                    Require(x != null, $"แถบล่าง: มี BottomExtras_{id}");
+                    if (x != null && !string.IsNullOrEmpty(cur))
+                        Require(x.gameObject.activeSelf == (id == cur),
+                                $"แถบล่าง: BottomExtras_{id} {(id == cur ? "เปิด" : "ปิด")}อยู่ตอนแท็บ {cur}");
+                }
+                int backs = hub.GetComponentsInChildren<Transform>(true).Count(t => t.name == "Btn_Back");
+                Require(backs == 1, $"BACK: มีปุ่มเดียวทั้ง hub (เจอ {backs})");
+                var back = footer != null ? footer.Find("Btn_Back") as RectTransform : null;
+                if (back != null)
+                {
+                    var corners = new Vector3[4];
+                    back.GetWorldCorners(corners);
+                    Vector2 bl = hub.transform.InverseTransformPoint(corners[0]);
+                    Require(bl.x < 0f && bl.y < 0f, $"BACK: อยู่ซ้ายล่าง (มุม {bl})");
+                    Require(back.GetComponent<P3RTabJump>()?.tabId == "back", "BACK: มี P3RTabJump \"back\"");
+                }
+                else Require(false, "BACK: หา BottomBar/Btn_Back บน P3R_Hub เจอ");
                 var bar = hub.GetComponent<TabBar>();
                 Require(bar != null && bar.tabs.All(t => t != null && t.button != null),
                         "หัวจอ: TabBar.tabs[].button ชี้ปุ่มแท็บบนหัวจอครบสี่");
@@ -523,8 +555,8 @@ namespace CloneSwarm.EditorTools
                 => Mathf.Abs(a.r - b.r) < 0.02f && Mathf.Abs(a.g - b.g) < 0.02f && Mathf.Abs(a.b - b.b) < 0.02f;
 
             /// <summary>
-            /// Btn_Back ของ panel นี้ — อยู่บนหัวจอชุดเดียว (TopBar/HeaderExtras_&lt;id&gt;) ไม่ใช่ในแผง
-            /// · ยังค้นในแผงด้วยสำหรับซีนที่ยังไม่มีหัวจอชุดเดียว
+            /// Btn_Back ของ panel นี้ — ปกติอยู่ในแถบล่างของแผง · ค้นบนหัวจอชุดเดียว
+            /// (TopBar/HeaderExtras_&lt;id&gt;) ด้วย เผื่อจอไหนย้ายมันขึ้นไปไว้ที่นั่น
             /// </summary>
             private static Transform BackOf(GameObject panel)
             {
@@ -536,7 +568,9 @@ namespace CloneSwarm.EditorTools
                 };
                 var hub = Find("P3R_Hub");
                 var extras = hub != null && id != null ? hub.transform.Find($"TopBar/HeaderExtras_{id}") : null;
-                return (extras != null ? extras.GetComponentsInChildren<Transform>(true) : new Transform[0])
+                var shared = hub != null ? hub.transform.Find("BottomBar/Btn_Back") : null;
+                return (shared != null ? new[] { shared } : new Transform[0])
+                       .Concat(extras != null ? extras.GetComponentsInChildren<Transform>(true) : new Transform[0])
                        .Concat(panel.GetComponentsInChildren<Transform>(true))
                        .FirstOrDefault(t => t.name == "Btn_Back");
             }

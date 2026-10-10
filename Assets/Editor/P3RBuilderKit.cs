@@ -651,6 +651,59 @@ namespace CloneSwarm.EditorTools
             return x;
         }
 
+        // แถบล่างของฮับ — **ใน MenuScene มีชุดเดียว** เหมือนหัวจอ (P3RScreenWirer.EnsureHubFooter)
+        // BottomBar มีแค่ปุ่ม BACK ซ้ายล่างที่ใช้ร่วมสี่จอ (P3RTabJump "back" ตัดสินปลายทางตามแท็บ)
+        // ของเฉพาะจอใส่ใน BuildHubFooterExtras → ย้ายขึ้นแถบเป็น BottomExtras_<id>
+        // ปุ่มอื่นในแถบล่างของแต่ละจอใช้ HubBackY / HubBackH ให้อยู่ระดับเดียวกับ BACK
+        public const float HubBottomH = 96f;
+        public const float HubBackY   = 21f;
+        public const float HubBackW   = 220f;   // พอสำหรับ "BACK TO LOBBY" ที่ P3RTabJump เปลี่ยนให้
+        public const float HubBackH   = 54f;
+
+        /// <summary>
+        /// แถบล่างที่มีแค่ปุ่ม BACK ซ้ายล่าง (ชื่อ Btn_Back · P3RTabJump "back" ต่อให้ตอนต่อสาย)
+        /// หน้าตาเดียวกับปุ่ม BACK ของ LOBBY / MAP
+        /// </summary>
+        public static RectTransform BuildHubBottomBar(RectTransform root, out Button back)
+        {
+            var bar = NewRect("BottomBar", root);
+            bar.anchorMin = new Vector2(0f, 0f); bar.anchorMax = new Vector2(1f, 0f);
+            bar.pivot = new Vector2(0.5f, 0f);
+            bar.sizeDelta = new Vector2(0f, HubBottomH);
+            bar.anchoredPosition = Vector2.zero;
+
+            var tint = new Color(1f, 1f, 1f, 0.7f);
+            var brt = NewRect("Btn_Back", bar);
+            BottomLeft(brt, HubPadX, HubBackY, HubBackW, HubBackH);
+            var bg = NewImage("Bg", brt, Over(tint, InkDeep, 0.10f));
+            Stretch(bg.rectTransform);
+            bg.raycastTarget = true;
+            Shear(bg);
+            AddBorder(brt, "Border", 1.5f, tint, shear: 9f);
+            var label = NewMono("Label", brt, "BACK", 18f, 0.16f, TextAlignmentOptions.Center, tint);
+            Stretch(label.rectTransform);
+
+            back = brt.gameObject.AddComponent<Button>();
+            back.targetGraphic = bg;
+            var nav = back.navigation; nav.mode = Navigation.Mode.None; back.navigation = nav;
+            return bar;
+        }
+
+        /// <summary>
+        /// ชั้นของเฉพาะจอบนแถบล่าง — สูงเท่าแถบล่าง วางทับมัน · อย่าวางทับที่ของ BACK (ซ้ายล่าง)
+        /// ต้องสร้าง **หลัง** BuildHubBottomBar · ชื่อ <c>BottomExtras</c> เป็นลูกตรงของแผง —
+        /// ตัวต่อสายย้ายขึ้นแถบล่างชุดเดียวเป็น <c>BottomExtras_&lt;id&gt;</c> และ P3RTabStrip เปิดเฉพาะของแท็บที่เลือก
+        /// </summary>
+        public static RectTransform BuildHubFooterExtras(RectTransform root)
+        {
+            var x = NewRect("BottomExtras", root);
+            x.anchorMin = new Vector2(0f, 0f); x.anchorMax = new Vector2(1f, 0f);
+            x.pivot = new Vector2(0.5f, 0f);
+            x.sizeDelta = new Vector2(0f, HubBottomH);
+            x.anchoredPosition = Vector2.zero;
+            return x;
+        }
+
         /// <summary>ปุ่มเล็กบนหัวจอ — เอียงตามธีม ป้ายตรงกลาง · xFromRight วัดจากขอบขวา</summary>
         public static Button HubHeaderButton(RectTransform parent, string name, string text,
                                              float xFromRight, float w, Color tint,
