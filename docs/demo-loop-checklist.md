@@ -103,7 +103,7 @@ regen ถูกอ่านบน server และ `SupportArenaPillar` ใส�
 
 ## G — ความเสถียร
 
-- [ ] ⬜ Console ไม่มี error ซ้ำทุกเฟรม (ตัวที่รู้แล้ว: `NetworkAnimator` บน `Purple 1.prefab`)
+- [ ] ⬜ Console ไม่มี error ซ้ำทุกเฟรม (`NetworkAnimator` บน `Purple 1.prefab` ถูก assign Animator แล้ว — error เดิมควรหายไป)
 - [ ] ⬜ นาทีที่ 12–15 ตอนศัตรูเยอะสุด เฟรมเรตยังเล่นได้ (จดค่า FPS จาก F1)
 - [ ] ⬜ co-op: กด F1 → Log VFX Report ช่วงหนักสุด → เอาคอลัมน์ "ควรตั้ง" ไปใส่ `VFXDatabase`
 - [ ] ⬜ เปิดดูภาพหลังอัปเกรด Unity b1 ว่าแสง/วัสดุยังปกติ
