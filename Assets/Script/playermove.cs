@@ -171,10 +171,70 @@ public class playermove : NetworkBehaviour
         isKnockedBack = false;
     }
 
+    // ── บังคับเดิน (ForcedMarchAction) ───────────────────────────────────
+    //
+    // ทางเดียวกับ knockback: server สั่งผ่าน ClientRpc แล้ว owner ขยับเอง (movement เป็น
+    // owner-authoritative · ดู CLAUDE.md) · ระหว่างนี้ input ของผู้เล่นถูกเมิน เดินตามทิศที่สั่งเท่านั้น
+    // knockback ที่โดนกลางทางยังชนะ (เช็คก่อน) แล้วกลับมาเดินต่อจนหมดเวลา
+
+    /// <summary>true ระหว่างโดนบังคับเดิน — FixedUpdate เขียน velocity ตามทิศที่สั่งแทน input</summary>
+    [HideInInspector] public bool isForcedMarching;
+    Vector3   _marchDir;
+    float     _marchSpeed;
+    float     _marchEndTime;
+    Coroutine _marchCoroutine;
+
+    /// <summary>
+    /// โชว์ลูกศรทิศบังคับเดินใต้ตัวผู้เล่นคนนี้บนทุกเครื่อง — seconds = 0 คือซ่อน
+    /// ทุกคนต้องเห็นลูกศรของทุกคน เพื่อช่วยกันอ่านว่าใครจะเดินชนอะไร
+    /// </summary>
+    [ClientRpc]
+    public void ShowForcedMarchMarkerClientRpc(Vector3 direction, float seconds)
+    {
+        var marker = GetComponent<ForcedMarchMarker>();
+        if (marker == null) marker = gameObject.AddComponent<ForcedMarchMarker>();
+        marker.Show(direction, seconds);
+    }
+
+    /// <summary>เริ่มบังคับเดิน · speed &lt;= 0 = ความเร็วเดินปกติของผู้เล่น · duration &lt;= 0 = หยุดทันที</summary>
+    [ClientRpc]
+    public void ForcedMarchClientRpc(Vector3 direction, float speed, float duration)
+    {
+        if (!IsOwner || rb == null) return;
+
+        if (_marchCoroutine != null) StopCoroutine(_marchCoroutine);
+        _marchCoroutine = null;
+        isForcedMarching = false;
+        if (duration <= 0f || isDead.Value) return;
+
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.0001f) return;
+        _marchDir   = direction.normalized;
+        _marchSpeed = speed;
+        _marchEndTime = Time.time + duration;
+        _marchCoroutine = StartCoroutine(ForcedMarchCoroutine());
+    }
+
+    private IEnumerator ForcedMarchCoroutine()
+    {
+        isForcedMarching = true;
+        while (Time.time < _marchEndTime && !isDead.Value) yield return null;
+        isForcedMarching = false;
+        _marchCoroutine = null;
+        if (rb != null) rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+    }
+
     void FixedUpdate()
     {
         if (!IsOwner || rb == null || isDead.Value || GamePause.LocalInputSuspended) return;
         if (isDashing || isKnockedBack) return;   // ปล่อยให้ dash หรือ knockback ควบคุม position เอง
+
+        if (isForcedMarching)
+        {
+            float s = _marchSpeed > 0f ? _marchSpeed : GetEffectiveMoveSpeed();
+            rb.linearVelocity = new Vector3(_marchDir.x * s, rb.linearVelocity.y, _marchDir.z * s);
+            return;
+        }
 
         Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y);
         float effectiveSpeed = GetEffectiveMoveSpeed();

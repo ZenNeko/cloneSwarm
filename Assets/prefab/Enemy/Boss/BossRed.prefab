@@ -1414,6 +1414,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 0b6716200559bbf46a47f9f022666642, type: 2}
   telegraphZonePrefab: {fileID: 2669163604657824465, guid: 89c393275ee24fe41b50ee13a9bcd373, type: 3}
   tetherPrefab: {fileID: 6578504810292836086, guid: f11a4642de8aa0a44a8cc88b55b06fbf, type: 3}
+  projectilePrefab: {fileID: 7311686904495137203, guid: e2c8c882eaccac44cb1e8baf6fa82141, type: 3}
 --- !u!1 &3503917040628601915
 GameObject:
   m_ObjectHideFlags: 0

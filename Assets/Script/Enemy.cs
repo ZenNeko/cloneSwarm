@@ -24,6 +24,12 @@ public class Enemy : NetworkBehaviour
     [Tooltip("ความเร็วในการหันหน้าเข้าหาทิศทางการเคลื่อนที่ (องศาต่อวินาที) — 0 = หันหน้าทันที")]
     public float rotationSpeed = 360f;
     [HideInInspector] public bool suppressDefaultMovement = false;
+    /// <summary>
+    /// ท่าบอสคุมตำแหน่งเอง (พุ่ง/วาร์ป — BossDashAction) · แยกจาก suppressDefaultMovement
+    /// เพราะ freeze ของผู้เล่นตั้ง/ปลด suppressDefaultMovement เอง ถ้าใช้ตัวเดียวกัน freeze หมดเวลา
+    /// กลางท่าพุ่งจะปลดล็อกให้บอสเดินไล่ผู้เล่นทับท่าที่กำลังเล่นอยู่
+    /// </summary>
+    [HideInInspector] public bool scriptedMovement = false;
 
 
     [Header("Wall Avoidance")]
@@ -228,7 +234,7 @@ public class Enemy : NetworkBehaviour
             return;
         }
 
-        if (suppressDefaultMovement) return;
+        if (suppressDefaultMovement || scriptedMovement) return;
 
         Vector3 dir          = Vector3.zero;
         bool    flowProvided = false;

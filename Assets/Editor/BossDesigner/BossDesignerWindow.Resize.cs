@@ -31,6 +31,7 @@ public partial class BossDesignerWindow
     {
         TetherAction       => ("tetherDuration",   "เวลาโซ่"),
         KeepMovingAction   => ("mechanicDuration", "เวลาที่ต้องเดิน"),
+        ForcedMarchAction  => ("marchDuration",    "เวลาที่โดนบังคับเดิน"),
         SpawnAoEActionBase => ("warningDuration",  "เวลาเตือน"),
         _                  => (null, null),
     };

@@ -72,6 +72,43 @@ namespace CloneSwarm.EditorTools
             // ── 8 ท่าชุด ─────────────────────────────────────────────
             S("8 ท่าชุด", "Limit Cut (ตามลำดับเลข)", typeof(LimitCutAction)),
             S("8 ท่าชุด", "จับคู่สี", typeof(ColorMatchAoEAction)),
+
+            // ── 9 บอสขยับ ────────────────────────────────────────────
+            S("9 บอสขยับ", "พุ่งใส่คนใกล้สุด", typeof(BossDashAction),
+              ("mode", "Dash"), ("targetingMode", "NearestPlayer"), ("lineWidth", 4f), ("overshoot", 3f),
+              ("warningDuration", 2f), ("damage", 40f)),
+            S("9 บอสขยับ", "พุ่งใส่คนสุ่ม 3 ครั้ง", typeof(BossDashAction),
+              ("mode", "Dash"), ("targetingMode", "RandomPlayer"), ("lineWidth", 3.5f), ("overshoot", 4f),
+              ("warningDuration", 1.5f), ("damage", 30f), ("repeatCount", 3)),
+            S("9 บอสขยับ", "วาร์ปไปกลางสนาม", typeof(BossDashAction),
+              ("mode", "Teleport"), ("targetingMode", "ArenaAnchor"), ("arenaAnchor", "Center"), ("radius", 6f),
+              ("warningDuration", 2f), ("damage", 35f)),
+            S("9 บอสขยับ", "วาร์ปใส่หัวคนสุ่ม", typeof(BossDashAction),
+              ("mode", "Teleport"), ("targetingMode", "RandomPlayer"), ("radius", 5f),
+              ("warningDuration", 2.5f), ("damage", 40f)),
+
+            // ── 10 กระสุน ────────────────────────────────────────────
+            S("10 กระสุน", "วงรอบตัว", typeof(ProjectilePatternAction),
+              ("pattern", "Ring"), ("count", 16), ("speed", 7f), ("damage", 15f)),
+            S("10 กระสุน", "เกลียวหมุน", typeof(ProjectilePatternAction),
+              ("pattern", "Ring"), ("count", 6), ("volleys", 12), ("volleyInterval", 0.2f), ("spinPerVolley", 12f),
+              ("aim", "FixedAngle"), ("speed", 7f), ("damage", 10f)),
+            S("10 กระสุน", "พัดใส่คนใกล้สุด", typeof(ProjectilePatternAction),
+              ("pattern", "Fan"), ("count", 7), ("spreadAngle", 60f), ("volleys", 3), ("volleyInterval", 0.5f),
+              ("speed", 9f), ("damage", 15f)),
+            S("10 กระสุน", "ปืนกลใส่ทุกคน", typeof(ProjectilePatternAction),
+              ("pattern", "Aimed"), ("count", 1), ("aim", "AllPlayers"), ("volleys", 8), ("volleyInterval", 0.15f),
+              ("speed", 12f), ("damage", 8f)),
+            S("10 กระสุน", "สาดสุ่ม", typeof(ProjectilePatternAction),
+              ("pattern", "Random"), ("count", 20), ("spreadAngle", 120f), ("speed", 6f), ("damage", 12f)),
+
+            // ── 11 บังคับเดิน ────────────────────────────────────────
+            S("11 บังคับเดิน", "บังคับเดินทิศสุ่มรายคน", typeof(ForcedMarchAction),
+              ("direction", "RandomEach"), ("randomDirections", 4), ("readTime", 3f), ("marchDuration", 2f)),
+            S("11 บังคับเดิน", "บังคับเดินหนีบอส", typeof(ForcedMarchAction),
+              ("direction", "AwayFromBoss"), ("readTime", 3f), ("marchDuration", 2f)),
+            S("11 บังคับเดิน", "บังคับเดินทิศเดียวกันทุกคน", typeof(ForcedMarchAction),
+              ("direction", "FixedAngle"), ("readTime", 3f), ("marchDuration", 2f)),
         };
 
         static Spec S(string folder, string name, System.Type type, params (string, object)[] values)
@@ -120,6 +157,7 @@ namespace CloneSwarm.EditorTools
                     switch (value)
                     {
                         case float f: p.floatValue = f; break;
+                        case int i:   p.intValue   = i; break;
                         case bool b:  p.boolValue  = b; break;
                         case string s when p.propertyType == SerializedPropertyType.Enum:
                             int idx = System.Array.IndexOf(p.enumNames, s);

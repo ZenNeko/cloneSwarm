@@ -19,6 +19,9 @@ public class BossController : NetworkBehaviour
     [Header("Prefabs")]
     public GameObject telegraphZonePrefab;
     public GameObject tetherPrefab;
+    [Tooltip("กระสุนตั้งต้นของท่ายิงกระสุน (ProjectilePatternAction) — ท่าที่ไม่ได้ใส่กระสุนเองใช้อันนี้\n" +
+             "ต้องมี EnemyProjectile + NetworkObject และอยู่ใน DefaultNetworkPrefabs")]
+    public GameObject projectilePrefab;
 
     // ── Static Events (ALL clients) ───────────────────────────────────────
     public static event System.Action<BossController>                OnAnyBossSpawned;
@@ -402,7 +405,20 @@ public class BossController : NetworkBehaviour
     public void RegisterMechanic(NetworkObject no)
     {
         if (!IsServer || no == null) return;
+
+        // ท่ายิงกระสุนลงทะเบียนทีละหลายสิบลูก และกระสุนส่วนใหญ่ despawn ตัวเองก่อนบอสตาย
+        // ไม่กวาดทิ้งเลย ทะเบียนจะโตไปตลอดไฟต์
+        if (_activeMechanics.Count >= 128)
+            _activeMechanics.RemoveAll(n => n == null || !n.IsSpawned);
+
         _activeMechanics.Add(no);
+    }
+
+    /// <summary>เล่น VFX ที่จุดหนึ่งบนทุกเครื่อง — NetworkedVFXPool.PlayById เล่นแค่เครื่องที่เรียก</summary>
+    [ClientRpc]
+    public void PlayVfxClientRpc(int vfxId, Vector3 pos, float scale)
+    {
+        NetworkedVFXPool.Instance?.PlayById(vfxId, pos, scale);
     }
 
     /// <summary>ลบกลไกที่ยังค้างอยู่ — เรียกตอนบอสตายหรือถูก despawn</summary>

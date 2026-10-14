@@ -22,6 +22,19 @@ public class EnemyProjectile : NetworkBehaviour
         startPos = transform.position;
     }
 
+    /// <summary>
+    /// ท่าบอสตั้งค่ากระสุนเองต่อนัด (ProjectilePatternAction) — prefab เดียวใช้ได้หลายท่า
+    /// เรียกก่อน Spawn ได้ · หันหัวกระสุนตามทิศให้ด้วย (กระสุนยาวจะได้ไม่บินเฉียง)
+    /// </summary>
+    public void Init(Vector3 direction, float newSpeed, float newDamage, float newMaxRange)
+    {
+        Init(direction);
+        speed    = newSpeed;
+        damage   = newDamage;
+        maxRange = newMaxRange;
+        if (moveDir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(moveDir);
+    }
+
     // ── Movement (Server only) ────────────────────────────────────────────
     void Update()
     {
