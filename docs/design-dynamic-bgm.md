@@ -1,6 +1,7 @@
 # ออกแบบ: BGM ที่เปลี่ยนตามช่วงเวลาของรันและการเจอบอส
 
 **Status:** Implemented (โค้ด) 2026-09-23 — คอมไพล์ผ่านทั้งสอง assembly · ยังไม่ได้ต่อในซีน · ยังไม่ได้ฟังจริง · DevTools แถว Music ยังไม่ทำ
+**ทดสอบ (2026-10-15):** สูตร mix แยกเป็น `MusicMix` + EditMode test (`MusicMixTests` · `LayeredMusicPlayerTests`) · เพลงทดสอบ 5 ชั้น + ธีมบอส `Music_StemTest` (สร้างด้วย `scripts/gen_stem_test_audio.py`) สลับใช้กลางรันได้จาก DevTools (F1 → Music → Stem test) · แถว Music ใน DevTools ทำแล้ว
 **Date:** 2026-09-23 (แก้ครั้งที่ 2 — เปลี่ยนจากสลับเพลงเป็น **ซ้อนชั้นเพลง** ตามที่เจ้าของเลือก)
 **เกี่ยวข้อง:** `Assets/Script/Audio/SoundManager.cs` · `SceneBGMPlayer.cs` · `GameTimeline.cs` · `BossController.cs` · `MapData.cs`
 

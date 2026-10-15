@@ -45,17 +45,12 @@ public class MusicDirector : MonoBehaviour
     bool   _cardPick;
 
     // ── ของที่คำนวณแล้วส่งไป ─────────────────────────────────────────────
-    float[] _work    = new float[0];
+    MusicMix _mix = new();
     float[] _sent    = new float[0];
-    float[] _preBoss = new float[0];   // mix ล่าสุดของเพลงหลักก่อนบอสออก — ใช้ตอนไม่มีธีมบอส
     LayeredTrack _sentTrack;
     float  _sentDuck = 1f;
     bool   _sentCardPick, _sentOverlay;
     float  _pollTimer;
-
-    // ชื่อ stem → index แปลงครั้งเดียวต่อ (รายการ, track) · ไม่เทียบสตริงทุกรอบ
-    readonly Dictionary<(StemLevel[], LayeredTrack), int[]> _indexCache = new();
-    readonly HashSet<string> _warnedNames = new();
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
     void Awake()
@@ -90,6 +85,15 @@ public class MusicDirector : MonoBehaviour
         GameTimeline.OnGameWon  -= OnWon;
         GameTimeline.OnGameLost -= OnLost;
 
+        // ออกจากซีนกลางจอเลือกการ์ด (Quit · หลุดจาก host) — duck อยู่ใน SoundManager ซึ่งอยู่ข้ามซีน
+        // ถ้าไม่คืน เพลงเมนูและรันถัดไปจะดังแค่ครึ่งเดียวไปตลอด
+        // เช็ค Exists ก่อน — Instance สร้างตัวใหม่เองถ้าไม่มี ซึ่งตอนปิดเกมจะทิ้ง GameObject ค้าง
+        if (!Mathf.Approximately(_sentDuck, 1f) && SoundManager.Exists)
+        {
+            SoundManager.Instance.SetMusicDuck(1f, 0f);
+            _sentDuck = 1f;
+        }
+
         if (Active == this) Active = null;
     }
 
@@ -112,6 +116,19 @@ public class MusicDirector : MonoBehaviour
         _pollTimer -= Time.unscaledDeltaTime;
         if (_pollTimer > 0f) return;
         _pollTimer = pollInterval;
+        Recompute();
+    }
+
+    /// <summary>
+    /// DevTools — สลับเพลงกลางรันเพื่อฟังทดสอบ โดยไม่ต้องแก้ MapData · สถานะเกม (บอส · จอการ์ด) คงเดิม
+    /// </summary>
+    public void DevUseProfile(MusicProfile profile)
+    {
+        if (profile == null || _result != Result.None) return;
+        Profile      = profile;
+        _mix         = new MusicMix();
+        _sentTrack   = null;
+        _sentOverlay = _sentCardPick = false;
         Recompute();
     }
 
@@ -164,156 +181,61 @@ public class MusicDirector : MonoBehaviour
     {
         if (!HasProfile || _result != Result.None) return;
 
-        var  tl        = GameTimeline.Instance;
-        bool mainBoss  = tl != null && tl.isMainBossPhase.Value;
-        bool bossTheme = mainBoss && Profile.mainBossTrack != null && Profile.mainBossTrack.StemCount > 0;
-        var  track     = bossTheme ? Profile.mainBossTrack : Profile.track;
-
-        EnsureSize(ref _work, track.StemCount);
-        System.Array.Clear(_work, 0, _work.Length);
-
-        bool  overlay = false;
-        float fade;
-
-        if (bossTheme)
+        var tl = GameTimeline.Instance;
+        var r  = _mix.Evaluate(Profile, new MusicMix.Facts
         {
-            var mix = Profile.PhaseMix(_bossPhase);
-            Fill(_work, mix, track);
-            fade = Profile.FadeOf(mix);
-            StateLabel = $"MainBoss (ธีม) เฟส {_bossPhase + 1}";
-        }
-        else if (mainBoss)
-        {
-            // ไม่มีธีมบอส → เพลงเดิมเล่นต่อ ค้าง mix ล่าสุดก่อนบอสออก ไม่ปรับอะไร (ตัดสินแล้ว 2026-09-23)
-            // เข้ามากลางไฟต์บอสจะไม่มี mix ก่อนหน้า → ใช้ช่วงเวลาล่าสุดแทน ดีกว่าเงียบทั้งไฟต์
-            if (_preBoss.Length == 0 && tl != null)
-            {
-                int last = Profile.BandIndexAt(tl.gameTime.Value / 60f);
-                EnsureSize(ref _preBoss, _work.Length);
-                if (last >= 0) Fill(_preBoss, Profile.timeBands[last].mix, track);
-            }
-            System.Array.Copy(_preBoss, _work, Mathf.Min(_preBoss.Length, _work.Length));
-            fade = Profile.defaultFade;
-            StateLabel = "MainBoss (เพลงเดิม)";
-        }
-        else
-        {
-            float minutes = tl != null ? tl.gameTime.Value / 60f : 0f;
-            int band = Profile.BandIndexAt(minutes);
-            StemMix bandMix = band >= 0 ? Profile.timeBands[band].mix : null;
-            Fill(_work, bandMix, track);
-            fade = Profile.FadeOf(bandMix);
-            StateLabel = band >= 0 ? $"ช่วง {band + 1} (นาที {Profile.timeBands[band].atMinutes:0.#})" : "ไม่มีช่วงเวลา";
+            minutes       = tl != null ? tl.gameTime.Value / 60f : 0f,
+            mainBossPhase = tl != null && tl.isMainBossPhase.Value,
+            bossPhase     = _bossPhase,
+            miniBoss      = _miniBosses.Count > 0 || Time.unscaledTime < _miniReleaseAt,
+            cardPick      = _cardPick,
+            sentOverlay   = _sentOverlay,
+            sentCardPick  = _sentCardPick,
+        });
+        StateLabel = r.label;
 
-            overlay = _miniBosses.Count > 0 || Time.unscaledTime < _miniReleaseAt;
-            if (overlay)
-            {
-                MaxInto(_work, Profile.miniBossOverlay, track);
-                StateLabel += " + มินิบอส";
-            }
-            if (overlay != _sentOverlay) fade = Profile.FadeOf(Profile.miniBossOverlay);
-
-            EnsureSize(ref _preBoss, _work.Length);
-            System.Array.Copy(_work, _preBoss, _work.Length);
-        }
-
-        // จอเลือกการ์ด — ใส่ท้ายสุด ปิดจอแล้วสูตรข้างบนคืน mix ที่ถูกให้เอง
-        if (_cardPick)
-        {
-            Override(_work, Profile.cardPickOverrides, track);
-            StateLabel += " · เลือกการ์ด";
-        }
-        if (_cardPick != _sentCardPick) fade = Profile.cardPickFade;
-
-        Send(track, fade);
-        _sentOverlay  = overlay;
+        Send(r);
+        _sentOverlay  = r.overlay;
         _sentCardPick = _cardPick;
     }
 
-    void Send(LayeredTrack track, float fade)
+    void Send(in MusicMix.Result r)
     {
         var sm = SoundManager.Instance;
+        var levels = _mix.Levels;
 
-        float duck = _cardPick ? Profile.cardPickDuck : 1f;
-        if (!Mathf.Approximately(duck, _sentDuck))
+        if (!Mathf.Approximately(r.duck, _sentDuck))
         {
-            sm.SetMusicDuck(duck, Profile.cardPickFade);
-            _sentDuck = duck;
+            sm.SetMusicDuck(r.duck, Profile.cardPickFade);
+            _sentDuck = r.duck;
         }
 
         // track เปลี่ยน (เริ่มซีน · เข้าธีมบอส) หรือถูกหยุดไปจากที่อื่น → เริ่มใหม่ด้วย crossfade
-        bool playing = sm.Music != null && sm.Music.CurrentTrack == track && sm.IsMusicPlaying;
-        if (track != _sentTrack || !playing)
+        bool playing = sm.Music != null && sm.Music.CurrentTrack == r.track && sm.IsMusicPlaying;
+        if (r.track != _sentTrack || !playing)
         {
-            sm.PlayMusicTrack(track, Profile.defaultFade, _work);
-            _sentTrack = track;
-            Remember();
+            sm.PlayMusicTrack(r.track, Profile.defaultFade, levels);
+            _sentTrack = r.track;
+            Remember(levels);
             return;
         }
 
-        if (SameAsSent()) return;   // ส่งซ้ำจะรีเซ็ตความเร็ว fade ที่กำลังเดินอยู่
-        sm.SetMusicLevels(_work, fade);
-        Remember();
+        if (SameAsSent(levels)) return;   // ส่งซ้ำจะรีเซ็ตความเร็ว fade ที่กำลังเดินอยู่
+        sm.SetMusicLevels(levels, r.fade);
+        Remember(levels);
     }
 
-    void Remember()
+    void Remember(float[] levels)
     {
-        EnsureSize(ref _sent, _work.Length);
-        System.Array.Copy(_work, _sent, _work.Length);
+        if (_sent.Length != levels.Length) _sent = new float[levels.Length];
+        System.Array.Copy(levels, _sent, levels.Length);
     }
 
-    bool SameAsSent()
+    bool SameAsSent(float[] levels)
     {
-        if (_sent.Length != _work.Length) return false;
-        for (int i = 0; i < _work.Length; i++)
-            if (!Mathf.Approximately(_sent[i], _work[i])) return false;
-        return true;
-    }
-
-    // ── Mix helpers ───────────────────────────────────────────────────────
-    void Fill(float[] into, StemMix mix, LayeredTrack track)
-    {
-        if (mix?.levels == null) return;
-        var idx = Indices(mix.levels, track);
-        for (int i = 0; i < idx.Length; i++)
-            if (idx[i] >= 0) into[idx[i]] = mix.levels[i].level;
-    }
-
-    void MaxInto(float[] into, StemMix mix, LayeredTrack track)
-    {
-        if (mix?.levels == null) return;
-        var idx = Indices(mix.levels, track);
-        for (int i = 0; i < idx.Length; i++)
-            if (idx[i] >= 0) into[idx[i]] = Mathf.Max(into[idx[i]], mix.levels[i].level);
-    }
-
-    void Override(float[] into, StemLevel[] levels, LayeredTrack track)
-    {
-        if (levels == null) return;
-        var idx = Indices(levels, track);
-        for (int i = 0; i < idx.Length; i++)
-            if (idx[i] >= 0) into[idx[i]] = levels[i].level;
-    }
-
-    int[] Indices(StemLevel[] levels, LayeredTrack track)
-    {
-        var key = (levels, track);
-        if (_indexCache.TryGetValue(key, out var idx) && idx.Length == levels.Length) return idx;
-
-        idx = new int[levels.Length];
+        if (_sent.Length != levels.Length) return false;
         for (int i = 0; i < levels.Length; i++)
-        {
-            idx[i] = track.IndexOf(levels[i].stem);
-            if (idx[i] < 0 && !string.IsNullOrEmpty(levels[i].stem) &&
-                _warnedNames.Add($"{track.name}/{levels[i].stem}"))
-                Debug.LogWarning($"[Music] '{Profile.name}' อ้าง stem '{levels[i].stem}' ที่ไม่มีใน track '{track.name}' — ข้ามชั้นนี้", Profile);
-        }
-        _indexCache[key] = idx;
-        return idx;
-    }
-
-    static void EnsureSize(ref float[] arr, int n)
-    {
-        if (arr.Length != n) arr = new float[n];
+            if (!Mathf.Approximately(_sent[i], levels[i])) return false;
+        return true;
     }
 }

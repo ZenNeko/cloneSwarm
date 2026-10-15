@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73477ef2c92aded43b59a9f58a5c4642, type: 3}
+  m_Name: Music_StemTest
+  m_EditorClassIdentifier: Assembly-CSharp::MusicProfile
+  track: {fileID: 11400000, guid: e4c32096ccef4fb5ab491299177ca6f4, type: 2}
+  timeBands:
+  - atMinutes: 0
+    mix:
+      levels:
+      - stem: pad
+        level: 1
+      - stem: melody
+        level: 1
+      fadeSeconds: -1
+  - atMinutes: 5
+    mix:
+      levels:
+      - stem: pad
+        level: 1
+      - stem: melody
+        level: 1
+      - stem: drums
+        level: 1
+      fadeSeconds: -1
+  - atMinutes: 10
+    mix:
+      levels:
+      - stem: pad
+        level: 1
+      - stem: melody
+        level: 1
+      - stem: drums
+        level: 1
+      - stem: bass
+        level: 1
+      fadeSeconds: -1
+  miniBossOverlay:
+    levels:
+    - stem: perc
+      level: 1
+    fadeSeconds: 1
+  miniBossReleaseHold: 3
+  mainBossTrack: {fileID: 11400000, guid: 08d0b9dee7794feeaa3dc235e26a527b, type: 2}
+  mainBossPhases:
+  - levels:
+    - stem: boss_drums
+      level: 1
+    fadeSeconds: -1
+  - levels:
+    - stem: boss_drums
+      level: 1
+    - stem: boss_bass
+      level: 1
+    fadeSeconds: -1
+  - levels:
+    - stem: boss_drums
+      level: 1
+    - stem: boss_bass
+      level: 1
+    - stem: boss_lead
+      level: 1
+    fadeSeconds: -1
+  cardPickOverrides:
+  - stem: drums
+    level: 0
+  - stem: bass
+    level: 0
+  - stem: perc
+    level: 0
+  - stem: boss_drums
+    level: 0
+  cardPickDuck: 0.5
+  cardPickFade: 0.4
+  winStinger: {fileID: 8300000, guid: 04b363a297ff440ba22001351cc50278, type: 3}
+  loseStinger: {fileID: 8300000, guid: f76c8ef445c144e9a275ac55cd00db64, type: 3}
+  endFade: 1.5
+  defaultFade: 2

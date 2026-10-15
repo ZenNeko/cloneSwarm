@@ -209,6 +209,16 @@ public class GameTimeline : NetworkBehaviour
     }
 
     // ── Public API ────────────────────────────────────────────────────────
+    /// <summary>
+    /// DevTools — เลื่อนนาฬิกาเกมไปข้างหน้า · นัดหมาย (มินิบอส · โซน · บอสใหญ่) ที่ข้ามไป
+    /// ยังเกิดตามปกติในเฟรมถัดไป เพราะ TickCues เช็ค &gt;= ไม่ใช่ช่วงแคบ
+    /// </summary>
+    public void DevSkipSeconds(float seconds)
+    {
+        if (!IsServer || gameEnded || !hasStarted.Value || seconds <= 0f) return;
+        gameTime.Value += seconds;
+    }
+
     /// <summary>เรียกจาก BossManager เมื่อ Main Boss ตาย → WIN</summary>
     public void TriggerWin()
     {
