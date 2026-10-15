@@ -222,9 +222,43 @@ public class MusicMixTests
     [Test]
     public void MainBoss_EmptyThemeTrack_CountsAsNoTheme()
     {
-        UseBossTheme();
         profile.mainBossTrack = MakeTrack("Empty");
         Assert.AreSame(main, Eval(15f, mainBoss: true).track);
+    }
+
+    // ── บอสใหญ่ ไม่มีธีม แต่ตั้งเฟสไว้ = ปรับชั้นของเพลงหลัก ────────────────
+
+    void UseMainTrackPhases()
+    {
+        profile.mainBossPhases = new[]
+        {
+            new StemMix { levels = new[] { L("pad", 1f), L("drums", 1f), L("bass", 1f) } },
+            new StemMix { levels = new[] { L("pad", 1f), L("drums", 1f), L("bass", 1f), L("perc", 1f) }, fadeSeconds = 0.5f },
+        };
+    }
+
+    [Test]
+    public void MainBoss_NoThemeWithPhases_LayersMainTrackByPhase()
+    {
+        UseMainTrackPhases();
+        Eval(14f);
+
+        var r = Eval(15f, mainBoss: true, phase: 0);
+        Assert.AreSame(main, r.track, "ไม่สลับเพลง");
+        AssertLevels(1f, 1f, 1f, 0f);
+
+        r = Eval(16f, mainBoss: true, phase: 1);
+        AssertLevels(1f, 1f, 1f, 1f);
+        Assert.AreEqual(0.5f, r.fade, "ใช้ fade ของเฟส");
+    }
+
+    [Test]
+    public void MainBoss_NoThemeWithPhases_IgnoresMiniBossAndAppliesCardPick()
+    {
+        UseMainTrackPhases();
+        var r = Eval(15f, mainBoss: true, miniBoss: true, cardPick: true);
+        Assert.IsFalse(r.overlay);
+        AssertLevels(1f, 0f, 1f, 0f);   // drums ถูกปิดตอนเลือกการ์ด · perc ของมินิบอสไม่มา
     }
 
     // ── บอสใหญ่ ไม่มีธีม ─────────────────────────────────────────────────

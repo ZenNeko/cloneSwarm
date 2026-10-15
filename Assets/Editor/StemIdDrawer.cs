@@ -9,7 +9,8 @@ namespace CloneSwarm.EditorTools
     ///
     /// ═══ track ไหน ═══
     ///
-    /// mainBossPhases อ้าง stem ของ **ธีมบอส** (mainBossTrack) · ช่องอื่นอ้าง stem ของ track หลัก
+    /// mainBossPhases อ้าง stem ของ **ธีมบอส** (mainBossTrack) หรือของ track หลักถ้าไม่ได้ใส่ธีมบอส
+    /// · ช่องอื่นอ้าง stem ของ track หลัก
     /// cardPickOverrides ใช้ได้กับทั้งสอง track (จอเลือกการ์ดเปิดกลางไฟต์บอสได้) → รวมชื่อจากทั้งคู่
     ///
     /// ═══ ไม่แก้ค่าที่ผิดให้เอง ═══
@@ -34,10 +35,13 @@ namespace CloneSwarm.EditorTools
             bool bossOnly = path.StartsWith("mainBossPhases");
             bool both     = path.StartsWith("cardPickOverrides");
 
-            if (!bossOnly) Add(names, profile.track);
-            if (bossOnly || both) Add(names, profile.mainBossTrack);
+            // ไม่ได้ใส่เพลงบอส → mainBossPhases ปรับชั้นของเพลงหลัก (MusicProfile.BossTrack)
+            if (bossOnly) Add(names, profile.BossTrack);
+            else          Add(names, profile.track);
+            if (both)     Add(names, profile.mainBossTrack);
 
-            source = bossOnly ? "mainBossTrack" : both ? "track / mainBossTrack" : "track";
+            source = bossOnly ? (profile.HasBossTheme ? "mainBossTrack" : "track (ไม่มีเพลงบอส ใช้เพลงหลัก)")
+                   : both ? "track / mainBossTrack" : "track";
             return names;
         }
 

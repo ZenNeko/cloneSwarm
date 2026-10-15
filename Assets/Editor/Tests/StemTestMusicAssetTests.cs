@@ -17,10 +17,10 @@ public class StemTestMusicAssetTests
         var p = AssetDatabase.LoadAssetAtPath<MusicProfile>(ProfilePath);
         Assert.IsNotNull(p, ProfilePath);
         Assert.IsNotNull(p.track, "track หลัก");
-        Assert.IsNotNull(p.mainBossTrack, "ธีมบอส");
+        Assert.IsTrue(p.HasBossMix, "ช่วงบอสต้องปรับชั้นตามเฟส");
 
-        Assert.IsNull(p.track.Validate(),         $"track หลัก: {p.track.Validate()}");
-        Assert.IsNull(p.mainBossTrack.Validate(), $"ธีมบอส: {p.mainBossTrack.Validate()}");
+        Assert.IsNull(p.track.Validate(),     $"track หลัก: {p.track.Validate()}");
+        Assert.IsNull(p.BossTrack.Validate(), $"track ช่วงบอส: {p.BossTrack.Validate()}");
 
         foreach (var band in p.timeBands)
             foreach (var l in band.mix.levels)
@@ -29,9 +29,9 @@ public class StemTestMusicAssetTests
             Assert.GreaterOrEqual(p.track.IndexOf(l.stem), 0, $"miniBossOverlay '{l.stem}'");
         foreach (var phase in p.mainBossPhases)
             foreach (var l in phase.levels)
-                Assert.GreaterOrEqual(p.mainBossTrack.IndexOf(l.stem), 0, $"mainBossPhases '{l.stem}'");
+                Assert.GreaterOrEqual(p.BossTrack.IndexOf(l.stem), 0, $"mainBossPhases '{l.stem}'");
         foreach (var l in p.cardPickOverrides)
-            Assert.IsTrue(p.track.IndexOf(l.stem) >= 0 || p.mainBossTrack.IndexOf(l.stem) >= 0,
+            Assert.IsTrue(p.track.IndexOf(l.stem) >= 0 || p.BossTrack.IndexOf(l.stem) >= 0,
                           $"cardPickOverrides '{l.stem}'");
 
         Assert.IsNotNull(p.winStinger,  "stinger ชนะ");

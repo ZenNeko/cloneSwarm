@@ -1018,14 +1018,11 @@ namespace CloneSwarm.EditorTools
                     Scan(p.miniBossOverlay?.levels, "miniBossOverlay", p.track);
                     if (p.mainBossPhases != null)
                         for (int i = 0; i < p.mainBossPhases.Length; i++)
-                            Scan(p.mainBossPhases[i]?.levels, $"mainBossPhases[{i}]", p.mainBossTrack);
+                            Scan(p.mainBossPhases[i]?.levels, $"mainBossPhases[{i}]", p.BossTrack);
                     Scan(p.cardPickOverrides, "cardPickOverrides", p.track, p.mainBossTrack);
 
                     Require(missing.Count == 0, $"เพลง {p.name}: ทุกชื่อ stem ใน mix มีอยู่ใน track");
                     foreach (var m in missing.Take(5)) lines.Add($"        └ {m}");
-
-                    if (p.mainBossTrack == null && p.mainBossPhases != null && p.mainBossPhases.Length > 0)
-                        lines.Add($"   หมายเหตุ  {p.name}: ตั้ง mainBossPhases ไว้แต่ไม่มีธีมบอส — ค่าพวกนี้ไม่ถูกใช้");
                 }
             }
 

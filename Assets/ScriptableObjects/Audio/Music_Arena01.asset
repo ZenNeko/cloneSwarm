@@ -24,7 +24,7 @@ MonoBehaviour:
     levels: []
     fadeSeconds: -1
   miniBossReleaseHold: 3
-  mainBossTrack: {fileID: 11400000, guid: 6b2ddd2aecbebcc478e3f2811a83022a, type: 2}
+  mainBossTrack: {fileID: 0}
   mainBossPhases:
   - levels:
     - stem: main

@@ -48,24 +48,25 @@ public class MusicMix
     {
         _profile = profile;
 
-        bool bossTheme = f.mainBossPhase && profile.mainBossTrack != null && profile.mainBossTrack.StemCount > 0;
-        var  track     = bossTheme ? profile.mainBossTrack : profile.track;
+        // ไม่มีเพลงบอสแยกแต่ตั้งเฟสไว้ → BossTrack คือเพลงหลัก · track ไม่เปลี่ยน จึงไม่ crossfade แค่ปรับชั้น
+        bool bossMix = f.mainBossPhase && profile.HasBossMix;
+        var  track   = bossMix ? profile.BossTrack : profile.track;
 
         EnsureSize(ref _work, track.StemCount);
         System.Array.Clear(_work, 0, _work.Length);
 
         var r = new Result { track = track };
 
-        if (bossTheme)
+        if (bossMix)
         {
             var mix = profile.PhaseMix(f.bossPhase);
             Fill(_work, mix, track);
             r.fade  = profile.FadeOf(mix);
-            r.label = $"MainBoss (ธีม) เฟส {f.bossPhase + 1}";
+            r.label = $"MainBoss ({(profile.HasBossTheme ? "ธีม" : "เพลงหลัก")}) เฟส {f.bossPhase + 1}";
         }
         else if (f.mainBossPhase)
         {
-            // ไม่มีธีมบอส → เพลงเดิมเล่นต่อ ค้าง mix ล่าสุดก่อนบอสออก ไม่ปรับอะไร (ตัดสินแล้ว 2026-09-23)
+            // ไม่มีเพลงบอสและไม่ได้ตั้งเฟส → เพลงเดิมเล่นต่อ ค้าง mix ล่าสุดก่อนบอสออก ไม่ปรับอะไร (ตัดสินแล้ว 2026-09-23)
             // เข้ามากลางไฟต์บอสจะไม่มี mix ก่อนหน้า → ใช้ช่วงเวลาล่าสุดแทน ดีกว่าเงียบทั้งไฟต์
             if (_preBoss.Length == 0)
             {
