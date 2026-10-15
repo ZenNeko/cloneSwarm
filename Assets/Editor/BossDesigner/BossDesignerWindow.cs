@@ -809,6 +809,12 @@ public partial class BossDesignerWindow : EditorWindow
             });
             card.Add(where);
 
+            if (action is BossDashAction)
+            {
+                card.Add(new PropertyField(so.FindProperty("mode"), "พุ่ง / วาร์ป"));
+                card.Add(Note("พุ่ง: ใช้ \"ความกว้าง\" · วาร์ป: ใช้ \"รัศมี\" · ระยะพุ่งเลยเป้า/ความเร็วอยู่ใน \"ขั้นสูง\"", 0.6f));
+            }
+
             if (mode.enumValueIndex == (int)SpawnAoEActionBase.TargetingMode.ArenaAnchor)
             {
                 card.Add(new PropertyField(so.FindProperty("arenaAnchor"), "จุดในสนาม"));
@@ -828,7 +834,7 @@ public partial class BossDesignerWindow : EditorWindow
 
             // ── ทิศ — Line/Cone หันหาผู้เล่นหรือมุมคงที่ · Cross มุมอย่างเดียว ──
             var aoeType = GetAoETypeOf(action);
-            if (aoeType == AoEType.Line || aoeType == AoEType.Cone)
+            if ((aoeType == AoEType.Line || aoeType == AoEType.Cone) && action is not BossDashAction)
             {
                 var aim = so.FindProperty("aimMode");
                 var aimField = new PopupField<string>("ทิศ", AimLabels, Mathf.Clamp(aim.enumValueIndex, 0, AimLabels.Count - 1));
@@ -2625,6 +2631,9 @@ public partial class BossDesignerWindow : EditorWindow
             nameof(TetherAction)        => "โซ่",
             nameof(LimitCutAction)      => "Limit Cut",
             nameof(KeepMovingAction)    => "ห้ามหยุดเดิน",
+            nameof(BossDashAction)      => "พุ่ง/วาร์ป",
+            nameof(ProjectilePatternAction) => "ยิงกระสุน",
+            nameof(ForcedMarchAction)   => "บังคับเดิน",
             nameof(RandomAttackAction)  => "สุ่มจากหลายท่า",
             nameof(ComboAction)         => "คอมโบ",
             nameof(BossTimelineAction)  => "timeline ซ้อน",
@@ -2642,6 +2651,9 @@ public partial class BossDesignerWindow : EditorWindow
     static Color ClipColor(BossAction action) => action switch
     {
         TetherAction         => new Color(0.45f, 0.35f, 0.75f),
+        BossDashAction       => new Color(0.8f, 0.25f, 0.3f),
+        ProjectilePatternAction => new Color(0.75f, 0.6f, 0.15f),
+        ForcedMarchAction    => new Color(0.6f, 0.3f, 0.6f),
         BossTimelineAction   => new Color(0.2f, 0.45f, 0.7f),
         ComboAction          => new Color(0.2f, 0.5f, 0.55f),
         RandomAttackAction   => new Color(0.3f, 0.55f, 0.3f),
