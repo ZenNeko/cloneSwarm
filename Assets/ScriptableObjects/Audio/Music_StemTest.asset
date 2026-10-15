@@ -50,24 +50,28 @@ MonoBehaviour:
       level: 1
     fadeSeconds: 1
   miniBossReleaseHold: 3
-  mainBossTrack: {fileID: 11400000, guid: 08d0b9dee7794feeaa3dc235e26a527b, type: 2}
+  mainBossTrack: {fileID: 11400000, guid: e4c32096ccef4fb5ab491299177ca6f4, type: 2}
   mainBossPhases:
   - levels:
-    - stem: boss_drums
+    - stem: pad
+      level: 1
+    - stem: melody
+      level: 1
+    - stem: drums
+      level: 1
+    - stem: bass
       level: 1
     fadeSeconds: -1
   - levels:
-    - stem: boss_drums
+    - stem: pad
       level: 1
-    - stem: boss_bass
+    - stem: melody
       level: 1
-    fadeSeconds: -1
-  - levels:
-    - stem: boss_drums
+    - stem: drums
       level: 1
-    - stem: boss_bass
+    - stem: bass
       level: 1
-    - stem: boss_lead
+    - stem: perc
       level: 1
     fadeSeconds: -1
   cardPickOverrides:
@@ -76,8 +80,6 @@ MonoBehaviour:
   - stem: bass
     level: 0
   - stem: perc
-    level: 0
-  - stem: boss_drums
     level: 0
   cardPickDuck: 0.5
   cardPickFade: 0.4

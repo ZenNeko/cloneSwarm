@@ -58,7 +58,9 @@ public class MusicProfile : ScriptableObject
     [Min(0f)] public float miniBossReleaseHold = 3f;
 
     [Header("บอสใหญ่")]
-    [Tooltip("ธีมบอส · ว่าง = เพลงเดิมเล่นต่อและค้าง mix ล่าสุด ไม่ปรับอะไร")]
+    // ใส่ track เดียวกับ track หลัก = ไม่สลับเพลง (Play เจอ track เดิมแล้วไม่ทำอะไร)
+    // แค่ปรับชั้นตาม mainBossPhases · เป็นค่าที่ใช้อยู่ตอนนี้ จนกว่าจะมีเพลงบอสจริง
+    [Tooltip("ธีมบอส · ว่าง = เพลงเดิมเล่นต่อและค้าง mix ล่าสุด ไม่ปรับอะไร · ใส่ track เดียวกับเพลงหลัก = ไม่สลับเพลง แต่ปรับชั้นตามเฟส")]
     public LayeredTrack mainBossTrack;
 
     [Tooltip("ใช้เฉพาะเมื่อมีธีมบอส · index = เฟส · ขาดช่องไหนใช้ช่องก่อนหน้า · อ้าง stem ของธีมบอส")]

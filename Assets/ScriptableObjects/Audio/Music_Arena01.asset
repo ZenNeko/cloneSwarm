@@ -24,8 +24,12 @@ MonoBehaviour:
     levels: []
     fadeSeconds: -1
   miniBossReleaseHold: 3
-  mainBossTrack: {fileID: 0}
-  mainBossPhases: []
+  mainBossTrack: {fileID: 11400000, guid: 6b2ddd2aecbebcc478e3f2811a83022a, type: 2}
+  mainBossPhases:
+  - levels:
+    - stem: main
+      level: 1
+    fadeSeconds: -1
   cardPickOverrides: []
   cardPickDuck: 0.5
   cardPickFade: 0.4
