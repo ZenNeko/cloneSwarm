@@ -41,6 +41,7 @@ public class MusicDirector : MonoBehaviour
     Result _result;
     readonly HashSet<BossController> _miniBosses = new();
     float  _miniReleaseAt = -1f;
+    BossController _mainBoss;   // บอสใหญ่ที่มีชีวิต — DevTools/Boss Designer เรียกบอสโดยไม่ตั้ง isMainBossPhase
     int    _bossPhase;
     bool   _cardPick;
 
@@ -136,13 +137,14 @@ public class MusicDirector : MonoBehaviour
     void OnBossSpawned(BossController bc)
     {
         if (bc == null) return;
-        if (bc.IsMainBoss.Value) _bossPhase = 0;
+        if (bc.IsMainBoss.Value) { _mainBoss = bc; _bossPhase = 0; }
         else _miniBosses.Add(bc);
         Recompute();
     }
 
     void OnBossDespawned(BossController bc)
     {
+        if (bc != null && bc == _mainBoss) { _mainBoss = null; Recompute(); return; }
         if (bc == null || !_miniBosses.Remove(bc)) return;
         if (_miniBosses.Count == 0 && Profile != null)
             _miniReleaseAt = Time.unscaledTime + Profile.miniBossReleaseHold;
@@ -185,7 +187,9 @@ public class MusicDirector : MonoBehaviour
         var r  = _mix.Evaluate(Profile, new MusicMix.Facts
         {
             minutes       = tl != null ? tl.gameTime.Value / 60f : 0f,
-            mainBossPhase = tl != null && tl.isMainBossPhase.Value,
+            // ตามนาฬิกา (นาที 15) หรือมีบอสใหญ่ตัวจริงอยู่ — ปุ่ม Spawn Main Boss ของ DevTools
+            // และ "ทดสอบในเกม" ของ Boss Designer ไม่ได้ตั้ง isMainBossPhase เพลงจึงไม่เข้าช่วงบอส
+            mainBossPhase = (tl != null && tl.isMainBossPhase.Value) || _mainBoss != null,
             bossPhase     = _bossPhase,
             miniBoss      = _miniBosses.Count > 0 || Time.unscaledTime < _miniReleaseAt,
             cardPick      = _cardPick,
