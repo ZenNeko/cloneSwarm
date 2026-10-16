@@ -25,6 +25,11 @@ public class DevTools : MonoBehaviour
     private bool       builtUI;
     private TextMeshProUGUI infoText;
     private TextMeshProUGUI vfxText;
+    private TextMeshProUGUI musicText;
+
+    // เพลงทดสอบ 5 ชั้น + ธีมบอส (scripts/gen_stem_test_audio.py) — โหลดผ่าน AssetDatabase
+    // เพราะไม่อยากให้ติดไปใน build · ปุ่มนี้จึงใช้ได้เฉพาะใน Editor
+    const string StemTestProfilePath = "Assets/ScriptableObjects/Audio/Music_StemTest.asset";
 
     // ─────────────────────────────────────────────────────────────────────
     // ปุ่มโกง (spawn บอส / ฆ่าศัตรูทั้งหมด / บังคับเลเวลอัป) ห้ามหลุดไปใน release build
@@ -80,6 +85,8 @@ public class DevTools : MonoBehaviour
 
         infoText.text = $"{expLine}\n{waveLine}\n{timeLine}\n{upgradeManagerLine}";
 
+        if (musicText != null) musicText.text = MusicInfo();
+
         if (vfxText != null)
         {
             var pool = NetworkedVFXPool.Instance;
@@ -87,6 +94,47 @@ public class DevTools : MonoBehaviour
                 ? pool.BuildShortReport(5)
                 : "NetworkedVFXPool - not in scene";
         }
+    }
+
+    // ── Music ─────────────────────────────────────────────────────────────
+    /// <summary>ชั้นเพลงที่ดังอยู่จริงตอนนี้ — ภาษาอังกฤษล้วน เพราะฟอนต์ของแผงนี้ไม่มีอักษรไทย</summary>
+    string MusicInfo()
+    {
+        var player = SoundManager.Exists ? SoundManager.Instance.Music : null;
+        if (player == null || player.CurrentTrack == null) return "Music: -";
+
+        var md = MusicDirector.Active;
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"Music: <b>{player.CurrentTrack.name}</b>  duck {player.Duck:0.00}");
+        if (md != null && md.Profile != null) sb.Append($"\nprofile {md.Profile.name}");
+
+        var stems = player.CurrentTrack.stems;
+        for (int i = 0; i < player.StemCount; i++)
+            sb.Append(i % 3 == 0 ? "\n" : "   ").Append($"{stems[i].name} {player.StemLevel(i):0.00}");
+        return sb.ToString();
+    }
+
+    void OnSkipMinute()
+    {
+        if (!RequireServer()) return;
+        var gt = GameTimeline.Instance;
+        if (gt == null) { Debug.LogWarning("[DevTools] GameTimeline ไม่พบ"); return; }
+        gt.DevSkipSeconds(60f);
+        Debug.Log("[DevTools] ⏩ เวลาเกม +1 นาที");
+    }
+
+    void OnUseStemTestMusic()
+    {
+#if UNITY_EDITOR
+        var md = MusicDirector.Active;
+        if (md == null) { Debug.LogWarning("[DevTools] MusicDirector ไม่พบในซีน"); return; }
+        var profile = UnityEditor.AssetDatabase.LoadAssetAtPath<MusicProfile>(StemTestProfilePath);
+        if (profile == null) { Debug.LogWarning($"[DevTools] ไม่พบ {StemTestProfilePath}"); return; }
+        md.DevUseProfile(profile);
+        Debug.Log("[DevTools] 🎵 สลับเป็นเพลงทดสอบแยก stem — เฉพาะเครื่องนี้");
+#else
+        Debug.LogWarning("[DevTools] เพลงทดสอบใช้ได้ใน Editor เท่านั้น");
+#endif
     }
 
     // ── VFX Pool ──────────────────────────────────────────────────────────
@@ -316,6 +364,24 @@ public class DevTools : MonoBehaviour
         AddButton(panelRoot, "Spawn Main Boss",  new Color(1f, 0.25f, 0.25f), OnSpawnMainBoss);
         AddButton(panelRoot, "Spawn Objective",  new Color(0.3f, 1f, 0.6f), OnSpawnObjective);
         AddButton(panelRoot, "Spawn Aug Orb",    new Color(0.72f, 0.4f, 1f), OnSpawnAugOrb);
+
+        // ── Music ──
+        AddLabel(panelRoot, "-- Music --", 11, new Color(0.7f,0.7f,0.7f));
+        musicText = AddLabel(panelRoot, "...", 11, Color.white);
+        musicText.GetComponent<LayoutElement>().preferredHeight = 58;
+
+        var musicRow = new GameObject("MusicRow");
+        musicRow.transform.SetParent(panelRoot.transform, false);
+        var musicLayout = musicRow.AddComponent<HorizontalLayoutGroup>();
+        musicLayout.spacing = 4;
+        musicLayout.childForceExpandWidth  = true;
+        musicLayout.childForceExpandHeight = false;
+        musicLayout.childControlWidth      = true;
+        musicLayout.childControlHeight     = true;
+        musicRow.AddComponent<LayoutElement>().preferredHeight = 30;
+
+        AddSmallButton(musicRow, "+1 min",    new Color(0.4f, 0.8f, 1f), OnSkipMinute);
+        AddSmallButton(musicRow, "Stem test", new Color(1f, 0.5f, 0.8f), OnUseStemTestMusic);
 
         // ── VFX Pool ──
         AddLabel(panelRoot, "-- VFX Pool (undersized) --", 11, new Color(0.7f,0.7f,0.7f));

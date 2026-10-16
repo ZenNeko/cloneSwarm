@@ -58,10 +58,14 @@ public class MusicProfile : ScriptableObject
     [Min(0f)] public float miniBossReleaseHold = 3f;
 
     [Header("บอสใหญ่")]
-    [Tooltip("ธีมบอส · ว่าง = เพลงเดิมเล่นต่อและค้าง mix ล่าสุด ไม่ปรับอะไร")]
+    // ช่วงบอสใหญ่มีสามแบบ:
+    //   ใส่ mainBossTrack                → crossfade ไปเพลงบอส แล้วปรับชั้นตาม mainBossPhases (stem ของเพลงบอส)
+    //   ว่าง + มี mainBossPhases         → เพลงหลักเล่นต่อ ไม่สลับเพลง แต่ปรับชั้นตามเฟส (stem ของเพลงหลัก)
+    //   ว่าง + ไม่มี mainBossPhases      → เพลงหลักเล่นต่อ ค้าง mix ล่าสุดก่อนบอสออก ไม่ปรับอะไร
+    [Tooltip("เพลงบอสแยก · ว่าง = ใช้เพลงหลักต่อ (ถ้ามี Main Boss Phases จะปรับชั้นของเพลงหลักตามเฟส · ไม่มี = ค้าง mix ล่าสุด)")]
     public LayeredTrack mainBossTrack;
 
-    [Tooltip("ใช้เฉพาะเมื่อมีธีมบอส · index = เฟส · ขาดช่องไหนใช้ช่องก่อนหน้า · อ้าง stem ของธีมบอส")]
+    [Tooltip("index = เฟส · ขาดช่องไหนใช้ช่องก่อนหน้า · อ้าง stem ของเพลงบอส หรือของเพลงหลักถ้าไม่ได้ใส่เพลงบอส")]
     public StemMix[] mainBossPhases = new StemMix[0];
 
     [Header("จอเลือกการ์ด (Level Up / Orb)")]
@@ -103,6 +107,15 @@ public class MusicProfile : ScriptableObject
         }
         return best >= 0 ? best : earliest;   // band แรกครอบตั้งแต่เริ่มเกมเสมอ
     }
+
+    /// <summary>มีเพลงบอสแยก (track ที่มี stem จริง)</summary>
+    public bool HasBossTheme => mainBossTrack != null && mainBossTrack.StemCount > 0;
+
+    /// <summary>ช่วงบอสใหญ่ปรับชั้นตามเฟส — มีเพลงบอสแยก หรือตั้ง mainBossPhases ไว้กับเพลงหลัก</summary>
+    public bool HasBossMix => HasBossTheme || (mainBossPhases != null && mainBossPhases.Length > 0);
+
+    /// <summary>track ที่ mainBossPhases อ้างชื่อ stem · เพลงบอสถ้ามี ไม่งั้นเพลงหลัก</summary>
+    public LayeredTrack BossTrack => HasBossTheme ? mainBossTrack : track;
 
     /// <summary>mix ของเฟสนี้ · ขาดช่องใช้ช่องก่อนหน้า · null ถ้าไม่มีเลย</summary>
     public StemMix PhaseMix(int phase)

@@ -71,6 +71,8 @@ public class LayeredMusicPlayer : MonoBehaviour
     public int   StemCount           => _live.count;
     public float Duck                => _duck;
     public float StemLevel(int i)    => i >= 0 && i < _live.count ? _live.cur[i] : 0f;
+    /// <summary>volume ที่ AudioSource ของชั้นนี้ได้จริง (ระดับชั้น × deck gain × duck × output scale)</summary>
+    public float StemVolume(int i)   => i >= 0 && i < _live.count && _live.src[i] != null ? _live.src[i].volume : 0f;
 
     public bool IsPlaying
     {
@@ -164,10 +166,11 @@ public class LayeredMusicPlayer : MonoBehaviour
     }
 
     // ── Loop ──────────────────────────────────────────────────────────────
-    void Update()
-    {
-        float dt = Time.unscaledDeltaTime;
+    void Update() => Tick(Time.unscaledDeltaTime);
 
+    /// <summary>เดิน fade ไป dt วินาที — Update เรียกทุกเฟรม · EditMode test เรียกตรงเพื่อคุมเวลาเอง</summary>
+    public void Tick(float dt)
+    {
         Step(_live, dt);
         Step(_out,  dt);
         if (_out.track != null && _out.releaseWhenSilent && _out.gain <= 0f)

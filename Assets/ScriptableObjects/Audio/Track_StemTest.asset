@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 932f69edcb14cf9409a33db665172d73, type: 3}
+  m_Name: Track_StemTest
+  m_EditorClassIdentifier: Assembly-CSharp::LayeredTrack
+  stems:
+  - name: pad
+    clip: {fileID: 8300000, guid: f4ec1776c2f7481c8e509115b0dc475b, type: 3}
+  - name: melody
+    clip: {fileID: 8300000, guid: 5f51b7bd00124c08815f0f17bc4343e9, type: 3}
+  - name: drums
+    clip: {fileID: 8300000, guid: 549eb6d1f6624e0ab8f45569a6c91602, type: 3}
+  - name: bass
+    clip: {fileID: 8300000, guid: 584a3280a0254c9aab0d870592bb066e, type: 3}
+  - name: perc
+    clip: {fileID: 8300000, guid: ba898733708f4acbaef635e5df1fb513, type: 3}
+  bpm: 120
+  beatsPerBar: 4

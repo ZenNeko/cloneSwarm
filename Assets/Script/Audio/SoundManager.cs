@@ -30,6 +30,9 @@ public class SoundManager : MonoBehaviour
 {
     // ── Singleton ─────────────────────────────────────────────────────────
     static SoundManager _instance;
+    /// <summary>มีตัวจริงอยู่แล้ว — ใช้ตอนปิดซีน/ปิดเกม ที่ไม่ควรให้ Instance สร้างตัวใหม่ขึ้นมา</summary>
+    public static bool Exists => _instance != null;
+
     public static SoundManager Instance
     {
         get
